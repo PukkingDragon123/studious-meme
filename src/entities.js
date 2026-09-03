@@ -452,7 +452,7 @@ class Snake extends Entity {
 class Gator extends Entity {
   constructor(x, y, size, boss = false) {
     super(x, y); this.size = size; this.sizeClass = size; this.type = 'gator'; this.isBoss = boss; this.threat = 1;
-    this.hp = Math.round((boss ? 150 : 55) * Math.pow(size, 1.5)); this.maxHp = this.hp; this.mass = Math.round(120 * size * (boss ? 1.6 : 1));
+    this.hp = Math.round((boss ? 75 : 55) * Math.pow(size, 1.5)); this.maxHp = this.hp; this.mass = Math.round(120 * size * (boss ? 1.6 : 1));
     this.name = boss ? 'OLD SCAR' : 'RIVAL GATOR'; this.r = 5; this.gibs = 0; this.persistent = boss;
     this.chain = new CrocChain(x, y, 0); this.parts = buildCrocParts(CROC_LOOKS[boss ? 'oldscar' : 'gator']);
     this.jaw = 0; this.biteT = 0; this.biteCd = rand(0.5, 1.5); this.state = 'patrol'; this.tx = x; this.ty = y; this.retarget = 0; this.legPhase = 0; this.roll = 0; this.rollT = 0; this.grabbing = false; this.grabT = 0; this.wasAir = false; this.roarCd = 0;
@@ -485,7 +485,7 @@ class Gator extends Entity {
         const [sx, sy] = this.snout;
         if (this.biteCd <= 0 && P.nearestDist(sx, sy) < 8 + 5 * P.size + 4 * this.size) {
           this.biteT = 0.16; this.biteCd = this.isBoss ? 1.2 : 1.6;
-          const dmg = 11 * Math.pow(this.size, 0.8) * (this.isBoss ? 1.3 : 1);
+          const dmg = 11 * Math.pow(this.size, 0.8) * (this.isBoss ? 1.1 : 1);
           if (P.hurt(dmg, this, 'bite') > 0) {
             SFX.chomp(this.size, this.pan); G.hitstop(0.05);
             const dx = P.x - this.x, dy = P.y - this.y, d = Math.hypot(dx, dy) || 1; if (!P.st.knockImmune) { P.vx += dx / d * 180; P.vy += dy / d * 120; }
