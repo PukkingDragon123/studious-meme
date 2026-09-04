@@ -25,6 +25,7 @@ class Player {
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
+    this.frozen = false; this.hidden = false;
   }
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
   get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * (this.frenzyT > 0 ? 1.3 : 1); }
@@ -39,6 +40,7 @@ class Player {
 
   update(dt, inp) {
     if (this.dead) { this.updateDead(dt); return; }
+    if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.size, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
@@ -360,6 +362,7 @@ class Player {
     if (under && chance(dt * 3)) G.fx.bubbles(this.x, this.y, 1, 8 * this.size);
   }
   draw(ctx) {
+    if (this.hidden) return;
     for (const g of this.ghosts) drawCroc(ctx, { nodes: g.nodes }, this.parts, this.size, { flipY: g.flip, alpha: g.life * 0.7 });
     const blink = this.invuln > 0 && !this.dead && Math.floor(G.t * 30) % 2 === 0 && this.hurtFlash <= 0;
     if (this.st.lure) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(64,240,200,0.08)'; ctx.beginPath(); ctx.arc(this.x, this.y, 30 * this.size, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }

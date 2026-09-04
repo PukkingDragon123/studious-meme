@@ -145,15 +145,68 @@ const G = {
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
-    // starter nursery
-    for (let i = 0; i < 4; i++) Spawn.school(rand(-300, 300), rand(20, 120), 'minnow');
-    for (let i = 0; i < 2; i++) Spawn.school(rand(-350, 350), rand(30, 150), 'bluegill');
-    for (let i = 0; i < 3; i++) this.add(new Frog(rand(-400, 400)));
-    for (let i = 0; i < 4; i++) this.add(new Bottom(rand(-400, 400), chance(0.6) ? 'crayfish' : 'snail'));
-    for (let i = 0; i < 2; i++) this.add(new Dragonfly(rand(-300, 300)));
-    { const lead = new Mullet(rand(-300, 300), 40); this.add(lead); for (let i = 1; i < 5; i++) this.add(new Mullet(lead.x + rand(-30, 30), lead.y + rand(-14, 14), lead)); }
-    Spawn.duck(rand(150, 300));
-    if (!demo) { this.state = 'play'; this.runs++; this.save.runs++; this.storeSave(); }
+    if (demo) this.seedNursery(0, 1);
+    if (!demo) { this.runs++; this.save.runs++; this.storeSave(); this.beginEgg(); }
+  },
+  // easy first meals, close to wherever the run begins
+  seedNursery(cx, dir) {
+    const w = x => World.floorY(x) > 30;
+    const pick = (a, b) => { const x = cx + dir * rand(a, b); return w(x) ? x : null; };
+    for (let i = 0; i < 6; i++) { const x = pick(40, 420); if (x !== null) Spawn.school(x, clamp(rand(12, 90), 8, World.floorY(x) - 12), chance(0.6) ? 'minnow' : 'bluegill'); }
+    for (let i = 0; i < 2; i++) { const x = pick(60, 400); if (x !== null) Spawn.school(x, clamp(rand(12, 60), 8, World.floorY(x) - 12), 'tilapia'); }
+    for (let i = 0; i < 4; i++) { const x = pick(30, 380); if (x !== null) this.add(new Frog(x)); }
+    for (let i = 0; i < 5; i++) { const x = pick(30, 380); if (x !== null) this.add(new Bottom(x, chance(0.6) ? 'crayfish' : 'snail')); }
+    for (let i = 0; i < 3; i++) { const x = pick(20, 300); if (x !== null) this.add(new Dragonfly(x)); }
+    const mx = pick(80, 300);
+    if (mx !== null) { const lead = new Mullet(mx, 30); this.add(lead); for (let i = 1; i < 5; i++) this.add(new Mullet(mx + rand(-30, 30), 30 + rand(-14, 14), lead)); }
+    const dx = pick(120, 340); if (dx !== null) Spawn.duck(dx);
+  },
+  // ---------- the egg ----------
+  beginEgg() {
+    const P = this.player;
+    // a nest on a bank with open water within a short crawl
+    const shoreDir = x => {
+      for (let d = 20; d < 110; d += 10) { if (World.floorY(x + d) > 40) return 1; if (World.floorY(x - d) > 40) return -1; }
+      return 0;
+    };
+    let nx = World.findX(0, x => { const f = World.floorY(x); return f < -4 && f > -46 && shoreDir(x) !== 0; }, 5000, 16);
+    if (nx === null) nx = World.findX(0, x => World.floorY(x) < -4, 8000, 20);
+    if (nx === null) { this.state = 'play'; return; }
+    const gy = World.floorY(nx);
+    const dir = shoreDir(nx) || 1;
+    this.egg = { x: nx, y: gy, dir, t: 0, taps: 0, need: 3, wob: 0, shake: 0, hatched: false, prompt: 0 };
+    this.seedNursery(nx, dir);
+    P.x = nx; P.y = gy - 5; P.angle = 0; P.facing = 1; P.frozen = true; P.hidden = true;
+    P.chain.reset(P.x, P.y, 0);
+    this.cam.x = nx + dir * 6; this.cam.y = gy - 20; this.cam.zoom = 4.6;
+    this.state = 'egg'; this.banner = null;
+    SFX.peep();
+  },
+  crackEgg() {
+    const e = this.egg; if (!e || e.hatched) return;
+    e.taps++; e.shake = 1; e.wob = rand(-1, 1) * 0.5;
+    this.shake(4 + e.taps * 2); this.hitstop(0.04);
+    SFX.crack(e.taps); if (chance(0.6)) SFX.peep();
+    for (let i = 0; i < 6 + e.taps * 4; i++) {
+      const a = rand(-Math.PI, 0), sp = rand(40, 130);
+      this.fx.add({ type: 'splinter', x: e.x + rand(-4, 4), y: e.y - 14 + rand(-6, 6), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: 1, w: randi(1, 3), color: choice(['#e8e0cc', '#c4b99e', '#f6f2e4']), rot: rand(TAU), vr: rand(-8, 8), life: rand(2, 4) });
+    }
+    if (e.taps >= e.need) this.hatch();
+  },
+  hatch() {
+    const e = this.egg, P = this.player;
+    e.hatched = true; e.t = 0;
+    this.whiteFlash(0.5); this.shake(10); this.slowmo(0.35, 0.8); SFX.hatch();
+    for (let i = 0; i < 40; i++) {
+      const a = rand(-Math.PI, 0.4), sp = rand(60, 220);
+      this.fx.add({ type: 'splinter', x: e.x + rand(-6, 6), y: e.y - 14 + rand(-8, 8), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: 1, w: randi(2, 5), color: choice(['#e8e0cc', '#c4b99e', '#f6f2e4', '#9c9078']), rot: rand(TAU), vr: rand(-10, 10), life: rand(4, 7) });
+    }
+    this.fx.glow(e.x, e.y - 12, 40, '#ffffff', 0.8);
+    this.fx.text(e.x, e.y - 34, 'HATCHED', { color: '#ffffff', scale: 3, life: 2 });
+    P.hidden = false; P.frozen = false; P.y = e.y - 6;
+    P.vx = 90 * e.dir; P.vy = -70; P.facing = e.dir; P.angle = e.dir > 0 ? 0 : Math.PI;
+    this.banner = { text: 'HATCHLING', sub: e.dir > 0 ? 'THE WATER IS TO YOUR RIGHT' : 'THE WATER IS TO YOUR LEFT', t: 4, max: 4, color: '#9ad8b0' };
+    this.state = 'play';
   },
   onChunkLoad(ch, rng) {
     if (this.state === 'title' && Math.abs(ch.x0) > 700) return;
@@ -235,7 +288,7 @@ const G = {
     this.shedPending = true; this.shedTier = Math.min(P.tier + 1, TIERS.length - 1); this.shedT = 0; this.state = 'shedding';
     this.slowmo(0.12, 1.4); SFX.shed(); this.whiteFlash(0.8); this.shake(6);
     const n = P.chain.nodes;
-    for (let i = 0; i < n.length; i++) { const part = i === 0 ? P.parts.head : i <= 5 ? P.parts.body[i - 1] : P.parts.tail[i - 6]; this.fx.husk(part.c, 0, 0, part.w, part.h, n[i].x, n[i].y, n[i].a, P.size, P.facing); }
+    for (let i = 0; i < n.length; i++) { const part = i === 0 ? P.parts.head : i <= 5 ? P.parts.body[i - 1] : P.parts.tail[i - 6]; this.fx.husk(part.c, 0, 0, part.w, part.h, n[i].x, n[i].y, n[i].a, P.size / CROC_PX, P.facing); }
     for (let i = 0; i < 14; i++) this.fx.glow(P.x + rand(-40, 40) * P.size, P.y + rand(-16, 16) * P.size, rand(2, 5) * P.size, '#ffffff', rand(0.4, 1.0));
     this.fx.bubbles(P.x, P.y, 30, 30 * P.size, -20);
     this.fx.text(P.x, P.y - 30 * P.size, 'SHEDDING!', { color: '#ffffff', scale: 3, life: 1.5 });
@@ -374,6 +427,17 @@ const G = {
         else if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
         else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.startRun(false); }
         break;
+      case 'egg': {
+        const e = this.egg;
+        e.t += raw; e.prompt += raw;
+        e.shake = Math.max(0, e.shake - raw * 3.5);
+        e.wob = lerp(e.wob, Math.sin(e.t * 1.6) * 0.06, 0.06);
+        this.updateWorld(dt, 'egg');
+        this.cam.zoom = lerp(this.cam.zoom, 4.6 - e.taps * 0.45, 0.06);
+        if (Input.bitePressed() || Input.hit('Enter') || Input.mouse.clicked || Input.dashPressed()) this.crackEgg();
+        if (e.t > 14) this.hatch();   // never leave anyone stuck in the shell
+        break;
+      }
       case 'play':
         if (Input.hit('Escape', 'KeyP')) { this.state = 'pause'; SFX.ui(); break; }
         if (Input.hit('KeyH')) { this.prevState = 'play'; this.state = 'help'; break; }
@@ -456,6 +520,7 @@ const G = {
     }
     const P = this.player;
     const [ax, ay] = Input.axis();
+    if (demo === 'egg') demo = false;
     const inp = demo ? this.demoInput() : { x: ax, y: ay, bite: this.state === 'play' && Input.bitePressed(), dash: this.state === 'play' && Input.dashPressed() };
     this.engineNear = 0;
     P.update(dt, inp);
@@ -481,6 +546,19 @@ const G = {
     c.x = lerp(c.x, tx, k); c.y = lerp(c.y, ty, k);
     c.y = Math.max(c.y, -(this.H / 2) / c.zoom + 30);
   },
+  drawEgg(ctx) {
+    const e = this.egg; if (!e || e.hatched) return;
+    const n = SPR.nest, nx = Math.round(e.x - n.w / 2), ny = Math.round(e.y - n.h + 4);
+    ctx.drawImage(n.c, nx, ny);                                   // nest, back to front
+    const st = Math.min(3, e.taps), s = SPR.egg[st];
+    const jx = e.shake > 0 ? rand(-1, 1) * e.shake * 2 : 0;
+    ctx.save();
+    ctx.translate(e.x + jx, e.y - 1);
+    ctx.rotate(e.wob + (e.shake > 0 ? rand(-0.08, 0.08) * e.shake : 0));
+    ctx.drawImage(s.c, -Math.round(s.w / 2), -s.h + 2);           // egg sits down in the bowl
+    ctx.restore();
+    ctx.drawImage(n.c, 0, 4, n.w, 4, nx, ny + 4, n.w, 4);         // front rim overlaps the shell
+  },
   // ---------- render ----------
   render() {
     const ctx = this.ctx, cam = this.cam, day = this.day, P = this.player;
@@ -500,18 +578,21 @@ const G = {
     let drewPlayer = false;
     for (const e of vis) { if (!drewPlayer && e.layer >= 2) { P.draw(ctx); drewPlayer = true; } e.draw(ctx); }
     if (!drewPlayer) P.draw(ctx);
+    if (this.state === 'egg') this.drawEgg(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
     this.fx.draw(ctx, cam);
     World.drawDecor(ctx, cam, 1, day);
     World.drawSurface(ctx, cam, day);
+    World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
     this.fx.drawTexts(ctx, cam);
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;
+      case 'egg': UI.drawEgg(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
-      case 'shed': UI.drawHUD(ctx); UI.drawShed(ctx); break;
+      case 'shed': UI.drawShed(ctx); break;
       case 'dead': UI.drawDeath(ctx); break;
       case 'pause': UI.drawHUD(ctx); UI.drawPause(ctx); break;
       case 'help': UI.drawHelp(ctx); break;

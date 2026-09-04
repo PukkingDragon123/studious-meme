@@ -52,14 +52,12 @@ const UI = {
       ctx.fillStyle = full ? '#60c0ff' : '#203040'; ctx.fillRect(39 + i * 10, H - 14, 6, 6);
       if (!full && i === P.dashCharges) { const f = 1 - clamp(P.dashCd / (1.6 * P.st.dashCd), 0, 1); ctx.fillStyle = '#60c0ff'; ctx.fillRect(39 + i * 10, H - 14 + 6 - Math.round(6 * f), 6, Math.round(6 * f)); }
     }
-    // evolution mini tree
-    let tx = W - 10 - 4 * 14;
-    for (const k of PATH_KEYS) {
-      const p = PATHS[k], lvl = P.skills[k];
-      for (let i = 0; i < 5; i++) { ctx.fillStyle = '#000'; ctx.fillRect(tx, H - 12 - i * 5, 10, 4); ctx.fillStyle = i < lvl ? p.color : '#1e2a22'; ctx.fillRect(tx + 1, H - 11 - i * 5, 8, 2); }
-      Font.draw(ctx, p.name[0], tx + 5, H - 42, { color: lvl ? p.color : '#405040', align: 'center', shadow: true });
-      tx += 14;
-    }
+    // genome strip: a live double helix carrying every splice you have taken
+    const beads = DNA.beads(P);
+    const gx = W - 96, gy = H - 26;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(gx - 4, gy - 3, 92, 20);
+    DNA.drawMini(ctx, gx, gy, 84, 14, G.t, beads, beads.length ? beads[beads.length - 1].color : '#40f0c8');
+    Font.draw(ctx, 'GENOME ' + beads.length, gx + 42, gy + 16, { color: '#7f9a90', align: 'center' });
     // acquired animal traits
     if (P.traits.length) {
       let ty = 40;
@@ -135,47 +133,74 @@ const UI = {
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
   },
   cardRects(n) {
-    const w = 168, h = 178, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 94;
+    const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;
     const r = []; for (let i = 0; i < n; i++) r.push({ x: x0 + i * (w + gap), y, w, h });
     return r;
   },
   drawShed(ctx) {
     const W = G.W, H = G.H, P = G.player, cards = G.shedCards, t = G.shedUiT;
-    ctx.fillStyle = 'rgba(2,6,8,0.72)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(2,6,8,0.80)'; ctx.fillRect(0, 0, W, H);
     const tier = TIERS[G.shedTier];
-    Font.draw(ctx, 'SHEDDING SKIN', W / 2, 14, { color: '#ffffff', align: 'center', scale: 3, outline: '#204030' });
+    const sel = cards[G.shedSel];
+    const selCol = sel ? (sel.kind === 'path' ? PATHS[sel.path].color : sel.kind === 'trait' ? sel.trait.color : '#9aa8a0') : '#40f0c8';
+    // --- the genome orb ---
+    const beads = DNA.beads(P);
+    DNA.draw(ctx, W / 2, 96, 58, G.t, beads, { glow: selCol, beadR: 6.5, rungs: 20 });
+    // the animal being spliced in, alive at the core of the orb
+    const icon = iconFor(sel);
+    if (icon) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = rgba(selCol, 0.16); ctx.beginPath(); ctx.arc(W / 2, 96, 30 + Math.sin(G.t * 3) * 2, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      drawIcon(ctx, icon, W / 2, 96, 46, G.t, { shadow: true });
+    }
+    Font.draw(ctx, 'SHEDDING SKIN', W / 2, 8, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
     const article = 'AEIOU'.indexOf(tier.name[0]) >= 0 ? 'AN' : 'A';
-    Font.draw(ctx, 'YOU HAVE GROWN INTO ' + article + ' ' + tier.name + '.  CHOOSE YOUR EVOLUTION.', W / 2, 44, { color: '#c8e8c0', align: 'center', shadow: true });
-    Font.draw(ctx, '1 / 2 / 3 OR CLICK    ARROWS + ENTER', W / 2, 56, { color: '#80a090', align: 'center' });
+    Font.draw(ctx, 'YOU HAVE GROWN INTO ' + article + ' ' + tier.name, W / 2, 26, { color: '#c8e8c0', align: 'center', shadow: true });
+    Font.draw(ctx, 'SPLICE ' + beads.length + ' STRAND' + (beads.length === 1 ? '' : 'S'), 10, 8, { color: rgba(selCol, 0.9), shadow: true });
+    Font.draw(ctx, '1 / 2 / 3 OR CLICK', W - 10, 8, { color: '#80a090', align: 'right', shadow: true });
+    // --- cards ---
     const rects = this.cardRects(cards.length);
     cards.forEach((c, i) => {
-      const r = rects[i], sel = i === G.shedSel, path = c.kind === 'path' ? PATHS[c.path] : null;
+      const r = rects[i], on = i === G.shedSel, path = c.kind === 'path' ? PATHS[c.path] : null;
       const trait = c.kind === 'trait' ? c.trait : null;
       const col = path ? path.color : trait ? trait.color : '#c0c0c0';
       const dark = path ? path.dark : trait ? shade(trait.color, 0.28) : '#303030';
       const slide = easeOutBack(clamp((t - i * 0.08) / 0.35, 0, 1));
-      const y = r.y + (1 - slide) * 60, lift = sel ? -6 : 0;
+      const y = r.y + (1 - slide) * 60, lift = on ? -8 : 0;
       ctx.globalAlpha = slide;
+      // a strand running from the orb down into the selected card
+      if (on) {
+        ctx.strokeStyle = rgba(col, 0.5); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(W / 2, 150); ctx.quadraticCurveTo(W / 2, y + lift - 14, r.x + r.w / 2, y + lift - 2); ctx.stroke();
+        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = rgba(col, 0.10);
+        ctx.fillRect(r.x - 4, y + lift - 4, r.w + 8, r.h + 8); ctx.globalCompositeOperation = 'source-over';
+      }
       ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(r.x + 4, y + lift + 4, r.w, r.h);
-      this.panel(ctx, r.x, y + lift, r.w, r.h, sel ? 'rgba(14,22,26,0.97)' : 'rgba(8,14,16,0.92)', sel ? col : dark);
-      if (sel) { ctx.fillStyle = col; ctx.fillRect(r.x, y + lift, r.w, 2); ctx.fillRect(r.x, y + lift + r.h - 2, r.w, 2); }
-      ctx.fillStyle = dark; ctx.fillRect(r.x + 1, y + lift + 1, r.w - 2, 22);
-      Font.draw(ctx, path ? path.name : trait ? (trait.unlock ? 'UNLOCKED TRAIT' : 'ANIMAL TRAIT') : 'MUTATION', r.x + r.w / 2, y + lift + 6, { color: col, align: 'center', scale: 1 });
-      Font.draw(ctx, path ? 'TIER ' + (c.tier + 1) + (c.node.evo ? '  EVOLUTION' : '') : trait ? trait.animal : 'ANY PATH', r.x + r.w / 2, y + lift + 15, { color: '#c0c0c0', align: 'center' });
-      // tier pips
-      if (path) for (let k = 0; k < 5; k++) { ctx.fillStyle = k < c.tier ? col : k === c.tier ? '#ffffff' : '#2a3a30'; ctx.fillRect(r.x + r.w / 2 - 22 + k * 9, y + lift + 27, 6, 3); }
-      if (trait) { ctx.fillStyle = col; ctx.fillRect(r.x + r.w / 2 - 26, y + lift + 28, 52, 1); }
-      Font.draw(ctx, c.node.name, r.x + r.w / 2, y + lift + 36 + (c.node.name.length > 16 ? 0 : 0), { color: '#ffffff', align: 'center', scale: c.node.name.length > 14 ? 1 : 1, outline: '#000' });
-      Font.drawWrapped(ctx, c.node.desc, r.x + 8, y + lift + 52, r.w - 16, { color: '#d8e0d0', lineHeight: 10 });
-      const tag = path ? path.tag : trait ? 'FROM THE ' + trait.animal : '';
-      if (tag) Font.drawWrapped(ctx, tag, r.x + 6, y + lift + r.h - 20, r.w - 12, { color: col, lineHeight: 9 });
-      Font.draw(ctx, String(i + 1), r.x + 6, y + lift + r.h - 12, { color: '#ffffff', scale: 1 });
+      this.panel(ctx, r.x, y + lift, r.w, r.h, on ? 'rgba(10,18,22,0.97)' : 'rgba(6,12,14,0.93)', on ? col : dark);
+      if (on) { ctx.fillStyle = col; ctx.fillRect(r.x, y + lift, r.w, 2); ctx.fillRect(r.x, y + lift + r.h - 2, r.w, 2); }
+      ctx.fillStyle = dark; ctx.fillRect(r.x + 1, y + lift + 1, r.w - 2, 30);
+      // animated animal icon in the card header
+      drawIcon(ctx, iconFor(c), r.x + 22, y + lift + 16, 24, G.t + i * 0.7, { alpha: on ? 1 : 0.75 });
+      Font.draw(ctx, path ? path.name : trait ? (trait.unlock ? 'UNLOCKED TRAIT' : 'ANIMAL TRAIT') : 'MUTATION', r.x + r.w / 2 + 16, y + lift + 8, { color: col, align: 'center' });
+      Font.draw(ctx, path ? 'TIER ' + (c.tier + 1) + (c.node.evo ? '  EVOLUTION' : '') : trait ? trait.animal : 'ANY PATH', r.x + r.w / 2 + 16, y + lift + 19, { color: '#b8c8bc', align: 'center' });
+      if (path) for (let k = 0; k < 5; k++) { ctx.fillStyle = k < c.tier ? col : k === c.tier ? '#ffffff' : '#22302a'; ctx.fillRect(r.x + r.w / 2 - 22 + k * 9, y + lift + 34, 6, 3); }
+      else { ctx.fillStyle = col; ctx.fillRect(r.x + r.w / 2 - 26, y + lift + 35, 52, 1); }
+      Font.draw(ctx, c.node.name, r.x + r.w / 2, y + lift + 44, { color: '#ffffff', align: 'center', outline: '#000' });
+      Font.drawWrapped(ctx, c.node.desc, r.x + 8, y + lift + 60, r.w - 16, { color: '#d8e0d0', lineHeight: 10 });
+      Font.draw(ctx, String(i + 1), r.x + 6, y + lift + r.h - 12, { color: on ? col : '#607068' });
       ctx.globalAlpha = 1;
     });
-    // path progress
+    // --- footer: path progress ---
     let px = W / 2 - 4 * 62 / 2 + 6;
-    for (const k of PATH_KEYS) { const p = PATHS[k]; Font.draw(ctx, p.name, px + 25, H - 40, { color: p.color, align: 'center' }); for (let i = 0; i < 5; i++) { ctx.fillStyle = i < P.skills[k] ? p.color : '#1e2a22'; ctx.fillRect(px + i * 10, H - 30, 8, 4); } px += 62; }
-    Font.draw(ctx, 'LENGTH ' + P.lengthFt.toFixed(1) + ' FT     SCORE ' + fmt(G.score), W / 2, H - 16, { color: '#90a898', align: 'center' });
+    for (const k of PATH_KEYS) {
+      const p = PATHS[k];
+      Font.draw(ctx, p.name, px + 25, H - 20, { color: P.skills[k] ? p.color : '#4a5a52', align: 'center' });
+      for (let i = 0; i < 5; i++) { ctx.fillStyle = i < P.skills[k] ? p.color : '#1e2a22'; ctx.fillRect(px + i * 10, H - 10, 8, 4); }
+      px += 62;
+    }
+    Font.draw(ctx, P.lengthFt.toFixed(1) + ' FT', 10, H - 12, { color: '#90a898' });
+    Font.draw(ctx, fmt(G.score), W - 10, H - 12, { color: '#90a898', align: 'right' });
   },
   drawDeath(ctx) {
     const W = G.W, H = G.H, P = G.player, d = G.deathInfo, s = G.stats, t = G.deadT;
@@ -229,6 +254,30 @@ const UI = {
     PATH_KEYS.forEach((k, i) => { const p = PATHS[k]; Font.draw(ctx, p.name + ': ' + p.tag, W / 2, 190 + i * 12, { color: p.color, align: 'center' }); });
     Font.draw(ctx, 'ESC / H: BACK', W / 2, H - 16, { color: '#90a898', align: 'center' });
   },
+  drawEgg(ctx) {
+    const W = G.W, H = G.H, e = G.egg; if (!e) return;
+    // vignette focus on the nest
+    const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.18, W / 2, H / 2, H * 0.75);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'A CROCODILE BEGINS', W / 2, 26, { color: '#cfe6d4', align: 'center', scale: 2, outline: '#0a1a12' });
+    const touch = G.touchUI || Input.touch.active;
+    const msg = touch ? 'TAP TO BREAK OUT' : 'MASH BITE TO BREAK OUT';
+    const pulse = 0.6 + 0.4 * Math.sin(e.prompt * 6);
+    ctx.globalAlpha = 0.65 + 0.35 * pulse;
+    Font.draw(ctx, msg, W / 2, H - 74, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
+    ctx.globalAlpha = 1;
+    // crack meter
+    const bw = 150, bx = W / 2 - bw / 2, by = H - 50;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 10);
+    for (let i = 0; i < e.need; i++) {
+      const seg = bw / e.need - 3, sx = bx + i * (bw / e.need);
+      ctx.fillStyle = i < e.taps ? '#ffe0a0' : '#2a2a24'; ctx.fillRect(sx, by, seg, 6);
+      if (i === e.taps) { ctx.fillStyle = `rgba(255,224,160,${(pulse * 0.5).toFixed(2)})`; ctx.fillRect(sx, by, seg, 6); }
+    }
+    Font.draw(ctx, 'SHELL', W / 2, by + 12, { color: '#90a898', align: 'center' });
+    if (touch) { const p = Input.pads(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.bite.x, p.bite.y, p.bite.r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; Font.draw(ctx, 'TAP', p.bite.x, p.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' }); }
+  },
   drawTouch(ctx) {
     const P = Input.pads(), T = Input.touch, pl = G.player;
     const ring = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; };
@@ -261,6 +310,7 @@ const UI = {
   drawCodex(ctx) {
     const W = G.W, H = G.H, scroll = G.codexScroll || 0;
     ctx.fillStyle = 'rgba(2,6,8,0.92)'; ctx.fillRect(0, 0, W, H);
+    DNA.draw(ctx, W / 2, 26, 30, G.t, DNA.beads(G.player), { glow: '#40f0c8', beadR: 4, rungs: 12, speed: 0.6 });
     Font.draw(ctx, 'TRAIT CODEX', W / 2, 10, { color: '#ffffff', align: 'center', scale: 3, outline: '#204030' });
     const total = ANIMAL_TRAITS.length, have = ANIMAL_TRAITS.filter(t => !t.unlock || Meta.isUnlocked(t.id)).length;
     Font.draw(ctx, have + ' / ' + total + ' TRAITS AVAILABLE     LOCKED TRAITS JOIN THE SHED POOL WHEN EARNED', W / 2, 38, { color: '#a0c0b0', align: 'center' });
@@ -273,13 +323,14 @@ const UI = {
       const [cur, need] = Meta.progress(t);
       UI.panel(ctx, cx, cy, cw - 8, rh - 4, open ? 'rgba(10,18,20,0.9)' : 'rgba(8,8,10,0.85)', open ? shade(t.color, 0.6) : '#2a2a2a');
       ctx.fillStyle = open ? t.color : '#3a3a3a'; ctx.fillRect(cx, cy, 2, rh - 4);
-      Font.draw(ctx, open ? t.name : '???  ' + t.animal, cx + 6, cy + 4, { color: open ? t.color : '#707070' });
-      if (open) Font.drawWrapped(ctx, t.animal, cx + 6, cy + 14, cw - 20, { color: '#90a090', lineHeight: 9 });
+      drawIcon(ctx, ICONS[TRAIT_ICON[t.id]], cx + 16, cy + 13, 20, G.t + cy * 0.02, { alpha: open ? 1 : 0.3 });
+      Font.draw(ctx, open ? t.name : '???  ' + t.animal, cx + 30, cy + 4, { color: open ? t.color : '#707070' });
+      if (open) Font.drawWrapped(ctx, t.animal, cx + 30, cy + 14, cw - 44, { color: '#90a090', lineHeight: 9 });
       else {
-        Font.draw(ctx, t.unlock.label, cx + 6, cy + 13, { color: '#808080' });
+        Font.draw(ctx, t.unlock.label, cx + 30, cy + 13, { color: '#808080' });
         const bw = cw - 20, f = need ? cur / need : 0;
-        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cx + 6, cy + 21, bw, 3);
-        ctx.fillStyle = t.color; ctx.fillRect(cx + 6, cy + 21, Math.round(bw * clamp(f, 0, 1)), 3);
+        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cx + 30, cy + 21, bw - 24, 3);
+        ctx.fillStyle = t.color; ctx.fillRect(cx + 30, cy + 21, Math.round((bw - 24) * clamp(f, 0, 1)), 3);
         Font.draw(ctx, cur + '/' + need, cx + cw - 14, cy + 4, { color: '#909090', align: 'right' });
       }
     }

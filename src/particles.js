@@ -48,7 +48,7 @@ class FXSystem {
     for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(0.3, 1) * power; this.add({ type: 'gristle', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: randi(1, 3), color: choice(['#9a1a1a', '#c04040', '#e8a090', '#f0e8d8']), life: rand(3, 7), rot: rand(TAU), settled: false }); }
   }
   text(x, y, str, opts = {}) {
-    if (G.state === 'title') return;
+    if (G.state === 'title' || G.state === 'shed' || G.state === 'codex' || G.state === 'help') return;
     if (this.texts.length > 40) this.texts.shift();
     this.texts.push({ x, y, str, color: opts.color || '#ffffff', scale: opts.scale || 1, life: opts.life || 1.1, maxLife: opts.life || 1.1, vy: opts.vy ?? -30, vx: opts.vx || 0, outline: opts.outline || '#000000', shake: opts.shake || 0, t: 0 });
   }
@@ -141,6 +141,7 @@ class FXSystem {
     ctx.globalAlpha = 1;
   }
   drawTexts(ctx, cam) {
+    if (G.state === 'shed' || G.state === 'codex' || G.state === 'help') return;
     for (const t of this.texts) {
       const [sx, sy] = cam.toScreen(t.x, t.y);
       const lf = t.life / t.maxLife;

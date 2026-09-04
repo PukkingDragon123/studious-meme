@@ -33,6 +33,11 @@ const World = {
       if (!land) {
         if (depth > 50 && rng() < 0.7) decor.push({ type: 'weed', x: x + rng() * 11, y: fy, h: 12 + rng() * 40, v: rng() < 0.5 ? 0 : 1, ph: rng() * TAU });
         if (m > 0.05 && m < 0.6 && depth < 120 && rng() < 0.35) decor.push({ type: 'cattail', x: x + rng() * 11, y: fy, top: -14 - rng() * 30, ph: rng() * TAU });
+        if (depth > 12 && rng() < 0.3) decor.push({ type: 'duckweed', x: x + rng() * 11, y: 0, w: 8 + rng() * 26, v: Math.floor(rng() * 3), ph: rng() * TAU });
+        if (depth > 30 && depth < 260 && rng() < 0.12) decor.push({ type: 'hyacinth', x: x + rng() * 11, y: 0, s: 0.8 + rng() * 0.7, bloom: rng() < 0.4, ph: rng() * TAU });
+        if (depth > 120 && rng() < 0.18) decor.push({ type: 'algae', x: x + rng() * 11, y: fy, h: 20 + rng() * 60, ph: rng() * TAU, v: rng() < 0.5 ? 0 : 1 });
+        if (depth > 60 && rng() < 0.07) decor.push({ type: 'sunkbranch', x: x + rng() * 11, y: fy, s: 0.8 + rng() * 0.9, flip: rng() < 0.5 });
+        if (depth > 200 && rng() < 0.05) decor.push({ type: 'shellbed', x: x + rng() * 11, y: fy, n: 3 + Math.floor(rng() * 5) });
         if (rng() < 0.12) decor.push({ type: 'rock', x: x + rng() * 16, y: fy, v: rng() < 0.5 ? 0 : 1, s: 1 + rng() * 1.5 });
         if (rng() < 0.05) decor.push({ type: 'log', x: x + rng() * 16, y: fy, s: 1 + rng() * 1.2 });
         if (depth > 25 && depth < 360 && rng() < 0.22) { const n = 1 + Math.floor(rng() * 3); for (let k = 0; k < n; k++) decor.push({ type: 'lily', x: x + k * 11 + rng() * 6, y: 0, v: rng() < 0.3 ? 1 : 0, ph: rng() * TAU }); }
@@ -49,6 +54,8 @@ const World = {
         if (rng() < 0.22) decor.push({ type: 'fern', x: x + rng() * 11, y: fy, s: 0.7 + rng() * 0.6, ph: rng() * TAU });
         if (rng() < 0.12) decor.push({ type: 'bush', x: x + rng() * 11, y: fy, s: 0.8 + rng() * 0.8, v: Math.floor(rng() * 3) });
         if (rng() < 0.05) decor.push({ type: 'flower', x: x + rng() * 11, y: fy, c: Math.floor(rng() * 4) });
+        if (m > 0.6 && rng() < 0.14) decor.push({ type: 'roots', x: x + rng() * 11, y: fy, n: 3 + Math.floor(rng() * 4), len: 16 + rng() * 40 });
+        if (rng() < 0.04) decor.push({ type: 'vine', x: x + rng() * 11, y: fy, h: 40 + rng() * 60, ph: rng() * TAU });
       }
       if (m > 0.5 && m < 0.92 && rng() < 0.3) decor.push({ type: 'mangrove', x: x + rng() * 16, y: fy, s: 0.8 + rng() * 0.8, dir: rng() < 0.5 ? -1 : 1 });
     }
@@ -174,6 +181,28 @@ const World = {
       }
       ctx.globalAlpha = 1;
     }
+    // caustic bands rippling just under the surface
+    if (light > 0.25) {
+      ctx.globalAlpha = 0.07 * light; ctx.fillStyle = '#d8fff0';
+      for (let sx2 = 0; sx2 < W; sx2 += 6) {
+        const wx = cam.toWorldX(sx2);
+        const band = Math.sin(wx * 0.05 + this.t * 1.6) + Math.sin(wx * 0.021 - this.t * 1.1);
+        if (band > 0.7) { const sy2 = cam.toScreen(wx, 0)[1]; const hgt = (14 + band * 10) * cam.zoom; ctx.fillRect(sx2, Math.round(sy2), 6, Math.round(hgt)); }
+      }
+      ctx.globalAlpha = 1;
+    }
+    // thermocline: a hazy band where the light gives out
+    { const ty = cam.toScreen(0, 300)[1], th = 90 * cam.zoom;
+      if (ty < H && ty + th > 0) { const tg = ctx.createLinearGradient(0, ty, 0, ty + th); tg.addColorStop(0, 'rgba(20,60,60,0)'); tg.addColorStop(0.5, `rgba(18,52,54,${(0.16 * light).toFixed(3)})`); tg.addColorStop(1, 'rgba(10,30,32,0)'); ctx.fillStyle = tg; ctx.fillRect(0, ty, W, th); } }
+    // suspended detritus
+    ctx.fillStyle = '#8a7a5a'; ctx.globalAlpha = 0.22;
+    for (let i = 0; i < 30; i++) {
+      const wx = cam.x + ((ihash(i, 70) * 900 - 450) + Math.sin(this.t * 0.3 + i) * 20);
+      const wy = 20 + ihash(i, 71) * 700 + Math.sin(this.t * 0.5 + i * 2) * 10;
+      const [px2, py2] = cam.toScreen(wx, wy);
+      if (px2 < 0 || px2 > W || py2 < hy || py2 > H) continue;
+      ctx.fillRect(Math.round(px2), Math.round(py2), 1, ihash(i, 72) > 0.7 ? 2 : 1);
+    }
     // motes
     ctx.fillStyle = '#9ad0c0'; ctx.globalAlpha = 0.28;
     for (let i = 0; i < 40; i++) {
@@ -203,6 +232,12 @@ const World = {
         ctx.fillStyle = k % 2 ? '#2e2218' : '#443222'; ctx.fillRect(p[0], Math.round(y), step, Math.max(1, Math.round((k % 2 ? 2 : 1.5) * cam.zoom)));
       }
       if (ihash(Math.floor(wx / 4), 17) < 0.06 && this.floorY(wx) < 0) { ctx.fillStyle = '#2a1e12'; const ry = p[1] + (3 + ihash(Math.floor(wx / 4), 18) * 20) * cam.zoom; ctx.fillRect(p[0], Math.round(ry), Math.max(1, Math.round(cam.zoom)), Math.round((6 + ihash(Math.floor(wx / 4), 19) * 16) * cam.zoom)); }
+      // limestone shelf and old shell layer
+      const ls = p[1] + (52 + Math.sin(wx * 0.006) * 12) * cam.zoom;
+      if (ls < H) { ctx.fillStyle = '#6b6455'; ctx.fillRect(p[0], Math.round(ls), step, Math.max(1, Math.round(3 * cam.zoom))); ctx.fillStyle = '#57503f'; ctx.fillRect(p[0], Math.round(ls + 3 * cam.zoom), step, Math.max(1, Math.round(cam.zoom))); }
+      const sh = p[1] + (26 + Math.sin(wx * 0.011 + 2) * 6) * cam.zoom;
+      if (sh < H && ihash(Math.floor(wx / 4), 23) < 0.35) { ctx.fillStyle = '#b3a98d'; ctx.fillRect(p[0], Math.round(sh), Math.max(1, Math.round(2 * cam.zoom)), Math.max(1, Math.round(cam.zoom))); }
+      if (ihash(Math.floor(wx / 4), 27) < 0.2) { ctx.fillStyle = '#241a10'; ctx.fillRect(p[0], Math.round(p[1] + (8 + ihash(Math.floor(wx / 4), 28) * 34) * cam.zoom), Math.max(1, Math.round(cam.zoom)), Math.max(1, Math.round(cam.zoom))); }
     }
     // top band
     for (let i = 0; i < pts.length - 1; i++) {
@@ -259,6 +294,68 @@ const World = {
         case 'palmetto': if (layer !== 1) break; {
           ctx.strokeStyle = '#3f7a3a'; ctx.lineWidth = Math.max(1, 1.5 * z);
           for (let b = -3; b <= 3; b++) { const sway = Math.sin(t * 1.2 + d.ph) * 1.5 * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + b * 4 * z * d.s + sway, sy - (16 - Math.abs(b) * 2.5) * d.s * z); ctx.stroke(); }
+          break; }
+        case 'duckweed': if (layer !== 1) break; {
+          const wy = cam.toScreen(d.x, this.surface(d.x))[1], ww = d.w * z;
+          const cols = ['#4f8a3a', '#5f9a44', '#3f7a30'];
+          ctx.fillStyle = cols[d.v];
+          for (let i = 0; i < ww; i += Math.max(1, Math.round(2 * z))) {
+            const h = (1.6 + Math.sin(i * 0.7 + d.ph + t * 0.6) * 0.7) * z;
+            ctx.fillRect(Math.round(sx - ww / 2 + i), Math.round(wy - h), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(h + z)));
+          }
+          ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fillRect(Math.round(sx - ww / 2), Math.round(wy - 2 * z), Math.round(ww), Math.max(1, Math.round(z)));
+          break; }
+        case 'hyacinth': if (layer !== 1) break; {
+          const wy = cam.toScreen(d.x, this.surface(d.x))[1], sw = Math.sin(t * 0.7 + d.ph) * 1.5 * z;
+          ctx.fillStyle = '#3f7a3a'; ctx.fillRect(Math.round(sx - 5 * d.s * z + sw), Math.round(wy - 2 * z), Math.round(10 * d.s * z), Math.max(1, Math.round(3 * z)));
+          for (let b = -2; b <= 2; b++) {
+            const bh = (7 - Math.abs(b) * 1.6) * d.s * z;
+            ctx.fillStyle = b % 2 ? '#4f9a44' : '#5faa50';
+            ctx.fillRect(Math.round(sx + b * 3.4 * d.s * z + sw), Math.round(wy - 2 * z - bh), Math.max(1, Math.round(3 * d.s * z)), Math.round(bh));
+          }
+          if (d.bloom) { ctx.fillStyle = '#b28ae0'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(3 * z))); ctx.fillStyle = '#e0d060'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(z))); }
+          break; }
+        case 'algae': if (layer !== 0) break; {
+          ctx.strokeStyle = d.v ? 'rgba(90,150,90,0.5)' : 'rgba(120,170,110,0.42)'; ctx.lineWidth = Math.max(1, 2 * z);
+          for (let b = -1; b <= 1; b++) {
+            ctx.beginPath(); ctx.moveTo(sx + b * 3 * z, sy);
+            for (let k = 1; k <= 4; k++) { const kk = k / 4, yy = sy - d.h * z * kk, xx = sx + b * 3 * z + Math.sin(t * 0.8 + d.ph + kk * 3) * 7 * z * kk; ctx.lineTo(xx, yy); }
+            ctx.stroke();
+          }
+          break; }
+        case 'sunkbranch': if (layer !== 0) break; {
+          ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = Math.max(1, 3 * d.s * z);
+          const f = d.flip ? -1 : 1;
+          ctx.beginPath(); ctx.moveTo(sx - 16 * d.s * z, sy); ctx.quadraticCurveTo(sx, sy - 12 * d.s * z, sx + 18 * d.s * z * f, sy - 4 * d.s * z); ctx.stroke();
+          ctx.lineWidth = Math.max(1, 1.6 * d.s * z);
+          ctx.beginPath(); ctx.moveTo(sx + 2 * z, sy - 7 * d.s * z); ctx.lineTo(sx + 10 * d.s * z * f, sy - 18 * d.s * z); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx - 6 * z, sy - 5 * d.s * z); ctx.lineTo(sx - 14 * d.s * z, sy - 15 * d.s * z); ctx.stroke();
+          break; }
+        case 'shellbed': if (layer !== 0) break; {
+          for (let i = 0; i < d.n; i++) {
+            const ox = (ihash(i, Math.floor(d.x)) - 0.5) * 26 * z;
+            ctx.fillStyle = i % 2 ? '#cfc6ad' : '#b3a98d';
+            ctx.fillRect(Math.round(sx + ox), Math.round(sy - 2 * z), Math.max(1, Math.round(3 * z)), Math.max(1, Math.round(2 * z)));
+            ctx.fillStyle = '#e6dfc9'; ctx.fillRect(Math.round(sx + ox), Math.round(sy - 2 * z), Math.max(1, Math.round(z)), Math.max(1, Math.round(z)));
+          }
+          break; }
+        case 'roots': if (layer !== 0) break; {
+          ctx.strokeStyle = '#4a3524'; ctx.lineWidth = Math.max(1, 1.6 * z);
+          for (let i = 0; i < d.n; i++) {
+            const ox = (ihash(i, Math.floor(d.x) + 3) - 0.5) * 26 * z, len = d.len * (0.6 + ihash(i, 7) * 0.6) * z;
+            ctx.beginPath(); ctx.moveTo(sx + ox, sy);
+            ctx.quadraticCurveTo(sx + ox + Math.sin(t * 0.5 + i) * 4 * z, sy + len * 0.6, sx + ox + (ihash(i, 9) - 0.5) * 14 * z, sy + len);
+            ctx.stroke();
+          }
+          break; }
+        case 'vine': if (layer !== 0) break; {
+          const top = cam.toScreen(d.x, d.y - d.h)[1];
+          ctx.strokeStyle = '#4a6a34'; ctx.lineWidth = Math.max(1, z);
+          ctx.beginPath(); ctx.moveTo(sx, top);
+          for (let k = 1; k <= 5; k++) { const kk = k / 5; ctx.lineTo(sx + Math.sin(t * 0.6 + d.ph + kk * 4) * 5 * z * kk, lerp(top, sy, kk)); }
+          ctx.stroke();
+          ctx.fillStyle = '#5f8a3a';
+          for (let k = 1; k <= 4; k++) { const kk = k / 5, vy = lerp(top, sy, kk), vx = sx + Math.sin(t * 0.6 + d.ph + kk * 4) * 5 * z * kk; ctx.fillRect(Math.round(vx + 2 * z), Math.round(vy), Math.max(1, Math.round(3 * z)), Math.max(1, Math.round(2 * z))); }
           break; }
         case 'cattail': if (layer !== 1) break; {
           const top = cam.toScreen(d.x, d.top)[1], sway = Math.sin(t * 1.3 + d.ph) * 3 * z;
@@ -350,9 +447,45 @@ const World = {
     ctx.beginPath();
     for (let sx = 0; sx <= W; sx += 2) { const wx = cam.toWorldX(sx); const sy = cam.toScreen(wx, this.surface(wx))[1]; if (sx === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy); }
     ctx.strokeStyle = mixColor('#b8ece6', '#3a6a68', 1 - light); ctx.stroke();
+    // organic scum riding the surface film
+    ctx.globalAlpha = 0.2; ctx.fillStyle = '#6a7a4a';
+    for (let sx2 = 0; sx2 < W; sx2 += 3) {
+      const wx = cam.toWorldX(sx2);
+      if (ihash(Math.floor(wx / 6), 44) > 0.72) { const sy2 = cam.toScreen(wx, this.surface(wx))[1]; ctx.fillRect(sx2, Math.round(sy2), 3, Math.max(1, Math.round(z))); }
+    }
+    ctx.globalAlpha = 1;
+    // pollen and gnats drifting over the water at low light
+    if (light > 0.15) {
+      ctx.globalAlpha = 0.3 * light; ctx.fillStyle = '#f0e8b0';
+      for (let i = 0; i < 26; i++) {
+        const wx = cam.x + ((ihash(i, 80) * 800 - 400) + this.t * (4 + ihash(i, 81) * 6)) % 800;
+        const wy = -6 - ihash(i, 82) * 40 + Math.sin(this.t * 1.2 + i) * 4;
+        const [px2, py2] = cam.toScreen(wx, wy);
+        if (px2 < 0 || px2 > W || py2 < 0 || py2 > H) continue;
+        ctx.fillRect(Math.round(px2), Math.round(py2), 1, 1);
+      }
+      ctx.globalAlpha = 1;
+    }
     // sparkles
     ctx.fillStyle = '#ffffff';
     for (let sx = 0; sx < W; sx += 3) { const wx = cam.toWorldX(sx); const h = ihash(Math.floor(wx / 3), 21); if (h < 0.08 && Math.sin(this.t * 5 + wx * 0.1) > 0.6) { const sy = cam.toScreen(wx, this.surface(wx))[1]; ctx.globalAlpha = 0.7 * light; ctx.fillRect(sx, Math.round(sy) - 1, 1, 1); } }
+    ctx.globalAlpha = 1;
+  },
+  drawMist(ctx, cam, day) {
+    const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1];
+    // mist gathers at dawn and after sundown
+    const m = Math.max(smoothstep(0.02, 0.10, day) * (1 - smoothstep(0.14, 0.24, day)), smoothstep(0.46, 0.56, day) * (1 - smoothstep(0.62, 0.76, day)));
+    if (m < 0.02 || hy < -40 || hy > H + 40) return;
+    for (let k = 0; k < 3; k++) {
+      const band = hy - 6 - k * 9 * cam.zoom, drift = (cam.x * (0.35 + k * 0.2) + this.t * (6 + k * 4));
+      ctx.globalAlpha = m * (0.30 - k * 0.06);
+      ctx.fillStyle = k === 0 ? '#e8f4f0' : '#cfe2de';
+      for (let sx = -40; sx < W + 40; sx += 8) {
+        const n = fbm((sx + drift) * 0.012, 90 + k * 13, 2);
+        const h = (6 + n * 20) * cam.zoom;
+        ctx.fillRect(sx, Math.round(band - h), 8, Math.round(h));
+      }
+    }
     ctx.globalAlpha = 1;
   },
   drawNight(ctx, cam, day) {

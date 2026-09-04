@@ -155,6 +155,45 @@ const SPR = {};
   SPR.rockProj = mkSprite(['.rrr.', 'rrRrr', 'rrrrr', '.rrr.'], { r: '#5a5f55', R: '#7a8075' });
 })();
 
+// ---------- egg + nest, for the start of a run ----------
+SPR.egg = (function () {
+  const stages = [];
+  for (let st = 0; st < 4; st++) {
+    const w = 22, h = 28, c = mkCanvas(w, h), x = c.getContext('2d');
+    const px = (i, j, col, ww = 1, hh = 1) => { x.fillStyle = col; x.fillRect(i, j, ww, hh); };
+    // ovoid shell, wider at the base
+    const shell = '#e8e0cc', shellHi = '#f6f2e4', shellLo = '#c4b99e', shellDk = '#9c9078';
+    const rows = [4, 7, 9, 10, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11, 10, 9, 7, 4];
+    rows.forEach((rw, k) => {
+      const j = 3 + k, i = Math.round((w - rw) / 2);
+      px(i, j, shell, rw, 1);
+      px(i, j, shellLo, 1, 1); px(i + rw - 1, j, shellLo, 1, 1);
+    });
+    // speckles and a soft highlight
+    for (const [a, b] of [[7, 8], [12, 11], [9, 15], [14, 17], [8, 20], [13, 22], [10, 6]]) px(a, b, shellLo, 1, 1);
+    px(7, 7, shellHi, 3, 2); px(6, 9, shellHi, 2, 3); px(8, 6, shellHi, 1, 1);
+    px(5, 18, shellDk, 2, 4); px(15, 16, shellDk, 2, 5);
+    // progressive cracks
+    const cracks = [
+      [[11, 8], [12, 9], [11, 10], [12, 11]],
+      [[11, 8], [12, 9], [11, 10], [12, 11], [13, 12], [10, 12], [9, 13], [14, 13], [11, 14]],
+      [[11, 7], [12, 9], [11, 10], [12, 11], [13, 12], [10, 12], [9, 13], [14, 13], [11, 14], [8, 15], [15, 15], [10, 16], [13, 17], [7, 17], [16, 17], [11, 18], [9, 19], [14, 19]],
+    ];
+    if (st > 0) for (const [a, b] of cracks[st - 1]) { px(a, b, '#4a4335', 1, 1); px(a + 1, b, shellDk, 1, 1); }
+    stages.push({ c, w, h });
+  }
+  return stages;
+})();
+SPR.nest = mkSprite([
+  '.....gggggggggggg.....',
+  '...ggGgggGggggGgggg...',
+  '..gGgggggggggggggGgg..',
+  '.gggGggmmmmmmggggggGg.',
+  'gGgggmmmmmmmmmmgggggGg',
+  'ggggmmmmmmmmmmmmgggggg',
+  '.GggmmmmmmmmmmmmggGgg.',
+  '..ggggmmmmmmmmgggggg..',
+], { g: '#6b5a34', G: '#8a7448', m: '#4a3a20' });
 // ---------- procedural crocodile ----------
 // look: {back, mid, belly, dark, eye, pupil, tooth, mouth, spikes, plates, glow, scars, spots, stripes}
 const CROC_LOOKS = {
@@ -172,127 +211,193 @@ function mixLook(a, b, t) {
   return o;
 }
 const crocPartCache = new Map();
+// Croc parts are authored at CROC_PX times the world scale, so the art can carry
+// real detail; everything that draws a part divides by it.
+const CROC_PX = 2;
 function buildCrocParts(L) {
   const key = JSON.stringify(L);
   if (crocPartCache.has(key)) return crocPartCache.get(key);
-  const px = (x, i, j, col, w = 1, h = 1) => { x.fillStyle = col; x.fillRect(i, j, w, h); };
   const parts = {};
-  const spikes = L.spikes || 0, top = Math.max(spikes ? 3 : 0, L.fin ? 6 : 0, L.shell ? 2 : 0, L.mane ? 3 : 0);
-  // HEAD (hinge at (2, 7+top))
+  const mk = (w, h) => { const c = mkCanvas(w, h); return { c, x: c.getContext('2d'), w, h }; };
+  const px = (x, i, j, col, w = 1, h = 1) => { x.fillStyle = col; x.fillRect(i, j, w, h); };
+  // checkerboard dither between two colors, for scale texture and soft ramps
+  const dith = (x, i, j, w, h, col, phase = 0, step = 2) => {
+    x.fillStyle = col;
+    for (let b = 0; b < h; b++) for (let a = (b + phase) % step; a < w; a += step) x.fillRect(i + a, j + b, 1, 1);
+  };
+  const hi = c => mixColor(c, '#ffffff', 0.22), lo = c => shade(c, 0.72), lo2 = c => shade(c, 0.55);
+  const spikes = L.spikes || 0;
+  const crest = Math.max(spikes ? 6 : 0, L.fin ? 12 : 0, L.shell ? 4 : 0, L.mane ? 6 : 0);
+
+  // ------------------------------------------------ HEAD (hinge at 4, y0+14)
   {
-    const w = 20, h = 10 + top, c = mkCanvas(w, h), x = c.getContext('2d');
-    const y0 = top;
-    px(x, 0, y0 + 2, L.dark, 9, 1);
-    px(x, 0, y0 + 3, L.back, 9, 2);
-    px(x, 0, y0 + 5, L.mid, 9, 2);
-    px(x, 0, y0 + 7, L.belly, 9, 1);
-    px(x, 2, y0 + 0, L.dark, 4, 1); px(x, 1, y0 + 1, L.dark, 1, 1); px(x, 6, y0 + 1, L.dark, 1, 1);
-    px(x, 2, y0 + 1, L.back, 1, 1); px(x, 3, y0 + 1, L.eye, 2, 1); px(x, 4, y0 + 1, L.pupil, 1, 1); px(x, 5, y0 + 1, L.back, 1, 1);
-    px(x, 9, y0 + 3, L.dark, 10, 1);
-    px(x, 9, y0 + 4, L.back, 10, 1);
-    px(x, 9, y0 + 5, L.mid, 10, 2);
-    px(x, 9, y0 + 7, L.belly, 10, 1);
-    px(x, 18, y0 + 2, L.dark, 1, 1); px(x, 19, y0 + 3, L.dark, 1, 1); px(x, 19, y0 + 4, L.back, 1, 1); px(x, 19, y0 + 5, L.mid, 1, 2); px(x, 19, y0 + 7, L.dark, 1, 1);
-    px(x, 0, y0 + 2, L.dark, 1, 6);
-    // subtle scales
-    px(x, 11, y0 + 4, L.dark, 1, 1); px(x, 14, y0 + 4, L.dark, 1, 1); px(x, 17, y0 + 4, L.dark, 1, 1);
-    // upper teeth
-    for (const tx of [7, 9, 11, 13, 15, 17]) px(x, tx, y0 + 8, L.tooth, 1, 1);
-    px(x, 19, y0 + 8, L.tooth, 1, 1);
-    if (L.scars) { px(x, 8, y0 + 4, '#d08080', 1, 1); px(x, 9, y0 + 5, '#d08080', 1, 1); px(x, 10, y0 + 6, '#d08080', 1, 1); }
-    if (spikes) { px(x, 3, y0 - 1, L.dark, 1, 1); px(x, 3, y0 - 2, L.belly, 1, 1); }
-    if (L.ganoid) for (const [gx, gy] of [[10, y0 + 4], [13, y0 + 5], [16, y0 + 4], [11, y0 + 6], [14, y0 + 6]]) px(x, gx, gy, mixColor(L.belly, '#ffffff', 0.4), 1, 1);
-    if (L.denticle) for (const [gx, gy] of [[11, y0 + 4], [15, y0 + 4], [13, y0 + 6], [17, y0 + 5]]) px(x, gx, gy, shade(L.mid, 0.75), 1, 1);
-    if (L.frill) { for (let f = 0; f < 4; f++) { px(x, 7, y0 + 2 - f, L.frill, 1, 1); px(x, 8, y0 + 2 - f, shade(L.frill, 0.7), 1, 1); } px(x, 7, y0 + 8, L.frill, 2, 2); }
-    if (L.mane) { for (const mx of [1, 3, 5, 7]) { px(x, mx, y0 - 1, L.mane, 1, 1); px(x, mx, y0 - 2, shade(L.mane, 0.8), 1, 1); px(x, mx + 1, y0 - 3, L.mane, 1, 1); } }
-    if (L.tusks) { px(x, 12, y0 + 8, L.tooth, 1, 2); px(x, 13, y0 + 9, L.tooth, 1, 1); px(x, 16, y0 + 8, L.tooth, 1, 2); px(x, 17, y0 + 9, L.tooth, 1, 1); }
-    if (L.horn) { px(x, 15, y0 + 2, L.tooth, 1, 1); px(x, 16, y0 + 1, L.tooth, 1, 1); px(x, 17, y0, L.tooth, 1, 1); }
-    if (L.beak) { px(x, 19, y0 + 3, L.beak, 1, 5); px(x, 18, y0 + 6, L.beak, 2, 2); }
-    parts.head = { c, w, h, ox: 2, oy: y0 + 7, eyeX: 4, eyeY: y0 + 1 };
+    const w = 40, h = 20 + crest, o = mk(w, h), x = o.x, y0 = crest;
+    // --- snout slab ---
+    px(x, 17, y0 + 6, lo2(L.back), 22, 1);
+    px(x, 17, y0 + 7, L.back, 22, 2);
+    dith(x, 17, y0 + 7, 22, 2, hi(L.back), 0, 3);
+    px(x, 17, y0 + 9, L.mid, 22, 3);
+    dith(x, 18, y0 + 10, 21, 2, lo(L.mid), 1, 3);
+    px(x, 17, y0 + 12, L.belly, 22, 2);
+    px(x, 17, y0 + 14, lo2(L.dark), 23, 1);
+    // rounded tip
+    px(x, 39, y0 + 6, '#00000000', 1, 1);
+    px(x, 38, y0 + 5, lo2(L.back), 2, 1); px(x, 38, y0 + 6, L.back, 2, 1);
+    px(x, 39, y0 + 13, lo2(L.dark), 1, 1);
+    // nostrils on the raised tip
+    px(x, 35, y0 + 4, lo2(L.back), 4, 2); px(x, 35, y0 + 5, L.back, 4, 1);
+    px(x, 36, y0 + 4, L.dark, 1, 1); px(x, 38, y0 + 4, L.dark, 1, 1);
+    // --- skull ---
+    px(x, 0, y0 + 3, lo2(L.back), 18, 1);
+    px(x, 0, y0 + 4, L.back, 18, 3);
+    dith(x, 1, y0 + 4, 16, 3, hi(L.back), 0, 3);
+    px(x, 0, y0 + 7, L.mid, 18, 4);
+    dith(x, 1, y0 + 8, 16, 3, lo(L.mid), 1, 3);
+    px(x, 0, y0 + 11, L.belly, 18, 3);
+    px(x, 0, y0 + 14, lo2(L.dark), 18, 1);
+    // jaw/cheek line and jowl bulge
+    px(x, 12, y0 + 11, lo(L.mid), 6, 1);
+    px(x, 2, y0 + 13, lo(L.belly), 14, 1);
+    // scale pits along the snout and skull
+    for (const [sx, sy] of [[20, y0 + 8], [24, y0 + 9], [28, y0 + 8], [32, y0 + 9], [22, y0 + 11], [26, y0 + 12], [30, y0 + 11], [34, y0 + 12], [4, y0 + 6], [8, y0 + 7], [12, y0 + 6]]) px(x, sx, sy, lo2(L.mid), 1, 1);
+    // --- eye turret ---
+    px(x, 5, y0 + 1, lo2(L.back), 7, 1);          // brow ridge
+    px(x, 4, y0 + 2, lo2(L.back), 1, 4); px(x, 12, y0 + 2, lo2(L.back), 1, 4);
+    px(x, 5, y0 + 2, L.back, 7, 1); dith(x, 5, y0 + 2, 7, 1, hi(L.back), 0, 2);
+    px(x, 5, y0 + 3, L.eye, 7, 2);                // iris
+    px(x, 5, y0 + 3, hi(L.eye), 3, 1);
+    px(x, 8, y0 + 3, L.pupil, 1, 2);              // vertical slit
+    px(x, 11, y0 + 4, shade(L.eye, 0.65), 1, 1);
+    px(x, 5, y0 + 5, lo2(L.dark), 7, 1);          // lower lid
+    px(x, 6, y0 + 3, '#ffffff', 1, 1);            // catchlight
+    // --- upper teeth, interlocking ---
+    for (const tx of [19, 22, 25, 28, 31, 34, 37]) { px(x, tx, y0 + 15, L.tooth, 1, 2); px(x, tx, y0 + 17, shade(L.tooth, 0.8), 1, 1); }
+    px(x, 16, y0 + 15, L.tooth, 1, 3); px(x, 13, y0 + 15, L.tooth, 1, 2);
+    // --- trait features ---
+    if (L.scars) { for (let k = 0; k < 5; k++) { px(x, 16 + k * 2, y0 + 7 + k, '#d08a80', 1, 1); px(x, 16 + k * 2, y0 + 8 + k, '#8a4a44', 1, 1); } }
+    if (L.ganoid) for (const [gx, gy] of [[20, y0 + 8], [24, y0 + 10], [28, y0 + 8], [32, y0 + 10], [22, y0 + 12], [30, y0 + 12]]) { px(x, gx, gy, mixColor(L.belly, '#ffffff', 0.45), 2, 1); px(x, gx, gy + 1, lo(L.belly), 2, 1); }
+    if (L.denticle) dith(x, 18, y0 + 7, 21, 6, lo2(L.mid), 0, 3);
+    if (L.frill) { for (let f = 0; f < 7; f++) { px(x, 14, y0 + 4 - f, L.frill, 2, 1); px(x, 15, y0 + 4 - f, shade(L.frill, 0.7), 1, 1); } px(x, 13, y0 + 15, L.frill, 3, 3); }
+    if (L.mane) for (const mx of [1, 4, 7, 10]) { px(x, mx, y0 - 1, L.mane, 2, 1); px(x, mx, y0 - 3, shade(L.mane, 0.8), 2, 2); px(x, mx + 1, y0 - 5, L.mane, 1, 2); }
+    if (L.tusks) { px(x, 24, y0 + 15, L.tooth, 2, 4); px(x, 25, y0 + 19, L.tooth, 1, 1); px(x, 32, y0 + 15, L.tooth, 2, 4); px(x, 33, y0 + 19, L.tooth, 1, 1); }
+    if (L.horn) { px(x, 30, y0 + 4, L.tooth, 1, 2); px(x, 31, y0 + 2, L.tooth, 1, 2); px(x, 32, y0 + 0, L.tooth, 1, 2); }
+    if (L.beak) { px(x, 38, y0 + 6, L.beak, 2, 8); px(x, 36, y0 + 12, L.beak, 3, 3); }
+    if (spikes) { px(x, 6, y0 - 2, L.dark, 2, 2); px(x, 6, y0 - 4, L.belly, 2, 2); }
+    parts.head = { c: o.c, w, h, ox: 4, oy: y0 + 11, eyeX: 7, eyeY: y0 + 3 };
   }
-  // JAW (hinge at (0,0))
+  // ------------------------------------------------ JAW (hinge at 0,0)
   {
-    const w = 19, h = 4, c = mkCanvas(w, h), x = c.getContext('2d');
-    for (const tx of [6, 8, 10, 12, 14, 16]) px(x, tx, 0, L.tooth, 1, 1);
-    px(x, 0, 1, L.dark, 1, 1); px(x, 1, 1, L.mouth, 17, 1); px(x, 18, 1, L.dark, 1, 1);
-    px(x, 0, 2, L.dark, 1, 1); px(x, 1, 2, L.belly, 17, 1); px(x, 18, 2, L.dark, 1, 1);
-    px(x, 0, 3, L.dark, 18, 1);
-    parts.jaw = { c, w, h, ox: 0, oy: 0 };
+    const w = 38, h = 8, o = mk(w, h), x = o.x;
+    for (const tx of [17, 20, 23, 26, 29, 32, 35]) { px(x, tx, 0, L.tooth, 1, 2); px(x, tx, 0, shade(L.tooth, 0.85), 1, 1); }
+    px(x, 12, 0, L.tooth, 1, 2);
+    px(x, 0, 2, lo2(L.dark), 1, 2);
+    px(x, 1, 2, L.mouth, 36, 2);                       // gums
+    dith(x, 2, 2, 34, 1, shade(L.mouth, 1.25), 0, 4);
+    px(x, 1, 4, lo(L.belly), 36, 2);                   // lower jaw plates
+    dith(x, 2, 4, 34, 2, L.belly, 0, 4);
+    px(x, 0, 6, lo2(L.dark), 37, 2);
+    for (let k = 2; k < 36; k += 5) px(x, k, 5, lo2(L.belly), 1, 1);
+    parts.jaw = { c: o.c, w, h, ox: 0, oy: 0 };
   }
-  // BODY segments x5 (center origin); canvas 10 wide, 10 + top tall
+  // ------------------------------------------------ BODY x5 (oy = y0+12)
   parts.body = [];
   for (let i = 0; i < 5; i++) {
-    const w = 10, h = 10 + top, c = mkCanvas(w, h), x = c.getContext('2d');
-    const y0 = top;
-    px(x, 0, y0 + 2, L.dark, 10, 1);
-    px(x, 0, y0 + 3, L.back, 10, 2);
-    px(x, 0, y0 + 5, L.mid, 10, 2);
-    px(x, 0, y0 + 7, L.belly, 10, 2);
-    px(x, 0, y0 + 9, L.dark, 10, 1);
-    // scutes
-    const sx = i % 2 ? [1, 4, 7] : [2, 5, 8];
-    for (const s of sx) { px(x, s, y0 + 1, L.dark, 1, 1); px(x, s, y0 + 3, L.dark, 1, 1); }
-    // highlight
-    px(x, 3, y0 + 4, mixColor(L.back, '#ffffff', 0.15), 1, 1); px(x, 8, y0 + 5, mixColor(L.mid, '#ffffff', 0.12), 1, 1);
-    if (L.stripes) px(x, 4, y0 + 3, shade(L.back, 0.7), 2, 6);
-    if (L.plates) { px(x, 1, y0 + 3, '#c9c2a3', 2, 2); px(x, 6, y0 + 3, '#c9c2a3', 2, 2); px(x, 2, y0 + 4, '#8a846a', 1, 1); px(x, 7, y0 + 4, '#8a846a', 1, 1); }
-    if (L.scars && (i === 1 || i === 3)) { px(x, 2, y0 + 3, '#d08080', 1, 1); px(x, 3, y0 + 4, '#d08080', 1, 1); px(x, 4, y0 + 5, '#d08080', 1, 1); px(x, 5, y0 + 6, '#d08080', 1, 1); }
-    if (L.spots) { px(x, 3, y0 + 5, L.spots, 1, 1); px(x, 7, y0 + 6, L.spots, 1, 1); }
-    if (L.ganoid) { for (let gy = 0; gy < 3; gy++) for (let gx = (gy % 2 ? 0 : 2); gx < 10; gx += 4) px(x, gx, y0 + 3 + gy * 2, mixColor(L.belly, '#ffffff', 0.35), 2, 1); }
-    if (L.denticle) { for (let gy = 0; gy < 4; gy++) for (let gx = (gy % 2 ? 1 : 3); gx < 10; gx += 3) px(x, gx, y0 + 3 + gy, shade(L.mid, 0.72), 1, 1); }
-    if (L.shell) { // turtle carapace: hex plates with a keel
-      px(x, 0, y0 + 1, L.shell, 10, 3); px(x, 0, y0, shade(L.shell, 0.7), 10, 1);
-      for (const s2 of [1, 5]) { px(x, s2, y0 + 1, shade(L.shell, 1.25), 3, 1); px(x, s2 + 1, y0 + 2, shade(L.shell, 0.75), 1, 1); }
-      px(x, 0, y0 + 4, shade(L.shell, 0.6), 10, 1);
-      for (const s2 of [2, 6]) { px(x, s2, y0 - 1, shade(L.shell, 0.8), 2, 1); px(x, s2, y0 - 2, shade(L.shell, 1.1), 1, 1); }
+    const w = 20, h = 20 + crest, o = mk(w, h), x = o.x, y0 = crest;
+    px(x, 0, y0 + 4, lo2(L.back), w, 1);
+    px(x, 0, y0 + 5, L.back, w, 4);
+    dith(x, 0, y0 + 5, w, 4, hi(L.back), i % 2, 3);
+    px(x, 0, y0 + 9, L.mid, w, 5);
+    dith(x, 0, y0 + 10, w, 4, lo(L.mid), (i + 1) % 2, 3);
+    px(x, 0, y0 + 14, L.belly, w, 4);
+    px(x, 0, y0 + 18, lo2(L.dark), w, 2);
+    // dorsal scute rows: two raised paired keels
+    const off = i % 2 ? 0 : 2;
+    for (let s = off; s < w; s += 5) {
+      px(x, s, y0 + 2, lo2(L.back), 3, 2); px(x, s + 1, y0 + 2, hi(L.back), 1, 1);
+      px(x, s, y0 + 1, L.dark, 2, 1);
+      px(x, s + 1, y0 + 7, lo2(L.back), 2, 1);
     }
-    if (L.stripe2) { for (const s2 of [0, 5]) px(x, s2, y0 + 2, shade(L.dark, 1.1), 2, 7); }
-    if (L.fin && (i === 1 || i === 2)) { // dorsal fin
-      const fh = i === 1 ? 6 : 4, fc = L.fin, fd = shade(fc, 0.7);
-      for (let f = 0; f < fh; f++) { const w2 = Math.max(1, Math.round((fh - f) * 1.1)); px(x, 3 + Math.round(f * 0.4), y0 - f, fc, w2, 1); px(x, 3 + Math.round(f * 0.4), y0 - f, fd, 1, 1); }
+    // lateral scale rows
+    for (let s = (i % 2 ? 1 : 3); s < w; s += 4) { px(x, s, y0 + 10, lo2(L.mid), 1, 3); px(x, s + 1, y0 + 10, hi(L.mid), 1, 1); }
+    // belly plates
+    for (let s = 0; s < w; s += 4) { px(x, s, y0 + 14, lo(L.belly), 1, 4); px(x, s + 1, y0 + 15, hi(L.belly), 2, 1); }
+    // rim light along the spine, shadow under the gut
+    px(x, 0, y0 + 4, hi(L.back), w, 1);
+    px(x, 0, y0 + 17, lo(L.belly), w, 1);
+    // trait features
+    if (L.stripes) { px(x, 7, y0 + 5, shade(L.back, 0.62), 4, 9); dith(x, 6, y0 + 5, 1, 9, shade(L.back, 0.62), 0, 2); }
+    if (L.stripe2) for (const s of [1, 10]) { px(x, s, y0 + 4, shade(L.dark, 1.15), 4, 14); dith(x, s + 4, y0 + 4, 2, 14, shade(L.dark, 1.15), 0, 2); }
+    if (L.plates) for (const s of [2, 12]) { px(x, s, y0 + 6, '#c9c2a3', 5, 4); px(x, s, y0 + 6, '#e4dfc4', 5, 1); px(x, s + 1, y0 + 8, '#8a846a', 3, 1); }
+    if (L.scars && (i === 1 || i === 3)) for (let k = 0; k < 7; k++) { px(x, 3 + k, y0 + 5 + k, '#d08a80', 1, 1); px(x, 3 + k, y0 + 6 + k, '#8a4a44', 1, 1); }
+    if (L.spots) for (const [gx, gy] of [[5, y0 + 10], [13, y0 + 12], [9, y0 + 7]]) { px(x, gx, gy, L.spots, 2, 2); px(x, gx, gy, mixColor(L.spots, '#ffffff', 0.4), 1, 1); }
+    if (L.ganoid) for (let gy = 0; gy < 4; gy++) for (let gx = (gy % 2 ? 0 : 3); gx < w; gx += 6) { px(x, gx, y0 + 6 + gy * 2, mixColor(L.belly, '#ffffff', 0.4), 3, 1); px(x, gx, y0 + 7 + gy * 2, lo(L.belly), 3, 1); }
+    if (L.denticle) dith(x, 0, y0 + 5, w, 9, lo2(L.mid), i % 2, 3);
+    if (L.shell) { // turtle carapace with keeled hexagonal scutes
+      px(x, 0, y0 + 2, L.shell, w, 5); px(x, 0, y0 + 1, lo2(L.shell), w, 1);
+      for (let s = (i % 2 ? 0 : 4); s < w; s += 8) {
+        px(x, s, y0 + 2, shade(L.shell, 1.3), 6, 1); px(x, s + 1, y0 + 3, shade(L.shell, 1.12), 4, 2);
+        px(x, s, y0 + 5, shade(L.shell, 0.62), 6, 1); px(x, s + 6, y0 + 2, shade(L.shell, 0.5), 1, 4);
+      }
+      px(x, 0, y0 + 7, shade(L.shell, 0.45), w, 1);
+      for (let s = (i % 2 ? 2 : 6); s < w; s += 8) { px(x, s, y0 - 1, shade(L.shell, 0.8), 4, 2); px(x, s + 1, y0 - 3, shade(L.shell, 1.15), 2, 2); }
     }
-    if (L.gills && i === 0) { for (const gx of [2, 4, 6]) px(x, gx, y0 + 5, shade(L.mouth, 1.1), 1, 3); }
-    if (spikes) for (const s of sx) { px(x, s, y0, L.dark, 1, 1); if (spikes >= 2) { px(x, s, y0 - 1, L.dark, 1, 1); px(x, s, y0 - 2, L.belly, 1, 1); } else px(x, s, y0 - 1, L.belly, 1, 1); }
-    parts.body.push({ c, w, h, ox: 5, oy: y0 + 6 });
+    if (L.fin && (i === 1 || i === 2)) {
+      const fh = i === 1 ? 12 : 8, fc = L.fin;
+      for (let f = 0; f < fh; f++) { const fw = Math.max(2, Math.round((fh - f) * 1.5)); const fx = 6 + Math.round(f * 0.5); px(x, fx, y0 - f, fc, fw, 1); px(x, fx, y0 - f, shade(fc, 0.65), 1, 1); if (f % 3 === 0) px(x, fx + 1, y0 - f, shade(fc, 0.8), 1, 1); }
+    }
+    if (L.gills && i === 0) for (const gx of [3, 7, 11]) { px(x, gx, y0 + 9, shade(L.mouth, 1.15), 2, 5); px(x, gx, y0 + 9, shade(L.mouth, 0.7), 1, 5); }
+    if (spikes) for (let s = off; s < w; s += 5) { px(x, s, y0 - 2, L.dark, 3, 2); if (spikes >= 2) { px(x, s, y0 - 5, L.dark, 2, 3); px(x, s, y0 - 6, L.belly, 2, 1); } else px(x, s, y0 - 3, L.belly, 2, 1); }
+    parts.body.push({ c: o.c, w, h, ox: 10, oy: y0 + 12 });
   }
-  // TAIL segments x6, tapering
+  // ------------------------------------------------ TAIL x6
   parts.tail = [];
   for (let k = 0; k < 6; k++) {
-    const w = 8, bh = 8 - k, h = bh + 2 + top, c = mkCanvas(w, h), x = c.getContext('2d');
-    const y0 = top + 2; // room for tail fin ridge
-    px(x, 0, y0, L.dark, 8, 1);
-    const back = Math.max(1, Math.round((bh - 2) * 0.4)), mid = Math.max(1, Math.round((bh - 2) * 0.35)), bel = Math.max(1, bh - 2 - back - mid);
-    px(x, 0, y0 + 1, L.back, 8, back);
-    px(x, 0, y0 + 1 + back, L.mid, 8, mid);
-    px(x, 0, y0 + 1 + back + mid, L.belly, 8, bel);
-    px(x, 0, y0 + bh - 1, L.dark, 8, 1);
-    // tail ridge (vertical scales)
-    for (const s of [1, 4, 7]) { px(x, s, y0 - 1, L.dark, 1, 1); if (k < 4) px(x, s, y0 - 2, L.dark, 1, 1); }
-    if (spikes && k < 3) for (const s of [1, 4]) { px(x, s, y0 - 3, L.dark, 1, 1); if (spikes >= 2) px(x, s, y0 - 4, L.belly, 1, 1); }
-    if (L.spots && k % 2 === 0) px(x, 4, y0 + 1 + back, L.spots, 1, 1);
-    if (L.ganoid) for (let gx = (k % 2 ? 1 : 3); gx < 8; gx += 4) px(x, gx, y0 + 2, mixColor(L.belly, '#ffffff', 0.3), 2, 1);
-    if (L.denticle) for (let gx = (k % 2 ? 1 : 2); gx < 8; gx += 3) px(x, gx, y0 + 2, shade(L.mid, 0.72), 1, 1);
-    if (L.stripe2 && k % 2 === 0) px(x, 3, y0, shade(L.dark, 1.1), 2, bh);
-    if (L.fin && k < 3) { const fh = 5 - k; for (let f = 0; f < fh; f++) px(x, 2 + Math.round(f * 0.5), y0 - 1 - f, L.fin, Math.max(1, fh - f), 1); }
-    if (L.barb && k >= 4) { px(x, 3, y0 - 1, L.tooth, 1, 1); px(x, 3, y0 - 2, L.tooth, 1, 1); px(x, 2, y0 - 1, L.tooth, 1, 1); if (k === 5) { px(x, 4, y0 - 3, L.tooth, 1, 1); px(x, 3, y0 - 4, L.tooth, 1, 1); } }
-    if (L.paddle && k >= 4) { const pc = L.paddle; for (let f = 1; f <= 3; f++) { px(x, 5 + f, y0 - f, pc, 1, bh + f); } }
-    parts.tail.push({ c, w, h, ox: 4, oy: y0 + Math.floor(bh / 2) });
+    const w = 16, bh = 18 - k * 2, h = bh + 6 + crest, o = mk(w, h), x = o.x, y0 = crest + 4;
+    const back = Math.max(2, Math.round((bh - 2) * 0.4)), mid = Math.max(2, Math.round((bh - 2) * 0.34)), bel = Math.max(1, bh - 2 - back - mid);
+    px(x, 0, y0, lo2(L.back), w, 1);
+    px(x, 0, y0 + 1, L.back, w, back); dith(x, 0, y0 + 1, w, back, hi(L.back), k % 2, 3);
+    px(x, 0, y0 + 1 + back, L.mid, w, mid); dith(x, 0, y0 + 1 + back, w, mid, lo(L.mid), (k + 1) % 2, 3);
+    px(x, 0, y0 + 1 + back + mid, L.belly, w, bel);
+    px(x, 0, y0 + bh - 1, lo2(L.dark), w, 1);
+    px(x, 0, y0, hi(L.back), w, 1);
+    // tail crest: paired scutes fusing into a single fin toward the tip
+    if (k < 3) { for (const s of [1, 6, 11]) { px(x, s, y0 - 2, lo2(L.back), 3, 2); px(x, s, y0 - 3, L.dark, 3, 1); px(x, s + 1, y0 - 2, L.back, 1, 1); } }
+    else { for (let s = 0; s < w; s += 4) { const ch = 4 - (k - 3); px(x, s, y0 - ch, lo2(L.back), 3, ch); px(x, s + 1, y0 - ch, L.back, 1, ch); } }
+    for (let s = (k % 2 ? 1 : 3); s < w; s += 4) px(x, s, y0 + 1 + back, lo2(L.mid), 1, 2);
+    if (L.spots && k % 2 === 0) { px(x, 5, y0 + 1 + back, L.spots, 2, 2); px(x, 5, y0 + 1 + back, mixColor(L.spots, '#ffffff', 0.4), 1, 1); }
+    if (L.ganoid) for (let gx = (k % 2 ? 1 : 4); gx < w; gx += 6) px(x, gx, y0 + 3, mixColor(L.belly, '#ffffff', 0.35), 3, 1);
+    if (L.denticle) dith(x, 0, y0 + 1, w, bh - 2, lo2(L.mid), k % 2, 3);
+    if (L.stripe2 && k % 2 === 0) px(x, 5, y0, shade(L.dark, 1.15), 4, bh);
+    if (L.fin && k < 3) { const fh = 10 - k * 3; for (let f = 0; f < fh; f++) px(x, 4 + Math.round(f * 0.6), y0 - 3 - f, L.fin, Math.max(2, fh - f), 1); }
+    if (L.barb && k >= 4) { px(x, 6, y0 - 4, L.tooth, 2, 4); px(x, 5, y0 - 2, 1 ? L.tooth : '', 1, 2); px(x, 8, y0 - 2, L.tooth, 1, 2); if (k === 5) { px(x, 7, y0 - 8, L.tooth, 2, 4); px(x, 6, y0 - 6, L.tooth, 1, 2); } }
+    if (L.paddle && k >= 4) { const pc = L.paddle; for (let f = 1; f <= 5; f++) px(x, 10 + f, y0 - f, pc, 1, bh + f * 2); }
+    if (spikes && k < 3) for (const s of [1, 8]) { px(x, s, y0 - 5, L.dark, 2, 2); if (spikes >= 2) px(x, s, y0 - 7, L.belly, 2, 2); }
+    parts.tail.push({ c: o.c, w, h, ox: 8, oy: y0 + Math.floor(bh / 2) });
   }
-  // LEGS 2 frames
+  // ------------------------------------------------ LEGS x2 frames
   parts.legs = [];
   for (let f = 0; f < 2; f++) {
-    const w = 6, h = 6, c = mkCanvas(w, h), x = c.getContext('2d');
-    if (f === 0) { px(x, 1, 0, L.dark, 3, 1); px(x, 1, 1, L.mid, 3, 2); px(x, 0, 1, L.dark, 1, 3); px(x, 4, 1, L.dark, 1, 2); px(x, 1, 3, L.mid, 2, 2); px(x, 0, 4, L.dark, 1, 1); px(x, 3, 4, L.dark, 1, 1); px(x, 0, 5, L.dark, 1, 1); px(x, 2, 5, L.dark, 1, 1); }
-    else { px(x, 2, 0, L.dark, 3, 1); px(x, 2, 1, L.mid, 3, 2); px(x, 1, 1, L.dark, 1, 2); px(x, 5, 1, L.dark, 1, 3); px(x, 3, 3, L.mid, 2, 2); px(x, 2, 4, L.dark, 1, 1); px(x, 5, 4, L.dark, 1, 1); px(x, 3, 5, L.dark, 1, 1); px(x, 5, 5, L.dark, 1, 1); }
-    if (L.claws) { px(x, f ? 2 : 0, 5, L.tooth, 1, 1); px(x, f ? 4 : 2, 5, L.tooth, 1, 1); px(x, f ? 5 : 3, 4, L.tooth, 1, 1); }
-    if (L.webbed) { px(x, f ? 2 : 0, 4, L.webbed, 4, 2); }
-    parts.legs.push({ c, w, h, ox: 3, oy: 0 });
+    const w = 14, h = 14, o = mk(w, h), x = o.x;
+    const sw = f ? 3 : 0; // stride offset
+    px(x, 2 + sw, 0, lo2(L.back), 7, 2);            // shoulder
+    px(x, 2 + sw, 2, L.mid, 7, 4);
+    dith(x, 3 + sw, 2, 5, 4, lo(L.mid), 0, 2);
+    px(x, 1 + sw, 2, lo2(L.dark), 1, 4);
+    px(x, 9 + sw, 1, lo2(L.dark), 1, 4);
+    px(x, 3 + sw, 6, L.mid, 5, 4);                  // forearm
+    px(x, 3 + sw, 6, lo2(L.dark), 1, 4);
+    px(x, 2 + sw, 10, lo2(L.dark), 7, 2);           // foot
+    px(x, 3 + sw, 10, L.belly, 5, 1);
+    for (const t of [2, 4, 6]) { px(x, t + sw, 12, lo2(L.dark), 1, 2); px(x, t + sw, 12, L.belly, 1, 1); }
+    if (L.claws) for (const t of [2, 4, 6]) { px(x, t + sw, 13, L.tooth, 1, 1); px(x, t + sw - 1, 13, L.tooth, 1, 1); }
+    if (L.webbed) px(x, 2 + sw, 11, L.webbed, 7, 2);
+    parts.legs.push({ c: o.c, w, h, ox: 6, oy: 0 });
   }
+  parts.jawY = 3; // the mouth corner sits below the chain node
   parts.look = L;
   crocPartCache.set(key, parts);
   return parts;
 }
-
 // chain geometry (at size 1)
 const CROC_SPACING = [0, 7, 9, 9, 9, 9, 8, 7, 7, 7, 7, 7]; // distance from previous node
 const CROC_LEN = CROC_SPACING.length;
@@ -318,7 +423,8 @@ class CrocChain {
   }
 }
 // draw a croc chain. opts: {jaw, legPhase, flipY, alpha, flash, roll}
-function drawCroc(ctx, chain, parts, size, opts = {}) {
+function drawCroc(ctx, chain, parts, worldSize, opts = {}) {
+  const size = worldSize / CROC_PX;
   const n = chain.nodes, flipY = opts.flipY || 1, jaw = opts.jaw || 0;
   const rk = opts.roll ? Math.cos(opts.roll) : 1, sy = size * flipY * (Math.abs(rk) < 0.2 ? 0.2 * sign(rk) : rk);
   if (opts.alpha !== undefined) ctx.globalAlpha = opts.alpha;
@@ -330,14 +436,14 @@ function drawCroc(ctx, chain, parts, size, opts = {}) {
     if (i === 1 || i === 4) {
       const lp = opts.legPhase || 0, f = Math.sin(lp + (i === 1 ? 0 : Math.PI)) > 0 ? 0 : 1;
       const leg = parts.legs[f];
-      ctx.drawImage(img(leg), -leg.ox - 2, 2); ctx.drawImage(img(leg), -leg.ox + 3, 2);
+      ctx.drawImage(img(leg), -leg.ox - 4, 4); ctx.drawImage(img(leg), -leg.ox + 6, 4);
     }
     ctx.drawImage(img(part), -part.ox, -part.oy);
     ctx.restore();
   }
   const h = n[0];
   ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a); ctx.scale(size, sy);
-  ctx.save(); ctx.rotate(jaw * 0.8); ctx.drawImage(img(parts.jaw), 0, 0); ctx.restore();
+  ctx.save(); ctx.translate(0, parts.jawY); ctx.rotate(jaw * 0.8); ctx.drawImage(img(parts.jaw), 0, 0); ctx.restore();
   ctx.drawImage(img(parts.head), -parts.head.ox, -parts.head.oy);
   if (parts.look.glow && !white) {
     ctx.globalCompositeOperation = 'lighter';

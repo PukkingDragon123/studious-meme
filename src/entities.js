@@ -547,7 +547,7 @@ class Gator extends Entity {
     const n = this.chain.nodes;
     for (let i = 0; i < n.length; i++) {
       const part = i === 0 ? this.parts.head : i <= 5 ? this.parts.body[i - 1] : this.parts.tail[i - 6];
-      const g = new Gib(n[i].x, n[i].y, part, { sx: 0, sy: 0, sw: part.w, sh: part.h }, this.size, 1, true, this.bloodColors);
+      const g = new Gib(n[i].x, n[i].y, part, { sx: 0, sy: 0, sw: part.w, sh: part.h }, this.size / CROC_PX, 1, true, this.bloodColors);
       g.rot = n[i].a; g.mass = this.mass * 0.3 / n.length; g.edible = true; const a = rand(TAU), sp = rand(30, 110) * Math.sqrt(power); g.vx = Math.cos(a) * sp; g.vy = Math.sin(a) * sp - 30; g.vr = rand(-6, 6);
       G.add(g);
     }

@@ -108,6 +108,18 @@ const SFX = {
   },
   pick() { this.tone({ type: 'sine', f: 660, t: 0.14, v: 0.2 }); this.tone({ type: 'sine', f: 990, t: 0.25, v: 0.2, delay: 0.09 }); this.tone({ type: 'triangle', f: 1320, t: 0.35, v: 0.12, delay: 0.18 }); },
   ui() { this.tone({ type: 'square', f: 900, t: 0.045, v: 0.08 }); },
+  crack(n = 0) {
+    const k = 1 + n * 0.35;
+    this.noise({ t: 0.09, v: 0.4, filter: { type: 'bandpass', f: 2200 * k, q: 2 } });
+    this.noise({ delay: 0.03, t: 0.14, v: 0.3, filter: { f: 900 * k, f2: 300 } });
+    this.tone({ type: 'square', f: 220 * k, f2: 90, t: 0.1, v: 0.14 });
+  },
+  peep() { const f = rand(900, 1300); this.tone({ type: 'square', f, f2: f * 1.4, t: 0.09, v: 0.1 }); this.tone({ type: 'sine', f: f * 1.5, f2: f * 2, t: 0.12, v: 0.06, delay: 0.06 }); },
+  hatch() {
+    this.crack(3); this.noise({ t: 0.5, v: 0.35, filter: { f: 1800, f2: 300 } });
+    [523, 784, 1046].forEach((f, i) => this.tone({ type: 'triangle', f, t: 0.5, v: 0.12, delay: 0.1 + i * 0.07 }));
+    this.peep();
+  },
   gunshot(pan = 0) {
     this.noise({ t: 0.2, v: 0.6, a: 0.001, filter: { type: 'highpass', f: 900, f2: 150 }, pan });
     this.tone({ type: 'square', f: 160, f2: 35, t: 0.09, v: 0.3, pan });
