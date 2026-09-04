@@ -31,6 +31,7 @@ as a fragment for hosts that supply their own document shell).
 | Steer with the mouse | hold left mouse | - |
 | Pause / settings | `P` / `ESC` | `II` button |
 | Trait codex | `C` | via pause |
+| Crack the egg | mash `SPACE` | tap |
 | Help | `H` | via pause |
 | Mute | `M` | via pause |
 
@@ -39,6 +40,7 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 
 ## How a run works
 
+- **Start as an egg.** Every run opens on a nest at the water's edge. Mash bite (or tap) to crack the shell, hatch, and crawl for the water.
 - **Eat** anything under half your size to swallow it whole. Bigger prey takes bites, bleeds, and comes apart.
 - **Latch** onto medium prey with a bite, then bite again to **death roll** and shred it.
 - **Hunger** drains constantly. Starving drains your health. Keep eating.
@@ -60,6 +62,12 @@ Four tiered paths, five nodes each, ending in an evolution that changes how you 
 | **Abyssal** | venom, regeneration, lure, toxic blood | Leviathan: periodic shockwaves |
 
 ## Animal traits
+
+Every shed opens the **genome orb**: a rotating DNA double helix wound around a glowing sphere,
+carrying one bead for every splice you have taken. Each bead wears the animated icon of the animal it
+came from, and the animal you are about to splice in swims, flaps or prowls at the core of the orb
+while you choose. A slim live helix in the corner of the HUD tracks the same genome during play, and
+the codex lists every trait beside its animal.
 
 Alongside the paths, shed cards offer **traits grafted from real Everglades animals**, each of which
 changes your crocodile's body as well as its stats: ganoid scales from the alligator gar, dermal
@@ -98,6 +106,20 @@ People are everywhere too: fishing docks, stilt-house fish camps lit up at night
 ramps, crab traps, channel markers and campfires, plus airboats, party pontoons, jon boats and kayaks.
 Most of it can be smashed, and everyone on it can be eaten.
 
+## Art
+
+Every sprite is defined in code, no image files. The crocodile is authored at double the world pixel
+density so it can carry real detail: a raised eye turret with a slit pupil and catchlight, nostrils on
+the snout tip, paired dorsal scute keels, dithered lateral scale rows, rectangular belly plates,
+interlocking teeth and clawed feet. Traits redraw it: a keeled turtle carapace, ganoid diamond scales,
+shark denticles, a dorsal sail, tusks, a tail barb.
+
+The swamp is layered. Four parallax bands of cypress, palm and oak sit behind live oaks with hanging
+moss, cypress knees, palmettos, ferns, cattails, vines and flowers on the banks. Underwater there is
+duckweed and flowering water hyacinth on the surface film, algae strands, sunken branches, shell beds,
+hanging roots, drifting detritus, rippling caustics, a hazy thermocline and limestone strata in the
+mud. Dawn and dusk raise mist off the water.
+
 ## Tech
 
 Plain HTML5 canvas and vanilla JavaScript. Everything is procedural: pixel sprites are defined in
@@ -115,6 +137,7 @@ src/sprites.js      pixel sprites, procedural crocodile, segment chain
 src/particles.js    blood, gibs, bubbles, splashes, popups
 src/world.js        terrain, chunks, sky/day cycle, water, forest
 src/traits.js       animal traits, unlock milestones, saved progress
+src/dna.js          animated animal icons and the DNA genome orb
 src/skills.js       evolution paths, size tiers, shed cards
 src/entities.js     prey, predators, boats, bosses
 src/creatures.js    the wider ecosystem and animals that hunt each other
