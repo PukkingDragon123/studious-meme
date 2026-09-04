@@ -1,7 +1,7 @@
 'use strict';
 const Input = {
   keys: {}, pressed: {}, mouse: { x: 0, y: 0, down: false, rdown: false, clicked: false, rclicked: false, moved: false },
-  touch: { joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, bite: false, dash: false, lastTap: 0 },
+  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, biteHeld: false, biteId: null, dashId: null, holdT: 0, autoBite: false },
   init(canvas) {
     window.addEventListener('keydown', e => {
       if (!this.keys[e.code]) this.pressed[e.code] = true; this.keys[e.code] = true;
@@ -14,20 +14,62 @@ const Input = {
     canvas.addEventListener('mousedown', e => { this.setMouse(e); if (e.button === 0) { this.mouse.down = true; this.mouse.clicked = true; } if (e.button === 2) { this.mouse.rdown = true; this.mouse.rclicked = true; } SFX.init(); SFX.resume(); e.preventDefault(); });
     window.addEventListener('mouseup', e => { if (e.button === 0) this.mouse.down = false; if (e.button === 2) this.mouse.rdown = false; });
     canvas.addEventListener('contextmenu', e => e.preventDefault());
-    const tpos = t => { const r = canvas.getBoundingClientRect(); return [(t.clientX - r.left) / r.width * G.W, (t.clientY - r.top) / r.height * G.H]; };
+    this.initTouch(canvas);
+  },
+  // ---- on-screen (touch) controls ----
+  pads() {
+    const W = G.W, H = G.H;
+    return {
+      bite: { x: W - 54, y: H - 54, r: 30, label: 'BITE' },
+      dash: { x: W - 112, y: H - 34, r: 21, label: 'DASH' },
+      pause: { x: W - 15, y: 15, r: 13, label: 'II' },
+      joyMax: W * 0.52,
+    };
+  },
+  inPad(p, x, y) { return dist(x, y, p.x, p.y) < p.r + 12; },
+  initTouch(canvas) {
+    const tpos = t => G.toCanvas(t.clientX, t.clientY);
+    const T = this.touch;
     canvas.addEventListener('touchstart', e => {
-      SFX.init(); SFX.resume(); e.preventDefault();
+      SFX.init(); SFX.resume(); e.preventDefault(); T.active = true;
+      const P = this.pads();
       for (const t of e.changedTouches) {
         const [x, y] = tpos(t);
-        if (x < G.W / 2 && !this.touch.joy) { this.touch.joy = true; this.touch.jid = t.identifier; this.touch.sx = x; this.touch.sy = y; this.touch.jx = 0; this.touch.jy = 0; }
-        else { const now = performance.now(); if (now - this.touch.lastTap < 280) this.touch.dash = true; else this.touch.bite = true; this.touch.lastTap = now; this.mouse.clicked = true; this.mouse.x = x; this.mouse.y = y; }
+        this.mouse.x = x; this.mouse.y = y; this.mouse.moved = true;
+        if (G.state !== 'play') { this.mouse.clicked = true; if (this.inPad(P.pause, x, y)) this.pressed.Escape = true; continue; }
+        if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
+        else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashId = t.identifier; }
+        else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
+        else if (x < P.joyMax && !T.joy) { T.joy = true; T.jid = t.identifier; T.sx = x; T.sy = y; T.cx = x; T.cy = y; T.jx = 0; T.jy = 0; }
+        else T.bite = true;
       }
     }, { passive: false });
-    canvas.addEventListener('touchmove', e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === this.touch.jid) { const [x, y] = tpos(t); const dx = x - this.touch.sx, dy = y - this.touch.sy, d = Math.hypot(dx, dy); const k = Math.min(1, d / 30); this.touch.jx = d > 4 ? dx / d * k : 0; this.touch.jy = d > 4 ? dy / d * k : 0; } }, { passive: false });
-    const tend = e => { for (const t of e.changedTouches) if (t.identifier === this.touch.jid) { this.touch.joy = false; this.touch.jid = null; this.touch.jx = this.touch.jy = 0; } };
-    canvas.addEventListener('touchend', tend); canvas.addEventListener('touchcancel', tend);
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (t.identifier !== T.jid) continue;
+        const [x, y] = tpos(t); T.cx = x; T.cy = y;
+        let dx = x - T.sx, dy = y - T.sy; let d = Math.hypot(dx, dy); const R = 32;
+        if (d > R) { T.sx += dx * (1 - R / d); T.sy += dy * (1 - R / d); dx = x - T.sx; dy = y - T.sy; d = Math.hypot(dx, dy); }
+        const k = Math.min(1, d / 24);
+        T.jx = d > 3 ? dx / (d || 1) * k : 0; T.jy = d > 3 ? dy / (d || 1) * k : 0;
+      }
+    }, { passive: false });
+    const end = e => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === T.jid) { T.joy = false; T.jid = null; T.jx = 0; T.jy = 0; }
+        if (t.identifier === T.biteId) { T.biteHeld = false; T.biteId = null; }
+        if (t.identifier === T.dashId) T.dashId = null;
+      }
+    };
+    canvas.addEventListener('touchend', end); canvas.addEventListener('touchcancel', end);
   },
-  setMouse(e) { const r = G.canvas.getBoundingClientRect(); this.mouse.x = (e.clientX - r.left) / r.width * G.W; this.mouse.y = (e.clientY - r.top) / r.height * G.H; },
+  // holding the bite pad keeps chomping
+  tickTouch(dt) {
+    const T = this.touch; T.autoBite = false;
+    if (T.biteHeld) { T.holdT -= dt; if (T.holdT <= 0) { T.holdT = 0.16; T.autoBite = true; } }
+  },
+  setMouse(e) { const p = G.toCanvas(e.clientX, e.clientY); this.mouse.x = p[0]; this.mouse.y = p[1]; },
   down(...codes) { return codes.some(c => this.keys[c]); },
   hit(...codes) { return codes.some(c => this.pressed[c]); },
   endFrame() { this.pressed = {}; this.mouse.clicked = false; this.mouse.rclicked = false; this.touch.bite = false; this.touch.dash = false; },
@@ -38,7 +80,7 @@ const Input = {
     else if (this.mouse.down && x === 0 && y === 0 && G.settings.mouseMove && G.player) { const [wx, wy] = G.cam.toWorld(this.mouse.x, this.mouse.y); const dx = wx - G.player.x, dy = wy - G.player.y, d = Math.hypot(dx, dy); if (d > 10) { x = dx / d; y = dy / d; } }
     return [x, y];
   },
-  bitePressed() { return this.hit('Space', 'KeyJ', 'KeyZ') || this.mouse.rclicked || this.touch.bite; },
+  bitePressed() { return this.hit('Space', 'KeyJ', 'KeyZ') || this.mouse.rclicked || this.touch.bite || this.touch.autoBite; },
   dashPressed() { return this.hit('ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX') || this.touch.dash; },
 };
 
@@ -59,25 +101,46 @@ const G = {
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
-    this.loadSave();
+    Meta.load(); this.loadSave();
+    this.touchUI = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    this.scale = 1; this.rotated = false;
     World.onChunkLoad = (ch, rng) => this.onChunkLoad(ch, rng);
-    this.resize(); window.addEventListener('resize', () => this.resize());
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 120));
     this.startRun(true);
     this.state = 'title';
     requestAnimationFrame(ts => this.loop(ts));
   },
   resize() {
-    const s = Math.max(1, Math.floor(Math.min(window.innerWidth / this.W, window.innerHeight / this.H)));
-    const fit = Math.min(window.innerWidth / this.W, window.innerHeight / this.H);
-    const scale = fit < 1 ? fit : s;
-    this.canvas.style.width = Math.floor(this.W * scale) + 'px'; this.canvas.style.height = Math.floor(this.H * scale) + 'px';
+    const vw = window.innerWidth, vh = window.innerHeight, c = this.canvas;
+    // a phone held upright gets the canvas turned sideways so the game fills the screen
+    this.rotated = this.touchUI && vh > vw * 1.25;
+    if (this.rotated) {
+      this.scale = Math.min(vw / this.H, vh / this.W);
+      c.style.transform = 'rotate(90deg)';
+    } else {
+      const fit = Math.min(vw / this.W, vh / this.H);
+      this.scale = fit >= 2 ? Math.floor(fit) : fit; // crisp integer scale on desktop, exact fit elsewhere
+      c.style.transform = 'none';
+    }
+    c.style.width = Math.round(this.W * this.scale) + 'px';
+    c.style.height = Math.round(this.H * this.scale) + 'px';
+  },
+  // client (page) coordinates -> virtual 640x360 canvas coordinates
+  toCanvas(clientX, clientY) {
+    const r = this.canvas.getBoundingClientRect();
+    if (!this.rotated) return [(clientX - r.left) / r.width * this.W, (clientY - r.top) / r.height * this.H];
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, s = this.scale || 1;
+    return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
   loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false) {
     World.reset((Math.random() * 1e9) | 0);
     this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null;
-    this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, biggest: '', biggestMass: 0, kinds: {} };
+    this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
+    this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
@@ -86,25 +149,35 @@ const G = {
     for (let i = 0; i < 4; i++) Spawn.school(rand(-300, 300), rand(20, 120), 'minnow');
     for (let i = 0; i < 2; i++) Spawn.school(rand(-350, 350), rand(30, 150), 'bluegill');
     for (let i = 0; i < 3; i++) this.add(new Frog(rand(-400, 400)));
+    for (let i = 0; i < 4; i++) this.add(new Bottom(rand(-400, 400), chance(0.6) ? 'crayfish' : 'snail'));
+    for (let i = 0; i < 2; i++) this.add(new Dragonfly(rand(-300, 300)));
+    { const lead = new Mullet(rand(-300, 300), 40); this.add(lead); for (let i = 1; i < 5; i++) this.add(new Mullet(lead.x + rand(-30, 30), lead.y + rand(-14, 14), lead)); }
     Spawn.duck(rand(150, 300));
     if (!demo) { this.state = 'play'; this.runs++; this.save.runs++; this.storeSave(); }
   },
   onChunkLoad(ch, rng) {
     if (this.state === 'title' && Math.abs(ch.x0) > 700) return;
-    const P = this.player; const D = this.difficulty();
-    for (let k = 0; k < 3; k++) {
+    const P = this.player, D = this.difficulty();
+    // human activity: structures cluster where there is water access
+    if (rng() < 0.75) { for (let a = 0; a < 3; a++) { const sx = ch.x0 + rng() * World.CHUNK; if (Math.abs(sx - P.x) < 320) continue; if (trySpawnStructure(sx, rng, D)) break; } }
+    for (let k = 0; k < 5; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
       const fy = World.floorY(x);
-      if (fy < -3) { if (rng() < 0.5) this.spawnLand(x, D); continue; }
-      if (fy < 30) { if (rng() < 0.5) Spawn.heron(x); continue; }
+      if (fy < -3) { if (rng() < 0.6) this.spawnLand(x, D); continue; }
+      if (fy < 30) { if (rng() < 0.5) Spawn.heron(x); else if (rng() < 0.4) this.add(new Bottom(x, 'crayfish')); continue; }
       const r = rng();
-      if (r < 0.45) Spawn.school(x, clamp(20 + rng() * 200, 10, fy - 15), rng() < 0.6 ? 'minnow' : 'bluegill');
-      else if (r < 0.6) Spawn.school(x, clamp(30 + rng() * 200, 10, fy - 15), D > 0.3 ? 'bass' : 'bluegill');
-      else if (r < 0.7) this.add(new Frog(x));
-      else if (r < 0.78 && D > 0.4) this.add(new Turtle(x, clamp(40 + rng() * 100, 10, fy - 15)));
-      else if (r < 0.85) Spawn.duck(x);
-      else if (r < 0.9 && fy > 250 && D > 0.8) Spawn.school(x, fy - 30, 'catfish');
-      else if (r < 0.95 && D > 1.5) Spawn.school(x, clamp(40 + rng() * 200, 10, fy - 15), 'gar');
+      if (r < 0.3) Spawn.school(x, clamp(20 + rng() * 200, 10, fy - 15), rng() < 0.6 ? 'minnow' : 'bluegill');
+      else if (r < 0.4) Spawn.school(x, clamp(10 + rng() * 60, 8, fy - 15), 'mullet');
+      else if (r < 0.5) Spawn.school(x, clamp(30 + rng() * 200, 10, fy - 15), D > 0.3 ? 'bass' : 'tilapia');
+      else if (r < 0.57) this.add(new Frog(x));
+      else if (r < 0.64 && D > 0.3) this.add(new Turtle(x, clamp(40 + rng() * 100, 10, fy - 15)));
+      else if (r < 0.7) this.add(new Bottom(x, rng() < 0.5 ? 'crayfish' : rng() < 0.6 ? 'crab' : 'snail'));
+      else if (r < 0.76) Spawn.duck(x);
+      else if (r < 0.8) this.add(new Dragonfly(x));
+      else if (r < 0.84 && fy > 250) Spawn.school(x, fy - 30, rng() < 0.5 ? 'catfish' : 'eel');
+      else if (r < 0.88 && fy > 200 && D > 0.6) this.add(new Ray(x));
+      else if (r < 0.92 && D > 1.2) Spawn.school(x, clamp(40 + rng() * 200, 10, fy - 15), rng() < 0.5 ? 'gar' : 'bowfin');
+      else if (r < 0.96 && D > 0.5) Spawn.school(x, clamp(10 + rng() * 60, 8, fy - 15), 'babygator');
     }
   },
   add(e) { this.ents.push(e); return e; },
@@ -126,6 +199,13 @@ const G = {
   // ---------- kill / eat bookkeeping ----------
   onEntityKilled(e, byPlayer, gulped) {
     const P = this.player;
+    if (byPlayer && e.type !== 'gib') {
+      Meta.eaten(e.name); Meta.event('kill');
+      if (e.mass >= 200) Meta.event('bigmeal');
+      const got = Meta.checkUnlocks();
+      for (const t of got) this.announceUnlock(t);
+      if (got.length) Meta.save();
+    }
     if (byPlayer) {
       if (e.edible || (P.st.ironStomach && e.type !== 'proj')) { if (!e.edible) e.mass = e.mass || 20; P.eat(e); }
       if (!gulped) e.explode(1);
@@ -133,6 +213,12 @@ const G = {
       if (e.isBoss) this.onBossKilled(e);
     } else if (e.type !== 'gib' && e.bleeds) e.explode(0.6);
     if (this.boss === e) this.boss = null;
+  },
+  announceUnlock(t) {
+    this.newUnlocks.push(t.id);
+    this.banner = { text: 'TRAIT UNLOCKED', sub: t.name + '  (' + t.animal + ')', t: 5, max: 5, color: t.color };
+    this.fx.text(this.player.x, this.player.y - 40 * this.player.size, 'UNLOCKED: ' + t.name, { color: t.color, scale: 2, life: 3 });
+    SFX.levelup(); SFX.pick(); this.whiteFlash(0.35); this.slowmo(0.3, 0.6);
   },
   onBossKilled(e) {
     this.stats.bosses++; this.addScore(10000);
@@ -162,6 +248,7 @@ const G = {
     SFX.pick(); SFX.roar(P.size); this.whiteFlash(0.5); this.fx.glow(P.x, P.y, 60 * P.size, '#ffffff', 0.8); this.addScore(500 * P.tier);
     if (card.node.evo) this.fx.text(P.x, P.y - 40 * P.size, 'EVOLVED!', { color: card.path ? PATHS[card.path].color : '#fff', scale: 3, life: 2 });
     if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
+    if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
     this.storeSave();
   },
   // ---------- director ----------
@@ -184,14 +271,30 @@ const G = {
       const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(80, 520)), fy = World.floorY(x);
       if (fy < 20) { this.spawnLand(x, D); }
       else {
-        const table = [['minnow', 5], ['bluegill', 4], ['bass', D >= 0.3 ? 3 : 0.5], ['catfish', fy > 250 && D >= 0.8 ? 2 : 0], ['gar', D >= 1.5 ? 2 : 0], ['tarpon', D >= 2.5 ? 2 : 0], ['otter', D >= 1.5 ? 1 : 0], ['manatee', D >= 3 && fy > 200 ? 0.7 : 0], ['frog', 2.5], ['turtle', D >= 0.5 ? 1.5 : 0], ['duck', 1.5], ['heron', 1.2], ['kayak', D >= 2 ? 0.8 : 0], ['moccasin', D >= 1 ? 1.2 : 0]];
+        const table = [
+          ['minnow', 4], ['bluegill', 3.5], ['mullet', 3], ['tilapia', 2.5], ['babygator', 1.6],
+          ['bass', D >= 0.3 ? 2.5 : 0.5], ['peacock', D >= 0.5 ? 2 : 0], ['bowfin', D >= 0.8 ? 1.6 : 0], ['snook', D >= 1 ? 1.6 : 0],
+          ['catfish', fy > 250 && D >= 0.8 ? 1.6 : 0], ['eel', fy > 300 && D >= 1 ? 1.2 : 0],
+          ['gar', D >= 1.5 ? 1.6 : 0], ['tarpon', D >= 2.5 ? 1.6 : 0], ['otter', D >= 1.5 ? 1 : 0], ['nutria', D >= 0.5 ? 1.4 : 0],
+          ['manatee', D >= 3 && fy > 200 ? 0.7 : 0], ['grouper', D >= 3.5 && fy > 420 ? 0.8 : 0], ['sawfish', D >= 4 && fy > 260 ? 0.7 : 0],
+          ['frog', 2], ['turtle', D >= 0.4 ? 2.2 : 0.8], ['bottom', 2.4], ['ray', fy > 180 && D >= 0.6 ? 1.2 : 0],
+          ['duck', 1.2], ['heron', 1], ['divebird', 1.6], ['vulture', 0.7], ['dragonfly', 1.2],
+          ['kayak', D >= 2 ? 0.7 : 0], ['pontoon', D >= 1.5 ? 0.7 : 0], ['moccasin', D >= 1 ? 1 : 0],
+        ];
         const kind = weightedPick(table);
-        if (FISH[kind]) { const d = FISH[kind]; const y = d.nearFloor ? fy - 30 : clamp(rand(d.band[0], d.band[1]), 10, fy - 15); Spawn.school(x, y, kind); }
+        if (kind === 'mullet') { const n = randi(4, 8); const lead = new Mullet(x, clamp(rand(10, 70), 8, fy - 15)); this.add(lead); for (let i = 1; i < n; i++) this.add(new Mullet(x + rand(-30, 30), lead.y + rand(-16, 16), lead)); }
+        else if (FISH[kind]) { const d = FISH[kind]; const y = d.nearFloor ? fy - 30 : clamp(rand(d.band[0], d.band[1]), 10, fy - 15); Spawn.school(x, y, kind); }
         else if (kind === 'frog') this.add(new Frog(x));
         else if (kind === 'turtle') this.add(new Turtle(x, clamp(rand(30, 150), 10, fy - 15)));
+        else if (kind === 'bottom') { const n = randi(1, 3); for (let i = 0; i < n; i++) this.add(new Bottom(x + rand(-40, 40), weightedPick([['crayfish', 3], ['crab', 2], ['snail', 1.5]]))); }
+        else if (kind === 'ray') this.add(new Ray(x));
         else if (kind === 'duck') Spawn.duck(x);
-        else if (kind === 'heron') { const hx = World.findX(x, xx => { const f = World.floorY(xx); return f > 4 && f < 40; }, 500, 12); if (hx !== null) Spawn.heron(hx); else Spawn.flock(x, -side, 'heron', 1); }
+        else if (kind === 'dragonfly') { const n = randi(1, 3); for (let i = 0; i < n; i++) this.add(new Dragonfly(x + rand(-40, 40))); }
+        else if (kind === 'divebird') { const k2 = choice(['anhinga', 'osprey', 'pelican', 'anhinga']); this.add(new DiveBird(x, -rand(70, 150), k2, -side)); }
+        else if (kind === 'vulture') this.add(new Vulture(x, -rand(120, 180), -side));
+        else if (kind === 'heron') { const hx = World.findX(x, xx => { const f = World.floorY(xx); return f > 4 && f < 40; }, 500, 12); if (hx !== null) { if (chance(0.25)) { const b = new Bird(hx, 0, 'spoonbill', 'wade'); this.add(b); } else Spawn.heron(hx); } else Spawn.flock(x, -side, 'egret', 2); }
         else if (kind === 'kayak') this.add(new Kayak(x, -side));
+        else if (kind === 'pontoon') { const wx = World.findX(x, xx => World.floorY(xx) > 60, 500, 30); if (wx !== null) Spawn.boat(wx, chance(0.5) ? 'pontoon' : 'jon', -side); }
         else if (kind === 'moccasin') this.add(new Snake(x, 4, 'moccasin'));
       }
     }
@@ -199,7 +302,11 @@ const G = {
   },
   spawnLand(x, D) {
     if (World.floorY(x) > -3) return;
-    const table = [['raccoon', 3], ['deer', D >= 0.8 ? 2.5 : 0], ['boar', D >= 2 ? 1.5 : 0], ['fisherman', D >= 1.2 ? 1.5 : 0], ['heron', 1.5]];
+    const table = [
+      ['raccoon', 3], ['armadillo', 2.2], ['iguana', 2], ['deer', D >= 0.6 ? 2.5 : 0.6], ['coyote', D >= 1 ? 1.6 : 0],
+      ['boar', D >= 1.6 ? 1.5 : 0], ['panther', D >= 2.4 ? 1.2 : 0], ['bear', D >= 3 ? 0.9 : 0],
+      ['fisherman', D >= 1 ? 1.4 : 0], ['ranger', D >= 1.6 ? 1 : 0], ['survivor', D >= 0.6 ? 0.8 : 0], ['heron', 1.5],
+    ];
     const k = weightedPick(table); if (k === 'heron') Spawn.heron(x); else this.add(new LandAnimal(x, k));
   },
   spawnPredator(D) {
@@ -213,6 +320,10 @@ const G = {
     if (D >= 1.5) opts.push(['tourist', 1.5]);
     if (D >= 3.5 && fy > 350) opts.push(['shark', 3]);
     if (D >= 2) opts.push(['boar', 1]);
+    if (D >= 2.6) opts.push(['panther', 1.5]);
+    if (D >= 3) opts.push(['bear', 1]);
+    if (D >= 3.2 && fy > 260) opts.push(['sawfish', 1.5]);
+    if (D >= 3.8 && fy > 420) opts.push(['grouper', 1.2]);
     const k = weightedPick(opts); if (!k) return;
     let warn = null;
     switch (k) {
@@ -222,7 +333,9 @@ const G = {
       case 'python': { const bx = World.findX(x, xx => World.floorY(xx) < -3, 800, 30); this.add(new Snake(bx !== null ? bx : x, 4, 'python', clamp(0.8 + D * 0.12, 0.8, 2.2))); break; }
       case 'poacher': case 'tourist': { const wx = World.findX(x, xx => World.floorY(xx) > 60, 600, 30); if (wx !== null) { Spawn.boat(wx, k, -side); if (k === 'poacher') warn = 'POACHERS NEARBY'; } break; }
       case 'shark': this.add(new Fish(x, clamp(rand(100, 400), 60, fy - 30), 'shark')); warn = 'SOMETHING IS HUNTING YOU'; break;
-      case 'boar': { const bx = World.findX(x, xx => World.floorY(xx) < -5, 1000, 40); if (bx !== null) this.add(new LandAnimal(bx, 'boar')); break; }
+      case 'boar': case 'panther': case 'bear': { const bx = World.findX(x, xx => World.floorY(xx) < -5, 1200, 40); if (bx !== null) { this.add(new LandAnimal(bx, k)); if (k !== 'boar') warn = k === 'bear' ? 'A BEAR IS ON THE BANK' : 'SOMETHING STALKS THE BANK'; } break; }
+      case 'sawfish': this.add(new Fish(x, clamp(rand(150, 400), 60, fy - 30), 'sawfish')); break;
+      case 'grouper': this.add(new Fish(x, clamp(rand(400, 700), 60, fy - 40), 'grouper')); break;
     }
     if (warn) { this.banner = { text: warn, t: 2.5, max: 2.5, color: '#ff8060' }; SFX.growl(side); }
   },
@@ -258,6 +371,7 @@ const G = {
       case 'title':
         this.titleT += raw; this.updateWorld(dt, true);
         if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; }
+        else if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
         else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.startRun(false); }
         break;
       case 'play':
@@ -290,6 +404,7 @@ const G = {
       case 'dead':
         this.deadT += raw; this.updateWorld(dt * 0.3, false);
         if (this.deadT > 1 && (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked)) { SFX.ui(); this.startRun(false); }
+        if (Input.hit('KeyC')) { this.prevState = 'dead'; this.state = 'codex'; this.codexScroll = 0; SFX.ui(); }
         if (Input.hit('Escape')) { this.startRun(true); this.state = 'title'; }
         break;
       case 'pause':
@@ -298,16 +413,27 @@ const G = {
         if (Input.hit('Digit1')) { this.settings.gore = !this.settings.gore; SFX.ui(); }
         if (Input.hit('Digit2')) { this.settings.shake = !this.settings.shake; SFX.ui(); }
         if (Input.hit('Digit3')) { this.settings.mouseMove = !this.settings.mouseMove; SFX.ui(); }
+        if (Input.hit('Digit4')) { this.settings.touch = this.settings.touch === false; SFX.ui(); }
+        if (Input.hit('KeyC')) { this.prevState = 'pause'; this.state = 'codex'; this.codexScroll = 0; SFX.ui(); }
         break;
       case 'help':
         if (Input.hit('Escape', 'KeyH', 'Enter')) { this.state = this.prevState; SFX.ui(); }
+        else if (Input.hit('KeyC')) { this.state = 'codex'; this.codexScroll = 0; SFX.ui(); }
         break;
+      case 'codex': {
+        const maxScroll = Math.max(0, Math.ceil(ANIMAL_TRAITS.length / 2) - 8);
+        if (Input.hit('ArrowDown', 'KeyS')) this.codexScroll = Math.min(maxScroll, (this.codexScroll || 0) + 1);
+        if (Input.hit('ArrowUp', 'KeyW')) this.codexScroll = Math.max(0, (this.codexScroll || 0) - 1);
+        if (Input.hit('Escape', 'KeyC', 'Enter', 'KeyH') || (Input.mouse.clicked && Input.mouse.y > this.H - 26)) { this.state = this.prevState || 'title'; SFX.ui(); }
+        break;
+      }
     }
     // screen fx decay (real time)
     this.shakeAmt *= Math.exp(-6 * raw);
     if (this.shakeAmt < 0.2) this.shakeAmt = 0;
     this.shakeX = Math.round(rand(-1, 1) * this.shakeAmt); this.shakeY = Math.round(rand(-1, 1) * this.shakeAmt);
     this.red *= Math.exp(-3 * raw); this.white *= Math.exp(-4.5 * raw); this.zoomP = lerp(this.zoomP, 1, 0.08);
+    Input.tickTouch(raw);
     Input.mouse.moved = false;
     const P = this.player;
     SFX.update({ dt: raw, night: 1 - World.light(this.day), danger: this.state === 'play' ? this.dangerLevel() : 0, engine: this.engineNear, underwater: P && P.inWater && this.state !== 'title' ? 1 : 0 });
@@ -322,7 +448,12 @@ const G = {
     return { x, y, bite, dash: false };
   },
   updateWorld(dt, demo) {
-    this.t += dt; World.t += dt; this.day = (this.day + dt / 420) % 1;
+    this.t += dt; World.t += dt;
+    const prevDay = this.day; this.day = (this.day + dt / 420) % 1;
+    if (this.state === 'play') {
+      if (prevDay < 0.62 && this.day >= 0.62) this.nightCounted = false;
+      if (!this.nightCounted && this.day >= 0.95) { this.nightCounted = true; Meta.event('night'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
+    }
     const P = this.player;
     const [ax, ay] = Input.axis();
     const inp = demo ? this.demoInput() : { x: ax, y: ay, bite: this.state === 'play' && Input.bitePressed(), dash: this.state === 'play' && Input.dashPressed() };
@@ -384,7 +515,9 @@ const G = {
       case 'dead': UI.drawDeath(ctx); break;
       case 'pause': UI.drawHUD(ctx); UI.drawPause(ctx); break;
       case 'help': UI.drawHelp(ctx); break;
+      case 'codex': UI.drawCodex(ctx); break;
     }
+    if (this.state === 'play' && (this.touchUI || Input.touch.active) && this.settings.touch !== false) UI.drawTouch(ctx);
     if (this.settings.fps) Font.draw(ctx, this.fps + ' FPS', 4, this.H - 24, { color: '#80ff80' });
   },
 };

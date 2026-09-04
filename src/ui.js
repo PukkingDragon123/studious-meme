@@ -60,6 +60,18 @@ const UI = {
       Font.draw(ctx, p.name[0], tx + 5, H - 42, { color: lvl ? p.color : '#405040', align: 'center', shadow: true });
       tx += 14;
     }
+    // acquired animal traits
+    if (P.traits.length) {
+      let ty = 40;
+      for (const id of P.traits.slice(-6)) {
+        const t = TRAIT_BY_ID[id]; if (!t) continue;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(9, ty - 1, Font.width(t.name) + 6, 9);
+        ctx.fillStyle = t.color; ctx.fillRect(9, ty - 1, 2, 9);
+        Font.draw(ctx, t.name, 14, ty, { color: t.color });
+        ty += 11;
+      }
+    }
+    if (P.st.magnet) Font.draw(ctx, 'LURE ACTIVE', 10, H - 26, { color: '#ff8a4a', shadow: true });
     // hints
     if (P.latched) Font.draw(ctx, 'LATCHED! BITE TO DEATH ROLL', W / 2, H - 30, { color: '#ff9080', align: 'center', shadow: true });
     if (P.grabbed) Font.draw(ctx, 'MASH BITE TO BREAK FREE!', W / 2, H - 30, { color: '#ff6040', align: 'center', shadow: true, scale: Math.floor(t * 8) % 2 ? 1 : 2 });
@@ -115,10 +127,11 @@ const UI = {
     Font.draw(ctx, 'HATCH. EAT. SHED. EVOLVE. BECOME THE SWAMP GOD.', W / 2, 110, { color: '#e0e8d0', align: 'center', shadow: true });
     if (Math.floor(t * 2) % 2 === 0) Font.draw(ctx, '> PRESS ENTER OR CLICK TO HUNT <', W / 2, 150, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
     this.panel(ctx, W / 2 - 150, 178, 300, 92);
-    const lines = ['WASD / ARROWS ..... SWIM (UP ON LAND: HOP)', 'SPACE / J ......... BITE  (AGAIN WHEN LATCHED: DEATH ROLL)', 'SHIFT / K ......... DASH', 'MOUSE ............. HOLD LEFT TO STEER, RIGHT TO BITE', 'P / ESC ........... PAUSE      M: MUTE      H: HELP', '', 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.'];
+    const lines = ['WASD / ARROWS ..... SWIM (UP ON LAND: HOP)', 'SPACE / J ......... BITE  (AGAIN WHEN LATCHED: DEATH ROLL)', 'SHIFT / K ......... DASH', 'TOUCH ............. LEFT THUMB SWIMS, PADS BITE AND DASH', 'P: PAUSE    H: HELP    C: TRAIT CODEX    M: MUTE', '', 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.'];
     lines.forEach((l, i) => Font.draw(ctx, l, W / 2 - 142, 186 + i * 11, { color: i === 6 ? '#ffb060' : '#d0dcc8' }));
     const s = G.save;
-    Font.draw(ctx, 'BEST SCORE ' + fmt(s.best) + '     LONGEST CROC ' + s.bestLen.toFixed(1) + ' FT     RUNS ' + s.runs, W / 2, H - 22, { color: '#90a898', align: 'center', shadow: true });
+    const have = ANIMAL_TRAITS.filter(t => !t.unlock || Meta.isUnlocked(t.id)).length;
+    Font.draw(ctx, 'BEST SCORE ' + fmt(s.best) + '     LONGEST CROC ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 22, { color: '#90a898', align: 'center', shadow: true });
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
   },
   cardRects(n) {
@@ -131,12 +144,15 @@ const UI = {
     ctx.fillStyle = 'rgba(2,6,8,0.72)'; ctx.fillRect(0, 0, W, H);
     const tier = TIERS[G.shedTier];
     Font.draw(ctx, 'SHEDDING SKIN', W / 2, 14, { color: '#ffffff', align: 'center', scale: 3, outline: '#204030' });
-    Font.draw(ctx, 'YOU HAVE GROWN INTO A ' + tier.name + '.  CHOOSE YOUR EVOLUTION.', W / 2, 44, { color: '#c8e8c0', align: 'center', shadow: true });
+    const article = 'AEIOU'.indexOf(tier.name[0]) >= 0 ? 'AN' : 'A';
+    Font.draw(ctx, 'YOU HAVE GROWN INTO ' + article + ' ' + tier.name + '.  CHOOSE YOUR EVOLUTION.', W / 2, 44, { color: '#c8e8c0', align: 'center', shadow: true });
     Font.draw(ctx, '1 / 2 / 3 OR CLICK    ARROWS + ENTER', W / 2, 56, { color: '#80a090', align: 'center' });
     const rects = this.cardRects(cards.length);
     cards.forEach((c, i) => {
-      const r = rects[i], sel = i === G.shedSel, path = c.path ? PATHS[c.path] : null;
-      const col = path ? path.color : '#c0c0c0', dark = path ? path.dark : '#303030';
+      const r = rects[i], sel = i === G.shedSel, path = c.kind === 'path' ? PATHS[c.path] : null;
+      const trait = c.kind === 'trait' ? c.trait : null;
+      const col = path ? path.color : trait ? trait.color : '#c0c0c0';
+      const dark = path ? path.dark : trait ? shade(trait.color, 0.28) : '#303030';
       const slide = easeOutBack(clamp((t - i * 0.08) / 0.35, 0, 1));
       const y = r.y + (1 - slide) * 60, lift = sel ? -6 : 0;
       ctx.globalAlpha = slide;
@@ -144,13 +160,15 @@ const UI = {
       this.panel(ctx, r.x, y + lift, r.w, r.h, sel ? 'rgba(14,22,26,0.97)' : 'rgba(8,14,16,0.92)', sel ? col : dark);
       if (sel) { ctx.fillStyle = col; ctx.fillRect(r.x, y + lift, r.w, 2); ctx.fillRect(r.x, y + lift + r.h - 2, r.w, 2); }
       ctx.fillStyle = dark; ctx.fillRect(r.x + 1, y + lift + 1, r.w - 2, 22);
-      Font.draw(ctx, path ? path.name : 'MUTATION', r.x + r.w / 2, y + lift + 6, { color: col, align: 'center', scale: 1 });
-      Font.draw(ctx, path ? 'TIER ' + (c.tier + 1) + (c.node.evo ? '  EVOLUTION' : '') : 'ANY PATH', r.x + r.w / 2, y + lift + 15, { color: '#c0c0c0', align: 'center' });
+      Font.draw(ctx, path ? path.name : trait ? (trait.unlock ? 'UNLOCKED TRAIT' : 'ANIMAL TRAIT') : 'MUTATION', r.x + r.w / 2, y + lift + 6, { color: col, align: 'center', scale: 1 });
+      Font.draw(ctx, path ? 'TIER ' + (c.tier + 1) + (c.node.evo ? '  EVOLUTION' : '') : trait ? trait.animal : 'ANY PATH', r.x + r.w / 2, y + lift + 15, { color: '#c0c0c0', align: 'center' });
       // tier pips
       if (path) for (let k = 0; k < 5; k++) { ctx.fillStyle = k < c.tier ? col : k === c.tier ? '#ffffff' : '#2a3a30'; ctx.fillRect(r.x + r.w / 2 - 22 + k * 9, y + lift + 27, 6, 3); }
+      if (trait) { ctx.fillStyle = col; ctx.fillRect(r.x + r.w / 2 - 26, y + lift + 28, 52, 1); }
       Font.draw(ctx, c.node.name, r.x + r.w / 2, y + lift + 36 + (c.node.name.length > 16 ? 0 : 0), { color: '#ffffff', align: 'center', scale: c.node.name.length > 14 ? 1 : 1, outline: '#000' });
       Font.drawWrapped(ctx, c.node.desc, r.x + 8, y + lift + 52, r.w - 16, { color: '#d8e0d0', lineHeight: 10 });
-      if (path) Font.draw(ctx, path.tag, r.x + r.w / 2, y + lift + r.h - 14, { color: dark === '#303030' ? '#888' : col, align: 'center' });
+      const tag = path ? path.tag : trait ? 'FROM THE ' + trait.animal : '';
+      if (tag) Font.drawWrapped(ctx, tag, r.x + 6, y + lift + r.h - 20, r.w - 12, { color: col, lineHeight: 9 });
       Font.draw(ctx, String(i + 1), r.x + 6, y + lift + r.h - 12, { color: '#ffffff', scale: 1 });
       ctx.globalAlpha = 1;
     });
@@ -168,25 +186,26 @@ const UI = {
     if (cause === 'EATEN') cause = 'EATEN BY ' + (d.killer || 'THE SWAMP');
     else if (cause === 'SHOT') cause = 'SHOT BY POACHERS'; else if (cause === 'CRUSHED') cause = 'CRUSHED BY ' + (d.killer || 'SOMETHING HEAVY'); else if (cause === 'POISONED') cause = 'DIED OF VENOM';
     Font.draw(ctx, cause, W / 2, 64, { color: '#ffb0a0', align: 'center', scale: 1, shadow: true });
-    this.panel(ctx, W / 2 - 150, 84, 300, 150, 'rgba(6,4,4,0.85)', '#5a2020');
+    this.panel(ctx, W / 2 - 150, 84, 300, 164, 'rgba(6,4,4,0.85)', '#5a2020');
     const mins = Math.floor(G.t / 60), secs = Math.floor(G.t % 60);
     const rows = [
       ['FINAL FORM', TIERS[P.tier].name + '  (' + P.lengthFt.toFixed(1) + ' FT)'], ['SCORE', fmt(G.score) + (G.score >= G.save.best && G.score > 0 ? '  NEW BEST!' : '')], ['SURVIVED', mins + 'M ' + secs + 'S'],
-      ['THINGS EATEN', String(s.eaten)], ['KILLS', String(s.kills)], ['BOSSES SLAIN', String(s.bosses)], ['BOATS SUNK', String(s.boats)], ['BIGGEST MEAL', s.biggest || '-'],
+      ['THINGS EATEN', String(s.eaten)], ['KILLS', String(s.kills)], ['BOSSES SLAIN', String(s.bosses)], ['BOATS AND CAMPS WRECKED', String(s.boats + (s.structures || 0))], ['BIGGEST MEAL', s.biggest || '-'],
       ['EVOLUTION', P.picked.filter(p => !p.startsWith('mut')).map(p => PATHS[p.split(':')[0]].name[0] + (+p.split(':')[1] + 1)).join(' ') || 'NONE'],
+      ['TRAITS', P.traits.length ? P.traits.map(id => (TRAIT_BY_ID[id] || {}).name || id).join(', ') : 'NONE'],
     ];
     rows.forEach((r, i) => { const y = 92 + i * 14; Font.draw(ctx, r[0], W / 2 - 140, y, { color: '#c09090' }); Font.draw(ctx, r[1], W / 2 + 140, y, { color: '#ffffff', align: 'right' }); });
-    Font.draw(ctx, 'BEST ' + fmt(G.save.best) + '     LONGEST ' + G.save.bestLen.toFixed(1) + ' FT', W / 2, 244, { color: '#90a898', align: 'center' });
+    Font.draw(ctx, 'BEST ' + fmt(G.save.best) + '     LONGEST ' + G.save.bestLen.toFixed(1) + ' FT', W / 2, 254, { color: '#90a898', align: 'center' });
     if (t > 1 && Math.floor(t * 2) % 2 === 0) Font.draw(ctx, 'PRESS ENTER TO HUNT AGAIN', W / 2, 262, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
-    Font.draw(ctx, 'ESC: TITLE', W / 2, 290, { color: '#708878', align: 'center' });
+    Font.draw(ctx, 'ESC: TITLE      C: TRAIT CODEX', W / 2, 290, { color: '#708878', align: 'center' });
   },
   drawPause(ctx) {
     const W = G.W, H = G.H;
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, W, H);
     Font.draw(ctx, 'PAUSED', W / 2, 40, { color: '#ffffff', align: 'center', scale: 3, outline: '#203030' });
     const S = G.settings;
-    const opts = [['1', 'GORE', S.gore ? 'ON' : 'REDUCED'], ['2', 'SCREEN SHAKE', S.shake ? 'ON' : 'LOW'], ['3', 'MOUSE STEERING', S.mouseMove ? 'ON' : 'OFF'], ['M', 'SOUND', SFX.muted ? 'OFF' : 'ON']];
-    this.panel(ctx, W / 2 - 120, 80, 240, 70);
+    const opts = [['1', 'GORE', S.gore ? 'ON' : 'REDUCED'], ['2', 'SCREEN SHAKE', S.shake ? 'ON' : 'LOW'], ['3', 'MOUSE STEERING', S.mouseMove ? 'ON' : 'OFF'], ['4', 'TOUCH PADS', S.touch === false ? 'OFF' : 'ON'], ['M', 'SOUND', SFX.muted ? 'OFF' : 'ON']];
+    this.panel(ctx, W / 2 - 120, 80, 240, 82);
     opts.forEach((o, i) => { Font.draw(ctx, '[' + o[0] + '] ' + o[1], W / 2 - 110, 90 + i * 14, { color: '#d0dcc8' }); Font.draw(ctx, o[2], W / 2 + 110, 90 + i * 14, { color: '#ffe060', align: 'right' }); });
     this.drawHelpBody(ctx, 164);
     Font.draw(ctx, 'ESC / P: RESUME      Q: QUIT TO TITLE', W / 2, H - 16, { color: '#90a898', align: 'center' });
@@ -209,6 +228,64 @@ const UI = {
     Font.draw(ctx, 'EVOLUTION PATHS', W / 2, 168, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
     PATH_KEYS.forEach((k, i) => { const p = PATHS[k]; Font.draw(ctx, p.name + ': ' + p.tag, W / 2, 190 + i * 12, { color: p.color, align: 'center' }); });
     Font.draw(ctx, 'ESC / H: BACK', W / 2, H - 16, { color: '#90a898', align: 'center' });
+  },
+  drawTouch(ctx) {
+    const P = Input.pads(), T = Input.touch, pl = G.player;
+    const ring = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; };
+    const disc = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; };
+    // joystick: shows where the thumb landed
+    if (T.joy) {
+      ring(T.sx, T.sy, 32, 0.35, '#ffffff');
+      disc(T.sx, T.sy, 30, 0.12, '#ffffff');
+      disc(T.sx + T.jx * 26, T.sy + T.jy * 26, 12, 0.5, '#8fe8d0');
+      ring(T.sx + T.jx * 26, T.sy + T.jy * 26, 12, 0.8, '#ffffff');
+    } else {
+      ring(70, G.H - 60, 30, 0.16, '#ffffff');
+      Font.draw(ctx, 'SWIM', 70, G.H - 64, { color: 'rgba(255,255,255,0.4)', align: 'center' });
+    }
+    // bite pad (turns red while latched: that is the death-roll button)
+    const latched = pl && (pl.latched || pl.grabbed || pl.tether);
+    const biteCol = latched ? '#ff5040' : '#e02a1e';
+    disc(P.bite.x, P.bite.y, P.bite.r, T.biteHeld ? 0.55 : 0.3, biteCol);
+    ring(P.bite.x, P.bite.y, P.bite.r, 0.75, '#ffffff');
+    Font.draw(ctx, latched ? 'ROLL' : 'BITE', P.bite.x, P.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' });
+    // dash pad, dimmed while recharging
+    const ready = pl && pl.dashCharges > 0;
+    disc(P.dash.x, P.dash.y, P.dash.r, ready ? 0.3 : 0.12, '#40a0ff');
+    ring(P.dash.x, P.dash.y, P.dash.r, ready ? 0.7 : 0.3, '#ffffff');
+    Font.draw(ctx, 'DASH', P.dash.x, P.dash.y - 3, { color: ready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
+    // pause
+    disc(P.pause.x, P.pause.y, P.pause.r, 0.25, '#ffffff');
+    Font.draw(ctx, 'II', P.pause.x, P.pause.y - 3, { color: '#ffffff', align: 'center', outline: '#000' });
+  },
+  drawCodex(ctx) {
+    const W = G.W, H = G.H, scroll = G.codexScroll || 0;
+    ctx.fillStyle = 'rgba(2,6,8,0.92)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'TRAIT CODEX', W / 2, 10, { color: '#ffffff', align: 'center', scale: 3, outline: '#204030' });
+    const total = ANIMAL_TRAITS.length, have = ANIMAL_TRAITS.filter(t => !t.unlock || Meta.isUnlocked(t.id)).length;
+    Font.draw(ctx, have + ' / ' + total + ' TRAITS AVAILABLE     LOCKED TRAITS JOIN THE SHED POOL WHEN EARNED', W / 2, 38, { color: '#a0c0b0', align: 'center' });
+    const cols = 2, rowsShown = 8, cw = (W - 30) / cols, rh = 30;
+    const start = scroll * cols;
+    for (let i = 0; i < rowsShown * cols; i++) {
+      const t = ANIMAL_TRAITS[start + i]; if (!t) break;
+      const cx = 15 + (i % cols) * cw, cy = 52 + Math.floor(i / cols) * rh;
+      const open = !t.unlock || Meta.isUnlocked(t.id);
+      const [cur, need] = Meta.progress(t);
+      UI.panel(ctx, cx, cy, cw - 8, rh - 4, open ? 'rgba(10,18,20,0.9)' : 'rgba(8,8,10,0.85)', open ? shade(t.color, 0.6) : '#2a2a2a');
+      ctx.fillStyle = open ? t.color : '#3a3a3a'; ctx.fillRect(cx, cy, 2, rh - 4);
+      Font.draw(ctx, open ? t.name : '???  ' + t.animal, cx + 6, cy + 4, { color: open ? t.color : '#707070' });
+      if (open) Font.drawWrapped(ctx, t.animal, cx + 6, cy + 14, cw - 20, { color: '#90a090', lineHeight: 9 });
+      else {
+        Font.draw(ctx, t.unlock.label, cx + 6, cy + 13, { color: '#808080' });
+        const bw = cw - 20, f = need ? cur / need : 0;
+        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cx + 6, cy + 21, bw, 3);
+        ctx.fillStyle = t.color; ctx.fillRect(cx + 6, cy + 21, Math.round(bw * clamp(f, 0, 1)), 3);
+        Font.draw(ctx, cur + '/' + need, cx + cw - 14, cy + 4, { color: '#909090', align: 'right' });
+      }
+    }
+    const maxScroll = Math.max(0, Math.ceil(total / cols) - rowsShown);
+    if (maxScroll > 0) Font.draw(ctx, 'UP / DOWN TO SCROLL   ' + (scroll + 1) + '/' + (maxScroll + 1), W / 2, H - 26, { color: '#708878', align: 'center' });
+    Font.draw(ctx, 'ESC / C: BACK', W / 2, H - 14, { color: '#90a898', align: 'center' });
   },
   drawScreenFx(ctx) {
     const W = G.W, H = G.H;

@@ -53,36 +53,44 @@ const MUTATIONS = [
   { name: 'SCAR TISSUE', desc: '-10% damage taken.', apply: p => { p.st.armor += 0.1; } },
   { name: 'QUICK RECOVERY', desc: '-25% dash cooldown.', apply: p => { p.st.dashCd *= 0.75; } },
 ];
-// pick n cards for the shed screen
+// pick n cards for the shed screen: a mix of path nodes and animal traits
 function rollCards(player, n = 3) {
   const pool = [];
   for (const k of PATH_KEYS) {
     const tier = player.skills[k];
-    if (tier < 5) {
-      const node = PATHS[k].nodes[tier];
-      const invested = tier > 0 ? 2.2 : 1;
-      pool.push({ path: k, tier, node, w: invested });
-    }
+    if (tier < 5) pool.push({ kind: 'path', path: k, tier, node: PATHS[k].nodes[tier], w: tier > 0 ? 2.4 : 1.1 });
   }
-  const picks = [];
-  const bag = pool.slice();
-  while (picks.length < n && bag.length) {
-    let tot = bag.reduce((s, c) => s + c.w, 0), r = Math.random() * tot, idx = 0;
-    for (let i = 0; i < bag.length; i++) { r -= bag[i].w; if (r <= 0) { idx = i; break; } }
-    picks.push(bag.splice(idx, 1)[0]);
+  for (const t of availableTraits(player)) pool.push({ kind: 'trait', trait: t, node: { name: t.name, desc: t.desc }, w: t.unlock ? 2.6 : 1.5 });
+  const picks = [], bag = pool.slice();
+  const drawFrom = list => {
+    let tot = list.reduce((s, c) => s + c.w, 0), r = Math.random() * tot;
+    for (let i = 0; i < list.length; i++) { r -= list[i].w; if (r <= 0) return list[i]; }
+    return list[list.length - 1];
+  };
+  const take = c => { picks.push(c); bag.splice(bag.indexOf(c), 1); };
+  const paths = bag.filter(c => c.kind === 'path'), traits = bag.filter(c => c.kind === 'trait');
+  if (n >= 2 && paths.length && traits.length) { take(drawFrom(paths)); take(drawFrom(traits)); }
+  while (picks.length < n && bag.length) take(drawFrom(bag));
+  const used = new Set(picks.map(c => c.node.name));
+  let guard = 0;
+  while (picks.length < n && guard++ < 40) {
+    const m = choice(MUTATIONS); if (used.has(m.name)) continue;
+    used.add(m.name); picks.push({ kind: 'mut', node: m, w: 1 });
   }
-  const used = new Set();
-  while (picks.length < n) { const m = choice(MUTATIONS); if (used.has(m.name)) { if (used.size >= MUTATIONS.length) break; continue; } used.add(m.name); picks.push({ path: null, tier: -1, node: m, w: 1 }); }
+  for (let i = picks.length - 1; i > 0; i--) { const j = randi(0, i); const t = picks[i]; picks[i] = picks[j]; picks[j] = t; }
   return picks;
 }
 function applyCard(player, card) {
-  card.node.apply(player);
-  if (card.path) { player.skills[card.path]++; player.picked.push(card.path + ':' + card.tier); }
-  else player.picked.push('mut:' + card.node.name);
+  if (card.kind === 'trait') applyTrait(player, card.trait);
+  else {
+    card.node.apply(player);
+    if (card.kind === 'path') { player.skills[card.path]++; player.picked.push(card.path + ':' + card.tier); }
+    else player.picked.push('mut:' + card.node.name);
+  }
   player.recomputeStats();
   player.rebuildLook();
 }
-// dominant path drives the croc palette
+// dominant path drives the croc palette; animal traits layer features on top
 function computeLook(player) {
   const sk = player.skills, entries = PATH_KEYS.map(k => [k, sk[k]]).sort((a, b) => b[1] - a[1]);
   const [k1, t1] = entries[0], [k2, t2] = entries[1];
@@ -104,6 +112,7 @@ function computeLook(player) {
   if (player.evo.behemoth) { L.spikes = 2; L.plates = true; }
   if (player.evo.phantom) { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }
   if (player.evo.abyssal) { L.glow = '#40f0c8'; L.spots = '#80fff0'; }
+  for (const id of player.traits) { const t = TRAIT_BY_ID[id]; if (t && t.look) t.look(L); }
   return L;
 }
 // size tiers (croc size units). Reaching a new tier triggers a shed.

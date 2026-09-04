@@ -102,7 +102,7 @@ class Entity {
 class Gib extends Entity {
   constructor(x, y, src, piece, size, facing, bleeds, colors) {
     super(x, y); this.src = src; this.p = piece; this.size = size; this.facing = facing; this.rot = rand(TAU); this.vr = 0;
-    this.r = Math.max(piece.sw, piece.sh) * 0.4; this.life = rand(10, 16); this.bleedFx = bleeds ? rand(0.6, 1.6) : 0; this.colors = colors;
+    this.r = Math.max(piece.sw, piece.sh) * 0.4; this.life = rand(10, 16) * (G.player && G.player.st ? G.player.st.gibLife : 1); this.bleedFx = bleeds ? rand(0.6, 1.6) : 0; this.colors = colors;
     this.type = 'gib'; this.name = 'MEAT'; this.hp = 1; this.maxHp = 1; this.sizeClass = 0.05; this.bleeds = false; this.gibs = 0; this.layer = -1; this.latchable = false; this.mass = 0;
   }
   update(dt) {
@@ -153,6 +153,7 @@ class Fish extends Entity {
     if (P.st.fearAura && this.sizeClass < P.size * 0.6 && dP < 260) { this.state = 'flee'; this.stateT = 1; }
     else if (d.pred && !P.dead && (ratio < 1.15 || (this.hp < this.maxHp && dP < 320)) && dP < 560) { this.state = 'hunt'; this.aware = true; }
     else if (d.aggr && !P.dead && P.size < d.aggrMax && dP < 170 && this.aware) this.state = 'hunt';
+    else if (this.lured) { this.state = 'lured'; this.lured = 0; }
     else if (sees && ratio > 0.6 && d.flee) { this.state = 'flee'; this.stateT = 1.2; }
     else if (this.stateT > 0) this.stateT -= dt;
     else this.state = 'wander';
@@ -174,9 +175,10 @@ class Fish extends Entity {
         const reach = this.r * this.size + 6 * P.size;
         if (this.attackCd <= 0 && P.nearestDist(this.x, this.y) < reach) {
           const dmg = (d.pred || d.aggr) * Math.pow(this.sizeClass / P.size, 0.5);
-          if (P.hurt(dmg, this, 'bite') > 0) { SFX.chomp(this.sizeClass, this.pan); }
+          if (P.hurt(dmg, this, 'bite') > 0) { SFX.chomp(this.sizeClass, this.pan); if (d.shock) { P.envenom(3, 2); G.fx.shock(P.x, P.y, 40, '#60e0ff', 0.4); SFX.shock(this.pan); } }
           this.attackCd = d.pred ? 1.4 : 1.8; this.vx *= -0.6; this.vy *= -0.6;
         }
+        if (d.shock && this.attackCd > 1.0) { G.fx.shock(this.x, this.y, 30, '#60e0ff', 0.3); }
         if (this.attackCd > 0.6 && d.pred) { const dx = this.x - P.x, dy = this.y - P.y, dd = Math.hypot(dx, dy) || 1; this.swimToward(P.x + dx / dd * 200, P.y + dy / dd * 70, sp, 3, dt); }
         else this.swimToward(P.x + P.vx * 0.2, P.y, sp * 1.25, 4, dt);
         break;
@@ -233,6 +235,7 @@ const BIRDS = {
   duck: { stand: SPR.duck, fly: SPR.egretFly, hp: 6, mass: 10, sizeClass: 0.5, name: 'MOTTLED DUCK', flee: 80, feathers: '#a08060', speed: 95, floats: true, r: 5 },
 };
 class Bird extends Entity {
+  get diving() { return false; }
   constructor(x, y, kind, mode, dir) {
     super(x, y); const d = BIRDS[kind]; this.def = d; this.kind = kind;
     Object.assign(this, { hp: d.hp, maxHp: d.hp, mass: d.mass, sizeClass: d.sizeClass, name: d.name, feathers: d.feathers, r: d.r });
@@ -258,7 +261,7 @@ class Bird extends Entity {
       }
       case 'fly': {
         const s = World.surface(this.x);
-        if (this.y > s + 2) { // knocked into water
+        if (this.y > s + 2 && !this.diving) { // knocked into water
           this.mode = 'drown'; this.drownT = 0; G.fx.splash(this.x, 0.8, this.vx); break;
         }
         this.dipT -= dt;
@@ -314,6 +317,7 @@ class LandAnimal extends Entity {
   constructor(x, kind) {
     super(x, 0); const d = LAND[kind]; this.def = d; this.kind = kind; this.frames = [d.spr[0]];
     Object.assign(this, { hp: d.hp, maxHp: d.hp, mass: d.mass, sizeClass: d.sizeClass, name: d.name, r: d.r, gibs: d.gibs });
+    this.armor = d.armor || 0; this.prey = null; this.huntCd = rand(2, 8);
     this.type = 'land'; this.facing = chance(0.5) ? 1 : -1; this.state = 'idle'; this.stateT = rand(1, 3); this.swimT = 0; this.layer = 1; this.rodT = 0; this.chargeCd = 0;
     this.y = World.floorY(x) - d.h; this.grazeT = 0;
   }
@@ -324,14 +328,30 @@ class LandAnimal extends Entity {
     if (fy > 0 || this.y > World.surface(this.x) + 4) { this.updateSwim(dt, P, d); return; }
     this.y = fy - d.h; this.vy = 0;
     const sees = this.senses(d.flee), dP = this.distTo(P);
+    // land predators hunt other land animals when the player is not a factor
+    if (d.hunter) {
+      this.huntCd -= dt;
+      if ((!this.prey || this.prey.dead || this.prey.remove) && this.huntCd <= 0) {
+        this.huntCd = rand(3, 9);
+        this.prey = Eco.findPrey(this, 340, this.sizeClass * 1.4, e => (e.type === 'land' || (e.type === 'bird' && e.mode === 'wade')) && Math.abs(World.floorY(e.x)) > 0 && World.floorY(e.x) < -2 && e !== this);
+      }
+      if (this.prey && !this.prey.dead && !this.prey.remove && !sees) {
+        const t = this.prey, dir2 = sign(t.x - this.x);
+        if (Math.abs(t.x - this.x) < 18) { Eco.devour(this, t, { label: 'HUNTED' }); this.prey = null; this.state = 'idle'; this.stateT = 2.5; this.vx = 0; }
+        else if (this.landAt(this.x + dir2 * 20)) { this.facing = dir2; this.vx = approach(this.vx, dir2 * d.speed * 0.9, 500 * dt); this.state = 'stalk'; this.x += this.vx * dt; if (t.takeoff && Math.abs(t.x - this.x) < 90) t.takeoff(this); return; }
+        else this.prey = null;
+      }
+    }
     if (d.charge && !P.dead && P.size < 2.9 && dP < 140 && (P.y < 40) && this.chargeCd <= 0) this.state = 'charge';
     if (this.state !== 'charge' && sees && (P.size > this.sizeClass * 0.45 || d.human)) { if (this.state !== 'flee') { this.state = 'flee'; if (d.human) SFX.yell(this.pan); } this.stateT = 2; }
     this.chargeCd -= dt;
     switch (this.state) {
       case 'idle': this.stateT -= dt; this.vx = approach(this.vx, 0, 300 * dt); if (this.stateT <= 0) { this.state = 'walk'; this.stateT = rand(1, 3); this.facing = chance(0.5) ? 1 : -1; } break;
       case 'walk': this.stateT -= dt; this.vx = approach(this.vx, this.facing * d.speed * 0.25, 300 * dt); if (!this.landAt(this.x + this.facing * 20)) this.facing *= -1; if (this.stateT <= 0) { this.state = 'idle'; this.stateT = rand(1, 4); } break;
+      case 'stalk': this.state = 'idle'; this.stateT = 1; break;
       case 'flee': {
         this.stateT -= dt; const dir = sign(this.x - P.x) || this.facing;
+        if (this.kind === 'iguana' && chance(dt * 1.2)) { const wx = World.findX(this.x, x => World.floorY(x) > 40, 300, 12); if (wx !== null) { this.x = wx; this.y -= 4; this.vy = 60; this.vx = rand(-30, 30); G.fx.splash(this.x, 0.6, 0); this.state = 'swim'; this.swimT = 0; break; } }
         if (!this.landAt(this.x + dir * 24)) { // cornered at the water's edge
           if (chance(dt * 0.8)) { this.vx = dir * 120; this.vy = -80; this.y -= 2; this.state = 'swim'; G.fx.splash(this.x, 0.8, this.vx); break; }
           this.facing = -dir;
@@ -559,12 +579,18 @@ class Boat extends Entity {
   constructor(x, kind = 'poacher', dir = 1) {
     super(x, 0); this.kind = kind; this.type = 'boat'; this.edible = false; this.bleeds = false; this.latchable = false; this.dir = dir; this.facing = dir; this.layer = 1;
     this.war = kind === 'warboat'; this.isBoss = this.war; this.persistent = this.war;
-    this.hp = this.war ? 320 : 90; this.maxHp = this.hp; this.armor = this.war ? 14 : 9; this.sizeClass = 5; this.r = 26; this.mass = 0;
-    this.name = this.war ? 'POACHER WARBOAT' : kind === 'tourist' ? 'AIRBOAT TOUR' : 'POACHERS'; this.threat = kind === 'tourist' ? 0 : 1;
-    this.speed = this.war ? 55 : kind === 'tourist' ? 35 : 45; this.fan = 0; this.sinking = false; this.sinkT = 0; this.engineOn = true; this.harpoonCd = 5; this.turnCd = 0;
+    this.jon = kind === 'jon'; this.pontoon = kind === 'pontoon'; this.airboat = !this.jon && !this.pontoon;
+    this.hp = this.war ? 320 : this.pontoon ? 160 : this.jon ? 55 : 90; this.maxHp = this.hp;
+    this.armor = this.war ? 14 : this.jon ? 5 : 9; this.sizeClass = 5; this.r = this.pontoon ? 34 : this.jon ? 18 : 26; this.mass = 0;
+    this.name = this.war ? 'POACHER WARBOAT' : this.pontoon ? 'PARTY PONTOON' : this.jon ? 'JON BOAT' : kind === 'tourist' ? 'AIRBOAT TOUR' : 'POACHERS';
+    this.threat = (kind === 'tourist' || this.pontoon || this.jon) ? 0 : 1;
+    this.speed = this.war ? 55 : this.pontoon ? 26 : this.jon ? 40 : kind === 'tourist' ? 35 : 45;
+    this.fan = 0; this.sinking = false; this.sinkT = 0; this.engineOn = true; this.harpoonCd = 5; this.turnCd = 0; this.moored = false;
     this.pass = [];
-    const n = this.war ? 3 : kind === 'tourist' ? 4 : 2;
-    for (let i = 0; i < n; i++) this.pass.push({ ox: -12 + i * (this.war ? 11 : 8) + (this.war ? 0 : 4), oy: -6, alive: true, shootCd: rand(0.5, 2), type: kind === 'tourist' ? 'tourist' : 'poacher', flash: 0 });
+    const n = this.war ? 3 : this.pontoon ? 5 : this.jon ? 2 : kind === 'tourist' ? 4 : 2;
+    const ptype = this.pontoon ? 'tourist' : this.jon ? 'fisherman' : kind === 'tourist' ? 'tourist' : 'poacher';
+    const spread = this.pontoon ? 13 : this.jon ? 12 : this.war ? 11 : 8;
+    for (let i = 0; i < n; i++) this.pass.push({ ox: -(n - 1) * spread / 2 + i * spread, oy: -6, alive: true, shootCd: rand(0.5, 2), type: ptype, flash: 0 });
     this.tether = null; this.debris = 0;
   }
   get alivePass() { return this.pass.filter(p => p.alive); }
@@ -582,7 +608,7 @@ class Boat extends Entity {
       if (dist(sx, sy, px, py) < P.biteRange + 6) { this.killPassenger(p, P, dx, dy); return; }
     }
     // hull
-    const dmg = P.biteDmg * (P.st.pierce ? 3 : 1);
+    const dmg = P.biteDmg * (P.st.pierce ? 3 : 1) * (P.st.hullMul || 1);
     if (dmg < this.armor && !P.st.pierce) { G.fx.sparks(sx, sy, 8, dx, dy); SFX.clank(this.pan); G.fx.text(this.x, this.y - 20, 'TOO TOUGH', { color: '#c0c0c0' }); this.vx += dx * 40; return; }
     this.hp -= dmg; this.flash = 0.1; G.fx.splinters(sx, sy, 10, 110); SFX.splinter(this.pan); G.hitstop(0.05); G.shake(4);
     G.fx.text(sx, sy - 14, choice(['CRACK!', 'CRUNCH!', 'SMASH!']), { color: '#e0c080' });
@@ -622,7 +648,8 @@ class Boat extends Entity {
     this.y = s - 3 + Math.sin(this.t * 2.5) * 0.6;
     // movement / patrol
     this.turnCd -= dt;
-    if (this.engineOn) {
+    if (this.moored) { this.vx *= 0.9; this.fan *= 0.95; }
+    else if (this.engineOn) {
       const ahead = World.floorY(this.x + this.dir * 60);
       if ((ahead < 12 || Math.abs(this.x - P.x) > 700) && this.turnCd <= 0) { this.dir *= -1; this.turnCd = 3; }
       if (this.threat && !P.dead && Math.abs(P.x - this.x) > 90 && chance(dt * 0.6)) this.dir = sign(P.x - this.x);
@@ -668,13 +695,26 @@ class Boat extends Entity {
     const f = this.facing;
     ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.scale(f, 1);
     if (this.sinking) ctx.rotate(this.dir * f * this.sinkT * 0.12);
-    const L = this.war ? 34 : 26, hullCol = this.flash > 0 ? '#ffffff' : this.war ? '#4a4a3a' : this.kind === 'tourist' ? '#c8c8c0' : '#8a8a80';
+    const L = this.war ? 34 : this.pontoon ? 42 : this.jon ? 20 : 26;
+    const hullCol = this.flash > 0 ? '#ffffff' : this.war ? '#4a4a3a' : this.pontoon ? '#d0d4d8' : this.jon ? '#4a7a4a' : this.kind === 'tourist' ? '#c8c8c0' : '#8a8a80';
     // hull
     ctx.fillStyle = hullCol; ctx.beginPath(); ctx.moveTo(-L, -2); ctx.lineTo(L - 6, -2); ctx.lineTo(L, -8); ctx.lineTo(L, -2); ctx.lineTo(L - 2, 5); ctx.lineTo(-L + 2, 5); ctx.closePath(); ctx.fill();
     ctx.fillStyle = this.war ? '#2a2a20' : '#5a5a50'; ctx.fillRect(-L, 3, L * 2, 2);
     ctx.fillStyle = this.war ? '#8a2020' : '#c04040'; ctx.fillRect(-L + 2, -1, L * 2 - 6, 1);
     // deck / seat
     ctx.fillStyle = '#3a3a30'; ctx.fillRect(-4, -12, 8, 10); ctx.fillRect(-6, -14, 12, 2);
+    if (this.pontoon) { // railings, canopy and pontoons
+      ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-L, 4, L * 2, 4); ctx.fillRect(-L + 2, 8, L * 2 - 4, 2);
+      ctx.fillStyle = '#7a8086'; for (let i = -L; i < L; i += 8) ctx.fillRect(i, 4, 1, 4);
+      ctx.fillStyle = '#c0c4c8'; for (let i = -L + 3; i < L; i += 9) ctx.fillRect(i, -12, 1, 10);
+      ctx.fillStyle = '#c0c4c8'; ctx.fillRect(-L + 2, -13, L * 2 - 4, 1);
+      ctx.fillStyle = '#3a8a6a'; ctx.fillRect(-L + 4, -26, L * 2 - 8, 3);
+      ctx.fillStyle = '#2a6a50'; for (let i = -L + 4; i < L - 4; i += 10) ctx.fillRect(i, -26, 5, 3);
+      ctx.fillStyle = '#8a9096'; ctx.fillRect(-L + 6, -26, 1, 13); ctx.fillRect(L - 8, -26, 1, 13);
+      ctx.fillStyle = '#333'; ctx.fillRect(-L - 2, -8, 6, 8);
+    }
+    if (this.jon) { ctx.fillStyle = '#2a2a2a'; ctx.fillRect(-L - 3, -10, 6, 10); ctx.fillStyle = '#444'; ctx.fillRect(-L - 2, -12, 4, 3); }
+    if (this.pontoon || this.jon) { ctx.restore(); this.drawPeople(ctx, f); return; }
     // fan cage at back (left in local space)
     const cx = -L + 8, cy = -12, R = 10;
     ctx.strokeStyle = '#222'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
@@ -683,10 +723,15 @@ class Boat extends Entity {
     for (let i = 0; i < 3; i++) { const a = this.fan + i * TAU / 3; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R - 2), cy + Math.sin(a) * (R - 2)); ctx.stroke(); }
     ctx.fillStyle = '#333'; ctx.fillRect(cx - 1, cy - 1, 3, 3); ctx.fillRect(cx - 2, cy + R - 2, 4, 4);
     if (this.war) { ctx.fillStyle = '#333'; ctx.fillRect(L - 14, -16, 10, 3); ctx.fillRect(L - 10, -20, 2, 5); }
+    ctx.restore(); this.drawPeople(ctx, f); return;
+  }
+  drawPeople(ctx, f) {
+    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.scale(f, 1);
+    if (this.sinking) ctx.rotate(this.dir * f * this.sinkT * 0.12);
     // passengers
     for (const p of this.pass) {
       if (!p.alive) continue;
-      const spr = p.type === 'tourist' ? SPR.tourist[0] : SPR.poacher[0];
+      const spr = p.type === 'tourist' ? SPR.tourist[0] : p.type === 'fisherman' ? SPR.human[0] : SPR.poacher[0];
       ctx.drawImage(spr.c, Math.round(p.ox - 4), Math.round(p.oy - 12));
       if (p.type === 'poacher') { ctx.fillStyle = '#222'; ctx.fillRect(p.ox + 2, p.oy - 6, 9, 1); if (p.flash > 0) { ctx.fillStyle = '#fff0a0'; ctx.fillRect(p.ox + 11, p.oy - 8, 3, 4); } }
       else if (chance(0.01)) { G.fx.glow(this.x + p.ox * f, this.y + p.oy - 10, 6, '#ffffff', 0.15); }

@@ -10,7 +10,12 @@ class Player {
       rollDmg: 1, rollSpeed: 1, latchMul: 2, pierce: false, crit: 0, multiChomp: false, goreMul: 1, frenzy: false, ironStomach: false, bullRush: false,
       growth: 1, fearAura: false, knockImmune: false, ambush: false, stealth: 1, dashCharges: 1, dashCd: 1, dashDist: 1, dashBite: false, wraith: false, leapMul: 1,
       venom: 0, lure: 0, toxicBlood: false, venomImmune: false, leviathan: false, hungerRestore: 1, bleed: false,
+      // animal traits
+      swallow: 1, magnet: 0, autoEat: false, reflect: 0, barb: 0, lunge: 0, landSpeed: 1, hop: 1, landRegen: 0, scavenge: 0,
+      hullMul: 1, ramMul: 1, turn: 1, bloodScent: false, woundMul: 1, nightEyes: false, airGrab: false, noEscape: false,
+      quake: false, manEater: false, gibLife: 1, shockDmg: 1,
     };
+    this.traits = [];
     this.lastMax = this.maxHp; this.hp = this.maxHp; this.hunger = 100;
     this.chain = new CrocChain(this.x, this.y, 0); this.look = CROC_LOOKS.base; this.parts = buildCrocParts(this.look);
     this.jaw = 0; this.biteT = 0; this.biteCd = 0; this.biteHit = false; this.biteCount = 0;
@@ -23,7 +28,7 @@ class Player {
   }
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
   get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * (this.frenzyT > 0 ? 1.3 : 1); }
-  get biteRange() { return (9 + 6 * this.size) * this.st.biteRadius; }
+  get biteRange() { return (9 + 6 * this.size) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.size; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
   get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * (this.frenzyT > 0 ? 1.4 : 1); }
@@ -48,6 +53,7 @@ class Player {
       if (this.hp <= 0) return this.die('STARVED');
     } else this.starving = false;
     if (this.st.regen > 0 && this.hunger > 25) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.regen * dt);
+    if (this.st.landRegen > 0 && this.onLand) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.landRegen * dt);
     if (this.poisonT > 0) { this.poisonT -= dt; this.hp -= this.venomDps * dt; if (chance(dt * 6)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030']); if (this.hp <= 0) return this.die('POISONED'); }
     // input
     let ix = inp.x, iy = inp.y; const mag = Math.hypot(ix, iy); if (mag > 1) { ix /= mag; iy /= mag; }
@@ -72,9 +78,9 @@ class Player {
       this.vy += 900 * dt;
       if (landHere && this.y >= fy - 5 * this.size - 1) {
         this.onLand = true; this.y = fy - 5 * this.size; if (this.vy > 0) this.vy = 0;
-        const landSpeed = this.speedMax * 0.38;
+        const landSpeed = this.speedMax * 0.38 * this.st.landSpeed;
         this.vx += (ix * landSpeed - this.vx) * Math.min(1, 5 * dt);
-        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.size, 3, '#6b5a3a'); }
+        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.size, 3, '#6b5a3a'); }
         if (Math.abs(this.vx) > 20 && chance(dt * 8)) G.fx.smoke(this.x - sign(this.vx) * 8 * this.size, this.y + 4 * this.size, 1, '#7a6a4a');
         if (this.wasAir) { this.wasAir = false; SFX.thud(); G.shake(2); }
       } else {
@@ -109,7 +115,7 @@ class Player {
       targetA = (this.facing > 0 ? 0 : Math.PI) + (this.facing > 0 ? slope : -slope);
     } else if (sp > 12) targetA = Math.atan2(this.vy, this.vx);
     if (this.grabbed) targetA = this.angle;
-    this.angle = angleLerp(this.angle, targetA, 1 - Math.exp(-(under ? 7 : 3.5) * dt));
+    this.angle = angleLerp(this.angle, targetA, 1 - Math.exp(-(under ? 7 * this.st.turn : 3.5) * dt));
     if (!this.onLand) this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
     // body
     const swim = clamp(sp / this.speedMax, 0, 1.3);
@@ -131,7 +137,7 @@ class Player {
       else {
         const [sx, sy] = this.snout; e.x = lerp(e.x, sx, 0.5); e.y = lerp(e.y, sy, 0.5); e.vx = this.vx; e.vy = this.vy; e.stun = 0.3; e.aware = true; e.awareT = 2;
         this.latchT += dt;
-        if (this.latchT > 3 && chance(dt * 1.2)) { this.latched = null; e.vx = -this.facing * 220; e.vy = -60; e.stun = 0; G.fx.text(e.x, e.y - 12, 'ESCAPED!', { color: '#ffb0b0' }); }
+        if (this.latchT > 3 && !this.st.noEscape && chance(dt * 1.2)) { this.latched = null; e.vx = -this.facing * 220; e.vy = -60; e.stun = 0; G.fx.text(e.x, e.y - 12, 'ESCAPED!', { color: '#ffb0b0' }); }
         if (chance(dt * 6)) G.fx.blood(e.x, e.y, 2, 0, 0, 30, e.bloodColors);
       }
     }
@@ -145,10 +151,46 @@ class Player {
     }
     if (this.gulpT > 0) this.gulpT -= dt;
     if (this.st.lure && chance(dt * 3)) G.fx.glow(this.x, this.y, 8 * this.size, '#40f0c8', 0.6);
+    this.magnetTick(dt);
+    if (this.st.barb) this.barbTick(dt);
     if (under && sp > this.speedMax * 0.5 && chance(dt * 5)) G.fx.bubbles(this.x - Math.cos(this.angle) * 10 * this.size, this.y, 1, 3 * this.size);
     // shed
     const tier = tierFor(this.sizeTarget);
     if (tier > this.tier && !G.shedPending && G.state === 'play') G.startShed(tier);
+  }
+  // SNAPPING TONGUE / SWARM CALLER: drag small prey into your mouth and swallow
+  // it automatically, so a parked crocodile still eats.
+  magnetTick(dt) {
+    const R = this.st.magnet; if (!R) return;
+    const [sx, sy] = this.snout, maxSize = this.size * 0.5 * this.st.swallow;
+    for (const e of G.ents) {
+      if (e.dead || e.remove || !e.edible) continue;
+      if (e.type === 'proj' || e.type === 'boat' || e.type === 'structure') continue;
+      if (e.sizeClass > maxSize) continue;
+      const dx = sx - e.x, dy = sy - e.y, d = Math.hypot(dx, dy);
+      if (d > R || d < 0.001) continue;
+      const pull = (1 - d / R) * 420 * dt;
+      e.vx += dx / d * pull; e.vy += dy / d * pull;
+      e.lured = 1;
+      if (this.st.autoEat && d < this.biteRange * 0.85) { this.gulp(e); this.biteT = Math.max(this.biteT, 0.12); this.biteHit = true; }
+      else if (chance(dt * 0.6)) G.fx.add({ type: 'bubble', x: e.x, y: e.y, vx: 0, vy: -20, s: 1, seed: rand(TAU), life: 0.5 });
+    }
+    if (chance(dt * 6)) G.fx.glow(sx, sy, 5 * this.size, '#ff8a4a', 0.35);
+  }
+  // CAUDAL BARB: the tail stabs anything crowding you from behind
+  barbTick(dt) {
+    this.barbCd = (this.barbCd || 0) - dt; if (this.barbCd > 0) return;
+    const tail = this.chain.nodes[CROC_LEN - 1];
+    for (const e of G.ents) {
+      if (e.dead || e.remove || e.type === 'gib' || e.type === 'proj' || !e.takeDamage) continue;
+      const d = e.nearestDist ? e.nearestDist(tail.x, tail.y) : dist(tail.x, tail.y, e.x, e.y) - e.r * e.size;
+      if (d > 10 * this.size) continue;
+      this.barbCd = 0.7;
+      e.takeDamage(this.st.barb * Math.sqrt(this.size), this, { dx: 0, dy: 0, pierce: true });
+      e.poison = Math.max(e.poison, 3); e.poisonDmg = this.st.barb * 0.3;
+      G.fx.text(e.x, e.y - 12, 'BARB!', { color: '#a0ff60' }); G.fx.sparks(tail.x, tail.y, 5); SFX.hurt(e.pan);
+      break;
+    }
   }
   pushGhost(life) { this.ghosts.push({ nodes: this.chain.nodes.map(n => ({ x: n.x, y: n.y, a: n.a })), life, flip: this.facing }); if (this.ghosts.length > 8) this.ghosts.shift(); }
   bite() {
@@ -166,6 +208,7 @@ class Player {
     }
     if (this.latched && this.rollT <= 0) { this.rollT = 1; this.biteCd = 0.45 / this.st.rollSpeed; G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return; }
     this.biteT = 0.18; this.biteHit = false; this.biteCd = 0.3;
+    if (this.st.lunge) { this.vx += Math.cos(this.angle) * this.st.lunge; this.vy += Math.sin(this.angle) * this.st.lunge; }
   }
   doBiteHit() {
     const [sx, sy] = this.snout, R = this.biteRange, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
@@ -184,14 +227,16 @@ class Player {
   }
   chompEntity(e, sx, sy, dx, dy) {
     if (e.onBite) { e.onBite(this, sx, sy, dx, dy); return; }
-    if (e.sizeClass <= this.size * 0.5 && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach)) { this.gulp(e); return; }
+    if (e.sizeClass <= this.size * 0.5 * this.st.swallow && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach)) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
     if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= 2.5; crit = true; }
     if (chance(this.st.crit)) { dmg *= 3; crit = true; }
+    if (this.st.woundMul > 1 && e.hp < e.maxHp * 0.6) { dmg *= this.st.woundMul; crit = true; }
     const applied = e.takeDamage(dmg, this, { dx, dy, pierce: this.st.pierce, crit });
     if (applied <= 0) return;
     const big = e.mass >= 60;
-    G.hitstop(big ? 0.09 : 0.05); G.shake(3 + Math.min(dmg, 40) * 0.15);
+    G.hitstop(big ? 0.09 : 0.05); G.shake((this.st.quake ? 6 : 3) + Math.min(dmg, 40) * 0.15);
+    if (this.st.quake) { G.fx.shock(e.x, e.y, 26 * Math.sqrt(this.size), '#ffd060', 0.3); }
     G.fx.text(e.x, e.y - 14 * e.size, crit ? 'CRITICAL!' : choice(['CHOMP!', 'CRUNCH!', 'SNAP!', 'RIP!']), { color: crit ? '#ffe040' : '#ffffff', scale: crit ? 2 : 1 });
     SFX.crunch(this.size, e.pan);
     if (this.st.venom && !e.dead) { e.poison = Math.max(e.poison, 3); e.poisonDmg = dmg * this.st.venom / 3; }
@@ -232,7 +277,7 @@ class Player {
   }
   shockwave() {
     const R = 70 * Math.sqrt(this.size) + 40;
-    G.fx.shock(this.x, this.y, R, '#40f0c8', 0.6); G.fx.glow(this.x, this.y, R * 0.5, '#40f0c8', 0.4); SFX.shock(); G.shake(10); G.hitstop(0.06);
+    G.fx.shock(this.x, this.y, R, '#40f0c8', 0.6); G.fx.glow(this.x, this.y, R * 0.22, '#40f0c8', 0.35); SFX.shock(); G.shake(10); G.hitstop(0.06);
     G.fx.text(this.x, this.y - 24 * this.size, 'SHOCKWAVE!', { color: '#40f0c8', scale: 2 });
     for (const e of G.ents) {
       if (e.dead || e.remove || e.type === 'proj' || e.type === 'gib') continue;
@@ -262,12 +307,14 @@ class Player {
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));
     this.combo++; this.comboT = 2.4;
     const pan = G.panOf(e.x);
-    if (this.combo > 1) { G.fx.text(this.x, this.y - 26 * this.size, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
+    if (this.combo > 1) { G.fx.text(this.x, this.y - 20 * this.size, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
     G.addScore(Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1)));
     if (e.type !== 'gib') G.fx.text(e.x, e.y + 6, '+' + Math.round(gain), { color: '#ffd860', vy: -18 });
     if (e.mass >= 60) { G.slowmo(0.3, 0.55); G.zoomPunch(1.07); G.fx.text(e.x, e.y - 30, e.threat ? 'PREDATOR SLAIN!' : 'DEVOURED!', { scale: 2, color: '#ff6040', life: 1.5 }); SFX.roar(this.size, pan); }
     if (this.st.frenzy) this.frenzyT = 4;
     if (this.st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.lifesteal);
+    if (this.st.scavenge && e.type === 'gib') this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.scavenge);
+    if (this.st.manEater && e.human) G.addScore(Math.round(e.mass * 20));
     G.stats.eaten++;
     if (e.mass > G.stats.biggestMass) { G.stats.biggestMass = e.mass; G.stats.biggest = e.name; }
     if (e.type !== 'gib') G.stats.kinds[e.name] = (G.stats.kinds[e.name] || 0) + 1;
@@ -285,6 +332,10 @@ class Player {
       this.invuln = 0.4; this.hurtFlash = 0.1; G.shake(4 + Math.min(dmg, 40) * 0.25); G.redFlash(0.4); SFX.hurt();
       G.fx.blood(this.x, this.y, Math.round(6 + Math.min(dmg, 40)), 0, 0, 90); G.fx.cloud(this.x, this.y, (10 + Math.min(dmg, 30) * 0.3) * Math.sqrt(this.size));
     } else if (chance(0.15)) G.redFlash(0.12);
+    if (this.st.reflect > 0 && src && src.takeDamage && kind === 'bite') {
+      src.takeDamage(dmg * this.st.reflect, this, { dx: 0, dy: 0, pierce: true });
+      G.fx.sparks(this.x, this.y, 6); SFX.clank(this.pan);
+    }
     if (this.st.toxicBlood && src && src.takeDamage && kind !== 'venom') { G.fx.cloud(this.x, this.y, 30 * Math.sqrt(this.size), '#30a050', 2); src.poison = Math.max(src.poison || 0, 3); src.poisonDmg = this.biteDmg * 0.25; }
     if (this.hp <= 0) this.die(kind === 'bullet' ? 'SHOT' : kind === 'crush' ? 'CRUSHED' : kind === 'venom' ? 'POISONED' : 'EATEN', src);
     return dmg;

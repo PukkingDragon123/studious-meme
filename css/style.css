@@ -1,3 +1,5 @@
 html, body { margin: 0; padding: 0; background: #05090a; height: 100%; overflow: hidden; }
 #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #0b1a16 0%, #04080a 70%); }
-canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; cursor: crosshair; touch-action: none; box-shadow: 0 0 60px rgba(0, 0, 0, 0.8); }
+canvas { transform-origin: center center; image-rendering: pixelated; image-rendering: crisp-edges; display: block; cursor: crosshair; touch-action: none; box-shadow: 0 0 60px rgba(0, 0, 0, 0.8); }
+
+html, body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }

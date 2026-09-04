@@ -28,22 +28,29 @@ const World = {
     const visits = (this._visits = this._visits || new Map()).get(ci) || 0; this._visits.set(ci, visits + 1);
     const rng = mulberry32((this.seed * 7919 + ci * 104729 + 12345) >>> 0);
     const x0 = ci * this.CHUNK, x1 = x0 + this.CHUNK, decor = [];
-    for (let x = x0; x < x1; x += 20) {
+    for (let x = x0; x < x1; x += 11) {
       const fy = this.floorY(x), m = this.bankMask(x), land = fy < 0, depth = fy;
       if (!land) {
-        if (depth > 50 && rng() < 0.55) decor.push({ type: 'weed', x: x + rng() * 16, y: fy, h: 12 + rng() * 34, v: rng() < 0.5 ? 0 : 1, ph: rng() * TAU });
+        if (depth > 50 && rng() < 0.7) decor.push({ type: 'weed', x: x + rng() * 11, y: fy, h: 12 + rng() * 40, v: rng() < 0.5 ? 0 : 1, ph: rng() * TAU });
+        if (m > 0.05 && m < 0.6 && depth < 120 && rng() < 0.35) decor.push({ type: 'cattail', x: x + rng() * 11, y: fy, top: -14 - rng() * 30, ph: rng() * TAU });
         if (rng() < 0.12) decor.push({ type: 'rock', x: x + rng() * 16, y: fy, v: rng() < 0.5 ? 0 : 1, s: 1 + rng() * 1.5 });
         if (rng() < 0.05) decor.push({ type: 'log', x: x + rng() * 16, y: fy, s: 1 + rng() * 1.2 });
         if (depth > 25 && depth < 360 && rng() < 0.22) { const n = 1 + Math.floor(rng() * 3); for (let k = 0; k < n; k++) decor.push({ type: 'lily', x: x + k * 11 + rng() * 6, y: 0, v: rng() < 0.3 ? 1 : 0, ph: rng() * TAU }); }
         if (m > 0.12 && m < 0.7 && depth < 90 && rng() < 0.7) decor.push({ type: 'reed', x: x + rng() * 16, y: fy, top: -10 - rng() * 34, ph: rng() * TAU, v: rng() < 0.5 ? 0 : 1 });
         if (depth > 300 && rng() < 0.08) decor.push({ type: 'skull', x: x + rng() * 16, y: fy });
       } else {
-        if (rng() < 0.75) decor.push({ type: 'sawgrass', x: x + rng() * 16, y: fy, s: 0.8 + rng() * 0.7, ph: rng() * TAU, fly: rng() < 0.35 });
-        if (rng() < 0.16 && m > 0.85) decor.push({ type: 'cypress', x: x + rng() * 16, y: fy, h: 70 + rng() * 80, v: Math.floor(rng() * 3), moss: rng() < 0.7 });
-        if (rng() < 0.05) decor.push({ type: 'stump', x: x + rng() * 16, y: fy });
-        if (rng() < 0.1) decor.push({ type: 'palmetto', x: x + rng() * 16, y: fy, s: 0.8 + rng() * 0.6, ph: rng() * TAU });
+        if (rng() < 0.9) decor.push({ type: 'sawgrass', x: x + rng() * 11, y: fy, s: 0.8 + rng() * 0.7, ph: rng() * TAU, fly: rng() < 0.3 });
+        if (rng() < 0.34) decor.push({ type: 'cypress', x: x + rng() * 11, y: fy, h: 60 + rng() * 110, v: Math.floor(rng() * 3), moss: rng() < 0.75, knees: rng() < 0.5 });
+        if (rng() < 0.2) decor.push({ type: 'palm', x: x + rng() * 11, y: fy, h: 60 + rng() * 70, v: Math.floor(rng() * 3), ph: rng() * TAU });
+        if (rng() < 0.16) decor.push({ type: 'oak', x: x + rng() * 11, y: fy, h: 50 + rng() * 50, v: Math.floor(rng() * 3), moss: rng() < 0.8 });
+        if (rng() < 0.07) decor.push({ type: 'stump', x: x + rng() * 11, y: fy });
+        if (rng() < 0.06) decor.push({ type: 'fallen', x: x + rng() * 11, y: fy, s: 0.9 + rng() * 0.8, flip: rng() < 0.5 });
+        if (rng() < 0.28) decor.push({ type: 'palmetto', x: x + rng() * 11, y: fy, s: 0.8 + rng() * 0.6, ph: rng() * TAU });
+        if (rng() < 0.22) decor.push({ type: 'fern', x: x + rng() * 11, y: fy, s: 0.7 + rng() * 0.6, ph: rng() * TAU });
+        if (rng() < 0.12) decor.push({ type: 'bush', x: x + rng() * 11, y: fy, s: 0.8 + rng() * 0.8, v: Math.floor(rng() * 3) });
+        if (rng() < 0.05) decor.push({ type: 'flower', x: x + rng() * 11, y: fy, c: Math.floor(rng() * 4) });
       }
-      if (m > 0.55 && m < 0.9 && rng() < 0.18) decor.push({ type: 'mangrove', x: x + rng() * 16, y: fy, s: 0.8 + rng() * 0.8, dir: rng() < 0.5 ? -1 : 1 });
+      if (m > 0.5 && m < 0.92 && rng() < 0.3) decor.push({ type: 'mangrove', x: x + rng() * 16, y: fy, s: 0.8 + rng() * 0.8, dir: rng() < 0.5 ? -1 : 1 });
     }
     const ch = { ci, x0, x1, decor, visits };
     this.chunks.set(ci, ch);
@@ -110,9 +117,10 @@ const World = {
     const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day);
     if (hy < -50) return;
     const layers = [
-      { f: 0.18, col: mixColor(sc.bot, '#1e3a24', 0.55), h: 34, seed: 11, trees: 0.35, dens: 90 },
-      { f: 0.36, col: mixColor(sc.bot, '#14301c', 0.78), h: 26, seed: 23, trees: 0.5, dens: 70 },
-      { f: 0.58, col: mixColor(sc.bot, '#0c2012', 0.9), h: 14, seed: 37, trees: 0.6, dens: 60 },
+      { f: 0.12, col: mixColor(sc.bot, '#24402a', 0.4), h: 40, seed: 7, trees: 0.3, dens: 110 },
+      { f: 0.18, col: mixColor(sc.bot, '#1e3a24', 0.55), h: 34, seed: 11, trees: 0.62, dens: 62 },
+      { f: 0.36, col: mixColor(sc.bot, '#14301c', 0.78), h: 26, seed: 23, trees: 0.8, dens: 44 },
+      { f: 0.58, col: mixColor(sc.bot, '#0c2012', 0.9), h: 16, seed: 37, trees: 0.9, dens: 34 },
     ];
     for (const L of layers) {
       ctx.fillStyle = L.col;
@@ -252,6 +260,57 @@ const World = {
           ctx.strokeStyle = '#3f7a3a'; ctx.lineWidth = Math.max(1, 1.5 * z);
           for (let b = -3; b <= 3; b++) { const sway = Math.sin(t * 1.2 + d.ph) * 1.5 * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + b * 4 * z * d.s + sway, sy - (16 - Math.abs(b) * 2.5) * d.s * z); ctx.stroke(); }
           break; }
+        case 'cattail': if (layer !== 1) break; {
+          const top = cam.toScreen(d.x, d.top)[1], sway = Math.sin(t * 1.3 + d.ph) * 3 * z;
+          ctx.strokeStyle = '#5a7a3a'; ctx.lineWidth = Math.max(1, z); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.4, (sy + top) / 2, sx + sway, top); ctx.stroke();
+          ctx.fillStyle = '#5a3a20'; ctx.fillRect(Math.round(sx + sway - z * 0.5), Math.round(top - 1), Math.max(1, Math.round(1.6 * z)), Math.max(2, Math.round(8 * z)));
+          break; }
+        case 'fern': if (layer !== 1) break; {
+          ctx.strokeStyle = '#3f6a2a'; ctx.lineWidth = Math.max(1, z);
+          for (let b = -2; b <= 2; b++) { const sway = Math.sin(t * 1.4 + d.ph + b) * 1.5 * z, len = (13 - Math.abs(b) * 2) * d.s * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + b * 4 * z + sway, sy - len * 0.7, sx + b * 7 * z + sway, sy - len); ctx.stroke(); }
+          break; }
+        case 'bush': if (layer !== 1) break; {
+          const cols = ['#2f5a24', '#3a6a2a', '#27491d'], w = 16 * d.s * z, h = 12 * d.s * z;
+          ctx.fillStyle = cols[d.v]; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.round(w), Math.round(h));
+          ctx.fillStyle = cols[(d.v + 1) % 3]; ctx.fillRect(Math.round(sx - w / 2 + 2 * z), Math.round(sy - h - 3 * z), Math.round(w - 4 * z), Math.round(4 * z));
+          ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - 2 * z), Math.round(w), Math.round(2 * z));
+          break; }
+        case 'flower': if (layer !== 1) break; {
+          const cols = ['#e8d84a', '#e87ab0', '#f0f0e0', '#c880e8'];
+          ctx.strokeStyle = '#4a7a3a'; ctx.lineWidth = Math.max(1, z); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.sin(t + d.c) * z, sy - 8 * z); ctx.stroke();
+          ctx.fillStyle = cols[d.c]; ctx.fillRect(Math.round(sx - z), Math.round(sy - 10 * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z)));
+          break; }
+        case 'fallen': if (layer !== 0) break; {
+          const w = 34 * d.s * z, h = 7 * d.s * z;
+          ctx.save(); ctx.translate(sx, sy); ctx.rotate((d.flip ? -1 : 1) * 0.12);
+          ctx.fillStyle = '#4a3524'; ctx.fillRect(Math.round(-w / 2), Math.round(-h), Math.round(w), Math.round(h));
+          ctx.fillStyle = '#6b5033'; ctx.fillRect(Math.round(-w / 2), Math.round(-h), Math.round(w), Math.max(1, Math.round(h * 0.35)));
+          ctx.fillStyle = '#3a5a2a'; for (let i = 0; i < 5; i++) ctx.fillRect(Math.round(-w / 2 + i * w / 5), Math.round(-h - z), Math.max(1, Math.round(3 * z)), Math.max(1, Math.round(z)));
+          ctx.restore(); break; }
+        case 'palm': if (layer !== 0) break; {
+          const h = d.h * z, tw = Math.max(1, 3 * z), sway = Math.sin(t * 0.8 + d.ph) * 3 * z;
+          ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = tw; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.5, sy - h * 0.6, sx + sway, sy - h); ctx.stroke();
+          ctx.fillStyle = '#5a4a2a'; for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(sx + sway * (i / 6) - tw / 2), Math.round(sy - h * (i / 6)), Math.round(tw), Math.max(1, Math.round(z)));
+          for (let b = 0; b < 7; b++) {
+            const a = -Math.PI * 0.95 + b * 0.32, len = (16 + (b % 2) * 7) * z;
+            ctx.strokeStyle = b % 2 ? '#3f7a3a' : '#356a30'; ctx.lineWidth = Math.max(1, 2.4 * z);
+            ctx.beginPath(); ctx.moveTo(sx + sway, sy - h); ctx.quadraticCurveTo(sx + sway + Math.cos(a) * len * 0.7, sy - h + Math.sin(a) * len * 0.7, sx + sway + Math.cos(a) * len, sy - h + Math.sin(a) * len + 9 * z); ctx.stroke();
+          }
+          if (d.v === 0) { ctx.fillStyle = '#8a6a2a'; ctx.fillRect(Math.round(sx + sway - 2 * z), Math.round(sy - h + 2 * z), Math.max(1, Math.round(4 * z)), Math.max(1, Math.round(3 * z))); }
+          break; }
+        case 'oak': if (layer !== 0) break; {
+          const h = d.h * z, tw = Math.max(1, 5 * z);
+          ctx.fillStyle = '#3a2a1c'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.round(tw), Math.round(h + 2));
+          ctx.fillStyle = '#4a3a26'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.max(1, Math.round(tw * 0.4)), Math.round(h));
+          ctx.strokeStyle = '#3a2a1c'; ctx.lineWidth = Math.max(1, 2 * z);
+          for (const bd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.6); ctx.quadraticCurveTo(sx + bd * 14 * z, sy - h * 0.75, sx + bd * 22 * z, sy - h * 0.95); ctx.stroke(); }
+          const cols = ['#2f5a2a', '#356630', '#27491d'];
+          for (let i = 0; i < 5; i++) {
+            const cx2 = sx + (ihash(d.v * 9 + i, 31) - 0.5) * 44 * z, cy2 = sy - h - (ihash(i, 32) - 0.2) * 14 * z, rw = (16 + ihash(i, 33) * 14) * z;
+            ctx.fillStyle = cols[i % 3]; ctx.fillRect(Math.round(cx2 - rw / 2), Math.round(cy2), Math.round(rw), Math.round(rw * 0.62));
+          }
+          if (d.moss) { ctx.fillStyle = '#93a077'; for (let j = 0; j < 6; j++) { const mx = sx + (ihash(d.v * 5 + j, 34) - 0.5) * 46 * z; ctx.fillRect(Math.round(mx), Math.round(sy - h + 2 * z), Math.max(1, Math.round(z)), Math.round((10 + ihash(j, 35) * 20) * z)); } }
+          break; }
         case 'cypress': if (layer !== 0) break; {
           const h = d.h * z, tw = 4 * z;
           ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.round(tw), Math.round(h + 2));
@@ -259,6 +318,7 @@ const World = {
           ctx.fillStyle = '#2a1e12'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.max(1, Math.round(z)), Math.round(h));
           const cols = ['#2f5a2a', '#3a6a30', '#2a4a22'];
           for (let j = 0; j < 5; j++) { const cw = (30 - j * 5) * z * (0.8 + ihash(d.v * 7 + j, 3) * 0.5), cy = sy - h * (0.4 + j * 0.15); ctx.fillStyle = cols[(j + d.v) % 3]; ctx.fillRect(Math.round(sx - cw / 2), Math.round(cy), Math.round(cw), Math.round(h * 0.08 + 2 * z)); }
+          if (d.knees) { ctx.fillStyle = '#4a3a26'; for (let j = 0; j < 4; j++) { const kx = sx + (ihash(d.v * 3 + j, 41) - 0.5) * 34 * z, kh = (5 + ihash(j, 42) * 9) * z; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(3 * z)), Math.round(kh)); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(z)), Math.round(kh)); ctx.fillStyle = '#4a3a26'; } }
           if (d.moss) { ctx.fillStyle = '#8a9a6a'; for (let j = 0; j < 4; j++) { const mx = sx + (ihash(d.v * 11 + j, 4) - 0.5) * 26 * z, my = sy - h * (0.5 + ihash(j, 5) * 0.3); ctx.fillRect(Math.round(mx), Math.round(my), Math.max(1, Math.round(z)), Math.round((8 + ihash(j, 6) * 12) * z)); } }
           break; }
         case 'stump': if (layer !== 0) break; ctx.fillStyle = '#4a3524'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy - 8 * z), Math.round(8 * z), Math.round(9 * z)); ctx.fillStyle = '#6b5a3a'; ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy - 8 * z), Math.round(6 * z), Math.max(1, Math.round(z))); break;

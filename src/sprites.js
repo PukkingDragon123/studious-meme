@@ -177,7 +177,7 @@ function buildCrocParts(L) {
   if (crocPartCache.has(key)) return crocPartCache.get(key);
   const px = (x, i, j, col, w = 1, h = 1) => { x.fillStyle = col; x.fillRect(i, j, w, h); };
   const parts = {};
-  const spikes = L.spikes || 0, top = spikes ? 3 : 0;
+  const spikes = L.spikes || 0, top = Math.max(spikes ? 3 : 0, L.fin ? 6 : 0, L.shell ? 2 : 0, L.mane ? 3 : 0);
   // HEAD (hinge at (2, 7+top))
   {
     const w = 20, h = 10 + top, c = mkCanvas(w, h), x = c.getContext('2d');
@@ -201,6 +201,13 @@ function buildCrocParts(L) {
     px(x, 19, y0 + 8, L.tooth, 1, 1);
     if (L.scars) { px(x, 8, y0 + 4, '#d08080', 1, 1); px(x, 9, y0 + 5, '#d08080', 1, 1); px(x, 10, y0 + 6, '#d08080', 1, 1); }
     if (spikes) { px(x, 3, y0 - 1, L.dark, 1, 1); px(x, 3, y0 - 2, L.belly, 1, 1); }
+    if (L.ganoid) for (const [gx, gy] of [[10, y0 + 4], [13, y0 + 5], [16, y0 + 4], [11, y0 + 6], [14, y0 + 6]]) px(x, gx, gy, mixColor(L.belly, '#ffffff', 0.4), 1, 1);
+    if (L.denticle) for (const [gx, gy] of [[11, y0 + 4], [15, y0 + 4], [13, y0 + 6], [17, y0 + 5]]) px(x, gx, gy, shade(L.mid, 0.75), 1, 1);
+    if (L.frill) { for (let f = 0; f < 4; f++) { px(x, 7, y0 + 2 - f, L.frill, 1, 1); px(x, 8, y0 + 2 - f, shade(L.frill, 0.7), 1, 1); } px(x, 7, y0 + 8, L.frill, 2, 2); }
+    if (L.mane) { for (const mx of [1, 3, 5, 7]) { px(x, mx, y0 - 1, L.mane, 1, 1); px(x, mx, y0 - 2, shade(L.mane, 0.8), 1, 1); px(x, mx + 1, y0 - 3, L.mane, 1, 1); } }
+    if (L.tusks) { px(x, 12, y0 + 8, L.tooth, 1, 2); px(x, 13, y0 + 9, L.tooth, 1, 1); px(x, 16, y0 + 8, L.tooth, 1, 2); px(x, 17, y0 + 9, L.tooth, 1, 1); }
+    if (L.horn) { px(x, 15, y0 + 2, L.tooth, 1, 1); px(x, 16, y0 + 1, L.tooth, 1, 1); px(x, 17, y0, L.tooth, 1, 1); }
+    if (L.beak) { px(x, 19, y0 + 3, L.beak, 1, 5); px(x, 18, y0 + 6, L.beak, 2, 2); }
     parts.head = { c, w, h, ox: 2, oy: y0 + 7, eyeX: 4, eyeY: y0 + 1 };
   }
   // JAW (hinge at (0,0))
@@ -231,6 +238,20 @@ function buildCrocParts(L) {
     if (L.plates) { px(x, 1, y0 + 3, '#c9c2a3', 2, 2); px(x, 6, y0 + 3, '#c9c2a3', 2, 2); px(x, 2, y0 + 4, '#8a846a', 1, 1); px(x, 7, y0 + 4, '#8a846a', 1, 1); }
     if (L.scars && (i === 1 || i === 3)) { px(x, 2, y0 + 3, '#d08080', 1, 1); px(x, 3, y0 + 4, '#d08080', 1, 1); px(x, 4, y0 + 5, '#d08080', 1, 1); px(x, 5, y0 + 6, '#d08080', 1, 1); }
     if (L.spots) { px(x, 3, y0 + 5, L.spots, 1, 1); px(x, 7, y0 + 6, L.spots, 1, 1); }
+    if (L.ganoid) { for (let gy = 0; gy < 3; gy++) for (let gx = (gy % 2 ? 0 : 2); gx < 10; gx += 4) px(x, gx, y0 + 3 + gy * 2, mixColor(L.belly, '#ffffff', 0.35), 2, 1); }
+    if (L.denticle) { for (let gy = 0; gy < 4; gy++) for (let gx = (gy % 2 ? 1 : 3); gx < 10; gx += 3) px(x, gx, y0 + 3 + gy, shade(L.mid, 0.72), 1, 1); }
+    if (L.shell) { // turtle carapace: hex plates with a keel
+      px(x, 0, y0 + 1, L.shell, 10, 3); px(x, 0, y0, shade(L.shell, 0.7), 10, 1);
+      for (const s2 of [1, 5]) { px(x, s2, y0 + 1, shade(L.shell, 1.25), 3, 1); px(x, s2 + 1, y0 + 2, shade(L.shell, 0.75), 1, 1); }
+      px(x, 0, y0 + 4, shade(L.shell, 0.6), 10, 1);
+      for (const s2 of [2, 6]) { px(x, s2, y0 - 1, shade(L.shell, 0.8), 2, 1); px(x, s2, y0 - 2, shade(L.shell, 1.1), 1, 1); }
+    }
+    if (L.stripe2) { for (const s2 of [0, 5]) px(x, s2, y0 + 2, shade(L.dark, 1.1), 2, 7); }
+    if (L.fin && (i === 1 || i === 2)) { // dorsal fin
+      const fh = i === 1 ? 6 : 4, fc = L.fin, fd = shade(fc, 0.7);
+      for (let f = 0; f < fh; f++) { const w2 = Math.max(1, Math.round((fh - f) * 1.1)); px(x, 3 + Math.round(f * 0.4), y0 - f, fc, w2, 1); px(x, 3 + Math.round(f * 0.4), y0 - f, fd, 1, 1); }
+    }
+    if (L.gills && i === 0) { for (const gx of [2, 4, 6]) px(x, gx, y0 + 5, shade(L.mouth, 1.1), 1, 3); }
     if (spikes) for (const s of sx) { px(x, s, y0, L.dark, 1, 1); if (spikes >= 2) { px(x, s, y0 - 1, L.dark, 1, 1); px(x, s, y0 - 2, L.belly, 1, 1); } else px(x, s, y0 - 1, L.belly, 1, 1); }
     parts.body.push({ c, w, h, ox: 5, oy: y0 + 6 });
   }
@@ -249,6 +270,12 @@ function buildCrocParts(L) {
     for (const s of [1, 4, 7]) { px(x, s, y0 - 1, L.dark, 1, 1); if (k < 4) px(x, s, y0 - 2, L.dark, 1, 1); }
     if (spikes && k < 3) for (const s of [1, 4]) { px(x, s, y0 - 3, L.dark, 1, 1); if (spikes >= 2) px(x, s, y0 - 4, L.belly, 1, 1); }
     if (L.spots && k % 2 === 0) px(x, 4, y0 + 1 + back, L.spots, 1, 1);
+    if (L.ganoid) for (let gx = (k % 2 ? 1 : 3); gx < 8; gx += 4) px(x, gx, y0 + 2, mixColor(L.belly, '#ffffff', 0.3), 2, 1);
+    if (L.denticle) for (let gx = (k % 2 ? 1 : 2); gx < 8; gx += 3) px(x, gx, y0 + 2, shade(L.mid, 0.72), 1, 1);
+    if (L.stripe2 && k % 2 === 0) px(x, 3, y0, shade(L.dark, 1.1), 2, bh);
+    if (L.fin && k < 3) { const fh = 5 - k; for (let f = 0; f < fh; f++) px(x, 2 + Math.round(f * 0.5), y0 - 1 - f, L.fin, Math.max(1, fh - f), 1); }
+    if (L.barb && k >= 4) { px(x, 3, y0 - 1, L.tooth, 1, 1); px(x, 3, y0 - 2, L.tooth, 1, 1); px(x, 2, y0 - 1, L.tooth, 1, 1); if (k === 5) { px(x, 4, y0 - 3, L.tooth, 1, 1); px(x, 3, y0 - 4, L.tooth, 1, 1); } }
+    if (L.paddle && k >= 4) { const pc = L.paddle; for (let f = 1; f <= 3; f++) { px(x, 5 + f, y0 - f, pc, 1, bh + f); } }
     parts.tail.push({ c, w, h, ox: 4, oy: y0 + Math.floor(bh / 2) });
   }
   // LEGS 2 frames
@@ -257,6 +284,8 @@ function buildCrocParts(L) {
     const w = 6, h = 6, c = mkCanvas(w, h), x = c.getContext('2d');
     if (f === 0) { px(x, 1, 0, L.dark, 3, 1); px(x, 1, 1, L.mid, 3, 2); px(x, 0, 1, L.dark, 1, 3); px(x, 4, 1, L.dark, 1, 2); px(x, 1, 3, L.mid, 2, 2); px(x, 0, 4, L.dark, 1, 1); px(x, 3, 4, L.dark, 1, 1); px(x, 0, 5, L.dark, 1, 1); px(x, 2, 5, L.dark, 1, 1); }
     else { px(x, 2, 0, L.dark, 3, 1); px(x, 2, 1, L.mid, 3, 2); px(x, 1, 1, L.dark, 1, 2); px(x, 5, 1, L.dark, 1, 3); px(x, 3, 3, L.mid, 2, 2); px(x, 2, 4, L.dark, 1, 1); px(x, 5, 4, L.dark, 1, 1); px(x, 3, 5, L.dark, 1, 1); px(x, 5, 5, L.dark, 1, 1); }
+    if (L.claws) { px(x, f ? 2 : 0, 5, L.tooth, 1, 1); px(x, f ? 4 : 2, 5, L.tooth, 1, 1); px(x, f ? 5 : 3, 4, L.tooth, 1, 1); }
+    if (L.webbed) { px(x, f ? 2 : 0, 4, L.webbed, 4, 2); }
     parts.legs.push({ c, w, h, ox: 3, oy: 0 });
   }
   parts.look = L;
