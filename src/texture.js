@@ -128,6 +128,12 @@ const Tex = {
 // These are painted once at world scale into a cached canvas and then blitted,
 // so a tree costs one drawImage no matter how much shading it carries.
 // ---------------------------------------------------------------------------
+// snap a colour to a coarse ramp: the day cycle shifts tints every frame, and
+// caching on the raw value would mint a new canvas per frame
+function qcol(hex, step = 24) {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(Math.round(r / step) * step, Math.round(g / step) * step, Math.round(b / step) * step);
+}
 const Leaf = {
   cache: new Map(),
   // filled ellipse as horizontal spans, so the edge stays hard like the rest of the art
@@ -178,6 +184,7 @@ const Leaf = {
       x.fillRect(Math.round(cx + Math.cos(a) * rw * rad), Math.round(cy + Math.sin(a) * rh * rad), 1 + ((r() * 2) | 0), 1 + ((r() * 2) | 0));
     }
     x.globalCompositeOperation = 'source-over';
+    if (this.cache.size > 1200) this.cache.clear();
     this.cache.set(key, cv);
     return cv;
   },

@@ -210,6 +210,12 @@ const Tex = {
 // These are painted once at world scale into a cached canvas and then blitted,
 // so a tree costs one drawImage no matter how much shading it carries.
 // ---------------------------------------------------------------------------
+// snap a colour to a coarse ramp: the day cycle shifts tints every frame, and
+// caching on the raw value would mint a new canvas per frame
+function qcol(hex, step = 24) {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(Math.round(r / step) * step, Math.round(g / step) * step, Math.round(b / step) * step);
+}
 const Leaf = {
   cache: new Map(),
   // filled ellipse as horizontal spans, so the edge stays hard like the rest of the art
@@ -260,6 +266,7 @@ const Leaf = {
       x.fillRect(Math.round(cx + Math.cos(a) * rw * rad), Math.round(cy + Math.sin(a) * rh * rad), 1 + ((r() * 2) | 0), 1 + ((r() * 2) | 0));
     }
     x.globalCompositeOperation = 'source-over';
+    if (this.cache.size > 1200) this.cache.clear();
     this.cache.set(key, cv);
     return cv;
   },
@@ -1129,7 +1136,20 @@ function buildBiped(s) {
   { // torso, pivot at the hips
     const o = R.mk(tw + 6, th + 4), x0 = 3, y0 = 2;
     R.rrect(o, x0, y0, tw, th, Math.max(1, Math.round(tw * 0.25)), shirt);
-    R.px(o, x0 + 1, y0 + 1, R.hi(shirt), 2, th * 0.5); R.px(o, x0 + 1, y0 + th - 2, R.lo(shirt), tw - 2, 1);
+    // round the torso off: a lit side, a shaded side and a dark turn at the far edge
+    const sLit = R.hi(shirt), sDk = R.lo(shirt), sDk2 = R.lo2(shirt);
+    for (let j = 0; j < th; j++) for (let i = 0; i < tw; i++) {
+      if (!R.inside(o, x0 + i, y0 + j)) continue;
+      const u = tw > 1 ? i / (tw - 1) : 0.5, bay = BAYER4[((y0 + j) & 3) * 4 + ((x0 + i) & 3)] * 0.0625 - 0.5;
+      if (u < 0.18 + bay * 0.16) R.px(o, x0 + i, y0 + j, sLit);
+      else if (u > 0.86 + bay * 0.1) R.px(o, x0 + i, y0 + j, sDk2);
+      else if (u > 0.66 + bay * 0.18) R.px(o, x0 + i, y0 + j, sDk);
+    }
+    // collar, hem and a couple of cloth folds
+    R.px(o, x0 + 1, y0, R.lo(shirt), tw - 2, 1);
+    R.px(o, x0 + 1, y0 + th - 2, sDk, tw - 2, 1);
+    R.px(o, x0 + Math.round(tw * 0.45), y0 + Math.round(th * 0.45), sDk, 1, Math.max(1, Math.round(th * 0.3)));
+    R.px(o, x0 + Math.round(tw * 0.62), y0 + Math.round(th * 0.6), sDk, 1, Math.max(1, Math.round(th * 0.22)));
     if (s.pattern === 'hawaii') for (let k = 0; k < 6; k++) R.disc(o, x0 + 1 + ihash(k, 41) * (tw - 2), y0 + 1 + ihash(k, 42) * (th - 2), 1, k % 2 ? '#f0e060' : '#f0f0f0');
     if (s.pattern === 'camo') for (let k = 0; k < 5; k++) R.px(o, x0 + 1 + ihash(k, 43) * (tw - 4), y0 + 1 + ihash(k, 44) * (th - 3), R.lo2(shirt), 2 + ihash(k, 45) * 2, 2);
     if (s.vest) { R.px(o, x0 + 1, y0, '#8a7a4a', 2, th * 0.7); R.px(o, x0 + tw - 3, y0, '#8a7a4a', 2, th * 0.7); }
@@ -1140,8 +1160,32 @@ function buildBiped(s) {
     R.outline(o, OL);
     parts.torso = R.part(o, x0 + tw / 2, y0 + th);
   }
-  { const o = R.mk(7, armLen + 5), aw = Math.max(2, Math.round(Hh * 0.07)); R.px(o, 3 - aw / 2, 1, s.coat ? '#f4f4f0' : shirt, aw, armLen * 0.45); R.px(o, 3 - aw / 2, 1 + armLen * 0.45, skin, aw, armLen * 0.55); R.disc(o, 3, 1 + armLen, Math.max(1.2, aw * 0.75), skin); R.outline(o, OL); parts.arm = R.part(o, 3, 1); }
-  { const o = R.mk(9, legLen + 5), lw = Math.max(2, Math.round(Hh * 0.09)); R.px(o, 4 - lw / 2, 1, pants, lw, s.shorts ? legLen * 0.45 : legLen); if (s.shorts) R.px(o, 4 - lw / 2, 1 + legLen * 0.45, skin, lw, legLen * 0.55); R.px(o, 4 - lw / 2 - 1, legLen, s.boots || '#2a2018', lw + 3, 2); R.outline(o, OL); parts.leg = R.part(o, 4, 1); }
+  { const o = R.mk(7, armLen + 5), aw = Math.max(2, Math.round(Hh * 0.07));
+    const sl = s.coat ? '#f4f4f0' : shirt, cut = Math.round(armLen * 0.45);
+    for (let j = 0; j < armLen; j++) {
+      const c = j < cut ? sl : skin;
+      R.px(o, 3 - aw / 2, 1 + j, c, aw, 1);
+      R.px(o, 3 - aw / 2, 1 + j, R.hi(c), Math.max(1, aw * 0.34), 1);
+      R.px(o, 3 + aw / 2 - Math.max(1, aw * 0.28), 1 + j, R.lo(c), Math.max(1, aw * 0.28), 1);
+    }
+    R.px(o, 3 - aw / 2 - 1, cut, R.lo(sl), aw + 2, 1);                 // cuff
+    R.disc(o, 3, 1 + armLen, Math.max(1.2, aw * 0.75), skin);
+    R.px(o, 3 - aw * 0.5, 1 + armLen - aw * 0.4, R.hi(skin), Math.max(1, aw * 0.5), 1);
+    R.outline(o, OL); parts.arm = R.part(o, 3, 1); }
+  { const o = R.mk(9, legLen + 5), lw = Math.max(2, Math.round(Hh * 0.09));
+    const cut = s.shorts ? Math.round(legLen * 0.45) : legLen;
+    for (let j = 0; j < legLen; j++) {
+      const c = j < cut ? pants : skin;
+      R.px(o, 4 - lw / 2, 1 + j, c, lw, 1);
+      R.px(o, 4 - lw / 2, 1 + j, R.hi(c), Math.max(1, lw * 0.32), 1);
+      R.px(o, 4 + lw / 2 - Math.max(1, lw * 0.28), 1 + j, R.lo(c), Math.max(1, lw * 0.28), 1);
+    }
+    if (s.shorts) R.px(o, 4 - lw / 2 - 1, cut, R.lo(pants), lw + 2, 1);
+    const bc = s.boots || '#2a2018';
+    R.px(o, 4 - lw / 2 - 1, legLen - 1, bc, lw + 3, 3);
+    R.px(o, 4 - lw / 2 - 1, legLen - 1, R.hi(bc), lw + 2, 1);
+    R.px(o, 4 - lw / 2 - 1, legLen + 1, R.lo2(bc), lw + 3, 1);
+    R.outline(o, OL); parts.leg = R.part(o, 4, 1); }
   const propLen = Math.round(Hh * 0.5);
   const mkProp = kind => {
     if (kind === 'rifle') { const o = R.mk(propLen + 2, 6); R.px(o, 1, 2, '#2a2a2a', propLen, 2); R.px(o, 1, 3, '#5a3a1a', propLen * 0.4, 2); R.px(o, propLen * 0.55, 1, '#3a3a3a', 3, 1); R.outline(o, OL); return R.part(o, propLen * 0.35, 3); }
@@ -2642,6 +2686,17 @@ const World = {
     const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day);
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
+    // furthest ridge: bare hills, no trees, barely separated from the sky
+    {
+      const col = mixColor(sc.bot, '#3c5a48', 0.26), ox = cam.x * 0.05;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(0, hy + 2);
+      for (let sx = 0; sx <= W; sx += 6) { const wx = ox + sx; const h = (fbm(wx * 0.004, 3) * 0.75 + 0.25) * 58; ctx.lineTo(sx, hy - h); }
+      ctx.lineTo(W, hy + 2); ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.clip();
+      Tex.fill(ctx, Tex.dither(mixColor(col, '#ffffff', 0.35), 0.1), ox, cam.y * 0.05, 1, 0.5);
+      ctx.restore();
+    }
     const layers = [
       { f: 0.12, col: mixColor(sc.bot, '#24402a', 0.4), h: 40, seed: 7, trees: 0.3, dens: 110 },
       { f: 0.18, col: mixColor(sc.bot, '#1e3a24', 0.55), h: 34, seed: 11, trees: 0.62, dens: 62 },
@@ -2649,12 +2704,20 @@ const World = {
       { f: 0.58, col: mixColor(sc.bot, '#0c2012', 0.9), h: 16, seed: 37, trees: 0.9, dens: 34 },
     ];
     for (const L of layers) {
+      // canopies for this layer, shaded just enough to have form without
+      // breaking the flat silhouette that sells the distance
+      L.qc = qcol(L.col);
+      L.qm = qcol(mixColor(L.col, '#ffffff', 0.1));
+      L.ql = qcol(mixColor(L.col, '#ffffff', 0.2));
       ctx.fillStyle = L.col;
       const ox = cam.x * L.f;
       // brush line
       ctx.beginPath(); ctx.moveTo(0, hy + 2);
       for (let sx = 0; sx <= W; sx += 4) { const wx = ox + sx; const h = (fbm(wx * 0.012, L.seed) * 0.8 + 0.2) * L.h; ctx.lineTo(sx, hy - h); }
       ctx.lineTo(W, hy + 2); ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.clip();
+      Tex.fill(ctx, Tex.dither(mixColor(L.col, '#ffffff', 0.3), 0.12), ox, cam.y * L.f, 1, 0.45);
+      ctx.restore();
       // trees
       const dens = L.dens;
       for (let k = Math.floor(ox / dens) - 1; k <= Math.floor((ox + W) / dens) + 1; k++) {
@@ -2676,15 +2739,20 @@ const World = {
         if (kind < 0.6) { // cypress: trunk + layered canopy
           ctx.fillRect(Math.round(sx), Math.round(hy - th), Math.round(tw), Math.round(th));
           ctx.fillRect(Math.round(sx - tw), Math.round(hy - 8), Math.round(tw * 3), 8);
-          for (let j = 0; j < 4; j++) { const cw = (26 - j * 5) * (0.7 + ihash(k * 3 + j, L.seed) * 0.6), cy = hy - th * (0.45 + j * 0.16); ctx.fillRect(Math.round(sx + tw / 2 - cw / 2), Math.round(cy), Math.round(cw), Math.round(th * 0.09 + 2)); }
+          for (let j = 0; j < 4; j++) {
+            const cwRaw = (26 - j * 5) * (0.7 + ihash(k * 3 + j, L.seed) * 0.6);
+            const cw = Math.max(6, Math.round(cwRaw / 3) * 3), cy = hy - th * (0.45 + j * 0.16);
+            const ch = Math.max(4, Math.round((th * 0.11 + 3) / 2) * 2);
+            Leaf.draw(ctx, Leaf.mass(cw, ch, L.qc, L.qm, L.ql, (k * 3 + j) & 7), sx + tw / 2, cy, 1);
+          }
           // moss strands
           for (let j = 0; j < 3; j++) { const mx = sx + tw / 2 + (ihash(k * 5 + j, L.seed + 1) - 0.5) * 20; ctx.fillRect(Math.round(mx), Math.round(hy - th * 0.55), 1, Math.round(10 + ihash(k * 7 + j, L.seed + 2) * 14)); }
         } else if (kind < 0.85) { // palm
           ctx.fillRect(Math.round(sx), Math.round(hy - th * 0.7), 2, Math.round(th * 0.7));
           for (let j = 0; j < 6; j++) { const a = -Math.PI * 0.9 + j * 0.3, len = 14 + ihash(k * 11 + j, L.seed) * 8; ctx.beginPath(); ctx.moveTo(sx + 1, hy - th * 0.7); ctx.lineTo(sx + 1 + Math.cos(a) * len, hy - th * 0.7 + Math.sin(a) * len + 8); ctx.lineWidth = 2; ctx.strokeStyle = L.col; ctx.stroke(); }
         } else { // mangrove clump
-          ctx.fillRect(Math.round(sx - 10), Math.round(hy - 18), 24, 12);
           for (let j = 0; j < 5; j++) ctx.fillRect(Math.round(sx - 8 + j * 5), Math.round(hy - 8), 1, 9);
+          Leaf.draw(ctx, Leaf.mass(26, 14, L.qc, L.qm, L.ql, (k * 7) & 7), sx + 2, hy - 13, 1);
         }
       }
     }
@@ -3176,7 +3244,7 @@ const World = {
           for (const bd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.6); ctx.quadraticCurveTo(sx + bd * 14 * z, sy - h * 0.75, sx + bd * 22 * z, sy - h * 0.95); ctx.stroke(); }
           for (let i = 0; i < 5; i++) {
             const cx2 = sx + (ihash(d.v * 9 + i, 31) - 0.5) * 44 * z, cy2 = sy - h - (ihash(i, 32) - 0.35) * 14 * z;
-            const mw = Math.round(20 + ihash(i, 33) * 16);
+            const mw = Math.round((20 + ihash(i, 33) * 16) / 4) * 4;
             Leaf.draw(ctx, Leaf.mass(mw, Math.round(mw * 0.72), '#1d3a19', '#2f5a2a', '#598f3e', d.v * 13 + i), cx2, cy2, z);
           }
           if (d.moss) { ctx.fillStyle = '#93a077'; for (let j = 0; j < 6; j++) { const mx = sx + (ihash(d.v * 5 + j, 34) - 0.5) * 46 * z; ctx.fillRect(Math.round(mx), Math.round(sy - h + 2 * z), Math.max(1, Math.round(z)), Math.round((10 + ihash(j, 35) * 20) * z)); } }
@@ -3187,7 +3255,7 @@ const World = {
           ctx.fillRect(Math.round(sx - tw * 1.5), Math.round(sy - 8 * z), Math.round(tw * 3), Math.round(8 * z)); // buttress
           ctx.fillStyle = '#2a1e12'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.max(1, Math.round(z)), Math.round(h));
           for (let j = 0; j < 5; j++) {
-            const cw = Math.round((30 - j * 5) * (0.8 + ihash(d.v * 7 + j, 3) * 0.5)), cy = sy - h * (0.4 + j * 0.15);
+            const cw = Math.round((30 - j * 5) * (0.8 + ihash(d.v * 7 + j, 3) * 0.5) / 3) * 3, cy = sy - h * (0.4 + j * 0.15);
             Leaf.draw(ctx, Leaf.mass(Math.max(6, cw), Math.max(4, Math.round(cw * 0.42)), '#1b361a', '#2f5a2a', '#4f8437', d.v * 3 + j), sx, cy, z);
           }
           if (d.knees) { ctx.fillStyle = '#4a3a26'; for (let j = 0; j < 4; j++) { const kx = sx + (ihash(d.v * 3 + j, 41) - 0.5) * 34 * z, kh = (5 + ihash(j, 42) * 9) * z; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(3 * z)), Math.round(kh)); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(z)), Math.round(kh)); ctx.fillStyle = '#4a3a26'; } }

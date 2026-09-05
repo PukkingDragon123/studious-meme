@@ -104,6 +104,17 @@ const World = {
     const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day);
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
+    // furthest ridge: bare hills, no trees, barely separated from the sky
+    {
+      const col = mixColor(sc.bot, '#3c5a48', 0.26), ox = cam.x * 0.05;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(0, hy + 2);
+      for (let sx = 0; sx <= W; sx += 6) { const wx = ox + sx; const h = (fbm(wx * 0.004, 3) * 0.75 + 0.25) * 58; ctx.lineTo(sx, hy - h); }
+      ctx.lineTo(W, hy + 2); ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.clip();
+      Tex.fill(ctx, Tex.dither(mixColor(col, '#ffffff', 0.35), 0.1), ox, cam.y * 0.05, 1, 0.5);
+      ctx.restore();
+    }
     const layers = [
       { f: 0.12, col: mixColor(sc.bot, '#24402a', 0.4), h: 40, seed: 7, trees: 0.3, dens: 110 },
       { f: 0.18, col: mixColor(sc.bot, '#1e3a24', 0.55), h: 34, seed: 11, trees: 0.62, dens: 62 },
@@ -111,12 +122,20 @@ const World = {
       { f: 0.58, col: mixColor(sc.bot, '#0c2012', 0.9), h: 16, seed: 37, trees: 0.9, dens: 34 },
     ];
     for (const L of layers) {
+      // canopies for this layer, shaded just enough to have form without
+      // breaking the flat silhouette that sells the distance
+      L.qc = qcol(L.col);
+      L.qm = qcol(mixColor(L.col, '#ffffff', 0.1));
+      L.ql = qcol(mixColor(L.col, '#ffffff', 0.2));
       ctx.fillStyle = L.col;
       const ox = cam.x * L.f;
       // brush line
       ctx.beginPath(); ctx.moveTo(0, hy + 2);
       for (let sx = 0; sx <= W; sx += 4) { const wx = ox + sx; const h = (fbm(wx * 0.012, L.seed) * 0.8 + 0.2) * L.h; ctx.lineTo(sx, hy - h); }
       ctx.lineTo(W, hy + 2); ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.clip();
+      Tex.fill(ctx, Tex.dither(mixColor(L.col, '#ffffff', 0.3), 0.12), ox, cam.y * L.f, 1, 0.45);
+      ctx.restore();
       // trees
       const dens = L.dens;
       for (let k = Math.floor(ox / dens) - 1; k <= Math.floor((ox + W) / dens) + 1; k++) {
@@ -138,15 +157,20 @@ const World = {
         if (kind < 0.6) { // cypress: trunk + layered canopy
           ctx.fillRect(Math.round(sx), Math.round(hy - th), Math.round(tw), Math.round(th));
           ctx.fillRect(Math.round(sx - tw), Math.round(hy - 8), Math.round(tw * 3), 8);
-          for (let j = 0; j < 4; j++) { const cw = (26 - j * 5) * (0.7 + ihash(k * 3 + j, L.seed) * 0.6), cy = hy - th * (0.45 + j * 0.16); ctx.fillRect(Math.round(sx + tw / 2 - cw / 2), Math.round(cy), Math.round(cw), Math.round(th * 0.09 + 2)); }
+          for (let j = 0; j < 4; j++) {
+            const cwRaw = (26 - j * 5) * (0.7 + ihash(k * 3 + j, L.seed) * 0.6);
+            const cw = Math.max(6, Math.round(cwRaw / 3) * 3), cy = hy - th * (0.45 + j * 0.16);
+            const ch = Math.max(4, Math.round((th * 0.11 + 3) / 2) * 2);
+            Leaf.draw(ctx, Leaf.mass(cw, ch, L.qc, L.qm, L.ql, (k * 3 + j) & 7), sx + tw / 2, cy, 1);
+          }
           // moss strands
           for (let j = 0; j < 3; j++) { const mx = sx + tw / 2 + (ihash(k * 5 + j, L.seed + 1) - 0.5) * 20; ctx.fillRect(Math.round(mx), Math.round(hy - th * 0.55), 1, Math.round(10 + ihash(k * 7 + j, L.seed + 2) * 14)); }
         } else if (kind < 0.85) { // palm
           ctx.fillRect(Math.round(sx), Math.round(hy - th * 0.7), 2, Math.round(th * 0.7));
           for (let j = 0; j < 6; j++) { const a = -Math.PI * 0.9 + j * 0.3, len = 14 + ihash(k * 11 + j, L.seed) * 8; ctx.beginPath(); ctx.moveTo(sx + 1, hy - th * 0.7); ctx.lineTo(sx + 1 + Math.cos(a) * len, hy - th * 0.7 + Math.sin(a) * len + 8); ctx.lineWidth = 2; ctx.strokeStyle = L.col; ctx.stroke(); }
         } else { // mangrove clump
-          ctx.fillRect(Math.round(sx - 10), Math.round(hy - 18), 24, 12);
           for (let j = 0; j < 5; j++) ctx.fillRect(Math.round(sx - 8 + j * 5), Math.round(hy - 8), 1, 9);
+          Leaf.draw(ctx, Leaf.mass(26, 14, L.qc, L.qm, L.ql, (k * 7) & 7), sx + 2, hy - 13, 1);
         }
       }
     }
@@ -638,7 +662,7 @@ const World = {
           for (const bd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.6); ctx.quadraticCurveTo(sx + bd * 14 * z, sy - h * 0.75, sx + bd * 22 * z, sy - h * 0.95); ctx.stroke(); }
           for (let i = 0; i < 5; i++) {
             const cx2 = sx + (ihash(d.v * 9 + i, 31) - 0.5) * 44 * z, cy2 = sy - h - (ihash(i, 32) - 0.35) * 14 * z;
-            const mw = Math.round(20 + ihash(i, 33) * 16);
+            const mw = Math.round((20 + ihash(i, 33) * 16) / 4) * 4;
             Leaf.draw(ctx, Leaf.mass(mw, Math.round(mw * 0.72), '#1d3a19', '#2f5a2a', '#598f3e', d.v * 13 + i), cx2, cy2, z);
           }
           if (d.moss) { ctx.fillStyle = '#93a077'; for (let j = 0; j < 6; j++) { const mx = sx + (ihash(d.v * 5 + j, 34) - 0.5) * 46 * z; ctx.fillRect(Math.round(mx), Math.round(sy - h + 2 * z), Math.max(1, Math.round(z)), Math.round((10 + ihash(j, 35) * 20) * z)); } }
@@ -649,7 +673,7 @@ const World = {
           ctx.fillRect(Math.round(sx - tw * 1.5), Math.round(sy - 8 * z), Math.round(tw * 3), Math.round(8 * z)); // buttress
           ctx.fillStyle = '#2a1e12'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.max(1, Math.round(z)), Math.round(h));
           for (let j = 0; j < 5; j++) {
-            const cw = Math.round((30 - j * 5) * (0.8 + ihash(d.v * 7 + j, 3) * 0.5)), cy = sy - h * (0.4 + j * 0.15);
+            const cw = Math.round((30 - j * 5) * (0.8 + ihash(d.v * 7 + j, 3) * 0.5) / 3) * 3, cy = sy - h * (0.4 + j * 0.15);
             Leaf.draw(ctx, Leaf.mass(Math.max(6, cw), Math.max(4, Math.round(cw * 0.42)), '#1b361a', '#2f5a2a', '#4f8437', d.v * 3 + j), sx, cy, z);
           }
           if (d.knees) { ctx.fillStyle = '#4a3a26'; for (let j = 0; j < 4; j++) { const kx = sx + (ihash(d.v * 3 + j, 41) - 0.5) * 34 * z, kh = (5 + ihash(j, 42) * 9) * z; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(3 * z)), Math.round(kh)); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(z)), Math.round(kh)); ctx.fillStyle = '#4a3a26'; } }

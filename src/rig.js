@@ -498,7 +498,20 @@ function buildBiped(s) {
   { // torso, pivot at the hips
     const o = R.mk(tw + 6, th + 4), x0 = 3, y0 = 2;
     R.rrect(o, x0, y0, tw, th, Math.max(1, Math.round(tw * 0.25)), shirt);
-    R.px(o, x0 + 1, y0 + 1, R.hi(shirt), 2, th * 0.5); R.px(o, x0 + 1, y0 + th - 2, R.lo(shirt), tw - 2, 1);
+    // round the torso off: a lit side, a shaded side and a dark turn at the far edge
+    const sLit = R.hi(shirt), sDk = R.lo(shirt), sDk2 = R.lo2(shirt);
+    for (let j = 0; j < th; j++) for (let i = 0; i < tw; i++) {
+      if (!R.inside(o, x0 + i, y0 + j)) continue;
+      const u = tw > 1 ? i / (tw - 1) : 0.5, bay = BAYER4[((y0 + j) & 3) * 4 + ((x0 + i) & 3)] * 0.0625 - 0.5;
+      if (u < 0.18 + bay * 0.16) R.px(o, x0 + i, y0 + j, sLit);
+      else if (u > 0.86 + bay * 0.1) R.px(o, x0 + i, y0 + j, sDk2);
+      else if (u > 0.66 + bay * 0.18) R.px(o, x0 + i, y0 + j, sDk);
+    }
+    // collar, hem and a couple of cloth folds
+    R.px(o, x0 + 1, y0, R.lo(shirt), tw - 2, 1);
+    R.px(o, x0 + 1, y0 + th - 2, sDk, tw - 2, 1);
+    R.px(o, x0 + Math.round(tw * 0.45), y0 + Math.round(th * 0.45), sDk, 1, Math.max(1, Math.round(th * 0.3)));
+    R.px(o, x0 + Math.round(tw * 0.62), y0 + Math.round(th * 0.6), sDk, 1, Math.max(1, Math.round(th * 0.22)));
     if (s.pattern === 'hawaii') for (let k = 0; k < 6; k++) R.disc(o, x0 + 1 + ihash(k, 41) * (tw - 2), y0 + 1 + ihash(k, 42) * (th - 2), 1, k % 2 ? '#f0e060' : '#f0f0f0');
     if (s.pattern === 'camo') for (let k = 0; k < 5; k++) R.px(o, x0 + 1 + ihash(k, 43) * (tw - 4), y0 + 1 + ihash(k, 44) * (th - 3), R.lo2(shirt), 2 + ihash(k, 45) * 2, 2);
     if (s.vest) { R.px(o, x0 + 1, y0, '#8a7a4a', 2, th * 0.7); R.px(o, x0 + tw - 3, y0, '#8a7a4a', 2, th * 0.7); }
@@ -509,8 +522,32 @@ function buildBiped(s) {
     R.outline(o, OL);
     parts.torso = R.part(o, x0 + tw / 2, y0 + th);
   }
-  { const o = R.mk(7, armLen + 5), aw = Math.max(2, Math.round(Hh * 0.07)); R.px(o, 3 - aw / 2, 1, s.coat ? '#f4f4f0' : shirt, aw, armLen * 0.45); R.px(o, 3 - aw / 2, 1 + armLen * 0.45, skin, aw, armLen * 0.55); R.disc(o, 3, 1 + armLen, Math.max(1.2, aw * 0.75), skin); R.outline(o, OL); parts.arm = R.part(o, 3, 1); }
-  { const o = R.mk(9, legLen + 5), lw = Math.max(2, Math.round(Hh * 0.09)); R.px(o, 4 - lw / 2, 1, pants, lw, s.shorts ? legLen * 0.45 : legLen); if (s.shorts) R.px(o, 4 - lw / 2, 1 + legLen * 0.45, skin, lw, legLen * 0.55); R.px(o, 4 - lw / 2 - 1, legLen, s.boots || '#2a2018', lw + 3, 2); R.outline(o, OL); parts.leg = R.part(o, 4, 1); }
+  { const o = R.mk(7, armLen + 5), aw = Math.max(2, Math.round(Hh * 0.07));
+    const sl = s.coat ? '#f4f4f0' : shirt, cut = Math.round(armLen * 0.45);
+    for (let j = 0; j < armLen; j++) {
+      const c = j < cut ? sl : skin;
+      R.px(o, 3 - aw / 2, 1 + j, c, aw, 1);
+      R.px(o, 3 - aw / 2, 1 + j, R.hi(c), Math.max(1, aw * 0.34), 1);
+      R.px(o, 3 + aw / 2 - Math.max(1, aw * 0.28), 1 + j, R.lo(c), Math.max(1, aw * 0.28), 1);
+    }
+    R.px(o, 3 - aw / 2 - 1, cut, R.lo(sl), aw + 2, 1);                 // cuff
+    R.disc(o, 3, 1 + armLen, Math.max(1.2, aw * 0.75), skin);
+    R.px(o, 3 - aw * 0.5, 1 + armLen - aw * 0.4, R.hi(skin), Math.max(1, aw * 0.5), 1);
+    R.outline(o, OL); parts.arm = R.part(o, 3, 1); }
+  { const o = R.mk(9, legLen + 5), lw = Math.max(2, Math.round(Hh * 0.09));
+    const cut = s.shorts ? Math.round(legLen * 0.45) : legLen;
+    for (let j = 0; j < legLen; j++) {
+      const c = j < cut ? pants : skin;
+      R.px(o, 4 - lw / 2, 1 + j, c, lw, 1);
+      R.px(o, 4 - lw / 2, 1 + j, R.hi(c), Math.max(1, lw * 0.32), 1);
+      R.px(o, 4 + lw / 2 - Math.max(1, lw * 0.28), 1 + j, R.lo(c), Math.max(1, lw * 0.28), 1);
+    }
+    if (s.shorts) R.px(o, 4 - lw / 2 - 1, cut, R.lo(pants), lw + 2, 1);
+    const bc = s.boots || '#2a2018';
+    R.px(o, 4 - lw / 2 - 1, legLen - 1, bc, lw + 3, 3);
+    R.px(o, 4 - lw / 2 - 1, legLen - 1, R.hi(bc), lw + 2, 1);
+    R.px(o, 4 - lw / 2 - 1, legLen + 1, R.lo2(bc), lw + 3, 1);
+    R.outline(o, OL); parts.leg = R.part(o, 4, 1); }
   const propLen = Math.round(Hh * 0.5);
   const mkProp = kind => {
     if (kind === 'rifle') { const o = R.mk(propLen + 2, 6); R.px(o, 1, 2, '#2a2a2a', propLen, 2); R.px(o, 1, 3, '#5a3a1a', propLen * 0.4, 2); R.px(o, propLen * 0.55, 1, '#3a3a3a', 3, 1); R.outline(o, OL); return R.part(o, propLen * 0.35, 3); }
