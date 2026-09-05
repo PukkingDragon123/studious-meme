@@ -27,15 +27,15 @@ F('flgar', 'FLORIDA GAR', 2.5, 5, { len: 68, h: 0.2, snout: 'gar', tail: 'round'
 F('gar', 'ALLIGATOR GAR', 6, 120, { len: 72, h: 0.22, snout: 'gar', tail: 'round', back: '#3e4a2e', mid: '#7b8a58', belly: '#b5bb8f', dark: '#1a2010', dorsal: 'soft' }, { speed: 95, band: [30, 400], school: [1, 2], flee: 100, armor: 9, aggr: 7, aggrMax: 2.2 });
 F('tarpon', 'TARPON', 5, 80, { len: 68, h: 0.3, snout: 'blunt', tail: 'lunate', back: '#5a6f7a', mid: '#a9bfc8', belly: '#e2ecef', dark: '#2a3a44', dorsal: 'soft' }, { speed: 130, band: [30, 500], school: [1, 3], flee: 160 });
 F('eel', 'AMERICAN EEL', 3, 4, { len: 70, h: 0.14, snout: 'point', tail: 'eel', back: '#2a2418', mid: '#5a4a2a', belly: '#b0a070', dark: '#120e08', dorsal: 'none' }, { speed: 80, band: [300, 900], nearFloor: true, school: [1, 1], flee: 80, shock: 6 });
-F('snakehead', 'BULLSEYE SNAKEHEAD', 2.5, 6, { len: 64, h: 0.24, snout: 'point', tail: 'round', back: '#4a3a1a', mid: '#8a6a3a', belly: '#c0a070', dark: '#241a08', pattern: 'blotch', dorsal: 'sail' }, { speed: 90, band: [20, 200], school: [1, 2], flee: 90, aggr: 6, aggrMax: 1.6 });
+F('snakehead', 'BULLSEYE SNAKEHEAD', 2.5, 6, { len: 64, h: 0.24, snout: 'point', tail: 'round', back: '#4a3a1a', mid: '#8a6a3a', belly: '#c0a070', dark: '#241a08', pattern: 'blotch', dorsal: 'sail', teeth: true }, { speed: 90, band: [20, 200], school: [1, 2], flee: 90, aggr: 6, aggrMax: 1.6 });
 F('ladyfish', 'LADYFISH', 1.5, 3, { len: 56, h: 0.22, snout: 'point', tail: 'fork', back: '#4a6a7a', mid: '#b0c8d0', belly: '#f0f4f6', dark: '#243440', dorsal: 'soft' }, { speed: 140, band: [10, 120], school: [3, 6], flee: 150, jumper: true });
 F('snapper', 'MANGROVE SNAPPER', 1.2, 2, { len: 48, h: 0.4, snout: 'blunt', tail: 'fork', back: '#6a4a3a', mid: '#a07a60', belly: '#d8c0a0', dark: '#2e1e14', pattern: 'stripe', dorsal: 'spiny' }, { speed: 80, band: [20, 300], school: [2, 5], flee: 110 });
 F('sheepshead', 'SHEEPSHEAD', 1.5, 5, { len: 52, h: 0.46, snout: 'blunt', tail: 'fork', back: '#5a5a5a', mid: '#c0c0c0', belly: '#e8e8e8', dark: '#222222', pattern: 'bars', dorsal: 'spiny' }, { speed: 70, band: [20, 300], school: [1, 3], flee: 100 });
 F('redfish', 'RED DRUM', 2.5, 12, { len: 64, h: 0.3, snout: 'blunt', tail: 'fork', back: '#8a4a30', mid: '#c08a60', belly: '#e8d0b0', dark: '#3a1e10', pattern: 'spots', spot: '#101010', dorsal: 'spiny' }, { speed: 100, band: [20, 300], school: [1, 3], flee: 120 });
 F('grouper', 'GOLIATH GROUPER', 7, 400, { len: 76, h: 0.46, snout: 'blunt', tail: 'round', back: '#4a4030', mid: '#8a7a5a', belly: '#c0b090', dark: '#221c10', pattern: 'blotch', dorsal: 'spiny' }, { speed: 55, band: [400, 900], school: [1, 1], flee: 70, pred: 16 });
 F('sawfish', 'SMALLTOOTH SAWFISH', 12, 500, { len: 100, h: 0.2, snout: 'gar', tail: 'fork', back: '#8a8a7a', mid: '#c8c8b8', belly: '#e8e8dc', dark: '#3a3a30', dorsal: 'soft' }, { speed: 110, band: [200, 800], school: [1, 1], flee: 90, aggr: 14, aggrMax: 5 });
-F('shark', 'BULL SHARK', 8, 250, { len: 84, h: 0.3, snout: 'point', tail: 'lunate', back: '#6a7f8a', mid: '#9aaeb8', belly: '#d8dfe0', dark: '#2a3a44', dorsal: 'sail' }, { speed: 175, band: [60, 800], school: [1, 1], flee: 0, pred: 22 });
-F('bonnet', 'BONNETHEAD SHARK', 3.5, 20, { len: 70, h: 0.26, snout: 'blunt', tail: 'lunate', back: '#7a8a8a', mid: '#a8b8b8', belly: '#e0e8e8', dark: '#2a3a3a', dorsal: 'sail' }, { speed: 130, band: [40, 400], school: [1, 2], flee: 80, aggr: 8, aggrMax: 2 });
+F('shark', 'BULL SHARK', 8, 250, { len: 84, h: 0.3, snout: 'point', tail: 'lunate', back: '#6a7f8a', mid: '#9aaeb8', belly: '#d8dfe0', dark: '#2a3a44', dorsal: 'sail', teeth: true }, { speed: 175, band: [60, 800], school: [1, 1], flee: 0, pred: 22 });
+F('bonnet', 'BONNETHEAD SHARK', 3.5, 20, { len: 70, h: 0.26, snout: 'blunt', tail: 'lunate', back: '#7a8a8a', mid: '#a8b8b8', belly: '#e0e8e8', dark: '#2a3a3a', dorsal: 'sail', teeth: true }, { speed: 130, band: [40, 400], school: [1, 2], flee: 80, aggr: 8, aggrMax: 2 });
 F('dolphin', 'BOTTLENOSE DOLPHIN', 8, 400, { len: 84, h: 0.3, snout: 'point', tail: 'lunate', back: '#4a5a66', mid: '#8a9aa6', belly: '#d8e0e6', dark: '#1e2a34', dorsal: 'sail' }, { speed: 200, band: [30, 400], school: [2, 4], flee: 220, mammal: true, jumper: true });
 F('manatee', 'MANATEE', 10, 1000, { len: 92, h: 0.42, snout: 'blunt', tail: 'round', back: '#6a7070', mid: '#8a9090', belly: '#a8aeae', dark: '#2e3434', dorsal: 'none' }, { speed: 30, band: [20, 300], school: [1, 2], flee: 60, mammal: true });
 
@@ -81,6 +81,7 @@ Q('otter', 'RIVER OTTER', 3.5, 20, { len: 60, h: 0.3, legs: 0.2, snout: 0.5, ear
 Q('nutria', 'NUTRIA', 2, 15, { len: 46, h: 0.44, legs: 0.2, snout: 0.6, ears: 'short', tail: 'long', tailCol: '#3a2a1a', body: '#6a4a2a', belly: '#8a6a4a', dark: '#2a1a0a' }, { speed: 110, flee: 150, gibs: 3, swims: true, band: [4, 60] });
 Q('iguana', 'GREEN IGUANA', 4, 10, { len: 50, h: 0.3, legs: 0.3, snout: 0.5, ears: 'none', tail: 'long', tailCol: '#5a7a3a', body: '#7aaa4a', belly: '#a8c870', dark: '#3a5a20', pattern: 'bands', mane: '#5a7a3a' }, { speed: 120, flee: 110, gibs: 3 });
 Q('cow', 'FLORIDA CRACKER COW', 8, 900, { len: 76, h: 0.55, legs: 0.8, snout: 0.7, ears: 'short', horns: true, tail: 'long', body: '#8a6a4a', belly: '#c0a888', dark: '#3a2a1a', pattern: 'spots', spot: '#f0e8e0', hoof: '#2a2018' }, { speed: 90, flee: 60, gibs: 6 });
+Q('rat', 'SEWER RAT', 0.9, 0.8, { len: 20, h: 0.5, legs: 0.25, snout: 0.9, ears: 'long', tail: 'long', tailCol: '#c09080', body: '#6a5a50', belly: '#9a8a80', dark: '#2a2420', eye: '#e03030' }, { speed: 130, flee: 70, gibs: 2 });
 Q('dog', 'CAMP DOG', 3, 60, { len: 48, h: 0.42, legs: 0.7, snout: 0.7, ears: 'short', tail: 'long', body: '#c0a060', belly: '#e8d8b0', dark: '#4a3a20' }, { speed: 200, flee: 90, gibs: 4 });
 
 // ------------------------------------------------------------ people
@@ -90,6 +91,9 @@ P('tourist', 'TOURIST', 5.6, 160, { skin: '#e0b090', shirt: '#d94a4a', pants: '#
 P('poacher', 'POACHER', 5.9, 180, { skin: '#d0a080', shirt: '#4a4a30', pants: '#2a3020', hair: '#5a3a1a', rifle: true }, { speed: 130, flee: 100 });
 P('ranger', 'RANGER', 5.8, 170, { skin: '#c09070', shirt: '#4a6a30', pants: '#3a4a28', hair: '#3a2a1a', hat: '#3a5a2a' }, { speed: 140, flee: 130 });
 P('kayaker', 'KAYAKER', 5.7, 165, { skin: '#e0b090', shirt: '#e0a020', pants: '#202020', hair: '#2a1a0a' }, {});
+P('scientist', 'SCIENTIST', 5.8, 160, { skin: '#e0b090', shirt: '#3a6ab0', pants: '#3a3a4a', hair: '#3a2a1a' }, { speed: 120, flee: 160 });
+P('shopkeep', 'SHOPKEEPER', 5.8, 190, { skin: '#e0b090', shirt: '#f0f0e0', pants: '#3a3a4a', hair: '#5a3a1a' }, { speed: 110, flee: 120 });
+P('camper', 'CAMPER', 5.7, 165, { skin: '#e0b090', shirt: '#4a9a5a', pants: '#6a5a4a', hair: '#c08040' }, { speed: 140, flee: 170 });
 
 // ------------------------------------------------------------ snakes (chain bodies, see Snake)
 def('moccasin', { name: 'WATER MOCCASIN', ft: 3, lb: 2.5, rig: 'snake', cat: 'snake', base: '#3a2a1e', band: '#5a4a34', belly: '#8a7a60', dark: '#1a1008', eye: '#c0a030', pattern: 'bands', n: 12, hp: 12, speed: 75, venom: 3 });
@@ -109,6 +113,7 @@ def('treefrog', { name: 'GREEN TREEFROG', ft: 0.2, lb: 0.03, rig: 'frog', cat: '
 def('crayfish', { name: 'CRAYFISH', ft: 0.35, lb: 0.05, rig: 'crab', cat: 'bottom', len: 30, body: '#8a3a2a', claw: '#c05a3a', long: true, armor: 3, hp: 4, speed: 26 });
 def('crab', { name: 'BLUE CRAB', ft: 0.6, lb: 0.5, rig: 'crab', cat: 'bottom', len: 26, body: '#3a6ab0', claw: '#5a8ad0', armor: 6, hp: 8, speed: 34, pinch: 3 });
 def('fiddler', { name: 'FIDDLER CRAB', ft: 0.12, lb: 0.01, rig: 'crab', cat: 'bottom', len: 20, body: '#6a5a4a', claw: '#e0d0b0', armor: 1, hp: 1, speed: 40 });
+def('roach', { name: 'COCKROACH', ft: 0.15, lb: 0.01, rig: 'crab', cat: 'bottom', len: 12, body: '#5a3a1a', claw: '#5a3a1a', long: true, armor: 0, hp: 1, speed: 60 });
 def('shrimp', { name: 'GRASS SHRIMP', ft: 0.15, lb: 0.005, rig: 'crab', cat: 'bottom', len: 24, body: '#c0d0c0', claw: '#c0d0c0', long: true, armor: 0, hp: 1, speed: 50 });
 def('snail', { name: 'APPLE SNAIL', ft: 0.2, lb: 0.1, rig: 'snail', cat: 'bottom', len: 18, shell: '#c09a4a', body: '#8a7a6a', armor: 4, hp: 3, speed: 6 });
 def('ray', { name: 'SOUTHERN STINGRAY', ft: 3, lb: 40, rig: 'ray', cat: 'ray', len: 60, body: '#6a5a44', spot: '#8a7a5a' });

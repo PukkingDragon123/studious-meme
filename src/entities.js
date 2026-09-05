@@ -16,13 +16,14 @@ class Entity {
     this.threat = 0; this.latchable = true; this.frames = null; this.frame = 0; this.animT = 0; this.persistent = false; this.isBoss = false;
     this.lastHitT = -9; this.gulped = false; this.feathers = null; this.wasAir = false;
     this.rig = null; this.species = null; this.anim = { phase: rand(TAU), speed: 0, mode: 'stand' }; this.worldLen = 0; this.groundOff = 0;
+    this.missing = null; this.dismembered = 0; this.beheaded = false;
   }
   // adopt a species from the catalogue: real size, weight-based food value, rigged art
-  useSpecies(id) {
+  useSpecies(id, variant = 0) {
     const sp = SPECIES[id]; if (!sp) return;
-    this.species = sp; this.name = sp.name; this.rig = rigOf(sp); this.kind = id;
-    this.worldLen = ftToPx(sp.ft); this.size = 1;
-    this.r = this.worldLen * (sp.cat === 'bird' || sp.cat === 'human' ? 0.16 : 0.2);
+    this.species = sp; this.name = sp.name; this.rig = rigOf(sp, variant); this.kind = id;
+    this.worldLen = gsOf(sp); this.size = 1;
+    this.r = this.worldLen * (sp.cat === 'bird' ? 0.18 : sp.cat === 'human' ? 0.14 : 0.2);
     this.sizeClass = sizeClassOf(sp.ft); this.mass = massOf(sp.lb);
     this.hp = this.maxHp = sp.hp || (sp.cat === 'human' ? 30 : sp.cat === 'bird' ? Math.round(4 + sp.lb * 3) : Math.round(4 + Math.pow(sp.lb, 0.75) * 3));
     this.armor = sp.armor || 0; this.gibs = sp.gibs || clamp(Math.round(2 + Math.log2(1 + sp.lb)), 2, 6);
@@ -72,19 +73,35 @@ class Entity {
       return 0;
     }
     this.hp -= dmg; this.flash = 0.1; this.lastHitT = G.t; this.aware = true; this.awareT = 3;
+    this.squash = 1;
     if (this.bleeds) {
-      const gm = src === G.player ? G.player.st.goreMul : 1;
-      G.fx.blood(this.x, this.y, clamp(dmg * 1.2, 5, 40) * gm, opts.dx || 0, opts.dy || 0, 70 + Math.min(dmg, 60), this.bloodColors);
-      G.fx.cloud(this.x, this.y, (8 + Math.min(dmg, 40) * 0.4) * Math.sqrt(this.size), this.bloodColors[0]);
+      const gm = (src === G.player ? G.player.st.goreMul : 1) * (G.settings.gore ? 1.6 : 0.5);
+      G.fx.blood(this.x, this.y, clamp(dmg * 1.4, 6, 48) * gm, opts.dx || 0, opts.dy || 0, 80 + Math.min(dmg, 70), this.bloodColors);
+      G.fx.cloud(this.x, this.y, (10 + Math.min(dmg, 40) * 0.5) * Math.sqrt(this.size), this.bloodColors[0]);
+      Gore.slick(this.x, this.y, 5 + Math.min(14, dmg * 0.4));
+      if (src === G.player && !this.dead) Gore.maybeTear(this, dmg, opts.dx || 0, opts.dy || 0);
     } else G.fx.sparks(this.x, this.y, 8, opts.dx, opts.dy);
     if (this.hp <= 0) this.die(src);
     return dmg;
   }
-  die(killer) { if (this.dead) return; this.dead = true; this.remove = true; G.onEntityKilled(this, killer === G.player, this.gulped); }
+  die(killer) {
+    if (this.dead) return; this.dead = true; this.remove = true;
+    if (this.human && killer === G.player) for (const o of G.ents) if (o !== this && o.human && !o.dead && Math.abs(o.x - this.x) < 300) { o.panicked = true; o.state = 'flee'; o.stateT = 6; o.watching = false; }
+    G.onEntityKilled(this, killer === G.player, this.gulped);
+  }
   explode(power = 1) {
     const s = this.spr, big = this.mass >= 60;
-    if (this.bleeds) G.fx.gore(this.x, this.y, 90 * Math.sqrt(power), 0, 0, big);
-    if (s) {
+    if (this.bleeds) Gore.burst(this, power);
+    if (this.rig && this.rig.world) {
+      const pls = this.rig.world(this.x, this.y, this.facing, this.angle, this.anim, this.size * this.rig.scale), n = Math.max(1, pls.length);
+      for (const pl of pls) {
+        if (this.missing && this.missing.has(pl.id)) continue;
+        const g = new Gib(pl.wx, pl.wy, pl.p, { sx: 0, sy: 0, sw: pl.p.w, sh: pl.p.h }, pl.k, pl.facing, this.bleeds, this.bloodColors);
+        g.rot = pl.wa; g.mass = this.edible && this.bleeds ? this.mass * 0.3 / n : 0; g.edible = g.mass > 0;
+        const a = rand(TAU), sp = rand(40, 130) * Math.sqrt(power); g.vx = this.vx * 0.3 + Math.cos(a) * sp; g.vy = this.vy * 0.3 + Math.sin(a) * sp - 20; g.vr = rand(-8, 8);
+        G.add(g);
+      }
+    } else if (s) {
       const pieces = sliceSprite(s, clamp(this.gibs, 2, 6)), ds = this.drawScale;
       for (const p of pieces) {
         const g = new Gib(this.x + (p.sx + p.sw / 2 - s.w / 2) * ds * this.facing, this.y + (p.sy + p.sh / 2 - s.h / 2) * ds, s, p, ds, this.facing, this.bleeds, this.bloodColors);
@@ -94,11 +111,13 @@ class Entity {
         G.add(g);
       }
     }
-    if (this.feathers) G.fx.feathers(this.x, this.y, 14, this.feathers);
+    if (this.feathers) G.fx.feathers(this.x, this.y, 18, this.feathers);
     SFX.gib(this.pan);
   }
   tick(dt) {
     this.t += dt; if (this.flash > 0) this.flash -= dt;
+    if (this.squash > 0) this.squash = Math.max(0, this.squash - dt * 5);
+    if (this.missing && this.missing.size && this.bleeds && chance(dt * 6)) { const pls = this.rig && this.rig.world ? this.rig.world(this.x, this.y, this.facing, this.angle, this.anim, this.size * this.rig.scale) : []; const pl = pls.find(q => this.missing.has(q.id)); if (pl) G.fx.blood(pl.wx, pl.wy, 2, 0, 0.4, 30, this.bloodColors); }
     if (this.awareT > 0) this.awareT -= dt; else this.aware = false;
     if (this.stun > 0) this.stun -= dt;
     this.slow = 0;
@@ -108,7 +127,10 @@ class Entity {
   update(dt) { this.tick(dt); }
   draw(ctx) {
     if (this.rig) {
-      this.rig.draw(ctx, this.x, this.y, this.facing, this.angle, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
+      const sq = this.squash > 0 ? this.squash : 0;
+      if (sq > 0) { ctx.save(); ctx.translate(this.x, this.y); ctx.scale(1 + sq * 0.25, 1 - sq * 0.25); ctx.translate(-this.x, -this.y); }
+      this.rig.draw(ctx, this.x, this.y, this.facing, this.angle, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0, missing: this.missing });
+      if (sq > 0) ctx.restore();
       if (this.poison > 0) { ctx.globalAlpha = 0.3; ctx.fillStyle = '#40ff60'; ctx.fillRect(this.x - this.r, this.y - this.r * 0.6, this.r * 2, this.r * 1.2); ctx.globalAlpha = 1; }
       return;
     }
@@ -132,11 +154,11 @@ class Gib extends Entity {
   }
   update(dt) {
     this.tick(dt); this.life -= dt; if (this.life <= 0) this.remove = true;
-    if (this.inWater) { this.drag(dt, 2.5); this.vy += 30 * dt; this.vr *= 0.97; if (this.wasAir) { this.wasAir = false; G.fx.splash(this.x, 0.35, this.vx); this.vx *= 0.4; this.vy *= 0.4; } }
+    if (this.inWater) { this.drag(dt, 2.5); this.vy += (this.buoyant ? -26 : 30) * dt; this.vr *= 0.97; if (this.wasAir) { this.wasAir = false; G.fx.splash(this.x, 0.35, this.vx); Water.splash(this.x, 18, 10); this.vx *= 0.4; this.vy *= 0.4; if (this.bleedFx > 0) Gore.slick(this.x, this.y, 7); } if (this.buoyant) { const s = World.surface(this.x); if (this.y < s + 2) { this.y = s + 2; this.vy = 0; this.vx *= 0.9; } } }
     else { this.vy += 600 * dt; this.wasAir = true; }
     this.move(dt); this.rot += this.vr * dt;
     const fy = World.floorY(this.x), rr = this.r * this.size * 0.5;
-    if (this.y > fy - rr) { if (this.vy > 25) G.fx.silt(this.x, fy, 3, 20); this.y = fy - rr; this.vy = 0; this.vx *= 0.8; this.vr *= 0.8; }
+    if (this.y > fy - rr) { if (this.vy > 25) { G.fx.silt(this.x, fy, 3, 20); if (this.bleedFx > 0 && chance(0.5)) Gore.slick(this.x, this.y, 6); } this.y = fy - rr; this.vy = 0; this.vx *= 0.8; this.vr *= 0.8; }
     if (this.bleedFx > 0) { this.bleedFx -= dt; if (chance(dt * 12)) G.fx.blood(this.x, this.y, 1, 0, 0, 15, this.colors); }
   }
   draw(ctx) {
@@ -318,7 +340,7 @@ class Bird extends Entity {
 // ---------- land animals ----------
 class LandAnimal extends Entity {
   constructor(x, kind) {
-    super(x, 0); const d = LAND[kind]; this.useSpecies(kind === 'survivor' ? 'tourist' : kind); this.def = d; this.kind = kind;
+    super(x, 0); const d = LAND[kind]; this.useSpecies(kind === 'survivor' ? 'tourist' : kind, d.human ? randi(0, 7) : 0); this.def = d; this.kind = kind;
     this.human = !!d.human; this.prey = null; this.huntCd = rand(2, 8);
     this.type = 'land'; this.facing = chance(0.5) ? 1 : -1; this.state = 'idle'; this.stateT = rand(1, 3); this.swimT = 0; this.layer = 1; this.rodT = 0; this.chargeCd = 0;
     this.y = World.floorY(x) - this.groundOff; this.grazeT = 0; this.grazeK = 0;
@@ -329,6 +351,7 @@ class LandAnimal extends Entity {
     const fy = World.floorY(this.x);
     if (fy > 0 || this.y > World.surface(this.x) + 4) { this.updateSwim(dt, P, d); return; }
     this.y = fy - this.groundOff; this.vy = 0;
+    if (this.watching) { this.vx = 0; this.anim.phase += dt * 0.8; this.facing = sign(P.x - this.x) || this.facing; return; }
     const sees = this.senses(d.flee), dP = this.distTo(P);
     // land predators hunt other land animals when the player is not a factor
     if (d.hunter) {
@@ -345,6 +368,31 @@ class LandAnimal extends Entity {
       }
     }
     if (d.charge && !P.dead && P.size < 2.9 && dP < 140 && (P.y < 40) && this.chargeCd <= 0) this.state = 'charge';
+    // armed people stand their ground and shoot until you get too close
+    if (this.armed === undefined) { const v = this.rig && this.rig.spec ? this.rig.spec.prop : null; this.armed = v === 'rifle' || v === 'shotgun' || v === 'harpoon' ? v : null; this.shootCd = rand(0.6, 2); }
+    if (this.armed && !P.dead && !this.panicked) {
+      const seesP = dP < 420 && P.y > -200 && Math.abs(P.y - this.y) < 260;
+      if (seesP && dP > 76) {
+        this.state = 'shoot'; this.stateT = 1.2; this.facing = sign(P.x - this.x) || this.facing;
+        this.shootCd -= dt;
+        if (this.shootCd <= 0) {
+          this.shootCd = this.armed === 'shotgun' ? rand(1.5, 2.4) : this.armed === 'harpoon' ? rand(2.6, 4) : rand(0.9, 1.6);
+          const hx = this.x + this.facing * this.r * 0.8, hy = this.y - this.worldLen * 0.55;
+          // lead the shot at where the croc is going
+          const tx = P.x + P.vx * 0.35 + rand(-10, 10), ty = P.y + P.vy * 0.3 + rand(-8, 8);
+          const a = Math.atan2(ty - hy, tx - hx);
+          if (this.armed === 'shotgun') { for (let k = -1; k <= 1; k++) G.add(new Projectile(hx, hy, Math.cos(a + k * 0.08) * 460, Math.sin(a + k * 0.08) * 460, 'bullet', this)); }
+          else if (this.armed === 'harpoon') G.add(new Projectile(hx, hy, Math.cos(a) * 420, Math.sin(a) * 420, 'harpoon', this));
+          else G.add(new Projectile(hx, hy, Math.cos(a) * 520, Math.sin(a) * 520, 'bullet', this));
+          this.muzzle = 0.07; SFX.gunshot(this.pan); G.fx.smoke(hx + Math.cos(a) * 8, hy + Math.sin(a) * 8, 1, '#c0c0c0');
+        }
+        this.vx = approach(this.vx, 0, 400 * dt);
+        this.x += this.vx * dt; if (this.muzzle > 0) this.muzzle -= dt;
+        return;
+      }
+      if (seesP && dP <= 76) { this.panicked = true; SFX.scream(this.pan); }   // too close: break and run
+    }
+    if (this.muzzle > 0) this.muzzle -= dt;
     if (this.state !== 'charge' && sees && (P.size > this.sizeClass * 0.45 || d.human)) { if (this.state !== 'flee') { this.state = 'flee'; if (d.human) SFX.yell(this.pan); } this.stateT = 2; }
     this.chargeCd -= dt;
     switch (this.state) {
@@ -391,9 +439,12 @@ class LandAnimal extends Entity {
     this.anim.speed = this.state === 'swim' ? 0.5 : sp;
     if (moving || this.state === 'swim') this.anim.phase += 0.016 * (6 + sp * 10);
     this.grazeK = lerp(this.grazeK, this.state === 'idle' && !this.human ? 1 : 0, 0.05); this.anim.graze = this.grazeK;
-    this.anim.panic = this.state === 'flee' || this.state === 'swim' ? 1 : 0; this.anim.aim = 0;
+    this.anim.panic = this.state === 'flee' || this.state === 'swim' ? 1 : 0;
+    this.anim.aim = this.state === 'shoot' ? 1 : 0;
+    this.anim.cast = this.kind === 'fisherman' && this.state === 'idle' ? 1 : 0;
     const ang = this.state === 'swim' ? (this.human ? -Math.PI / 2 + 0.3 : 0.25) : 0;
     this.rig.draw(ctx, this.x, this.y, this.facing, ang, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
+    if (this.muzzle > 0) { ctx.fillStyle = '#fff0a0'; const mx = this.x + this.facing * this.r * 1.5, my = this.y - this.worldLen * 0.55; ctx.fillRect(mx - 2, my - 2, 5, 4); ctx.fillStyle = '#ffd040'; ctx.fillRect(mx + this.facing * 3, my - 1, 3, 2); }
     if (this.kind === 'fisherman' && this.state !== 'swim' && this.state !== 'flee') {
       const hx = this.x + this.facing * this.r * 0.9, hy = this.y - this.groundOff * 0.72;
       ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(hx + this.facing * this.r * 1.6, hy - this.r * 0.8); ctx.lineTo(hx + this.facing * this.r * 2.6, World.surface(this.x) + 4 + Math.sin(this.rodT) * 1); ctx.stroke();
@@ -405,11 +456,11 @@ class Snake extends Entity {
   constructor(x, y, kind, mul = 1) {
     super(x, y); this.kind = kind; this.type = 'snake';
     const sp = SPECIES[kind] || SPECIES.moccasin; this.species = sp; this.name = sp.name;
-    const P2 = snakeParts(sp); this.head = P2.head; this.segs = P2.segs; this.n = sp.n;
-    // segment spacing so the whole chain spans the real length (times the boss multiplier)
-    const worldLen = ftToPx(sp.ft) * mul; this.sp = worldLen / (this.n + 1); this.size = this.sp / (12 * 0.85); this.mul = mul;
+    const P2 = snakeParts(sp); this.head = P2.head; this.segs = P2.segs; this.n = sp.n; this.D = P2.D;
+    // segment spacing so the whole chain spans the game length (times the boss multiplier)
+    const worldLen = gsOf(sp) * mul; this.sp = worldLen / (this.n + 1); this.k = this.sp * 1.7 / this.D; this.size = 1; this.mul = mul;
     this.hp = Math.round(sp.hp * mul * mul); this.mass = massOf(sp.lb * mul * mul); this.sizeClass = sizeClassOf(sp.ft) * mul; this.speed = sp.speed;
-    this.venom = sp.venom || 0; this.constrict = (sp.constrict || 0) * mul; this.r = this.sp * 0.5; this.gibs = 0; this.threat = sp.constrict ? 1 : 0;
+    this.venom = sp.venom || 0; this.constrict = (sp.constrict || 0) * mul; this.r = this.sp * 0.8; this.gibs = 0; this.threat = sp.constrict ? 1 : 0;
     if (kind === 'python' && mul > 1.3) this.name = 'MOTHER PYTHON';
     this.maxHp = this.hp; this.chain = []; for (let i = 0; i <= this.n; i++) this.chain.push({ x: x - i * this.sp, y, a: 0 });
     this.tx = x; this.ty = y; this.retarget = 0; this.phase = rand(TAU); this.state = 'wander'; this.strikeCd = 0; this.grabT = 0; this.bloodColors = ['#7a1010', '#a02020', '#c03030', '#5a0808'];
@@ -468,7 +519,7 @@ class Snake extends Entity {
     G.fx.gore(this.x, this.y, 80 * Math.sqrt(power), 0, 0, this.constrict > 0);
     for (let i = 0; i < this.chain.length; i++) {
       const c = this.chain[i], s = i === 0 ? this.head : this.segs[i % 2];
-      const g = new Gib(c.x, c.y, s, { sx: 0, sy: 0, sw: s.w, sh: s.h }, this.size / RIG_PX * 2, 1, true, this.bloodColors);
+      const g = new Gib(c.x, c.y, s, { sx: 0, sy: 0, sw: s.w, sh: s.h }, this.k, 1, true, this.bloodColors);
       g.rot = c.a; g.mass = this.mass * 0.3 / this.chain.length; g.edible = true; const a = rand(TAU), spd = rand(30, 90); g.vx = Math.cos(a) * spd; g.vy = Math.sin(a) * spd - 20; g.vr = rand(-6, 6);
       G.add(g);
     }
@@ -476,8 +527,8 @@ class Snake extends Entity {
   }
   draw(ctx) {
     const c = this.chain, white = this.flash > 0;
-    const k = this.size / RIG_PX * 2, flip = Math.cos(c[0].a) >= 0 ? 1 : -1;
-    for (let i = c.length - 1; i >= 1; i--) { const s = this.segs[i % 2]; const taper = i > c.length - 5 ? 1 - (i - (c.length - 5)) * 0.15 : 1; R.drawImg(ctx, white ? spriteWhite(s).c : s.c, s, c[i].x, c[i].y, c[i].a, k, k * flip * taper); }
+    const k = this.k, flip = Math.cos(c[0].a) >= 0 ? 1 : -1;
+    for (let i = c.length - 1; i >= 1; i--) { const s = this.segs[i % 2]; const taper = i > c.length - 6 ? 1 - (i - (c.length - 6)) * 0.13 : 1; R.drawImg(ctx, white ? spriteWhite(s).c : s.c, s, c[i].x, c[i].y, c[i].a, k * taper, k * flip * taper); }
     R.drawImg(ctx, white ? spriteWhite(this.head).c : this.head.c, this.head, c[0].x, c[0].y, c[0].a, k, k * flip);
   }
 }
@@ -573,7 +624,7 @@ class Gator extends Entity {
 // ---------- humans in the water ----------
 class Human extends Entity {
   constructor(x, y, kind = 'swimmer') {
-    super(x, y); this.useSpecies(SPECIES[kind] ? kind : 'tourist'); this.type = 'human'; this.human = true; this.kind = kind; this.layer = 1; this.life = 45; this.screamT = rand(0.5, 2); this.anim.panic = 1;
+    super(x, y); this.useSpecies(SPECIES[kind] ? kind : 'tourist', randi(0, 7)); this.type = 'human'; this.human = true; this.kind = kind; this.layer = 1; this.life = 45; this.screamT = rand(0.5, 2); this.anim.panic = 1; this.anim.swim = 1;
   }
   update(dt) {
     this.tick(dt); this.life -= dt; const s = World.surface(this.x);
@@ -586,7 +637,7 @@ class Human extends Entity {
     if (World.floorY(this.x) < -2) { this.remove = true; const s2 = new LandAnimal(this.x, 'survivor'); s2.state = 'flee'; s2.stateT = 3; G.add(s2); }
     if (this.life <= 0) { this.bleeds = true; this.die(null); }
   }
-  draw(ctx) { this.rig.draw(ctx, this.x, this.y + this.r * 0.3, this.facing, -Math.PI / 2 + 0.35, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 }); }
+  draw(ctx) { this.rig.draw(ctx, this.x, this.y + this.worldLen * 0.42, this.facing, -Math.PI / 2 + 0.4, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0, missing: this.missing }); }
   explode(p) { super.explode(p); dropMeat(this.x, this.y, 2, 6); if (chance(0.7)) { const g = new Gib(this.x, this.y, SPR.armGib, { sx: 0, sy: 0, sw: 3, sh: 3 }, 1.5, 1, true, BLOOD_COLORS); g.mass = 6; g.edible = true; g.vx = rand(-80, 80); g.vy = -rand(60, 140); g.vr = rand(-9, 9); G.add(g); } }
 }
 // ---------- boats ----------
@@ -595,10 +646,10 @@ class Boat extends Entity {
     super(x, 0); this.kind = kind; this.type = 'boat'; this.edible = false; this.bleeds = false; this.latchable = false; this.dir = dir; this.facing = dir; this.layer = 1;
     this.war = kind === 'warboat'; this.isBoss = this.war; this.persistent = this.war;
     this.jon = kind === 'jon'; this.pontoon = kind === 'pontoon'; this.airboat = !this.jon && !this.pontoon;
-    // real hull lengths: jon boat 14 ft, airboat 18 ft, warboat 22 ft, pontoon 24 ft
+    // hull lengths in game px: jon boat 84, airboat 100, warboat 130, pontoon 150
     this.ft = this.pontoon ? 24 : this.war ? 22 : this.jon ? 14 : 18;
     this.baseL = this.pontoon ? 84 : this.war ? 68 : this.jon ? 40 : 52;      // hull half-length in local px
-    this.bs = ftToPx(this.ft) / (this.baseL * 2);                             // local px -> world px
+    this.bs = (this.pontoon ? 150 : this.war ? 130 : this.jon ? 84 : 100) / (this.baseL * 2);   // local px -> world px
     this.hp = this.war ? 320 : this.pontoon ? 160 : this.jon ? 55 : 90; this.maxHp = this.hp;
     this.armor = this.war ? 14 : this.jon ? 5 : 9; this.sizeClass = this.ft / 1.5; this.r = this.baseL * this.bs; this.mass = 0;
     this.name = this.war ? 'POACHER WARBOAT' : this.pontoon ? 'PARTY PONTOON' : this.jon ? 'JON BOAT' : kind === 'tourist' ? 'AIRBOAT TOUR' : 'POACHERS';
@@ -609,20 +660,20 @@ class Boat extends Entity {
     const n = this.war ? 3 : this.pontoon ? 5 : this.jon ? 2 : kind === 'tourist' ? 4 : 2;
     const ptype = this.pontoon ? 'tourist' : this.jon ? 'fisherman' : kind === 'tourist' ? 'tourist' : 'poacher';
     const spread = this.pontoon ? 26 : this.jon ? 22 : this.war ? 22 : 18;
-    for (let i = 0; i < n; i++) this.pass.push({ ox: -(n - 1) * spread / 2 + i * spread + (this.airboat ? 6 : 0), oy: -4, alive: true, shootCd: rand(0.5, 2), type: ptype, flash: 0, rig: rigOf(SPECIES[ptype]), phase: rand(TAU), panic: 0 });
+    for (let i = 0; i < n; i++) this.pass.push({ ox: -(n - 1) * spread / 2 + i * spread + (this.airboat ? 6 : 0), oy: -4, alive: true, shootCd: rand(0.5, 2), type: ptype, flash: 0, rig: rigOf(SPECIES[ptype], randi(0, 7)), phase: rand(TAU), panic: 0 });
     this.tether = null; this.debris = 0;
   }
   get alivePass() { return this.pass.filter(p => p.alive); }
-  passPos(p) { const ph = ftToPx(SPECIES[p.type].ft); return [this.x + p.ox * this.bs * this.facing, this.y + p.oy * this.bs - ph * 0.5]; }
+  passPos(p) { const ph = gsOf(SPECIES[p.type]); return [this.x + p.ox * this.bs * this.facing, this.y + p.oy * this.bs - ph * 0.5]; }
   hitTest(x, y, r) {
     if (this.sinking) return false;
-    for (const p of this.alivePass) { const [px, py] = this.passPos(p); const ph = ftToPx(SPECIES[p.type].ft); if (Math.abs(x - px) < r + ph * 0.18 && Math.abs(y - py) < r + ph * 0.5) return true; }
+    for (const p of this.alivePass) { const [px, py] = this.passPos(p); const ph = gsOf(SPECIES[p.type]); if (Math.abs(x - px) < r + ph * 0.18 && Math.abs(y - py) < r + ph * 0.5) return true; }
     return Math.abs(x - this.x) < r + this.r && Math.abs(y - this.y) < r + 10 * this.bs;
   }
   nearestDist(x, y) { return Math.max(0, Math.hypot(Math.max(0, Math.abs(x - this.x) - this.r), Math.max(0, Math.abs(y - this.y) - 8 * this.bs))); }
   onBite(P, sx, sy, dx, dy) {
     for (const p of this.alivePass) {
-      const [px, py] = this.passPos(p); const ph = ftToPx(SPECIES[p.type].ft);
+      const [px, py] = this.passPos(p); const ph = gsOf(SPECIES[p.type]);
       if (Math.abs(sx - px) < P.biteRange + ph * 0.2 && Math.abs(sy - py) < P.biteRange + ph * 0.5) { this.killPassenger(p, P, dx, dy); return; }
     }
     const dmg = P.biteDmg * (P.st.pierce ? 3 : 1) * (P.st.hullMul || 1);
@@ -761,7 +812,7 @@ class Boat extends Entity {
   drawPeople(ctx) {
     for (const p of this.pass) {
       if (!p.alive) continue;
-      const [px, py] = this.passPos(p), ph = ftToPx(SPECIES[p.type].ft);
+      const [px, py] = this.passPos(p), ph = gsOf(SPECIES[p.type]);
       const aim = p.type === 'poacher' && !G.player.dead && Math.abs(G.player.x - this.x) < 320 + this.r && G.player.y > -160 && G.player.y < 110;
       const face = aim ? sign(G.player.x - px) || this.facing : this.facing;
       p.rig.draw(ctx, px, py + ph * 0.5, face, this.angle, { phase: p.phase, speed: 0, panic: p.panic > 0 ? 1 : 0, aim: aim ? 1 : 0 }, { scale: p.rig.scale, white: this.flash > 0 });
@@ -773,8 +824,8 @@ class Boat extends Entity {
 class Kayak extends Entity {
   constructor(x, dir) {
     super(x, 0); this.dir = dir || (chance(0.5) ? 1 : -1); this.facing = this.dir; this.type = 'kayak'; this.bleeds = false; this.layer = 1; this.latchable = false; this.paddle = 0;
-    this.bs = ftToPx(12) / 60; this.r = 30 * this.bs; this.hp = 10; this.maxHp = 10; this.mass = 0; this.sizeClass = 12 / 1.5; this.name = 'KAYAKER';
-    this.rider = rigOf(SPECIES.kayaker); this.rh = ftToPx(SPECIES.kayaker.ft); this.ph = rand(TAU);
+    this.bs = 70 / 60; this.r = 30 * this.bs; this.hp = 10; this.maxHp = 10; this.mass = 0; this.sizeClass = 12 / 1.5; this.name = 'KAYAKER';
+    this.rider = rigOf(SPECIES.kayaker, randi(0, 7)); this.rh = gsOf(SPECIES.kayaker); this.ph = rand(TAU);
   }
   update(dt) {
     this.tick(dt); const s = World.surface(this.x); this.y = s - 2 * this.bs; this.paddle += dt * 4; this.ph += dt;
@@ -845,7 +896,7 @@ class Projectile extends Entity {
 class SkunkApe extends Entity {
   constructor(x) {
     super(x, 0); this.useSpecies('skunkape'); this.hp = 900; this.maxHp = 900; this.mass = 1200; this.type = 'skunkape'; this.isBoss = true; this.persistent = true; this.threat = 1; this.gibs = 6; this.layer = 1;
-    this.hh = ftToPx(7.5); this.y = World.floorY(x) - this.hh * 0.5; this.throwCd = 2; this.poundCd = 0; this.walkT = 0; this.rage = false; this.bloodColors = ['#7a1010', '#a51a1a', '#c02020', '#5a0808']; this.roarCd = 0;
+    this.hh = gsOf(SPECIES.skunkape); this.y = World.floorY(x) - this.hh * 0.5; this.throwCd = 2; this.poundCd = 0; this.walkT = 0; this.rage = false; this.bloodColors = ['#7a1010', '#a51a1a', '#c02020', '#5a0808']; this.roarCd = 0;
   }
   update(dt) {
     this.tick(dt); const P = G.player; const fy = World.floorY(this.x);

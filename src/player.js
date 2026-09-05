@@ -5,6 +5,7 @@ class Player {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
+    this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
     this.st = {
       speed: 1, accel: 1, bite: 1, biteRadius: 1, hpMul: 1, armor: 0, bulletArmor: 0, hungerRate: 1, regen: 0, lifesteal: 0,
       rollDmg: 1, rollSpeed: 1, latchMul: 2, pierce: false, crit: 0, multiChomp: false, goreMul: 1, frenzy: false, ironStomach: false, bullRush: false,
@@ -128,6 +129,9 @@ class Player {
     const fy2 = World.floorY(this.x);
     if (this.y > fy2 - 5 * this.vis) { this.y = fy2 - 5 * this.vis; if (this.vy > 0) this.vy *= -0.15; if (fy2 < 0) this.onLand = true; }
     if (this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
+    if (G.intro && G.intro.grate && !G.intro.grate.broken) { const gx = G.intro.grate.x - 26 * this.vis; if (this.x > gx) { this.x = gx; if (this.vx > 0) this.vx = 0; } }
+    const roof = World.roofY(this.x);
+    if (roof !== null) { const lim = roof + 6 * this.vis; if (this.y < lim) { this.y = lim; if (this.vy < 0) this.vy *= -0.2; } }
     // heading
     let targetA = this.angle;
     if (this.onLand) {
@@ -175,9 +179,9 @@ class Player {
     this.magnetTick(dt);
     if (this.st.barb) this.barbTick(dt);
     if (under && sp > this.speedMax * 0.5 && chance(dt * 5)) G.fx.bubbles(this.x - Math.cos(this.angle) * 10 * this.vis, this.y, 1, 3 * this.vis);
-    // shed
+    // growing into a new size tier sheds your skin: a free gene point and a new name
     const tier = tierFor(this.sizeTarget);
-    if (tier > this.tier && !G.shedPending && G.state === 'play') G.startShed(tier);
+    if (tier > this.tier && G.state === 'play') G.growTier(tier);
   }
   // SNAPPING TONGUE / SWARM CALLER: drag small prey into your mouth and swallow
   // it automatically, so a parked crocodile still eats.
@@ -250,7 +254,7 @@ class Player {
     if (e.onBite) { e.onBite(this, sx, sy, dx, dy); return; }
     if (e.sizeClass <= this.size * 0.5 * this.st.swallow && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach)) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
-    if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= 2.5; crit = true; }
+    if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= 2.5; crit = true; this.lastKillHow = 'ambush'; }
     if (chance(this.st.crit)) { dmg *= 3; crit = true; }
     if (this.st.woundMul > 1 && e.hp < e.maxHp * 0.6) { dmg *= this.st.woundMul; crit = true; }
     const applied = e.takeDamage(dmg, this, { dx, dy, pierce: this.st.pierce, crit });
@@ -275,7 +279,10 @@ class Player {
   rollHit() {
     const e = this.latched; if (!e || e.dead) return; this.rollCount++;
     const dmg = this.biteDmg * 1.6 * this.st.rollDmg, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
+    const lethal = e.hp <= dmg; this.lastKillHow = 'roll';
     e.takeDamage(dmg, this, { dx: -dx, dy: -dy, pierce: true });
+    if (lethal && e.bleeds && G.settings.gore) { this.latched = null; Gore.bisect(e, dx, dy); }
+    else if (e.bleeds && G.settings.gore && chance(0.6)) { const l = Gore.limbsOf(e).filter(q => !(e.missing && e.missing.has(q.id))); if (l.length) Gore.tear(e, choice(l).id, -dx, -dy); }
     G.fx.gore(e.x, e.y, 130, 0, 0, true); G.hitstop(0.08); G.shake(9); SFX.crunch(this.size * 1.5, e.pan); SFX.gib(e.pan);
     G.fx.text(e.x, e.y - 16 * e.size, choice(['TEAR!', 'SHRED!', 'RIP!']), { color: '#ff4040', scale: 2 });
     G.addScore(25);
@@ -336,7 +343,9 @@ class Player {
     if (this.st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.lifesteal);
     if (this.st.scavenge && e.type === 'gib') this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.scavenge);
     if (this.st.manEater && e.human) G.addScore(Math.round(e.mass * 20));
-    G.stats.eaten++;
+    const gp = Genome.pointsFor(e); this.genePoints += gp; this.newPoints += gp;
+    Affinity.onEat(this, e); Affinity.onKill(this, e, this.lastKillHow || 'bite'); this.lastKillHow = null;
+    G.stats.eaten++; G.stats.genePoints = (G.stats.genePoints || 0) + gp;
     if (e.mass > G.stats.biggestMass) { G.stats.biggestMass = e.mass; G.stats.biggest = e.name; }
     if (e.type !== 'gib') G.stats.kinds[e.name] = (G.stats.kinds[e.name] || 0) + 1;
   }
@@ -348,7 +357,7 @@ class Player {
     let mult = 1 - clamp(this.st.armor, 0, 0.75);
     if (kind === 'bullet') mult *= (1 - clamp(this.st.bulletArmor, 0, 0.85)) / Math.pow(this.size, 0.55);
     dmg *= mult; if (dmg < 0.05) return 0;
-    this.hp -= dmg; this.hurtT = G.t;
+    this.hp -= dmg; this.hurtT = G.t; Affinity.onHurtTaken(this, dmg);
     if (!dot) {
       this.invuln = 0.4; this.hurtFlash = 0.1; G.shake(4 + Math.min(dmg, 40) * 0.25); G.redFlash(0.4); SFX.hurt();
       G.fx.blood(this.x, this.y, Math.round(6 + Math.min(dmg, 40)), 0, 0, 90); G.fx.cloud(this.x, this.y, (10 + Math.min(dmg, 30) * 0.3) * Math.sqrt(this.vis));
@@ -366,7 +375,7 @@ class Player {
     if (this.dead) return; this.dead = true; this.deathT = 0; this.cause = cause; this.killer = src && src.name ? src.name : null; this.hp = 0;
     if (this.grabbed && this.grabbed.release) this.grabbed.release(); this.grabbed = null; this.latched = null;
     if (this.tether) { if (this.tether.boat) this.tether.boat.cutTether(); this.tether = null; }
-    G.fx.gore(this.x, this.y, 140 * Math.sqrt(this.vis), 0, 0, true); G.fx.flesh(this.x, this.y, 20, 100);
+    G.fx.gore(this.x, this.y, 140 * Math.sqrt(this.vis), 0, 0, true); G.fx.flesh(this.x, this.y, 20, 100); Gore.slick(this.x, this.y, 30);
     SFX.death(); G.shake(20); G.slowmo(0.25, 2.5);
     G.onPlayerDeath(cause, src);
   }

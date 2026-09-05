@@ -89,6 +89,8 @@ class FXSystem {
           break;
         }
         case 'foam': { p.x += p.vx * dt; p.y = World.surface(p.x); p.vx *= 0.96; break; }
+        case 'slick': { p.r = lerp(p.r, p.r1, 1 - Math.exp(-0.7 * dt)); p.x += p.vx * dt; p.y = World.surface(p.x); p.vx *= 0.98; break; }
+        case 'pool': { p.r = lerp(p.r, p.r1, 1 - Math.exp(-1.2 * dt)); p.y = World.floorY(p.x); break; }
         case 'ripple': { p.r += p.gr * dt; break; }
         case 'feather': {
           if (under) { p.vy = approach(p.vy, 9, 40 * dt); p.vx *= 0.97; p.x += (p.vx + Math.sin(p.t * 2 + p.seed) * 6) * dt; }
@@ -143,6 +145,8 @@ class FXSystem {
         case 'gristle': { const s = Math.max(1, Math.round(p.s * z)); ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; ctx.fillRect(Math.round(sx), Math.round(sy), s, s); if (s > 1) { ctx.fillStyle = '#5a0808'; ctx.fillRect(Math.round(sx), Math.round(sy) + s - 1, Math.max(1, s >> 1), 1); } break; }
         case 'bubble': { const s = Math.max(1, Math.round(p.s * z)); ctx.globalAlpha = 0.7; ctx.fillStyle = '#cfeae8'; ctx.fillRect(Math.round(sx), Math.round(sy), s, s); if (s > 1) { ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(sx), Math.round(sy), 1, 1); } break; }
         case 'drop': case 'foam': { const s = Math.max(1, Math.round(p.s * z)); ctx.globalAlpha = p.type === 'foam' ? lf : 0.9; ctx.fillStyle = p.color || '#e8f4f2'; ctx.fillRect(Math.round(sx), Math.round(sy), s, s); break; }
+        case 'slick': { const r = p.r * z; ctx.globalAlpha = clamp(lf, 0, 1) * 0.6; ctx.fillStyle = '#6a0c0c'; ctx.beginPath(); ctx.ellipse(sx, sy, r, Math.max(1, r * 0.22), 0, 0, TAU); ctx.fill(); ctx.globalAlpha = clamp(lf, 0, 1) * 0.45; ctx.fillStyle = '#a01a1a'; ctx.beginPath(); ctx.ellipse(sx - r * 0.2, sy, r * 0.55, Math.max(1, r * 0.14), 0, 0, TAU); ctx.fill(); break; }
+        case 'pool': { const r = p.r * z; ctx.globalAlpha = clamp(lf, 0, 1) * 0.75; ctx.fillStyle = '#5a0a0a'; ctx.beginPath(); ctx.ellipse(sx, sy, r, Math.max(1, r * 0.3), 0, 0, TAU); ctx.fill(); ctx.globalAlpha = clamp(lf, 0, 1) * 0.5; ctx.fillStyle = '#8a1414'; ctx.beginPath(); ctx.ellipse(sx - r * 0.15, sy - r * 0.06, r * 0.6, Math.max(1, r * 0.18), 0, 0, TAU); ctx.fill(); break; }
         case 'ripple': { ctx.globalAlpha = p.alpha * lf; ctx.strokeStyle = '#d8f0ee'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(sx, sy, p.r * z, Math.max(1, p.r * z * 0.22), 0, 0, TAU); ctx.stroke(); break; }
         case 'feather': { const s = Math.max(1, Math.round(2 * z)); ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; ctx.fillRect(Math.round(sx), Math.round(sy), s, Math.max(1, s >> 1)); break; }
         case 'spark': { ctx.globalAlpha = lf; ctx.fillStyle = p.color; const s = Math.max(1, Math.round(z)); ctx.fillRect(Math.round(sx), Math.round(sy), s, s); break; }

@@ -11,14 +11,23 @@ const ICONS = {};
   SPR.mosquito = [mkSprite(['.W.W.', 'WWWWW', '.bbb.', '..t..'], { W: '#b0d0e0', b: '#5a3030', t: '#8a4040' }),
                   mkSprite(['.....', 'WWWWW', '.bbb.', '..t..'], { W: '#b0d0e0', b: '#5a3030', t: '#8a4040' })];
   SPR.eggIcon = mkSprite(['.eee.', 'eeeee', 'eeeee', 'eeeee', '.eee.'], { e: '#e8e0cc' });
+  // snapshots of a whole toon rig in a few poses, so icons are the real animals
+  const rigFrames = (id, mode) => {
+    const sp = SPECIES[id]; if (!sp) return [SPR.eggIcon];
+    const rg = rigOf(sp), frames = [], w = Math.ceil(rg.len * 1.3) + 8, h = Math.ceil((rg.height || rg.len) * 1.5) + 8;
+    const yOff = rg.kind === 'biped' ? rg.len * 0.48 : rg.kind === 'bird' ? (mode === 'fly' ? 0 : rg.height * 0.1) : rg.kind === 'quad' ? rg.height * 0.1 : 0;
+    for (const ph of [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5]) { const c = mkCanvas(w, h), x = ctxOf(c); rg.draw(x, w / 2, h / 2 + yOff, 1, 0, { phase: ph, speed: 0.7, mode }, { scale: 1 }); frames.push({ c, w, h }); }
+    return frames;
+  };
   Object.assign(ICONS, {
-    gar: I(SPR.gar, 'swim'), shark: I(SPR.shark, 'swim'), otter: I(SPR.otter, 'swim'), heron: I(SPR.heron, 'still'),
-    turtle: I(SPR.turtle, 'still'), python: I(SPR.pythonHead, 'swim'), manatee: I(SPR.manatee, 'swim'), boar: I(SPR.boar, 'walk'),
-    ray: I(SPR.ray, 'swim'), panther: I(SPR.panther, 'walk'), vulture: I(SPR.vultureFly, 'fly'), tarpon: I(SPR.tarpon, 'swim'),
-    crab: I(SPR.crab, 'walk'), mosquito: I(SPR.mosquito, 'fly'), frog: I(SPR.frog, 'still'), egret: I(SPR.egretFly, 'fly'),
-    grouper: I(SPR.grouper, 'swim'), minnow: I(SPR.minnow, 'swim'), eel: I(SPR.eel, 'swim'), human: I(SPR.human, 'walk'),
-    boat: I(SPR.kayak, 'still'), croc: I(SPR.babygator, 'swim'), bluegill: I(SPR.bluegill, 'swim'), deer: I(SPR.deer, 'walk'),
-    dragonfly: I(SPR.dragonfly, 'fly'), bass: I(SPR.bass, 'swim'), duck: I(SPR.duck, 'still'), egg: I(SPR.eggIcon, 'still'),
+    gar: I(rigFrames('gar', 'swim'), 'swim'), shark: I(rigFrames('shark', 'swim'), 'swim'), otter: I(rigFrames('otter', 'walk'), 'walk'), heron: I(rigFrames('heron', 'stand'), 'still'),
+    turtle: I(rigFrames('turtle', 'swim'), 'still'), python: I(rigFrames('python', 'swim'), 'swim'), manatee: I(rigFrames('manatee', 'swim'), 'swim'), boar: I(rigFrames('boar', 'walk'), 'walk'),
+    ray: I(rigFrames('ray', 'swim'), 'swim'), panther: I(rigFrames('panther', 'walk'), 'walk'), vulture: I(rigFrames('vulture', 'fly'), 'fly'), tarpon: I(rigFrames('tarpon', 'swim'), 'swim'),
+    crab: I(rigFrames('crab', 'walk'), 'walk'), mosquito: I(SPR.mosquito, 'fly'), frog: I(rigFrames('frog', 'still'), 'still'), egret: I(rigFrames('egret', 'fly'), 'fly'),
+    grouper: I(rigFrames('grouper', 'swim'), 'swim'), minnow: I(rigFrames('minnow', 'swim'), 'swim'), eel: I(rigFrames('eel', 'swim'), 'swim'), human: I(rigFrames('tourist', 'walk'), 'walk'),
+    boat: I(SPR.kayak, 'still'), croc: I(SPR.babygator, 'swim'), bluegill: I(rigFrames('bluegill', 'swim'), 'swim'), deer: I(rigFrames('deer', 'walk'), 'walk'),
+    dragonfly: I(SPR.dragonfly, 'fly'), bass: I(rigFrames('bass', 'swim'), 'swim'), duck: I(rigFrames('duck', 'swim'), 'still'), egg: I(SPR.eggIcon, 'still'),
+    rat: I(rigFrames('rat', 'walk'), 'walk'), scientist: I(rigFrames('scientist', 'walk'), 'walk'),
   });
 })();
 // trait id -> icon key
@@ -48,7 +57,9 @@ function drawIcon(ctx, icon, x, y, box, t, opts = {}) {
     default: f = n > 1 ? Math.floor(t * 2) % n : 0; sq = 1 + Math.sin(t * 2.4) * 0.05; break;
   }
   const s = icon.frames[f];
-  const k = Math.max(1, Math.floor(box / Math.max(s.w, s.h) * icon.scale)) * (opts.scale || 1);
+  // big rig snapshots scale down smoothly; tiny sprites snap to whole pixels
+  const raw = box / Math.max(s.w, s.h) * icon.scale;
+  const k = (raw >= 1 ? Math.floor(raw) : raw) * (opts.scale || 1);
   ctx.save();
   ctx.translate(Math.round(x), Math.round(y + bob * box));
   if (opts.alpha !== undefined) ctx.globalAlpha = opts.alpha;

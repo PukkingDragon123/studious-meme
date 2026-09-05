@@ -219,181 +219,131 @@ function buildCrocParts(L) {
   if (crocPartCache.has(key)) return crocPartCache.get(key);
   const parts = {};
   const mk = (w, h) => { const c = mkCanvas(w, h); return { c, x: c.getContext('2d'), w, h }; };
-  const px = (x, i, j, col, w = 1, h = 1) => { x.fillStyle = col; x.fillRect(i, j, w, h); };
-  // checkerboard dither between two colors, for scale texture and soft ramps
-  const dith = (x, i, j, w, h, col, phase = 0, step = 2) => {
-    x.fillStyle = col;
-    for (let b = 0; b < h; b++) for (let a = (b + phase) % step; a < w; a += step) x.fillRect(i + a, j + b, 1, 1);
-  };
-  const hi = c => mixColor(c, '#ffffff', 0.22), lo = c => shade(c, 0.72), lo2 = c => shade(c, 0.55);
+  const px = (o, i, j, col, w = 1, h = 1) => { o.x.fillStyle = col; o.x.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+  const hi = c => mixColor(c, '#ffffff', 0.3), lo = c => shade(c, 0.72), lo2 = c => shade(c, 0.5);
+  const OL = mixColor(shade(L.dark, 0.75), '#150e08', 0.45);
+  // a 2px dark edge, so the toon outline survives being drawn at half scale
+  const edge = o => { R.outline(o, OL); R.outline(o, OL); };
   const spikes = L.spikes || 0;
-  const crest = Math.max(spikes ? 6 : 0, L.fin ? 12 : 0, L.shell ? 4 : 0, L.mane ? 6 : 0);
-
-  // ------------------------------------------------ HEAD (hinge at 4, y0+14)
+  const crest = Math.max(spikes ? 7 : 0, L.fin ? 13 : 0, L.shell ? 6 : 0, L.mane ? 7 : 0);
+  // ------------------------------------------------ HEAD: rounded skull, long snout, big eye
   {
-    const w = 40, h = 20 + crest, o = mk(w, h), x = o.x, y0 = crest;
-    // --- snout slab ---
-    px(x, 17, y0 + 6, lo2(L.back), 22, 1);
-    px(x, 17, y0 + 7, L.back, 22, 2);
-    dith(x, 17, y0 + 7, 22, 2, hi(L.back), 0, 3);
-    px(x, 17, y0 + 9, L.mid, 22, 3);
-    dith(x, 18, y0 + 10, 21, 2, lo(L.mid), 1, 3);
-    px(x, 17, y0 + 12, L.belly, 22, 2);
-    px(x, 17, y0 + 14, lo2(L.dark), 23, 1);
-    // rounded tip
-    px(x, 39, y0 + 6, '#00000000', 1, 1);
-    px(x, 38, y0 + 5, lo2(L.back), 2, 1); px(x, 38, y0 + 6, L.back, 2, 1);
-    px(x, 39, y0 + 13, lo2(L.dark), 1, 1);
-    // nostrils on the raised tip
-    px(x, 35, y0 + 4, lo2(L.back), 4, 2); px(x, 35, y0 + 5, L.back, 4, 1);
-    px(x, 36, y0 + 4, L.dark, 1, 1); px(x, 38, y0 + 4, L.dark, 1, 1);
-    // --- skull ---
-    px(x, 0, y0 + 3, lo2(L.back), 18, 1);
-    px(x, 0, y0 + 4, L.back, 18, 3);
-    dith(x, 1, y0 + 4, 16, 3, hi(L.back), 0, 3);
-    px(x, 0, y0 + 7, L.mid, 18, 4);
-    dith(x, 1, y0 + 8, 16, 3, lo(L.mid), 1, 3);
-    px(x, 0, y0 + 11, L.belly, 18, 3);
-    px(x, 0, y0 + 14, lo2(L.dark), 18, 1);
-    // jaw/cheek line and jowl bulge
-    px(x, 12, y0 + 11, lo(L.mid), 6, 1);
-    px(x, 2, y0 + 13, lo(L.belly), 14, 1);
-    // scale pits along the snout and skull
-    for (const [sx, sy] of [[20, y0 + 8], [24, y0 + 9], [28, y0 + 8], [32, y0 + 9], [22, y0 + 11], [26, y0 + 12], [30, y0 + 11], [34, y0 + 12], [4, y0 + 6], [8, y0 + 7], [12, y0 + 6]]) px(x, sx, sy, lo2(L.mid), 1, 1);
-    // --- eye turret ---
-    px(x, 5, y0 + 1, lo2(L.back), 7, 1);          // brow ridge
-    px(x, 4, y0 + 2, lo2(L.back), 1, 4); px(x, 12, y0 + 2, lo2(L.back), 1, 4);
-    px(x, 5, y0 + 2, L.back, 7, 1); dith(x, 5, y0 + 2, 7, 1, hi(L.back), 0, 2);
-    px(x, 5, y0 + 3, L.eye, 7, 2);                // iris
-    px(x, 5, y0 + 3, hi(L.eye), 3, 1);
-    px(x, 8, y0 + 3, L.pupil, 1, 2);              // vertical slit
-    px(x, 11, y0 + 4, shade(L.eye, 0.65), 1, 1);
-    px(x, 5, y0 + 5, lo2(L.dark), 7, 1);          // lower lid
-    px(x, 6, y0 + 3, '#ffffff', 1, 1);            // catchlight
-    // --- upper teeth, interlocking ---
-    for (const tx of [19, 22, 25, 28, 31, 34, 37]) { px(x, tx, y0 + 15, L.tooth, 1, 2); px(x, tx, y0 + 17, shade(L.tooth, 0.8), 1, 1); }
-    px(x, 16, y0 + 15, L.tooth, 1, 3); px(x, 13, y0 + 15, L.tooth, 1, 2);
-    // --- trait features ---
-    if (L.scars) { for (let k = 0; k < 5; k++) { px(x, 16 + k * 2, y0 + 7 + k, '#d08a80', 1, 1); px(x, 16 + k * 2, y0 + 8 + k, '#8a4a44', 1, 1); } }
-    if (L.ganoid) for (const [gx, gy] of [[20, y0 + 8], [24, y0 + 10], [28, y0 + 8], [32, y0 + 10], [22, y0 + 12], [30, y0 + 12]]) { px(x, gx, gy, mixColor(L.belly, '#ffffff', 0.45), 2, 1); px(x, gx, gy + 1, lo(L.belly), 2, 1); }
-    if (L.denticle) dith(x, 18, y0 + 7, 21, 6, lo2(L.mid), 0, 3);
-    if (L.frill) { for (let f = 0; f < 7; f++) { px(x, 14, y0 + 4 - f, L.frill, 2, 1); px(x, 15, y0 + 4 - f, shade(L.frill, 0.7), 1, 1); } px(x, 13, y0 + 15, L.frill, 3, 3); }
-    if (L.mane) for (const mx of [1, 4, 7, 10]) { px(x, mx, y0 - 1, L.mane, 2, 1); px(x, mx, y0 - 3, shade(L.mane, 0.8), 2, 2); px(x, mx + 1, y0 - 5, L.mane, 1, 2); }
-    if (L.tusks) { px(x, 24, y0 + 15, L.tooth, 2, 4); px(x, 25, y0 + 19, L.tooth, 1, 1); px(x, 32, y0 + 15, L.tooth, 2, 4); px(x, 33, y0 + 19, L.tooth, 1, 1); }
-    if (L.horn) { px(x, 30, y0 + 4, L.tooth, 1, 2); px(x, 31, y0 + 2, L.tooth, 1, 2); px(x, 32, y0 + 0, L.tooth, 1, 2); }
-    if (L.beak) { px(x, 38, y0 + 6, L.beak, 2, 8); px(x, 36, y0 + 12, L.beak, 3, 3); }
-    if (spikes) { px(x, 6, y0 - 2, L.dark, 2, 2); px(x, 6, y0 - 4, L.belly, 2, 2); }
-    parts.head = { c: o.c, w, h, ox: 4, oy: y0 + 11, eyeX: 7, eyeY: y0 + 3 };
+    const w = 44, h = 22 + crest, o = mk(w, h), y0 = crest, cy = y0 + 10;
+    // snout: a tapering rounded slab
+    for (let i = 0; i < 26; i++) {
+      const u = i / 25, hh = 4.6 - u * 1.5, x = 17 + i;
+      for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.3 ? L.back : f < 0.4 ? L.mid : L.belly); }
+      if (i % 3 === 0) px(o, x, cy - hh, hi(L.back));
+    }
+    // rounded snout tip and nostril pad
+    R.disc({ c: o.c, x: o.x, w, h }, 42, cy - 1, 3.1, L.mid);
+    px(o, 40, cy - 4, L.back, 4, 3); px(o, 41, cy - 4, lo2(L.dark), 1, 1); px(o, 43, cy - 4, lo2(L.dark), 1, 1);
+    // skull: a fat rounded blob
+    R.blob({ c: o.c, x: o.x, w, h }, 9, cy - 1, 10, 7.5, L.mid, { light: hi(L.back), shade: lo(L.mid), hx: 0.1,
+      pat: (i, j, u, v) => (v < -0.15 ? (v < -0.55 ? lo2(L.back) : L.back) : v > 0.45 ? L.belly : null) });
+    // cheek line and jowl
+    px(o, 4, cy + 4, lo(L.belly), 12, 1);
+    // eye turret: raised bump, big cartoon eye
+    R.disc({ c: o.c, x: o.x, w, h }, 8, cy - 7, 4.2, L.back);
+    R.eye({ c: o.c, x: o.x, w, h }, 8, cy - 7, 3, { ring: OL, iris: L.eye, pupil: L.pupil, look: [0.45, 0.05] });
+    px(o, 6, cy - 10, hi(L.back), 5, 1);
+    // upper teeth
+    for (const tx of [19, 23, 27, 31, 35, 39]) { px(o, tx, cy + 4, L.tooth, 2, 3); px(o, tx, cy + 6, shade(L.tooth, 0.82), 2, 1); }
+    px(o, 15, cy + 4, L.tooth, 2, 4);
+    // trait features
+    if (L.scars) for (let k = 0; k < 5; k++) { px(o, 15 + k * 2, cy - 3 + k, '#d08a80', 1, 1); px(o, 15 + k * 2, cy - 2 + k, '#8a4a44', 1, 1); }
+    if (L.ganoid) for (const [gx, gy] of [[20, cy - 2], [25, cy], [30, cy - 2], [35, cy]]) { px(o, gx, gy, mixColor(L.belly, '#ffffff', 0.45), 3, 1); px(o, gx, gy + 1, lo(L.belly), 3, 1); }
+    if (L.denticle) R.dith({ c: o.c, x: o.x, w, h }, 18, cy - 3, 22, 6, lo2(L.mid), 0, 3);
+    if (L.frill) { for (let f = 0; f < 8; f++) { px(o, 14, cy - 8 - f, L.frill, 3, 1); px(o, 15, cy - 8 - f, shade(L.frill, 0.7), 1, 1); } px(o, 13, cy + 4, L.frill, 3, 4); }
+    if (L.mane) for (const mx of [1, 5, 9]) { px(o, mx, y0 - 1, L.mane, 3, 2); px(o, mx + 1, y0 - 4, shade(L.mane, 0.8), 2, 3); }
+    if (L.tusks) { px(o, 26, cy + 4, L.tooth, 2, 6); px(o, 34, cy + 4, L.tooth, 2, 6); }
+    if (L.horn) { px(o, 30, cy - 8, L.tooth, 2, 3); px(o, 32, cy - 11, L.tooth, 2, 3); }
+    if (spikes) { px(o, 6, y0 + 1, L.dark, 3, 3); px(o, 6, y0 - 2, L.belly, 3, 3); }
+    edge(o);
+    parts.head = { c: o.c, w, h, ox: 6, oy: cy, eyeX: 8, eyeY: cy - 7 };
   }
-  // ------------------------------------------------ JAW (hinge at 0,0)
+  // ------------------------------------------------ JAW
   {
-    const w = 38, h = 8, o = mk(w, h), x = o.x;
-    for (const tx of [17, 20, 23, 26, 29, 32, 35]) { px(x, tx, 0, L.tooth, 1, 2); px(x, tx, 0, shade(L.tooth, 0.85), 1, 1); }
-    px(x, 12, 0, L.tooth, 1, 2);
-    px(x, 0, 2, lo2(L.dark), 1, 2);
-    px(x, 1, 2, L.mouth, 36, 2);                       // gums
-    dith(x, 2, 2, 34, 1, shade(L.mouth, 1.25), 0, 4);
-    px(x, 1, 4, lo(L.belly), 36, 2);                   // lower jaw plates
-    dith(x, 2, 4, 34, 2, L.belly, 0, 4);
-    px(x, 0, 6, lo2(L.dark), 37, 2);
-    for (let k = 2; k < 36; k += 5) px(x, k, 5, lo2(L.belly), 1, 1);
-    parts.jaw = { c: o.c, w, h, ox: 0, oy: 0 };
+    const w = 40, h = 9, o = mk(w, h);
+    for (const tx of [17, 21, 25, 29, 33, 37]) px(o, tx, 0, L.tooth, 2, 3);
+    px(o, 11, 0, L.tooth, 2, 3);
+    px(o, 1, 2, L.mouth, 38, 3);
+    px(o, 1, 5, lo(L.belly), 38, 3);
+    for (let k = 3; k < 38; k += 6) px(o, k, 6, lo2(L.belly), 2, 1);
+    edge(o);
+    parts.jaw = { c: o.c, w, h, ox: 1, oy: 1 };
   }
-  // ------------------------------------------------ BODY x5 (oy = y0+12)
+  // ------------------------------------------------ BODY x5: rounded barrels
   parts.body = [];
   for (let i = 0; i < 5; i++) {
-    const w = 20, h = 20 + crest, o = mk(w, h), x = o.x, y0 = crest;
-    px(x, 0, y0 + 4, lo2(L.back), w, 1);
-    px(x, 0, y0 + 5, L.back, w, 4);
-    dith(x, 0, y0 + 5, w, 4, hi(L.back), i % 2, 3);
-    px(x, 0, y0 + 9, L.mid, w, 5);
-    dith(x, 0, y0 + 10, w, 4, lo(L.mid), (i + 1) % 2, 3);
-    px(x, 0, y0 + 14, L.belly, w, 4);
-    px(x, 0, y0 + 18, lo2(L.dark), w, 2);
-    // dorsal scute rows: two raised paired keels
-    const off = i % 2 ? 0 : 2;
-    for (let s = off; s < w; s += 5) {
-      px(x, s, y0 + 2, lo2(L.back), 3, 2); px(x, s + 1, y0 + 2, hi(L.back), 1, 1);
-      px(x, s, y0 + 1, L.dark, 2, 1);
-      px(x, s + 1, y0 + 7, lo2(L.back), 2, 1);
+    const w = 22, h = 24 + crest, o = mk(w, h), y0 = crest, cy = y0 + 11, half = 8.4 - Math.abs(i - 1.4) * 0.35;
+    for (let x = 1; x < w - 1; x++) {
+      const hh = half * (1 - Math.pow(Math.abs(x - w / 2) / (w / 1.7), 4));
+      for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.34 ? L.back : f < 0.36 ? L.mid : L.belly); }
+      if (x % 3 === (i % 3)) px(o, x, cy - hh, hi(L.back));
+      px(o, x, cy + hh - 1, lo(L.belly));
     }
-    // lateral scale rows
-    for (let s = (i % 2 ? 1 : 3); s < w; s += 4) { px(x, s, y0 + 10, lo2(L.mid), 1, 3); px(x, s + 1, y0 + 10, hi(L.mid), 1, 1); }
+    // dorsal scute keels
+    const off = i % 2 ? 1 : 3;
+    for (let s2 = off; s2 < w - 2; s2 += 5) { px(o, s2, cy - half - 1, lo2(L.back), 3, 2); px(o, s2 + 1, cy - half - 2, L.back, 1, 1); }
     // belly plates
-    for (let s = 0; s < w; s += 4) { px(x, s, y0 + 14, lo(L.belly), 1, 4); px(x, s + 1, y0 + 15, hi(L.belly), 2, 1); }
-    // rim light along the spine, shadow under the gut
-    px(x, 0, y0 + 4, hi(L.back), w, 1);
-    px(x, 0, y0 + 17, lo(L.belly), w, 1);
-    // trait features
-    if (L.stripes) { px(x, 7, y0 + 5, shade(L.back, 0.62), 4, 9); dith(x, 6, y0 + 5, 1, 9, shade(L.back, 0.62), 0, 2); }
-    if (L.stripe2) for (const s of [1, 10]) { px(x, s, y0 + 4, shade(L.dark, 1.15), 4, 14); dith(x, s + 4, y0 + 4, 2, 14, shade(L.dark, 1.15), 0, 2); }
-    if (L.plates) for (const s of [2, 12]) { px(x, s, y0 + 6, '#c9c2a3', 5, 4); px(x, s, y0 + 6, '#e4dfc4', 5, 1); px(x, s + 1, y0 + 8, '#8a846a', 3, 1); }
-    if (L.scars && (i === 1 || i === 3)) for (let k = 0; k < 7; k++) { px(x, 3 + k, y0 + 5 + k, '#d08a80', 1, 1); px(x, 3 + k, y0 + 6 + k, '#8a4a44', 1, 1); }
-    if (L.spots) for (const [gx, gy] of [[5, y0 + 10], [13, y0 + 12], [9, y0 + 7]]) { px(x, gx, gy, L.spots, 2, 2); px(x, gx, gy, mixColor(L.spots, '#ffffff', 0.4), 1, 1); }
-    if (L.ganoid) for (let gy = 0; gy < 4; gy++) for (let gx = (gy % 2 ? 0 : 3); gx < w; gx += 6) { px(x, gx, y0 + 6 + gy * 2, mixColor(L.belly, '#ffffff', 0.4), 3, 1); px(x, gx, y0 + 7 + gy * 2, lo(L.belly), 3, 1); }
-    if (L.denticle) dith(x, 0, y0 + 5, w, 9, lo2(L.mid), i % 2, 3);
-    if (L.shell) { // turtle carapace with keeled hexagonal scutes
-      px(x, 0, y0 + 2, L.shell, w, 5); px(x, 0, y0 + 1, lo2(L.shell), w, 1);
-      for (let s = (i % 2 ? 0 : 4); s < w; s += 8) {
-        px(x, s, y0 + 2, shade(L.shell, 1.3), 6, 1); px(x, s + 1, y0 + 3, shade(L.shell, 1.12), 4, 2);
-        px(x, s, y0 + 5, shade(L.shell, 0.62), 6, 1); px(x, s + 6, y0 + 2, shade(L.shell, 0.5), 1, 4);
-      }
-      px(x, 0, y0 + 7, shade(L.shell, 0.45), w, 1);
-      for (let s = (i % 2 ? 2 : 6); s < w; s += 8) { px(x, s, y0 - 1, shade(L.shell, 0.8), 4, 2); px(x, s + 1, y0 - 3, shade(L.shell, 1.15), 2, 2); }
+    for (let s2 = 1; s2 < w - 1; s2 += 4) px(o, s2, cy + half * 0.45, lo(L.belly), 1, half * 0.5);
+    if (L.stripes) px(o, 8, cy - half, shade(L.back, 0.6), 5, half * 1.6);
+    if (L.stripe2) for (const s2 of [2, 12]) px(o, s2, cy - half, shade(L.dark, 1.2), 5, half * 1.9);
+    if (L.plates) for (const s2 of [3, 13]) { px(o, s2, cy - half * 0.6, '#c9c2a3', 6, 5); px(o, s2, cy - half * 0.6, '#e4dfc4', 6, 1); }
+    if (L.scars && (i === 1 || i === 3)) for (let k = 0; k < 7; k++) { px(o, 4 + k, cy - 4 + k, '#d08a80', 1, 1); px(o, 4 + k, cy - 3 + k, '#8a4a44', 1, 1); }
+    if (L.spots) for (const [gx, gy] of [[6, cy + 1], [14, cy + 3], [10, cy - 3]]) { px(o, gx, gy, L.spots, 3, 3); px(o, gx, gy, mixColor(L.spots, '#ffffff', 0.4), 1, 1); }
+    if (L.ganoid) for (let gy = -3; gy < 4; gy += 2) for (let gx = (gy % 4 ? 2 : 5); gx < w - 2; gx += 6) { px(o, gx, cy + gy, mixColor(L.belly, '#ffffff', 0.4), 3, 1); px(o, gx, cy + gy + 1, lo(L.belly), 3, 1); }
+    if (L.denticle) R.dith({ c: o.c, x: o.x, w, h }, 2, cy - half + 1, w - 4, half * 1.6, lo2(L.mid), i % 2, 3);
+    if (L.shell) {
+      for (let x = 2; x < w - 2; x++) { const hh = half * 0.95 * Math.sqrt(Math.max(0, 1 - Math.pow((x - w / 2) / (w / 2.1), 2))); px(o, x, cy - hh - 3, L.shell, 1, hh * 0.75); }
+      for (let s2 = (i % 2 ? 1 : 5); s2 < w - 3; s2 += 7) { px(o, s2, cy - half - 2, shade(L.shell, 1.25), 5, 1); px(o, s2 + 5, cy - half - 2, shade(L.shell, 0.55), 1, 4); }
     }
-    if (L.fin && (i === 1 || i === 2)) {
-      const fh = i === 1 ? 12 : 8, fc = L.fin;
-      for (let f = 0; f < fh; f++) { const fw = Math.max(2, Math.round((fh - f) * 1.5)); const fx = 6 + Math.round(f * 0.5); px(x, fx, y0 - f, fc, fw, 1); px(x, fx, y0 - f, shade(fc, 0.65), 1, 1); if (f % 3 === 0) px(x, fx + 1, y0 - f, shade(fc, 0.8), 1, 1); }
-    }
-    if (L.gills && i === 0) for (const gx of [3, 7, 11]) { px(x, gx, y0 + 9, shade(L.mouth, 1.15), 2, 5); px(x, gx, y0 + 9, shade(L.mouth, 0.7), 1, 5); }
-    if (spikes) for (let s = off; s < w; s += 5) { px(x, s, y0 - 2, L.dark, 3, 2); if (spikes >= 2) { px(x, s, y0 - 5, L.dark, 2, 3); px(x, s, y0 - 6, L.belly, 2, 1); } else px(x, s, y0 - 3, L.belly, 2, 1); }
-    parts.body.push({ c: o.c, w, h, ox: 10, oy: y0 + 12 });
+    if (L.fin && (i === 1 || i === 2)) { const fh = i === 1 ? 13 : 9, fc = L.fin; for (let f = 0; f < fh; f++) { const fw = Math.max(2, Math.round((fh - f) * 1.4)); px(o, 7 + Math.round(f * 0.4), cy - half - f, fc, fw, 1); px(o, 7 + Math.round(f * 0.4), cy - half - f, shade(fc, 0.65), 1, 1); } }
+    if (L.gills && i === 0) for (const gx of [4, 8, 12]) px(o, gx, cy - 1, shade(L.mouth, 1.1), 2, 5);
+    if (spikes) for (let s2 = off; s2 < w - 2; s2 += 5) { px(o, s2, cy - half - 3, L.dark, 3, 3); if (spikes >= 2) px(o, s2, cy - half - 6, L.belly, 3, 3); }
+    edge(o);
+    parts.body.push({ c: o.c, w, h, ox: 11, oy: cy });
   }
-  // ------------------------------------------------ TAIL x6
+  // ------------------------------------------------ TAIL x6: tapering with a crest
   parts.tail = [];
   for (let k = 0; k < 6; k++) {
-    const w = 16, bh = 18 - k * 2, h = bh + 6 + crest, o = mk(w, h), x = o.x, y0 = crest + 4;
-    const back = Math.max(2, Math.round((bh - 2) * 0.4)), mid = Math.max(2, Math.round((bh - 2) * 0.34)), bel = Math.max(1, bh - 2 - back - mid);
-    px(x, 0, y0, lo2(L.back), w, 1);
-    px(x, 0, y0 + 1, L.back, w, back); dith(x, 0, y0 + 1, w, back, hi(L.back), k % 2, 3);
-    px(x, 0, y0 + 1 + back, L.mid, w, mid); dith(x, 0, y0 + 1 + back, w, mid, lo(L.mid), (k + 1) % 2, 3);
-    px(x, 0, y0 + 1 + back + mid, L.belly, w, bel);
-    px(x, 0, y0 + bh - 1, lo2(L.dark), w, 1);
-    px(x, 0, y0, hi(L.back), w, 1);
-    // tail crest: paired scutes fusing into a single fin toward the tip
-    if (k < 3) { for (const s of [1, 6, 11]) { px(x, s, y0 - 2, lo2(L.back), 3, 2); px(x, s, y0 - 3, L.dark, 3, 1); px(x, s + 1, y0 - 2, L.back, 1, 1); } }
-    else { for (let s = 0; s < w; s += 4) { const ch = 4 - (k - 3); px(x, s, y0 - ch, lo2(L.back), 3, ch); px(x, s + 1, y0 - ch, L.back, 1, ch); } }
-    for (let s = (k % 2 ? 1 : 3); s < w; s += 4) px(x, s, y0 + 1 + back, lo2(L.mid), 1, 2);
-    if (L.spots && k % 2 === 0) { px(x, 5, y0 + 1 + back, L.spots, 2, 2); px(x, 5, y0 + 1 + back, mixColor(L.spots, '#ffffff', 0.4), 1, 1); }
-    if (L.ganoid) for (let gx = (k % 2 ? 1 : 4); gx < w; gx += 6) px(x, gx, y0 + 3, mixColor(L.belly, '#ffffff', 0.35), 3, 1);
-    if (L.denticle) dith(x, 0, y0 + 1, w, bh - 2, lo2(L.mid), k % 2, 3);
-    if (L.stripe2 && k % 2 === 0) px(x, 5, y0, shade(L.dark, 1.15), 4, bh);
-    if (L.fin && k < 3) { const fh = 10 - k * 3; for (let f = 0; f < fh; f++) px(x, 4 + Math.round(f * 0.6), y0 - 3 - f, L.fin, Math.max(2, fh - f), 1); }
-    if (L.barb && k >= 4) { px(x, 6, y0 - 4, L.tooth, 2, 4); px(x, 5, y0 - 2, 1 ? L.tooth : '', 1, 2); px(x, 8, y0 - 2, L.tooth, 1, 2); if (k === 5) { px(x, 7, y0 - 8, L.tooth, 2, 4); px(x, 6, y0 - 6, L.tooth, 1, 2); } }
-    if (L.paddle && k >= 4) { const pc = L.paddle; for (let f = 1; f <= 5; f++) px(x, 10 + f, y0 - f, pc, 1, bh + f * 2); }
-    if (spikes && k < 3) for (const s of [1, 8]) { px(x, s, y0 - 5, L.dark, 2, 2); if (spikes >= 2) px(x, s, y0 - 7, L.belly, 2, 2); }
-    parts.tail.push({ c: o.c, w, h, ox: 8, oy: y0 + Math.floor(bh / 2) });
+    const w = 18, bh = 15 - k * 2.1, h = bh * 2 + 10 + crest, o = mk(w, h), cy = crest + bh + 4;
+    for (let x = 1; x < w - 1; x++) {
+      const hh = Math.max(1.2, bh * 0.5 * (1 - (x - 1) / (w * 2.6)));
+      for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.34 ? L.back : f < 0.36 ? L.mid : L.belly); }
+      if (x % 3 === (k % 3)) px(o, x, cy - hh, hi(L.back));
+    }
+    const th = Math.max(1.5, bh * 0.5);
+    if (k < 3) { for (const s2 of [2, 7, 12]) { px(o, s2, cy - th - 2, lo2(L.back), 3, 3); px(o, s2 + 1, cy - th - 3, L.back, 1, 1); } }
+    else { for (let s2 = 1; s2 < w - 2; s2 += 4) { const ch = Math.max(1, 5 - (k - 3) * 1.2); px(o, s2, cy - th - ch, lo2(L.back), 3, ch); px(o, s2 + 1, cy - th - ch, L.back, 1, ch); } }
+    if (L.spots && k % 2 === 0) px(o, 6, cy - 1, L.spots, 3, 3);
+    if (L.ganoid) for (let gx = (k % 2 ? 2 : 5); gx < w - 2; gx += 6) px(o, gx, cy - 1, mixColor(L.belly, '#ffffff', 0.35), 3, 1);
+    if (L.denticle) R.dith({ c: o.c, x: o.x, w, h }, 1, cy - th, w - 2, th * 1.6, lo2(L.mid), k % 2, 3);
+    if (L.stripe2 && k % 2 === 0) px(o, 6, cy - th, shade(L.dark, 1.2), 5, th * 2);
+    if (L.fin && k < 3) { const fh = 11 - k * 3; for (let f = 0; f < fh; f++) px(o, 5 + Math.round(f * 0.5), cy - th - 3 - f, L.fin, Math.max(2, fh - f), 1); }
+    if (L.barb && k >= 4) { px(o, 7, cy - th - 5, L.tooth, 2, 5); if (k === 5) px(o, 8, cy - th - 10, L.tooth, 2, 5); }
+    if (L.paddle && k >= 4) { const pc = L.paddle; for (let f = 1; f <= 6; f++) px(o, 11 + f, cy - f, pc, 1, th * 2 + f * 2); }
+    if (spikes && k < 3) for (const s2 of [2, 9]) { px(o, s2, cy - th - 6, L.dark, 3, 3); if (spikes >= 2) px(o, s2, cy - th - 9, L.belly, 3, 3); }
+    edge(o);
+    parts.tail.push({ c: o.c, w, h, ox: 9, oy: cy });
   }
   // ------------------------------------------------ LEGS x2 frames
   parts.legs = [];
   for (let f = 0; f < 2; f++) {
-    const w = 14, h = 14, o = mk(w, h), x = o.x;
-    const sw = f ? 3 : 0; // stride offset
-    px(x, 2 + sw, 0, lo2(L.back), 7, 2);            // shoulder
-    px(x, 2 + sw, 2, L.mid, 7, 4);
-    dith(x, 3 + sw, 2, 5, 4, lo(L.mid), 0, 2);
-    px(x, 1 + sw, 2, lo2(L.dark), 1, 4);
-    px(x, 9 + sw, 1, lo2(L.dark), 1, 4);
-    px(x, 3 + sw, 6, L.mid, 5, 4);                  // forearm
-    px(x, 3 + sw, 6, lo2(L.dark), 1, 4);
-    px(x, 2 + sw, 10, lo2(L.dark), 7, 2);           // foot
-    px(x, 3 + sw, 10, L.belly, 5, 1);
-    for (const t of [2, 4, 6]) { px(x, t + sw, 12, lo2(L.dark), 1, 2); px(x, t + sw, 12, L.belly, 1, 1); }
-    if (L.claws) for (const t of [2, 4, 6]) { px(x, t + sw, 13, L.tooth, 1, 1); px(x, t + sw - 1, 13, L.tooth, 1, 1); }
-    if (L.webbed) px(x, 2 + sw, 11, L.webbed, 7, 2);
-    parts.legs.push({ c: o.c, w, h, ox: 6, oy: 0 });
+    const w = 16, h = 17, o = mk(w, h), sw = f ? 3 : 0;
+    R.blob({ c: o.c, x: o.x, w, h }, 5 + sw, 4, 4.2, 3.6, L.mid, { light: hi(L.mid), shade: lo(L.mid), hl: false });
+    px(o, 4 + sw, 6, L.mid, 5, 6);
+    px(o, 4 + sw, 6, lo(L.mid), 1, 6);
+    px(o, 2 + sw, 12, lo2(L.dark), 9, 3);
+    px(o, 3 + sw, 12, L.belly, 7, 2);
+    for (const t of [3, 6, 9]) px(o, t + sw - 1, 14, lo2(L.dark), 2, 2);
+    if (L.claws) for (const t of [3, 6, 9]) px(o, t + sw - 1, 15, L.tooth, 2, 2);
+    if (L.webbed) px(o, 3 + sw, 13, L.webbed, 8, 2);
+    edge(o);
+    parts.legs.push({ c: o.c, w, h, ox: 7, oy: 0 });
   }
-  parts.jawY = 3; // the mouth corner sits below the chain node
+  parts.jawY = 4;
   parts.look = L;
   crocPartCache.set(key, parts);
   return parts;

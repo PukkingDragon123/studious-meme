@@ -1,12 +1,14 @@
 # CHOMPERS
 
-A 2D pixel-art, side-scrolling **eater roguelike** set in the Florida Everglades. You are a crocodile.
-Hatch small, eat everything that fits in your jaws, grow, shed your skin, and graft on traits from the
-animals you devour until you are the swamp god. Then something bigger finds you and you start again.
+A 2D pixel-art, side-scrolling **eater roguelike** set in the Florida Everglades. You are Subject 7:
+a lab-made crocodile spliced with the genes of every animal alive. You break your tank, take the storm
+sewer out, and surface in the swamp with the whole genome to spend.
 
-Inspired by the *Hungry Shark* games, with roguelike runs, a procedural swamp with simulated water,
-mud, weather and vegetation, a living ecosystem of ninety real-size species, and a skill tree of
-animal traits you unlock permanently.
+Eat anything that fits in your jaws. Every meal pays **gene points**, and you spend them whenever you
+like on a hexagonal **gene tree** of six lineages. How you hunt builds affinity, so the lineage that
+matches your style keeps getting cheaper, and specialising far enough down one branch unlocks its apex
+gene. Inspired by the *Hungry Shark* games, with roguelike runs, a hand-authored map of named biomes,
+simulated water, mud and weather, and a cartoon cast of ninety animals that come apart when bitten.
 
 ## Play
 
@@ -31,8 +33,9 @@ as a fragment for hosts that supply their own document shell).
 | Dash / ram | `SHIFT` / `K` | `DASH` pad |
 | Steer with the mouse | hold left mouse | - |
 | Pause / settings | `P` / `ESC` | `II` button |
+| Gene tree | `G` / `E` / `TAB` | tap the gene chip |
 | Trait codex | `C` | via pause |
-| Crack the egg | mash `SPACE` | tap |
+| Break the tank | mash `SPACE` | tap |
 | Help | `H` | via pause |
 | Mute | `M` | via pause |
 
@@ -41,15 +44,36 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 
 ## How a run works
 
-- **Start as an egg.** Every run opens on a nest at the water's edge. Mash bite (or tap) to crack the shell, hatch, and crawl for the water.
-- **Eat** anything under half your size to swallow it whole. Bigger prey takes bites, bleeds, and comes apart.
-- **Latch** onto medium prey with a bite, then bite again to **death roll** and shred it.
+- **You start in a tank.** A containment lab, acid, and scientists on the other side of the glass. Mash bite to crack it, drop into the drain, and follow the storm sewer east past the rats.
+- **Chew through the outfall grate** and the Everglades open up in front of you.
+- **Eat** anything under half your size to swallow it whole. Bigger prey takes bites, bleeds, loses limbs and comes apart.
+- **Latch** onto medium prey with a bite, then bite again to **death roll** and tear it in half.
 - **Hunger** drains constantly. Starving drains your health. Keep eating.
-- **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God.
-- Every new tier makes you **shed your skin** and choose one of three cards: an evolution path node or an animal trait.
+- **Gene points** drop from every meal. Press `G` at any moment, in the middle of a fight if you want, and spend them.
+- **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God. Each tier sheds your skin and pays two free points.
 - **Predators** hunt you while you are small and flee when you are big.
 - **Bosses** arrive after certain sheds: Old Scar, the Poacher Warboat, Mother Python, the Skunk Ape, and Big Bull.
 - Death is permanent, but the traits you unlock are not.
+
+## The gene tree
+
+Six lineages radiate from one primordial cell on a hex grid, four genes deep, with hybrid genes sitting
+between neighbouring lineages. A gene can be taken whenever it touches something you already own, so
+you can drive straight down one branch or weave across the middle.
+
+| Lineage | Theme | Apex |
+| --- | --- | --- |
+| **Ripper** | bite damage, bleeding, death rolls, blood frenzy | Apex Ripper: colossal jaws that hit everything in reach |
+| **Bulwark** | armor, plating, iron stomach | Living Fortress: attackers take 40% back and nothing can move you |
+| **Phantom** | speed, ambush, stealth | Wraith: two dashes, higher leaps, slow-motion breaches |
+| **Abyssal** | venom, regeneration, lure | Leviathan: shockwaves, toxic blood, venom immunity |
+| **Colossus** | growth, swallowing, bulk | Titan: quaking bites and a crushing ram |
+| **Savage** | land speed, night vision, people | Man-Eater: people panic, boats break like sticks |
+
+**Affinity** is the quiet half of the system. Rolling and dismembering feeds Ripper, ambush kills feed
+Phantom, taking hits feeds Bulwark, eating big meals feeds Colossus, and hunting people and land
+animals feeds Savage. Each lineage's genes get up to 50% cheaper as its affinity climbs, so the
+crocodile you end up with is the one you actually played.
 
 ## Evolution paths
 
@@ -96,49 +120,68 @@ Ten further traits are **locked until you earn them**, and they stay unlocked ac
 automatically, so a parked crocodile keeps eating and growing on its own. Press `C` for the codex,
 which lists every trait and your progress toward the locked ones.
 
-## The swamp
+## The map
 
-The ecosystem runs with or without you. Ospreys and pelicans plunge out of the sky for fish, anhingas
-chase them underwater, vultures circle and land on carrion, panthers and coyotes stalk raccoons along
-the banks, herons spear hatchlings in the shallows, and predatory fish eat the schools. Eighty-nine
-species live here, from fiddler crabs and apple snails on the bottom to goliath grouper, sawfish,
-manatees and bull sharks in the deep channels, with cottonmouths, rat snakes, indigo snakes and
-Burmese pythons on the banks and a rumoured skunk ape in the deep forest.
+The world is authored, not shuffled. One long swamp runs west to east through named places, each with
+its own palette, plants, animals and human activity:
 
-**Everything is drawn at its real size.** Every species carries its true length and weight (a 1.5 ft
-hatchling, a 4 ft great blue heron, a 6 ft tarpon, a 15 ft python, a 22 ft pontoon boat), mapped
-through one shared scale so a bass really is a third of a young crocodile and a kayak really does dwarf
-it. Your own crocodile grows on the same curve, and the camera pulls back as you do.
+| Biome | What it is |
+| --- | --- |
+| **Containment** | the lab you were made in: concrete, crates, a broken tank |
+| **Storm Sewer** | a flooded pipe run full of rats, roaches and trash |
+| **The Outfall** | a concrete canal under a city skyline, thick with tilapia and walking catfish |
+| **Mangrove Tangle** | shallow braided water, root islands, snapper and sheepshead |
+| **Gator Joe's Fish Camp** | a working town: bait shop, docks, stilt houses, moored jon boats |
+| **Cypress Swamp** | dark deep pockets, knees and moss, panthers and bears on the hummocks |
+| **Sawgrass Prairie** | broad shallow sheet flow, wading birds, deer on the low islands |
+| **The Deep Cut** | a fast cut channel with tarpon, bull sharks and undercut banks |
+| **Paradise Campground** | tents, fire rings, coolers, campers who did not read the sign |
+| **Florida Bay** | open deep water, dolphins, sawfish, manatees, a far shore you never reach |
 
-**The swamp is simulated, not painted.** The water surface is a spring-mass wave field: every splash,
-bite, breach, boat hull and swimming body pushes it, waves travel and reflect, foam forms where the
-surface moves fastest, and rain pocks it. The mud is a deformable bed that your belly and feet press
-into and that softens toward the waterline, leaving tracks and silt clouds behind you. Weather rolls
-through in showers with gusting wind, lightning and delayed thunder, and the sky, water tint and
-lighting follow it. Trees, bushes, cattails, ferns and lilies are sprung, so they bend, shake and shed
-leaves when you crash through them or a boat's wake reaches them.
+The ecosystem runs with or without you. Ospreys and pelicans plunge for fish, anhingas chase them
+underwater, vultures land on carrion, panthers stalk raccoons along the banks, herons spear hatchlings
+in the shallows, and predatory fish eat the schools.
 
-People are everywhere too: fishing docks, stilt-house fish camps lit up at night, ranger towers, boat
-ramps, crab traps, channel markers and campfires, plus airboats, party pontoons, jon boats, poacher
-skiffs and kayaks, all at real scale with rigged people aboard who fish, point, panic and shoot.
-Most of it can be smashed, and everyone on it can be eaten.
+**The swamp is simulated, not painted.** The water surface is a bouncy spring-mass field: every splash,
+bite, breach, hull and swimming body pushes it, waves travel and reflect, foam blobs form on the
+crests, and rain pocks it. The mud is a deformable bed that your belly presses into. Weather rolls
+through in showers with wind, lightning and delayed thunder. Plants are sprung, so they bend and shed
+leaves when you crash through them.
+
+People are everywhere: fishing docks, the bait shop, stilt-house camps lit at night, ranger towers,
+campsites, crab traps and channel markers, plus airboats, pontoons, jon boats, poacher skiffs and
+kayaks. Armed people hold their ground and shoot with lead on their aim, then break and run when you
+get inside their nerve. Watching a neighbour get eaten sets the whole group running.
+
+## Gore
+
+Bites tear limbs off. A wounded animal keeps moving with one leg gone, trailing blood, until something
+finishes it. Death rolls cut prey clean in half. Bodies burst into their own rig parts plus hearts,
+guts, livers, eyes and bone, and the soft pieces float while the heavy ones sink. Blood spreads as
+slicks across the water surface and soaks into pools on the mud. All of it can be switched down in the
+pause menu.
 
 ## Art
 
-Every sprite is defined in code, no image files. The crocodile is authored at double the world pixel
-density so it can carry real detail: a raised eye turret with a slit pupil and catchlight, nostrils on
-the snout tip, paired dorsal scute keels, dithered lateral scale rows, rectangular belly plates,
-interlocking teeth and clawed feet. Traits redraw it: a keeled turtle carapace, ganoid diamond scales,
-shark denticles, a dorsal sail, tusks, a tail barb.
+Every sprite is drawn in code, no image files, in a chunky hand-drawn cartoon style: round bodies,
+dark outlines, three-tone shading and big expressive eyes.
 
-Every other animal is a **rigged, jointed creature** generated from its species description at the
-same double density: fish with articulated tails, fins and gill plates; birds with two-part flapping
-wings, folded wings on the ground, necks that peck and spear, and trailing legs in flight; quadrupeds
-with four swinging legs and a head that dips to drink; people with walking legs and arms that cast,
-aim and flail; turtles that pull into their shells, frogs that kick, crabs that scuttle, snakes that
-slither as chains of segments. Boats are detailed hulls with rigging, rails, consoles, fans and cargo.
-Nothing floats over the world as text any more: damage, growth and unlocks are told through the
-bodies, the blood, the orb and the HUD.
+Animals are **rigged, jointed puppets** generated from a species description, then posed every frame
+from an animation state, so limbs swing, tails wag, wings beat and heads bob. Because each part is a
+separate piece, a bite can take one off and a death can scatter the rest. Fish have articulated tails
+and pectoral fins; birds have two-part wings, smooth tube necks that stretch and spear, and legs that
+trail in flight; quadrupeds have four swinging legs and heads that dip to graze; turtles pull into
+their shells; frogs kick; crabs scuttle; snakes slither as chains of beads.
+
+**People are procedurally varied.** Skin, hair style and colour, clothes, hats, glasses, beards and
+props are all rolled per person, so the campsite is full of different-looking campers. Everyone has a
+big head and big eyes, and a second scared face with blown pupils and an open mouth that shows the
+moment they notice you.
+
+The crocodile is authored at double the world pixel density with a thick outline that survives being
+drawn at half scale: a raised eye turret with a big cartoon eye, a rounded snout, dorsal scute keels,
+belly plates and clawed feet. Genes redraw it: a keeled carapace, ganoid diamond scales, shark
+denticles, a dorsal sail, tusks, a tail barb, glowing eyes.
 
 The swamp is layered. Four parallax bands of cypress, palm and oak sit behind live oaks with hanging
 moss, cypress knees, palmettos, ferns, cattails, vines and flowers on the banks. Underwater there is
@@ -148,11 +191,11 @@ mud. Dawn and dusk raise mist off the water.
 
 ## Tech
 
-Plain HTML5 canvas and vanilla JavaScript. Everything is procedural: pixel sprites are defined in
-code, creatures are rigs generated from a species catalogue, the crocodile is built from parts and
-drawn as an undulating segment chain, terrain is a noise heightmap, water is a damped spring-mass
-surface, mud is a pressure field, gore is sprite slicing plus particles, and all audio is synthesized
-with WebAudio.
+Plain HTML5 canvas and vanilla JavaScript. Everything is generated in code: sprites are painted by
+drawing routines, creatures are toon rigs built from a species catalogue and posed per frame, the
+crocodile is a segment chain, terrain is an authored profile of control points, water is a bouncy
+spring-mass surface, mud is a pressure field, gore is real rig parts plus organs, and all audio is
+synthesized with WebAudio.
 
 ```
 index.html
@@ -162,14 +205,17 @@ src/util.js         math, noise, colors
 src/font.js         5x7 bitmap font
 src/audio.js        synthesized SFX, ambience, music
 src/sprites.js      pixel sprites, procedural crocodile, segment chain
-src/rig.js          rigged creature generators: fish, birds, quadrupeds, people, turtles, snakes...
-src/species.js      the species catalogue: real lengths and weights, behaviour, colours
+src/rig.js          toon rig generators: fish, birds, quadrupeds, people, turtles, snakes...
+src/species.js      the species catalogue: sizes, weights, behaviour, colours
 src/particles.js    blood, gibs, bubbles, splashes, silt, leaves, footprints, rain
+src/gore.js         dismemberment, organs, blood slicks and pools
+src/map.js          the authored terrain profile and the biome table
 src/physics.js      water waves, mud deformation, weather, sprung foliage
 src/world.js        terrain, chunks, sky/day cycle, water, forest
 src/traits.js       animal traits, unlock milestones, saved progress
 src/dna.js          animated animal icons and the DNA genome orb
-src/skills.js       evolution paths, size tiers, shed cards
+src/skills.js       size tiers and legacy trait cards
+src/genome.js       the hex gene tree, gene points and playstyle affinity
 src/entities.js     prey, predators, boats, bosses
 src/creatures.js    the wider ecosystem and animals that hunt each other
 src/structures.js   docks, fish camps, towers, traps

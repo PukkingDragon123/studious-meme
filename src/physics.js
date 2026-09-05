@@ -14,7 +14,7 @@ const Water = {
     for (let i = 0; i < this.N; i++) { const j = i + shift; if (j >= 0 && j < this.N) { h[i] = this.h[j]; v[i] = this.v[j]; } }
     this.h = h; this.v = v; this.x0 += shift * this.DX;
   },
-  ambient(x) { const t = this.t; return Math.sin(x * 0.021 + t * 2.1) * 1.2 + Math.sin(x * 0.053 - t * 3.3) * 0.7 + Math.sin(x * 0.0071 + t * 0.7) * (1 + this.wind * 2); },
+  ambient(x) { const t = this.t; return Math.sin(x * 0.026 + t * 1.9) * 1.7 + Math.sin(x * 0.061 - t * 3.1) * 0.9 + Math.sin(x * 0.0083 + t * 0.6) * (1.4 + this.wind * 2.4); },
   surface(x) {
     if (!this.h) return this.ambient(x);
     const f = (x - this.x0) / this.DX, i = Math.floor(f);
@@ -26,13 +26,13 @@ const Water = {
   velocity(x) { if (!this.h) return 0; const i = Math.round((x - this.x0) / this.DX); return i >= 0 && i < this.N ? this.v[i] : 0; },
   update(dt) {
     if (!this.h) return; this.t += dt;
-    const h = this.h, v = this.v, N = this.N, K = 38, D = 1.3, S = 900;
+    const h = this.h, v = this.v, N = this.N, K = 24, D = 0.62, S = 1500;
     dt = Math.min(dt, 1 / 40);
     for (let i = 0; i < N; i++) v[i] += (-h[i] * K - v[i] * D) * dt;
     for (let pass = 0; pass < 3; pass++) {
       for (let i = 1; i < N - 1; i++) v[i] += S * (h[i - 1] + h[i + 1] - 2 * h[i]) * dt / 3;
     }
-    for (let i = 0; i < N; i++) { h[i] += v[i] * dt; if (h[i] > 60) h[i] = 60; else if (h[i] < -60) h[i] = -60; }
+    for (let i = 0; i < N; i++) { h[i] += v[i] * dt; if (h[i] > 70) h[i] = 70; else if (h[i] < -70) h[i] = -70; }
     v[0] = v[N - 1] = 0; h[0] *= 0.9; h[N - 1] *= 0.9;
   },
   // push the surface down (force > 0) or up around x
@@ -43,7 +43,9 @@ const Water = {
     for (let i = a; i <= b; i++) { const d = Math.abs(i - c) / w; if (d > 1) continue; const k = 0.5 * (1 + Math.cos(d * Math.PI)); this.v[i] += force * k; }
   },
   // a moving body dragging the surface along
-  wake(x, vx, size, dt) { if (Math.abs(vx) < 20) return; this.splash(x, clamp(Math.abs(vx) * 0.09, 2, 22) * size * dt * 60 * 0.12, 10 * size); this.splash(x - sign(vx) * 12 * size, -clamp(Math.abs(vx) * 0.05, 1, 14) * size * dt * 60 * 0.12, 8 * size); },
+  wake(x, vx, size, dt) { if (Math.abs(vx) < 20) return; this.splash(x, clamp(Math.abs(vx) * 0.13, 3, 30) * size * dt * 60 * 0.14, 12 * size); this.splash(x - sign(vx) * 13 * size, -clamp(Math.abs(vx) * 0.08, 2, 20) * size * dt * 60 * 0.14, 10 * size); },
+  // steepness of the surface at x, for crest foam
+  slope(x) { return (this.surface(x + 4) - this.surface(x - 4)) / 8; },
 };
 
 // shore mud: a recovering depression field along x, plus footprints
@@ -124,7 +126,7 @@ const Foliage = {
 };
 const FOLIAGE_KIND = {
   weed: { top: d => d.y - d.h, water: true }, algae: { top: d => d.y - d.h, water: true }, reed: { top: d => d.top }, cattail: { top: d => d.top },
-  sawgrass: { top: d => d.y - 12 * d.s }, palmetto: { top: d => d.y - 16 * d.s }, fern: { top: d => d.y - 13 * d.s }, bush: { top: d => d.y - 12 * d.s },
+  sawgrass: { top: d => d.y - 12 * d.s }, seagrass: { top: d => d.y - d.h, water: true }, mushroom: { top: d => d.y - 6 }, palmetto: { top: d => d.y - 16 * d.s }, fern: { top: d => d.y - 13 * d.s }, bush: { top: d => d.y - 12 * d.s },
   hyacinth: { top: d => -10, water: true }, duckweed: { top: d => -3, water: true }, lily: { top: d => -3, water: true },
   cypress: { top: d => d.y - d.h, tree: true, leaf: '#3a6a30' }, oak: { top: d => d.y - d.h, tree: true, leaf: '#4a7a3a' }, palm: { top: d => d.y - d.h, tree: true, leaf: '#5a8a3a' },
   mangrove: { top: d => d.y - 30 * d.s, tree: true, leaf: '#3f7a3a' }, vine: { top: d => d.y - d.h }, flower: { top: d => d.y - 10 },

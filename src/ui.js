@@ -17,59 +17,75 @@ const UI = {
     ctx.fillStyle = col; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = border; ctx.fillRect(x, y, w, 1); ctx.fillRect(x, y + h - 1, w, 1); ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
   },
+  // a chunky outlined meter
+  meter(ctx, x, y, w, h, frac, col, bg, icon) {
+    ctx.fillStyle = '#0d1210'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+    const fw = Math.round(w * clamp(frac, 0, 1));
+    if (fw > 0) {
+      ctx.fillStyle = col; ctx.fillRect(x, y, fw, h);
+      ctx.fillStyle = mixColor(col, '#ffffff', 0.45); ctx.fillRect(x, y, fw, Math.max(1, Math.round(h * 0.3)));
+      ctx.fillStyle = shade(col, 0.7); ctx.fillRect(x, y + h - 1, fw, 1);
+    }
+    ctx.fillStyle = '#2a3a34'; ctx.fillRect(x, y, w, 1);
+  },
   drawHUD(ctx) {
     const P = G.player, W = G.W, H = G.H, t = G.t;
-    // HP + hunger
     const lowHp = P.hp / P.maxHp < 0.3;
-    this.bar(ctx, 10, 10, 120, 7, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff6060' : '#d02828', '#2a0a0a');
-    Font.draw(ctx, 'HP', 12, 10, { color: '#ffffff', shadow: true });
-    Font.draw(ctx, Math.ceil(P.hp) + '/' + P.maxHp, 128, 10, { color: '#ffd0d0', align: 'right', shadow: true });
-    this.bar(ctx, 10, 21, 120, 5, P.hunger / 100, P.starving && Math.floor(t * 8) % 2 ? '#ffe080' : '#e08a20', '#2a1a0a');
-    Font.draw(ctx, P.starving ? 'STARVING!' : 'HUNGER', 12, 20, { color: '#ffffff', shadow: true });
-    if (P.poisonT > 0) Font.draw(ctx, 'POISONED', 12, 30, { color: '#60ff60', shadow: true });
-    if (P.frenzyT > 0) Font.draw(ctx, 'FRENZY!', 70, 30, { color: '#ff5030', shadow: true });
-    // tier / length / growth
+    // vitals block
+    ctx.fillStyle = 'rgba(6,12,12,0.55)'; ctx.fillRect(6, 6, 148, 30);
+    this.meter(ctx, 30, 10, 118, 8, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff7a6a' : '#d83a2a', '#2a0e0c');
+    this.meter(ctx, 30, 23, 118, 6, P.hunger / 100, P.starving && Math.floor(t * 8) % 2 ? '#ffe080' : '#e0902a', '#2a1c0a');
+    // heart + jaw icons
+    ctx.fillStyle = lowHp && Math.floor(t * 6) % 2 ? '#ff8a7a' : '#d83a2a';
+    ctx.fillRect(12, 11, 4, 5); ctx.fillRect(18, 11, 4, 5); ctx.fillRect(11, 13, 12, 3); ctx.fillRect(13, 16, 8, 2); ctx.fillRect(15, 18, 4, 2);
+    ctx.fillStyle = '#e0902a'; ctx.fillRect(12, 23, 11, 3); ctx.fillStyle = '#f4f0e0';
+    for (let i = 0; i < 4; i++) ctx.fillRect(13 + i * 3, 26, 2, 2);
+    ctx.fillRect(12, 28, 11, 2);
+    Font.draw(ctx, Math.ceil(P.hp) + '/' + P.maxHp, 146, 11, { color: '#ffe0d8', align: 'right', shadow: true });
+    if (P.poisonT > 0) Font.draw(ctx, 'POISONED', 158, 10, { color: '#60ff60', shadow: true });
+    if (P.frenzyT > 0) Font.draw(ctx, 'FRENZY', 158, 20, { color: '#ff5030', shadow: true });
+    if (P.missingLimbs) Font.draw(ctx, 'BLEEDING', 158, 30, { color: '#ff6060', shadow: true });
+    // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
-    const label = tier.name + '  ' + P.lengthFt.toFixed(1) + ' FT';
-    Font.draw(ctx, label, W / 2, 8, { color: '#e8f0d8', align: 'center', shadow: true, scale: 1 });
+    Font.draw(ctx, tier.name + '  ' + P.lengthFt.toFixed(1) + ' FT', W / 2, 8, { color: '#eaf2dc', align: 'center', shadow: true });
     if (next) {
-      const m0 = sizeToMass(tier.size), m1 = sizeToMass(next.size), frac = (P.mass - m0) / (m1 - m0);
-      this.bar(ctx, W / 2 - 70, 18, 140, 4, frac, '#6ad040', '#0a1a0a');
-      Font.draw(ctx, 'NEXT SHED: ' + next.name, W / 2, 24, { color: '#a0c890', align: 'center', shadow: true });
+      const m0 = sizeToMass(tier.size), m1 = sizeToMass(next.size);
+      this.meter(ctx, W / 2 - 62, 18, 124, 5, (P.mass - m0) / (m1 - m0), '#6ad040', '#0d2010');
     }
-    // score / combo
-    Font.draw(ctx, 'SCORE', W - 10, 10, { color: '#c0c0a0', align: 'right', shadow: true });
-    Font.draw(ctx, fmt(G.score), W - 10, 19, { color: '#fff0a0', align: 'right', shadow: true, scale: 1 });
+    // gene points: a hex chip that pulses when you can spend
+    const gp = P.genePoints, canBuy = GENES.some(g => Genome.unlocked(P, g) && Genome.cost(P, g) <= gp);
+    const gx = W - 42, gy = 19, pulse = canBuy ? 0.5 + 0.5 * Math.sin(t * 5) : 0;
+    this.hex(ctx, gx, gy, 14, canBuy ? mixColor('#1a3a34', '#40f0c8', pulse * 0.45) : '#16241f', canBuy ? '#40f0c8' : '#31463f', 2);
+    Font.draw(ctx, String(gp), gx, gy - 4, { color: canBuy ? '#b8ffe8' : '#8aa89c', align: 'center', scale: gp > 99 ? 1 : 2, outline: '#06110e' });
+    Font.draw(ctx, canBuy ? 'G: SPLICE' : 'GENES', gx, gy + 17, { color: canBuy ? '#40f0c8' : '#7f9a90', align: 'center' });
+    if (P.newPoints > 0 && G.state === 'play') Font.draw(ctx, '+' + P.newPoints, gx - 20, gy - 3, { color: '#b8ffe8', align: 'right', shadow: true });
+    // score
+    Font.draw(ctx, fmt(G.score), W - 10, 46, { color: '#fff0a0', align: 'right', shadow: true });
     if (P.combo > 1) {
-      const sc = 1 + Math.min(2, Math.floor(P.combo / 5)), pulse = 1 + 0.1 * Math.sin(t * 20);
-      Font.draw(ctx, 'X' + P.combo, W - 10, 30, { color: P.combo >= 10 ? '#ff40c0' : '#ffa030', align: 'right', shadow: true, scale: sc });
-      this.bar(ctx, W - 60, 30 + 8 * sc, 50, 2, P.comboT / 2.4, '#ffa030', '#1a1a1a');
+      const sc = 1 + Math.min(2, Math.floor(P.combo / 5));
+      Font.draw(ctx, 'X' + P.combo, W - 10, 56, { color: P.combo >= 10 ? '#ff40c0' : '#ffa030', align: 'right', shadow: true, scale: sc });
     }
+    // apex badge and lineage pips
+    let px2 = 10, py2 = H - 40;
+    for (const k of LIN_KEYS) {
+      const d = Genome.depth(P, k); if (!d) continue;
+      const L = LINEAGES[k];
+      ctx.fillStyle = L.color; ctx.fillRect(px2, py2, 3, 3 + d * 2);
+      Font.draw(ctx, L.name.slice(0, 3), px2 + 5, py2, { color: L.color });
+      px2 += 24;
+    }
+    if (P.apex) Font.draw(ctx, LINEAGES[P.apex].name + ' APEX', 10, H - 30, { color: LINEAGES[P.apex].color, shadow: true });
     // dash pips
     Font.draw(ctx, 'DASH', 10, H - 14, { color: '#c0d0e0', shadow: true });
     for (let i = 0; i < P.st.dashCharges; i++) {
-      const full = i < P.dashCharges; ctx.fillStyle = '#000'; ctx.fillRect(38 + i * 10, H - 15, 8, 8);
+      const full = i < P.dashCharges; ctx.fillStyle = '#0d1210'; ctx.fillRect(38 + i * 10, H - 15, 8, 8);
       ctx.fillStyle = full ? '#60c0ff' : '#203040'; ctx.fillRect(39 + i * 10, H - 14, 6, 6);
       if (!full && i === P.dashCharges) { const f = 1 - clamp(P.dashCd / (1.6 * P.st.dashCd), 0, 1); ctx.fillStyle = '#60c0ff'; ctx.fillRect(39 + i * 10, H - 14 + 6 - Math.round(6 * f), 6, Math.round(6 * f)); }
     }
-    // genome strip: a live double helix carrying every splice you have taken
-    const beads = DNA.beads(P);
-    const gx = W - 96, gy = H - 26;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(gx - 4, gy - 3, 92, 20);
-    DNA.drawMini(ctx, gx, gy, 84, 14, G.t, beads, beads.length ? beads[beads.length - 1].color : '#40f0c8');
-    Font.draw(ctx, 'GENOME ' + beads.length, gx + 42, gy + 16, { color: '#7f9a90', align: 'center' });
-    // acquired animal traits
-    if (P.traits.length) {
-      let ty = 40;
-      for (const id of P.traits.slice(-6)) {
-        const t = TRAIT_BY_ID[id]; if (!t) continue;
-        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(9, ty - 1, Font.width(t.name) + 6, 9);
-        ctx.fillStyle = t.color; ctx.fillRect(9, ty - 1, 2, 9);
-        Font.draw(ctx, t.name, 14, ty, { color: t.color });
-        ty += 11;
-      }
-    }
-    if (P.st.magnet) Font.draw(ctx, 'LURE ACTIVE', 10, H - 26, { color: '#ff8a4a', shadow: true });
+    // biome name, bottom right
+    const B = Biome.at(P.x);
+    Font.draw(ctx, B.name, W - 10, H - 12, { color: '#7f9a90', align: 'right' });
     // hints
     if (P.latched) Font.draw(ctx, 'LATCHED! BITE TO DEATH ROLL', W / 2, H - 30, { color: '#ff9080', align: 'center', shadow: true });
     if (P.grabbed) Font.draw(ctx, 'MASH BITE TO BREAK FREE!', W / 2, H - 30, { color: '#ff6040', align: 'center', shadow: true, scale: Math.floor(t * 8) % 2 ? 1 : 2 });
@@ -78,13 +94,11 @@ const UI = {
     // boss bar
     if (G.boss && !G.boss.dead) {
       const b = G.boss, frac = b.hp / b.maxHp;
-      Font.draw(ctx, b.name, W / 2, 34, { color: '#ff6060', align: 'center', shadow: true });
-      this.bar(ctx, W / 2 - 100, 43, 200, 5, frac, frac < 0.3 ? '#ffb020' : '#e02020', '#200808', '#601010');
-      // offscreen arrow
+      Font.draw(ctx, b.name, W / 2, 32, { color: '#ff6060', align: 'center', shadow: true });
+      this.meter(ctx, W / 2 - 100, 41, 200, 6, frac, frac < 0.3 ? '#ffb020' : '#e02020', '#200808');
       const [sx] = G.cam.toScreen(b.x, b.y);
       if (sx < 0 || sx > W) { const dir = sx < 0 ? -1 : 1; Font.draw(ctx, dir < 0 ? '<<' : '>>', dir < 0 ? 12 : W - 12, H / 2, { color: '#ff6060', align: 'center', shadow: true, scale: 2 }); }
     }
-    // banner
     if (G.banner) {
       const b = G.banner, a = Math.min(1, b.t / 0.5, (b.max - b.t) / 0.3);
       ctx.globalAlpha = clamp(a, 0, 1);
@@ -93,11 +107,83 @@ const UI = {
       if (b.sub) Font.draw(ctx, b.sub, W / 2, H * 0.3 + 20, { color: '#ffffff', align: 'center', outline: '#000' });
       ctx.globalAlpha = 1;
     }
-    // early tutorial
-    if (G.t < 14 && G.state === 'play' && G.runs <= 1) {
-      const msgs = ['WASD / ARROWS: SWIM', 'SPACE: BITE   SHIFT: DASH', 'EAT SMALL THINGS TO GROW. AVOID BIG THINGS.'];
-      Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 4.5))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
+    if (G.t < 16 && G.state === 'play' && G.runs <= 1) {
+      const msgs = ['WASD / ARROWS: SWIM', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
+      Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
     }
+  },
+  // a filled hexagon with a border
+  hex(ctx, cx, cy, r, fill, stroke, lw) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) { const a = i * TAU / 6; const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+  },
+  // screen positions of every gene cell
+  geneCells() {
+    const cx = G.W / 2, cy = G.H / 2 + 6, R = 25;
+    return GENES.map(g => { const [sx, sy] = Genome.pos(g, cx, cy, R); return { g, sx, sy, R }; });
+  },
+  drawGenes(ctx) {
+    const W = G.W, H = G.H, P = G.player, t = G.t;
+    ctx.fillStyle = 'rgba(3,8,10,0.95)'; ctx.fillRect(0, 0, W, H);
+    const cells = this.geneCells(), byId = {};
+    for (const c of cells) byId[c.g.id] = c;
+    // links between adjacent cells
+    ctx.lineWidth = 1;
+    for (const c of cells) for (const n of hexNbrs(c.g)) {
+      const o = byId[n.id]; if (!o || o.sx < c.sx || (o.sx === c.sx && o.sy < c.sy)) continue;
+      const both = Genome.has(P, c.g.id) && Genome.has(P, n.id);
+      const one = Genome.has(P, c.g.id) || Genome.has(P, n.id);
+      ctx.strokeStyle = both ? 'rgba(120,240,210,0.55)' : one ? 'rgba(90,150,140,0.3)' : 'rgba(60,90,86,0.16)';
+      ctx.beginPath(); ctx.moveTo(c.sx, c.sy); ctx.lineTo(o.sx, o.sy); ctx.stroke();
+    }
+    // cells
+    for (const c of cells) {
+      const g = c.g, own = Genome.has(P, g.id), open = Genome.unlocked(P, g);
+      const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
+      const cost = Genome.cost(P, g), afford = open && P.genePoints >= cost;
+      const sel = G.geneSel === g.id;
+      const r = c.R * (g.root ? 0.8 : g.apex ? 1.06 : 1) * (sel ? 1.12 : 1);
+      if (own) { ctx.globalCompositeOperation = 'lighter'; this.hex(ctx, c.sx, c.sy, r * 1.3, rgba(col, 0.12), null); ctx.globalCompositeOperation = 'source-over'; }
+      this.hex(ctx, c.sx, c.sy, r, own ? rgba(col, 0.3) : afford ? 'rgba(14,30,28,0.95)' : 'rgba(10,16,18,0.9)', own ? col : afford ? mixColor(col, '#ffffff', 0.2) : open ? shade(col, 0.55) : '#2a3a38', sel ? 2 : 1);
+      // icon
+      const ic = L ? ICONS[L.icon] : ICONS.croc;
+      if (ic) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
+      if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
+      // cost pip
+      if (!own && g.cost) { const cy2 = c.sy + r - 5; ctx.fillStyle = afford ? '#0d2a24' : '#1a1210'; ctx.fillRect(c.sx - 7, cy2 - 4, 14, 9); Font.draw(ctx, String(cost), c.sx, cy2 - 3, { color: afford ? '#7affda' : '#8a6a6a', align: 'center' }); }
+      if (own) { ctx.fillStyle = col; ctx.fillRect(c.sx - 2, c.sy + r - 7, 4, 4); }
+      if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; this.hex(ctx, c.sx, c.sy, r + 3, null, 'rgba(255,255,255,0.5)', 1); }
+    }
+    // header
+    Font.draw(ctx, 'GENE TREE', W / 2, 8, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
+    this.hex(ctx, 26, 18, 13, '#16241f', '#40f0c8', 2);
+    Font.draw(ctx, String(P.genePoints), 26, 12, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#06110e' });
+    Font.draw(ctx, 'POINTS', 26, 32, { color: '#7f9a90', align: 'center' });
+    // affinity meters: what your playstyle is discounting
+    let ay = 46;
+    for (const k of LIN_KEYS) {
+      const L = LINEAGES[k], f = Genome.affinityPct(P, k);
+      Font.draw(ctx, L.name, 8, ay, { color: f > 0.05 ? L.color : '#4a5a56' });
+      this.meter(ctx, 54, ay, 34, 4, f, L.color, '#131c1a');
+      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 92, ay, { color: shade(L.color, 0.85) });
+      ay += 11;
+    }
+    // detail panel for the selected gene
+    const g = GENE_BY_ID[G.geneSel] || GENES[0], own = Genome.has(P, g.id), open = Genome.unlocked(P, g);
+    const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
+    const pw = 214, px3 = W - pw - 8, py3 = H - 92;
+    this.panel(ctx, px3, py3, pw, 84, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
+    Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
+    Font.draw(ctx, L ? L.name + (g.hybrid ? ' HYBRID' : g.apex ? ' APEX' : ' TIER ' + g.ring) : 'ORIGIN', px3 + 8, py3 + 18, { color: '#8aa89c' });
+    Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 32, pw - 16, { color: '#d8e4dc', lineHeight: 9 });
+    const cost = Genome.cost(P, g);
+    if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
+    else if (!open) Font.draw(ctx, 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
+    else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
+    Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 9, { color: '#7f9a90', align: 'center' });
   },
   drawLogo(ctx, x, y, scale, t) {
     const txt = 'CHOMPERS', w = Font.width(txt, scale);
@@ -121,11 +207,11 @@ const UI = {
     const W = G.W, H = G.H, t = G.titleT;
     ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, 0, W, H);
     this.drawLogo(ctx, W / 2, 40, 6, t);
-    Font.draw(ctx, 'AN EVERGLADES EATER ROGUELIKE', W / 2, 98, { color: '#a8d0b0', align: 'center', shadow: true });
-    Font.draw(ctx, 'HATCH. EAT. SHED. EVOLVE. BECOME THE SWAMP GOD.', W / 2, 110, { color: '#e0e8d0', align: 'center', shadow: true });
+    Font.draw(ctx, 'A LAB ESCAPED. AN EVERGLADES EATER ROGUELIKE.', W / 2, 98, { color: '#a8d0b0', align: 'center', shadow: true });
+    Font.draw(ctx, 'THEY SPLICED EVERY ANIMAL INTO YOU. NOW USE THEM ALL.', W / 2, 110, { color: '#e0e8d0', align: 'center', shadow: true });
     if (Math.floor(t * 2) % 2 === 0) Font.draw(ctx, '> PRESS ENTER OR CLICK TO HUNT <', W / 2, 150, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
     this.panel(ctx, W / 2 - 150, 178, 300, 92);
-    const lines = ['WASD / ARROWS ..... SWIM (UP ON LAND: HOP)', 'SPACE / J ......... BITE  (AGAIN WHEN LATCHED: DEATH ROLL)', 'SHIFT / K ......... DASH', 'TOUCH ............. LEFT THUMB SWIMS, PADS BITE AND DASH', 'P: PAUSE    H: HELP    C: TRAIT CODEX    M: MUTE', '', 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.'];
+    const lines = ['WASD / ARROWS ..... SWIM (UP ON LAND: HOP)', 'SPACE / J ......... BITE  (AGAIN WHEN LATCHED: DEATH ROLL)', 'SHIFT / K ......... DASH', 'G ................. GENE TREE: SPEND WHAT YOU HAVE EATEN', 'TOUCH ............. LEFT THUMB SWIMS, PADS BITE AND DASH', 'P: PAUSE   H: HELP   C: CODEX   M: MUTE', 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.'];
     lines.forEach((l, i) => Font.draw(ctx, l, W / 2 - 142, 186 + i * 11, { color: i === 6 ? '#ffb060' : '#d0dcc8' }));
     const s = G.save;
     const have = ANIMAL_TRAITS.filter(t => !t.unlock || Meta.isUnlocked(t.id)).length;
@@ -238,10 +324,10 @@ const UI = {
   drawHelpBody(ctx, y) {
     const W = G.W;
     const lines = [
-      'SWIM WITH WASD. BITE WITH SPACE. DASH WITH SHIFT.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY TAKES BITES.',
-      'BITE MEDIUM PREY TO LATCH ON, THEN BITE AGAIN TO DEATH ROLL.', 'LEAP OUT OF THE WATER TO SNATCH BIRDS. CRAWL ONTO BANKS FOR DEER.',
-      'GROW TO A NEW SIZE TIER TO SHED YOUR SKIN AND PICK AN EVOLUTION.', 'PREDATORS HUNT YOU WHEN YOU ARE SMALL. THEY FLEE WHEN YOU ARE BIG.',
-      'POACHERS SHOOT FROM AIRBOATS. BREACH TO EAT THEM OR CRUSH THE HULL.', 'HUNGER DRAINS. ALWAYS BE EATING.',
+      'SWIM WITH WASD. BITE WITH SPACE. DASH WITH SHIFT.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY COMES APART.',
+      'BITE MEDIUM PREY TO LATCH ON, THEN BITE AGAIN TO DEATH ROLL IT IN HALF.', 'LEAP OUT OF THE WATER TO SNATCH BIRDS. CRAWL ONTO BANKS FOR DEER.',
+      'EVERY MEAL PAYS GENE POINTS. PRESS G AND SPEND THEM ON THE HEX TREE.', 'HOW YOU HUNT BUILDS AFFINITY, WHICH MAKES THAT LINEAGE CHEAPER.',
+      'POACHERS SHOOT FROM THE BANK AND FROM AIRBOATS. TAKE THEM UNDER.', 'HUNGER DRAINS. ALWAYS BE EATING.',
     ];
     lines.forEach((l, i) => Font.draw(ctx, l, W / 2, y + i * 11, { color: i % 2 ? '#c8d8c0' : '#e8f0e0', align: 'center' }));
   },
@@ -253,6 +339,41 @@ const UI = {
     Font.draw(ctx, 'EVOLUTION PATHS', W / 2, 168, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
     PATH_KEYS.forEach((k, i) => { const p = PATHS[k]; Font.draw(ctx, p.name + ': ' + p.tag, W / 2, 190 + i * 12, { color: p.color, align: 'center' }); });
     Font.draw(ctx, 'ESC / H: BACK', W / 2, H - 16, { color: '#90a898', align: 'center' });
+  },
+  drawIntro(ctx) {
+    const W = G.W, H = G.H, e = G.intro; if (!e) return;
+    const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, H * 0.85);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.62)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    if (e.phase === 'tank') {
+      Font.draw(ctx, 'CHIMERA PROJECT — SUBJECT 7', W / 2, 20, { color: '#8ce8a0', align: 'center', scale: 2, outline: '#04120a' });
+      Font.draw(ctx, 'ONE ANIMAL. EVERY GENE. THEY WANTED TO SEE WHAT IT BECOMES.', W / 2, 40, { color: '#a8c8b8', align: 'center', shadow: true });
+      const touch = G.touchUI || Input.touch.active;
+      const pulse = 0.6 + 0.4 * Math.sin(e.prompt * 6);
+      ctx.globalAlpha = 0.65 + 0.35 * pulse;
+      Font.draw(ctx, touch ? 'TAP TO BREAK THE GLASS' : 'MASH BITE TO BREAK THE GLASS', W / 2, H - 74, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
+      ctx.globalAlpha = 1;
+      const bw = 160, bx = W / 2 - bw / 2, by = H - 50;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 10);
+      for (let i = 0; i < e.need; i++) {
+        const seg = bw / e.need - 3, sx = bx + i * (bw / e.need);
+        ctx.fillStyle = i < e.taps ? '#8ce8a0' : '#22322a'; ctx.fillRect(sx, by, seg, 6);
+        if (i === e.taps) { ctx.fillStyle = `rgba(140,232,160,${(pulse * 0.5).toFixed(2)})`; ctx.fillRect(sx, by, seg, 6); }
+      }
+      Font.draw(ctx, 'GLASS', W / 2, by + 12, { color: '#7f9a90', align: 'center' });
+      if (touch) { const p = Input.pads(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.bite.x, p.bite.y, p.bite.r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; Font.draw(ctx, 'TAP', p.bite.x, p.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' }); }
+    } else {
+      this.drawHUD(ctx);
+      // an alarm wash while the escape is on
+      const flash = 0.5 + 0.5 * Math.sin(G.t * 5);
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(180,20,20,${(0.05 + 0.06 * flash).toFixed(3)})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over';
+      const grate = G.intro.grate;
+      if (grate && !grate.broken) {
+        const far = G.player.x < grate.x - 240;
+        Font.draw(ctx, far ? 'FOLLOW THE PIPE EAST' : 'BITE THROUGH THE GRATE', W / 2, H - 46, { color: '#ffe060', align: 'center', shadow: true });
+        if (!far) { const f = 1 - clamp(grate.hp / grate.maxHp, 0, 1); this.meter(ctx, W / 2 - 50, H - 34, 100, 5, f, '#e0a020', '#2a1c0a'); }
+      }
+    }
   },
   drawEgg(ctx) {
     const W = G.W, H = G.H, e = G.egg; if (!e) return;
