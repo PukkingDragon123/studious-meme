@@ -36,7 +36,11 @@ const Input = {
       for (const t of e.changedTouches) {
         const [x, y] = tpos(t);
         this.mouse.x = x; this.mouse.y = y; this.mouse.moved = true;
-        if (G.state !== 'play') { this.mouse.clicked = true; if (this.inPad(P.pause, x, y)) this.pressed.Escape = true; continue; }
+        // the intro is playable, so the pads have to live through it too
+        const playable = G.state === 'play' || G.state === 'intro';
+        if (!playable) { this.mouse.clicked = true; if (this.inPad(P.pause, x, y)) this.pressed.Escape = true; continue; }
+        // curled in the tank there is nothing to steer: every tap is a chomp
+        if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; continue; }
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
         else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashId = t.identifier; }
         else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
@@ -146,7 +150,17 @@ const G = {
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
     Water.init(0); Mud.init(0); Weather.rain = 0; Weather.target = 0; Weather.timer = rand(40, 120);
-    if (demo) { this.player.x = 3400; this.player.y = 90; this.player.chain.reset(3400, 90, 0); this.cam.x = 3400; this.cam.y = 60; World.ensure(3400, 1600); this.seedNursery(3400, 1); }
+    if (demo) {
+      // the title runs a live game: a grown croc hunting the mangroves in morning light
+      const DX = 5100;   // cypress swamp: deep open water with trees on both banks
+      this.day = 0.24; Weather.rain = 0; Weather.target = 0; Weather.timer = 400;
+      const P = this.player;
+      P.size = 4.2; P.sizeTarget = 4.2; P.mass = sizeToMass(4.2); P.tier = tierFor(4.2); P.hp = P.maxHp;
+      P.x = DX; P.y = 90; P.chain.reset(DX, 90, 0);
+      this.cam.x = DX; this.cam.y = 70; this.cam.zoom = 1.45;
+      World.ensure(DX, 1600); this.seedNursery(DX, 1); this.seedNursery(DX, -1);
+      for (let i = 0; i < 20; i++) { this.director.spawnT = 0; this.populate(1.2); }
+    }
     if (!demo) { this.runs++; this.save.runs++; this.storeSave(); this.beginIntro(); }
   },
   // easy first meals, close to wherever the run begins
@@ -160,7 +174,7 @@ const G = {
     for (let i = 0; i < 3; i++) { const x = pick(20, 300); if (x !== null) this.add(new Dragonfly(x)); }
     const mx = pick(80, 300);
     if (mx !== null) { const lead = new Mullet(mx, 30); this.add(lead); for (let i = 1; i < 5; i++) this.add(new Mullet(mx + rand(-30, 30), 30 + rand(-14, 14), lead)); }
-    const dx = pick(120, 340); if (dx !== null) Spawn.duck(dx);
+    const dx = pick(120, 340); if (dx !== null && !World.isIndoor(dx)) Spawn.duck(dx);
   },
   // ---------- the intro: born in a tank, out through the sewer ----------
   beginIntro() {
@@ -220,11 +234,14 @@ const G = {
     const B = Biome.at(ch.x0);
     for (let k = 0; k < 5; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
-      if (Biome.at(x).indoor && rng() < 0.5) continue;
+      const Bx = Biome.at(x);
+      if (Bx.indoor && rng() < 0.5) continue;
       const fy = World.floorY(x);
       if (fy < -3) { if (rng() < 0.6) this.spawnLand(x, D); continue; }
-      if (fy < 30) { if (rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, B.id === 'outfall' ? 'roach' : 'crayfish')); continue; }
-      const kind = weightedPick(B.fish.concat([['frog', 1.4], ['turtle', 1.4], ['bottom', 2], ['duck', 1]]));
+      if (fy < 30) { if (!Bx.indoor && rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, Bx.id === 'outfall' || Bx.indoor ? 'roach' : 'crayfish')); continue; }
+      if (Bx.indoor && !Bx.fish.length) continue;
+      const kind = weightedPick(Bx.fish.concat(Bx.indoor ? [['bottom', 2]] : [['frog', 1.4], ['turtle', 1.4], ['bottom', 2], ['duck', 1]]));
+      if (!kind) continue;
       if (kind === 'frog') this.add(new Frog(x, chance(0.3) ? 'pigfrog' : 'frog'));
       else if (kind === 'turtle') this.add(new Turtle(x, clamp(40 + rng() * 100, 10, fy - 15), choice(['turtle', 'slider', 'cooter'])));
       else if (kind === 'bottom') this.add(new Bottom(x, B.id === 'outfall' ? 'roach' : choice(['crayfish', 'crab', 'snail', 'shrimp', 'fiddler'])));
@@ -325,7 +342,7 @@ const G = {
     const d = this.director, P = this.player, D = this.difficulty();
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
     d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(30 - D * 2.2, 10, 30) * rand(0.8, 1.25); this.spawnPredator(D); }
-    d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); }
+    d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     if (d.bossQueue && !this.boss) { d.bossT -= dt; if (d.bossT <= 0) this.spawnBoss(d.bossQueue); }
     // hard cap
     if (this.ents.length > 220) { let n = 0; for (const e of this.ents) if (e.type === 'gib' && n++ > 40) e.remove = true; }
@@ -340,9 +357,11 @@ const G = {
     const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(80, 520)), fy = World.floorY(x);
     if (fy < 20) { this.spawnLand(x, D); return; }
     const B = Biome.at(x);
+    if (B.indoor && !B.fish.length) return;  // nothing swims in a dry containment cell
+    const sky = !B.indoor;                   // no ducks or herons under a concrete roof
     // the biome decides what lives here; difficulty only gates the dangerous half
     const table = B.fish.map(([k, w]) => { const sp = SPECIES[k]; const hard = sp ? sizeClassOf(sp.ft) : 1; return [k, hard > 2.5 && D < 1.2 ? w * 0.15 : hard > 4 && D < 2.2 ? w * 0.3 : w]; });
-    const extra = [['frog', 1.6], ['turtle', D >= 0.4 ? 1.8 : 0.7], ['bottom', 2.2], ['duck', 1], ['heron', 1.2], ['divebird', 1.4], ['vulture', 0.5], ['dragonfly', 1], ['babygator', D >= 0.5 ? 1.2 : 0]];
+    const extra = [['frog', B.indoor ? 0.4 : 1.6], ['turtle', B.indoor ? 0 : D >= 0.4 ? 1.8 : 0.7], ['bottom', 2.2], ['duck', sky ? 1 : 0], ['heron', sky ? 1.2 : 0], ['divebird', sky ? 1.4 : 0], ['vulture', sky ? 0.5 : 0], ['dragonfly', sky ? 1 : 0], ['babygator', B.indoor ? 0 : D >= 0.5 ? 1.2 : 0]];
     if (fy > 180 && D >= 0.6) extra.push(['ray', 1.2]);
     if (D >= 1) extra.push(['moccasin', 0.9]);
     if (B.town && D >= 1.2) extra.push(['kayak', 0.7], ['pontoon', 0.8]);
@@ -370,8 +389,9 @@ const G = {
     if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
     if (B.id === 'campground') table.push(['camper', 3]);
     if (D >= 1.6) table.push(['ranger', 1], ['poacher', D >= 2.4 ? 1.4 : 0]);
-    table.push(['heron', 1.2]);
+    if (!B.indoor) table.push(['heron', 1.2]);
     const k = weightedPick(table);
+    if (!k) return;
     if (k === 'heron') this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis']), 'wade'));
     else this.add(new LandAnimal(x, k));
   },
@@ -564,7 +584,7 @@ const G = {
   demoInput() {
     const P = this.player, t = this.titleT;
     P.hunger = 100; P.hp = P.maxHp;
-    let x = Math.cos(t * 0.45) * 0.8, y = Math.sin(t * 0.9) * 0.35 + (P.y < 50 ? 0.7 : 0) + (P.y > 150 ? -0.7 : 0);
+    let x = Math.cos(t * 0.45) * 0.8, y = Math.sin(t * 0.9) * 0.3 + (P.y < 34 ? 0.8 : 0) + (P.y > 104 ? -0.8 : 0);
     if (P.x > 500) x = -1; if (P.x < -500) x = 1;
     let bite = false;
     for (const e of this.ents) if (e.type === 'fish' && !e.dead && dist(e.x, e.y, P.x, P.y) < 60) { const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; x = dx / d; y = dy / d; if (d < 26 && P.biteCd <= 0) bite = true; break; }
@@ -666,7 +686,7 @@ const G = {
       case 'help': UI.drawHelp(ctx); break;
       case 'codex': UI.drawCodex(ctx); break;
     }
-    if (this.state === 'play' && (this.touchUI || Input.touch.active) && this.settings.touch !== false) UI.drawTouch(ctx);
+    if ((this.state === 'play' || this.state === 'intro') && (this.touchUI || Input.touch.active) && this.settings.touch !== false) UI.drawTouch(ctx);
     if (this.settings.fps) Font.draw(ctx, this.fps + ' FPS', 4, this.H - 24, { color: '#80ff80' });
   },
 };

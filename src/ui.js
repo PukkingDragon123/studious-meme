@@ -114,7 +114,10 @@ const UI = {
       ctx.globalAlpha = 1;
     }
     if (G.t < 16 && G.state === 'play' && G.runs <= 1) {
-      const msgs = ['WASD / ARROWS: SWIM', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
+      const touch = G.touchUI || Input.touch.active;
+      const msgs = touch
+        ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   DASH PAD LUNGES', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
+        : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
       Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
     }
   },
@@ -224,19 +227,55 @@ const UI = {
     for (let i = 0; i < 12; i++) { const tx = Math.round(x - w / 2 + i * (w / 11)); ctx.beginPath(); ctx.moveTo(tx - 3, y - 2); ctx.lineTo(tx + 3, y - 2); ctx.lineTo(tx, y + 4); ctx.closePath(); ctx.fill(); }
   },
   drawTitle(ctx) {
-    const W = G.W, H = G.H, t = G.titleT;
-    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, 0, W, H);
-    this.drawLogo(ctx, W / 2, 40, 6, t);
-    Font.draw(ctx, 'A LAB ESCAPED. AN EVERGLADES EATER ROGUELIKE.', W / 2, 98, { color: '#a8d0b0', align: 'center', shadow: true });
-    Font.draw(ctx, 'THEY SPLICED EVERY ANIMAL INTO YOU. NOW USE THEM ALL.', W / 2, 110, { color: '#e0e8d0', align: 'center', shadow: true });
-    if (Math.floor(t * 2) % 2 === 0) Font.draw(ctx, '> PRESS ENTER OR CLICK TO HUNT <', W / 2, 150, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
-    this.panel(ctx, W / 2 - 150, 178, 300, 92);
-    const lines = ['WASD / ARROWS ..... SWIM (UP ON LAND: HOP)', 'SPACE / J ......... BITE  (AGAIN WHEN LATCHED: DEATH ROLL)', 'SHIFT / K ......... DASH', 'G ................. GENE TREE: SPEND WHAT YOU HAVE EATEN', 'TOUCH ............. LEFT THUMB SWIMS, PADS BITE AND DASH', 'P: PAUSE   H: HELP   C: CODEX   M: MUTE', 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.'];
-    lines.forEach((l, i) => Font.draw(ctx, l, W / 2 - 142, 186 + i * 11, { color: i === 6 ? '#ffb060' : '#d0dcc8' }));
+    const W = G.W, H = G.H, t = G.titleT, touch = G.touchUI;
+    // darken the top and the bottom only, so the swamp behind stays bright in the middle
+    const top = ctx.createLinearGradient(0, 0, 0, 138);
+    top.addColorStop(0, 'rgba(4,10,10,0.58)'); top.addColorStop(1, 'rgba(4,10,10,0)');
+    ctx.fillStyle = top; ctx.fillRect(0, 0, W, 138);
+    const bot = ctx.createLinearGradient(0, H - 70, 0, H);
+    bot.addColorStop(0, 'rgba(4,10,10,0)'); bot.addColorStop(1, 'rgba(4,10,10,0.7)');
+    ctx.fillStyle = bot; ctx.fillRect(0, H - 70, W, 70);
+    // vignette
+    const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.34, W / 2, H / 2, H * 0.88);
+    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.22)');
+    ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+
+    this.drawLogo(ctx, W / 2, 22, 6, t);
+    Font.draw(ctx, 'AN EVERGLADES EATER ROGUELIKE', W / 2, 92, { color: '#7fd8b8', align: 'center', outline: '#04100c' });
+    Font.draw(ctx, 'THEY SPLICED EVERY ANIMAL INTO YOU. NOW USE THEM ALL.', W / 2, 104, { color: '#e6eede', align: 'center', outline: '#04100c' });
+
+    // start prompt: a chevron pair that breathes rather than a hard blink
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
+    const label = touch ? 'TAP TO HUNT' : 'PRESS ENTER TO HUNT';
+    const lw = Font.width(label, 2);
+    ctx.globalAlpha = 0.55 + 0.45 * pulse;
+    Font.draw(ctx, label, W / 2, 128, { color: '#ffe060', align: 'center', scale: 2, outline: '#3a1c00' });
+    ctx.globalAlpha = 0.3 + 0.7 * pulse;
+    const chev = 10 + Math.round(pulse * 4);
+    Font.draw(ctx, '>', W / 2 - lw / 2 - chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
+    Font.draw(ctx, '<', W / 2 + lw / 2 + chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
+    ctx.globalAlpha = 1;
+
+    // controls: two tidy columns, keyboard or touch depending on the device
+    const rows = touch
+      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
+      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['G', 'GENE TREE'], ['UP ON LAND', 'HOP'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
+    const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
+    const boxH = per * 11 + 10, boxY = H - 74 - boxH;
+    this.panel(ctx, 20, boxY, pw2, boxH, 'rgba(6,14,14,0.68)', 'rgba(120,180,160,0.35)');
+    rows.forEach((r, i) => {
+      const c = Math.floor(i / per), ry = boxY + 7 + (i % per) * 11, rx = x0 + c * colW;
+      Font.draw(ctx, r[0], rx, ry, { color: '#8fe8c8' });
+      Font.draw(ctx, r[1], rx + 96, ry, { color: '#d4e0d0' });
+    });
+
+    Font.draw(ctx, 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.', W / 2, boxY + boxH + 8, { color: '#ffb060', align: 'center', outline: '#2a1200' });
+
     const s = G.save;
-    const have = ANIMAL_TRAITS.filter(t => !t.unlock || Meta.isUnlocked(t.id)).length;
-    Font.draw(ctx, 'BEST SCORE ' + fmt(s.best) + '     LONGEST CROC ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 22, { color: '#90a898', align: 'center', shadow: true });
+    const have = ANIMAL_TRAITS.filter(t2 => !t2.unlock || Meta.isUnlocked(t2.id)).length;
+    Font.draw(ctx, 'BEST ' + fmt(s.best) + '     LONGEST ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 20, { color: '#90a898', align: 'center', shadow: true });
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
+    if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
   },
   cardRects(n) {
     const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;
@@ -371,7 +410,7 @@ const UI = {
       const touch = G.touchUI || Input.touch.active;
       const pulse = 0.6 + 0.4 * Math.sin(e.prompt * 6);
       ctx.globalAlpha = 0.65 + 0.35 * pulse;
-      Font.draw(ctx, touch ? 'TAP TO BREAK THE GLASS' : 'MASH BITE TO BREAK THE GLASS', W / 2, H - 74, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
+      Font.draw(ctx, touch ? 'TAP ANYWHERE TO BREAK THE GLASS' : 'MASH BITE TO BREAK THE GLASS', W / 2, H - 74, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
       ctx.globalAlpha = 1;
       const bw = 160, bx = W / 2 - bw / 2, by = H - 50;
       ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 10);
@@ -381,7 +420,6 @@ const UI = {
         if (i === e.taps) { ctx.fillStyle = `rgba(140,232,160,${(pulse * 0.5).toFixed(2)})`; ctx.fillRect(sx, by, seg, 6); }
       }
       Font.draw(ctx, 'GLASS', W / 2, by + 12, { color: '#7f9a90', align: 'center' });
-      if (touch) { const p = Input.pads(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.bite.x, p.bite.y, p.bite.r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; Font.draw(ctx, 'TAP', p.bite.x, p.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' }); }
     } else {
       this.drawHUD(ctx);
       // an alarm wash while the escape is on
@@ -423,6 +461,9 @@ const UI = {
     const P = Input.pads(), T = Input.touch, pl = G.player;
     const ring = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; };
     const disc = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; };
+    // curled in the tank there is nothing to steer, and drawIntro already
+    // shows the chomp prompt: pads here would only clutter the glass meter
+    if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') return;
     // joystick: shows where the thumb landed
     if (T.joy) {
       ring(T.sx, T.sy, 32, 0.35, '#ffffff');
@@ -431,7 +472,7 @@ const UI = {
       ring(T.sx + T.jx * 26, T.sy + T.jy * 26, 12, 0.8, '#ffffff');
     } else {
       ring(70, G.H - 60, 30, 0.16, '#ffffff');
-      Font.draw(ctx, 'SWIM', 70, G.H - 64, { color: 'rgba(255,255,255,0.4)', align: 'center' });
+      Font.draw(ctx, pl && pl.onLand ? 'WALK' : 'SWIM', 70, G.H - 64, { color: 'rgba(255,255,255,0.4)', align: 'center' });
     }
     // bite pad (turns red while latched: that is the death-roll button)
     const latched = pl && (pl.latched || pl.grabbed || pl.tether);

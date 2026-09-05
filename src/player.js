@@ -83,10 +83,21 @@ class Player {
       this.vy += 900 * dt;
       if (landHere && this.y >= fy - 5 * this.vis - 1) {
         this.onLand = true; this.y = fy - 5 * this.vis; if (this.vy > 0) this.vy = 0;
-        const landSpeed = this.speedMax * 0.38 * this.st.landSpeed;
-        this.vx += (ix * landSpeed - this.vx) * Math.min(1, 5 * dt);
-        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); }
-        if (Math.abs(this.vx) > 20 && chance(dt * 8)) G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a');
+        // a crocodile on land is slower than in the water, but it is not helpless
+        const landSpeed = this.speedMax * 0.62 * this.st.landSpeed;
+        const grip = ix !== 0 ? 7 : 9;   // pushes off quickly, stops quickly
+        this.vx += (ix * landSpeed - this.vx) * Math.min(1, grip * dt);
+        // walk up a slope instead of grinding to a halt against it
+        const ahead = World.floorY(this.x + 8 * this.vis * sign(this.vx || ix || 1));
+        const rise = fy - ahead;
+        if (rise > 1 && Math.abs(this.vx) > 6) this.vx *= 1 - Math.min(0.45, rise / (26 * this.vis));
+        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); SFX.thud && SFX.thud(); }
+        // one puff of grit per footfall rather than a random dribble
+        if (Math.abs(this.vx) > 14) {
+          this.stepT = (this.stepT || 0) + Math.abs(this.vx) * dt;
+          const stride = 13 * this.vis;
+          if (this.stepT > stride) { this.stepT = 0; G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a'); }
+        } else this.stepT = 0;
         if (this.wasAir) { this.wasAir = false; SFX.thud(); G.shake(2); }
       } else {
         this.onLand = false; this.vx += ix * 140 * dt; this.airT += dt;
@@ -136,16 +147,19 @@ class Player {
     let targetA = this.angle;
     if (this.onLand) {
       if (Math.abs(this.vx) > 8) this.facing = sign(this.vx);
+      // follow the ground, but never rear up: a croc on a steep bank still reads as a croc
       const slope = Math.atan2(World.floorY(this.x + 10 * this.facing) - World.floorY(this.x - 10 * this.facing), 20 * this.facing);
-      targetA = (this.facing > 0 ? 0 : Math.PI) + (this.facing > 0 ? slope : -slope);
+      const pitch = clamp(slope, -0.7, 0.7);
+      targetA = (this.facing > 0 ? 0 : Math.PI) + (this.facing > 0 ? pitch : -pitch);
     } else if (sp > 12) targetA = Math.atan2(this.vy, this.vx);
     if (this.grabbed) targetA = this.angle;
     this.angle = angleLerp(this.angle, targetA, 1 - Math.exp(-(under ? 7 * this.st.turn : 3.5) * dt));
     if (!this.onLand) this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
     // body
     const swim = clamp(sp / this.speedMax, 0, 1.3);
-    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim);
-    this.legPhase += dt * (2 + swim * 7 + (this.onLand ? Math.abs(this.vx) * 0.06 : 0));
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim, this.onLand);
+    if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
+    else this.legPhase += dt * (2 + swim * 7);
     // jaws
     if (this.biteT > 0) {
       this.biteT -= dt;

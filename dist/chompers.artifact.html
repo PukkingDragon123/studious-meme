@@ -1378,7 +1378,7 @@ class CrocChain {
   constructor(x, y, a) { this.nodes = []; for (let i = 0; i < CROC_LEN; i++) this.nodes.push({ x: x - i * 8 * Math.cos(a), y: y - i * 8 * Math.sin(a), a }); this.phase = 0; }
   reset(x, y, a) { for (let i = 0; i < CROC_LEN; i++) { const n = this.nodes[i]; n.x = x - i * 8 * Math.cos(a); n.y = y - i * 8 * Math.sin(a); n.a = a; } }
   // solve follow-the-leader with bend limit and swimming undulation
-  solve(hx, hy, ha, size, dt, swim) {
+  solve(hx, hy, ha, size, dt, swim, ground = false) {
     const n = this.nodes; n[0].x = hx; n[0].y = hy; n[0].a = ha;
     this.phase += dt * (4 + swim * 9);
     for (let i = 1; i < CROC_LEN; i++) {
@@ -1391,6 +1391,13 @@ class CrocChain {
       const wig = Math.sin(this.phase - i * 0.75) * (0.05 + swim * 0.16) * Math.pow(i / CROC_LEN, 1.4);
       const a = back + d + wig;
       s.x = p.x + Math.cos(a) * sp; s.y = p.y + Math.sin(a) * sp;
+      // walking, the belly rides the ground instead of sinking through the bank.
+      // only the position is lifted: feeding the lifted angle back into `back`
+      // for the next link makes one bump curl the whole tail up into a hook
+      if (ground) {
+        const fy = World.floorY(s.x) - 3 * size;
+        if (s.y > fy) s.y = fy;
+      }
       s.a = a + Math.PI;
     }
   }
@@ -2168,7 +2175,9 @@ const Weather = {
     if (this.rain <= 0.02) return;
     const W = G.W, n = Math.round(this.rain * 90 * dt * 60 / 60 * 4);
     for (let i = 0; i < n; i++) {
-      const wx = cam.toWorldX(rand(-40, W + 40)), top = cam.toWorld(0, -10)[1];
+      const wx = cam.toWorldX(rand(-40, W + 40));
+      if (World.isIndoor(wx)) continue;  // there is a roof over the lab and the sewer
+      const top = cam.toWorld(0, -10)[1];
       G.fx.add({ type: 'rain', x: wx, y: Math.min(top, -300) + rand(-60, 0), vx: -this.wind * 60 + rand(-8, 8), vy: rand(420, 520), life: 3 });
     }
   },
@@ -2273,8 +2282,9 @@ const World = {
     const g = ctx.createLinearGradient(0, Math.min(hy - 220 * cam.zoom, 0), 0, hy);
     g.addColorStop(0, sc.top); g.addColorStop(1, sc.bot);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, Math.max(0, hy));
-    if (Weather.rain > 0.02) { ctx.fillStyle = `rgba(60,70,80,${(Weather.rain * 0.55).toFixed(3)})`; ctx.fillRect(0, 0, W, Math.max(0, hy)); }
-    if (Weather.flash > 0) { ctx.fillStyle = `rgba(230,240,255,${(Weather.flash * 0.7).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+    const roofed = World.isIndoor(G.cam.x);
+    if (!roofed && Weather.rain > 0.02) { ctx.fillStyle = `rgba(60,70,80,${(Weather.rain * 0.55).toFixed(3)})`; ctx.fillRect(0, 0, W, Math.max(0, hy)); }
+    if (!roofed && Weather.flash > 0) { ctx.fillStyle = `rgba(230,240,255,${(Weather.flash * 0.7).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     const light = this.light(day), night = 1 - light;
     // stars
     if (night > 0.15) {
@@ -5069,10 +5079,21 @@ class Player {
       this.vy += 900 * dt;
       if (landHere && this.y >= fy - 5 * this.vis - 1) {
         this.onLand = true; this.y = fy - 5 * this.vis; if (this.vy > 0) this.vy = 0;
-        const landSpeed = this.speedMax * 0.38 * this.st.landSpeed;
-        this.vx += (ix * landSpeed - this.vx) * Math.min(1, 5 * dt);
-        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); }
-        if (Math.abs(this.vx) > 20 && chance(dt * 8)) G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a');
+        // a crocodile on land is slower than in the water, but it is not helpless
+        const landSpeed = this.speedMax * 0.62 * this.st.landSpeed;
+        const grip = ix !== 0 ? 7 : 9;   // pushes off quickly, stops quickly
+        this.vx += (ix * landSpeed - this.vx) * Math.min(1, grip * dt);
+        // walk up a slope instead of grinding to a halt against it
+        const ahead = World.floorY(this.x + 8 * this.vis * sign(this.vx || ix || 1));
+        const rise = fy - ahead;
+        if (rise > 1 && Math.abs(this.vx) > 6) this.vx *= 1 - Math.min(0.45, rise / (26 * this.vis));
+        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); SFX.thud && SFX.thud(); }
+        // one puff of grit per footfall rather than a random dribble
+        if (Math.abs(this.vx) > 14) {
+          this.stepT = (this.stepT || 0) + Math.abs(this.vx) * dt;
+          const stride = 13 * this.vis;
+          if (this.stepT > stride) { this.stepT = 0; G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a'); }
+        } else this.stepT = 0;
         if (this.wasAir) { this.wasAir = false; SFX.thud(); G.shake(2); }
       } else {
         this.onLand = false; this.vx += ix * 140 * dt; this.airT += dt;
@@ -5122,16 +5143,19 @@ class Player {
     let targetA = this.angle;
     if (this.onLand) {
       if (Math.abs(this.vx) > 8) this.facing = sign(this.vx);
+      // follow the ground, but never rear up: a croc on a steep bank still reads as a croc
       const slope = Math.atan2(World.floorY(this.x + 10 * this.facing) - World.floorY(this.x - 10 * this.facing), 20 * this.facing);
-      targetA = (this.facing > 0 ? 0 : Math.PI) + (this.facing > 0 ? slope : -slope);
+      const pitch = clamp(slope, -0.7, 0.7);
+      targetA = (this.facing > 0 ? 0 : Math.PI) + (this.facing > 0 ? pitch : -pitch);
     } else if (sp > 12) targetA = Math.atan2(this.vy, this.vx);
     if (this.grabbed) targetA = this.angle;
     this.angle = angleLerp(this.angle, targetA, 1 - Math.exp(-(under ? 7 * this.st.turn : 3.5) * dt));
     if (!this.onLand) this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
     // body
     const swim = clamp(sp / this.speedMax, 0, 1.3);
-    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim);
-    this.legPhase += dt * (2 + swim * 7 + (this.onLand ? Math.abs(this.vx) * 0.06 : 0));
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim, this.onLand);
+    if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
+    else this.legPhase += dt * (2 + swim * 7);
     // jaws
     if (this.biteT > 0) {
       this.biteT -= dt;
@@ -5681,7 +5705,10 @@ const UI = {
       ctx.globalAlpha = 1;
     }
     if (G.t < 16 && G.state === 'play' && G.runs <= 1) {
-      const msgs = ['WASD / ARROWS: SWIM', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
+      const touch = G.touchUI || Input.touch.active;
+      const msgs = touch
+        ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   DASH PAD LUNGES', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
+        : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
       Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
     }
   },
@@ -5791,19 +5818,55 @@ const UI = {
     for (let i = 0; i < 12; i++) { const tx = Math.round(x - w / 2 + i * (w / 11)); ctx.beginPath(); ctx.moveTo(tx - 3, y - 2); ctx.lineTo(tx + 3, y - 2); ctx.lineTo(tx, y + 4); ctx.closePath(); ctx.fill(); }
   },
   drawTitle(ctx) {
-    const W = G.W, H = G.H, t = G.titleT;
-    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, 0, W, H);
-    this.drawLogo(ctx, W / 2, 40, 6, t);
-    Font.draw(ctx, 'A LAB ESCAPED. AN EVERGLADES EATER ROGUELIKE.', W / 2, 98, { color: '#a8d0b0', align: 'center', shadow: true });
-    Font.draw(ctx, 'THEY SPLICED EVERY ANIMAL INTO YOU. NOW USE THEM ALL.', W / 2, 110, { color: '#e0e8d0', align: 'center', shadow: true });
-    if (Math.floor(t * 2) % 2 === 0) Font.draw(ctx, '> PRESS ENTER OR CLICK TO HUNT <', W / 2, 150, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
-    this.panel(ctx, W / 2 - 150, 178, 300, 92);
-    const lines = ['WASD / ARROWS ..... SWIM (UP ON LAND: HOP)', 'SPACE / J ......... BITE  (AGAIN WHEN LATCHED: DEATH ROLL)', 'SHIFT / K ......... DASH', 'G ................. GENE TREE: SPEND WHAT YOU HAVE EATEN', 'TOUCH ............. LEFT THUMB SWIMS, PADS BITE AND DASH', 'P: PAUSE   H: HELP   C: CODEX   M: MUTE', 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.'];
-    lines.forEach((l, i) => Font.draw(ctx, l, W / 2 - 142, 186 + i * 11, { color: i === 6 ? '#ffb060' : '#d0dcc8' }));
+    const W = G.W, H = G.H, t = G.titleT, touch = G.touchUI;
+    // darken the top and the bottom only, so the swamp behind stays bright in the middle
+    const top = ctx.createLinearGradient(0, 0, 0, 138);
+    top.addColorStop(0, 'rgba(4,10,10,0.58)'); top.addColorStop(1, 'rgba(4,10,10,0)');
+    ctx.fillStyle = top; ctx.fillRect(0, 0, W, 138);
+    const bot = ctx.createLinearGradient(0, H - 70, 0, H);
+    bot.addColorStop(0, 'rgba(4,10,10,0)'); bot.addColorStop(1, 'rgba(4,10,10,0.7)');
+    ctx.fillStyle = bot; ctx.fillRect(0, H - 70, W, 70);
+    // vignette
+    const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.34, W / 2, H / 2, H * 0.88);
+    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.22)');
+    ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+
+    this.drawLogo(ctx, W / 2, 22, 6, t);
+    Font.draw(ctx, 'AN EVERGLADES EATER ROGUELIKE', W / 2, 92, { color: '#7fd8b8', align: 'center', outline: '#04100c' });
+    Font.draw(ctx, 'THEY SPLICED EVERY ANIMAL INTO YOU. NOW USE THEM ALL.', W / 2, 104, { color: '#e6eede', align: 'center', outline: '#04100c' });
+
+    // start prompt: a chevron pair that breathes rather than a hard blink
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
+    const label = touch ? 'TAP TO HUNT' : 'PRESS ENTER TO HUNT';
+    const lw = Font.width(label, 2);
+    ctx.globalAlpha = 0.55 + 0.45 * pulse;
+    Font.draw(ctx, label, W / 2, 128, { color: '#ffe060', align: 'center', scale: 2, outline: '#3a1c00' });
+    ctx.globalAlpha = 0.3 + 0.7 * pulse;
+    const chev = 10 + Math.round(pulse * 4);
+    Font.draw(ctx, '>', W / 2 - lw / 2 - chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
+    Font.draw(ctx, '<', W / 2 + lw / 2 + chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
+    ctx.globalAlpha = 1;
+
+    // controls: two tidy columns, keyboard or touch depending on the device
+    const rows = touch
+      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
+      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['G', 'GENE TREE'], ['UP ON LAND', 'HOP'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
+    const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
+    const boxH = per * 11 + 10, boxY = H - 74 - boxH;
+    this.panel(ctx, 20, boxY, pw2, boxH, 'rgba(6,14,14,0.68)', 'rgba(120,180,160,0.35)');
+    rows.forEach((r, i) => {
+      const c = Math.floor(i / per), ry = boxY + 7 + (i % per) * 11, rx = x0 + c * colW;
+      Font.draw(ctx, r[0], rx, ry, { color: '#8fe8c8' });
+      Font.draw(ctx, r[1], rx + 96, ry, { color: '#d4e0d0' });
+    });
+
+    Font.draw(ctx, 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.', W / 2, boxY + boxH + 8, { color: '#ffb060', align: 'center', outline: '#2a1200' });
+
     const s = G.save;
-    const have = ANIMAL_TRAITS.filter(t => !t.unlock || Meta.isUnlocked(t.id)).length;
-    Font.draw(ctx, 'BEST SCORE ' + fmt(s.best) + '     LONGEST CROC ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 22, { color: '#90a898', align: 'center', shadow: true });
+    const have = ANIMAL_TRAITS.filter(t2 => !t2.unlock || Meta.isUnlocked(t2.id)).length;
+    Font.draw(ctx, 'BEST ' + fmt(s.best) + '     LONGEST ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 20, { color: '#90a898', align: 'center', shadow: true });
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
+    if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
   },
   cardRects(n) {
     const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;
@@ -5938,7 +6001,7 @@ const UI = {
       const touch = G.touchUI || Input.touch.active;
       const pulse = 0.6 + 0.4 * Math.sin(e.prompt * 6);
       ctx.globalAlpha = 0.65 + 0.35 * pulse;
-      Font.draw(ctx, touch ? 'TAP TO BREAK THE GLASS' : 'MASH BITE TO BREAK THE GLASS', W / 2, H - 74, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
+      Font.draw(ctx, touch ? 'TAP ANYWHERE TO BREAK THE GLASS' : 'MASH BITE TO BREAK THE GLASS', W / 2, H - 74, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
       ctx.globalAlpha = 1;
       const bw = 160, bx = W / 2 - bw / 2, by = H - 50;
       ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 10);
@@ -5948,7 +6011,6 @@ const UI = {
         if (i === e.taps) { ctx.fillStyle = `rgba(140,232,160,${(pulse * 0.5).toFixed(2)})`; ctx.fillRect(sx, by, seg, 6); }
       }
       Font.draw(ctx, 'GLASS', W / 2, by + 12, { color: '#7f9a90', align: 'center' });
-      if (touch) { const p = Input.pads(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.bite.x, p.bite.y, p.bite.r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; Font.draw(ctx, 'TAP', p.bite.x, p.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' }); }
     } else {
       this.drawHUD(ctx);
       // an alarm wash while the escape is on
@@ -5990,6 +6052,9 @@ const UI = {
     const P = Input.pads(), T = Input.touch, pl = G.player;
     const ring = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; };
     const disc = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; };
+    // curled in the tank there is nothing to steer, and drawIntro already
+    // shows the chomp prompt: pads here would only clutter the glass meter
+    if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') return;
     // joystick: shows where the thumb landed
     if (T.joy) {
       ring(T.sx, T.sy, 32, 0.35, '#ffffff');
@@ -5998,7 +6063,7 @@ const UI = {
       ring(T.sx + T.jx * 26, T.sy + T.jy * 26, 12, 0.8, '#ffffff');
     } else {
       ring(70, G.H - 60, 30, 0.16, '#ffffff');
-      Font.draw(ctx, 'SWIM', 70, G.H - 64, { color: 'rgba(255,255,255,0.4)', align: 'center' });
+      Font.draw(ctx, pl && pl.onLand ? 'WALK' : 'SWIM', 70, G.H - 64, { color: 'rgba(255,255,255,0.4)', align: 'center' });
     }
     // bite pad (turns red while latched: that is the death-roll button)
     const latched = pl && (pl.latched || pl.grabbed || pl.tether);
@@ -6095,7 +6160,11 @@ const Input = {
       for (const t of e.changedTouches) {
         const [x, y] = tpos(t);
         this.mouse.x = x; this.mouse.y = y; this.mouse.moved = true;
-        if (G.state !== 'play') { this.mouse.clicked = true; if (this.inPad(P.pause, x, y)) this.pressed.Escape = true; continue; }
+        // the intro is playable, so the pads have to live through it too
+        const playable = G.state === 'play' || G.state === 'intro';
+        if (!playable) { this.mouse.clicked = true; if (this.inPad(P.pause, x, y)) this.pressed.Escape = true; continue; }
+        // curled in the tank there is nothing to steer: every tap is a chomp
+        if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; continue; }
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
         else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashId = t.identifier; }
         else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
@@ -6205,7 +6274,17 @@ const G = {
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
     Water.init(0); Mud.init(0); Weather.rain = 0; Weather.target = 0; Weather.timer = rand(40, 120);
-    if (demo) { this.player.x = 3400; this.player.y = 90; this.player.chain.reset(3400, 90, 0); this.cam.x = 3400; this.cam.y = 60; World.ensure(3400, 1600); this.seedNursery(3400, 1); }
+    if (demo) {
+      // the title runs a live game: a grown croc hunting the mangroves in morning light
+      const DX = 5100;   // cypress swamp: deep open water with trees on both banks
+      this.day = 0.24; Weather.rain = 0; Weather.target = 0; Weather.timer = 400;
+      const P = this.player;
+      P.size = 4.2; P.sizeTarget = 4.2; P.mass = sizeToMass(4.2); P.tier = tierFor(4.2); P.hp = P.maxHp;
+      P.x = DX; P.y = 90; P.chain.reset(DX, 90, 0);
+      this.cam.x = DX; this.cam.y = 70; this.cam.zoom = 1.45;
+      World.ensure(DX, 1600); this.seedNursery(DX, 1); this.seedNursery(DX, -1);
+      for (let i = 0; i < 20; i++) { this.director.spawnT = 0; this.populate(1.2); }
+    }
     if (!demo) { this.runs++; this.save.runs++; this.storeSave(); this.beginIntro(); }
   },
   // easy first meals, close to wherever the run begins
@@ -6219,7 +6298,7 @@ const G = {
     for (let i = 0; i < 3; i++) { const x = pick(20, 300); if (x !== null) this.add(new Dragonfly(x)); }
     const mx = pick(80, 300);
     if (mx !== null) { const lead = new Mullet(mx, 30); this.add(lead); for (let i = 1; i < 5; i++) this.add(new Mullet(mx + rand(-30, 30), 30 + rand(-14, 14), lead)); }
-    const dx = pick(120, 340); if (dx !== null) Spawn.duck(dx);
+    const dx = pick(120, 340); if (dx !== null && !World.isIndoor(dx)) Spawn.duck(dx);
   },
   // ---------- the intro: born in a tank, out through the sewer ----------
   beginIntro() {
@@ -6279,11 +6358,14 @@ const G = {
     const B = Biome.at(ch.x0);
     for (let k = 0; k < 5; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
-      if (Biome.at(x).indoor && rng() < 0.5) continue;
+      const Bx = Biome.at(x);
+      if (Bx.indoor && rng() < 0.5) continue;
       const fy = World.floorY(x);
       if (fy < -3) { if (rng() < 0.6) this.spawnLand(x, D); continue; }
-      if (fy < 30) { if (rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, B.id === 'outfall' ? 'roach' : 'crayfish')); continue; }
-      const kind = weightedPick(B.fish.concat([['frog', 1.4], ['turtle', 1.4], ['bottom', 2], ['duck', 1]]));
+      if (fy < 30) { if (!Bx.indoor && rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, Bx.id === 'outfall' || Bx.indoor ? 'roach' : 'crayfish')); continue; }
+      if (Bx.indoor && !Bx.fish.length) continue;
+      const kind = weightedPick(Bx.fish.concat(Bx.indoor ? [['bottom', 2]] : [['frog', 1.4], ['turtle', 1.4], ['bottom', 2], ['duck', 1]]));
+      if (!kind) continue;
       if (kind === 'frog') this.add(new Frog(x, chance(0.3) ? 'pigfrog' : 'frog'));
       else if (kind === 'turtle') this.add(new Turtle(x, clamp(40 + rng() * 100, 10, fy - 15), choice(['turtle', 'slider', 'cooter'])));
       else if (kind === 'bottom') this.add(new Bottom(x, B.id === 'outfall' ? 'roach' : choice(['crayfish', 'crab', 'snail', 'shrimp', 'fiddler'])));
@@ -6384,7 +6466,7 @@ const G = {
     const d = this.director, P = this.player, D = this.difficulty();
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
     d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(30 - D * 2.2, 10, 30) * rand(0.8, 1.25); this.spawnPredator(D); }
-    d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); }
+    d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     if (d.bossQueue && !this.boss) { d.bossT -= dt; if (d.bossT <= 0) this.spawnBoss(d.bossQueue); }
     // hard cap
     if (this.ents.length > 220) { let n = 0; for (const e of this.ents) if (e.type === 'gib' && n++ > 40) e.remove = true; }
@@ -6399,9 +6481,11 @@ const G = {
     const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(80, 520)), fy = World.floorY(x);
     if (fy < 20) { this.spawnLand(x, D); return; }
     const B = Biome.at(x);
+    if (B.indoor && !B.fish.length) return;  // nothing swims in a dry containment cell
+    const sky = !B.indoor;                   // no ducks or herons under a concrete roof
     // the biome decides what lives here; difficulty only gates the dangerous half
     const table = B.fish.map(([k, w]) => { const sp = SPECIES[k]; const hard = sp ? sizeClassOf(sp.ft) : 1; return [k, hard > 2.5 && D < 1.2 ? w * 0.15 : hard > 4 && D < 2.2 ? w * 0.3 : w]; });
-    const extra = [['frog', 1.6], ['turtle', D >= 0.4 ? 1.8 : 0.7], ['bottom', 2.2], ['duck', 1], ['heron', 1.2], ['divebird', 1.4], ['vulture', 0.5], ['dragonfly', 1], ['babygator', D >= 0.5 ? 1.2 : 0]];
+    const extra = [['frog', B.indoor ? 0.4 : 1.6], ['turtle', B.indoor ? 0 : D >= 0.4 ? 1.8 : 0.7], ['bottom', 2.2], ['duck', sky ? 1 : 0], ['heron', sky ? 1.2 : 0], ['divebird', sky ? 1.4 : 0], ['vulture', sky ? 0.5 : 0], ['dragonfly', sky ? 1 : 0], ['babygator', B.indoor ? 0 : D >= 0.5 ? 1.2 : 0]];
     if (fy > 180 && D >= 0.6) extra.push(['ray', 1.2]);
     if (D >= 1) extra.push(['moccasin', 0.9]);
     if (B.town && D >= 1.2) extra.push(['kayak', 0.7], ['pontoon', 0.8]);
@@ -6429,8 +6513,9 @@ const G = {
     if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
     if (B.id === 'campground') table.push(['camper', 3]);
     if (D >= 1.6) table.push(['ranger', 1], ['poacher', D >= 2.4 ? 1.4 : 0]);
-    table.push(['heron', 1.2]);
+    if (!B.indoor) table.push(['heron', 1.2]);
     const k = weightedPick(table);
+    if (!k) return;
     if (k === 'heron') this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis']), 'wade'));
     else this.add(new LandAnimal(x, k));
   },
@@ -6623,7 +6708,7 @@ const G = {
   demoInput() {
     const P = this.player, t = this.titleT;
     P.hunger = 100; P.hp = P.maxHp;
-    let x = Math.cos(t * 0.45) * 0.8, y = Math.sin(t * 0.9) * 0.35 + (P.y < 50 ? 0.7 : 0) + (P.y > 150 ? -0.7 : 0);
+    let x = Math.cos(t * 0.45) * 0.8, y = Math.sin(t * 0.9) * 0.3 + (P.y < 34 ? 0.8 : 0) + (P.y > 104 ? -0.8 : 0);
     if (P.x > 500) x = -1; if (P.x < -500) x = 1;
     let bite = false;
     for (const e of this.ents) if (e.type === 'fish' && !e.dead && dist(e.x, e.y, P.x, P.y) < 60) { const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; x = dx / d; y = dy / d; if (d < 26 && P.biteCd <= 0) bite = true; break; }
@@ -6725,7 +6810,7 @@ const G = {
       case 'help': UI.drawHelp(ctx); break;
       case 'codex': UI.drawCodex(ctx); break;
     }
-    if (this.state === 'play' && (this.touchUI || Input.touch.active) && this.settings.touch !== false) UI.drawTouch(ctx);
+    if ((this.state === 'play' || this.state === 'intro') && (this.touchUI || Input.touch.active) && this.settings.touch !== false) UI.drawTouch(ctx);
     if (this.settings.fps) Font.draw(ctx, this.fps + ' FPS', 4, this.H - 24, { color: '#80ff80' });
   },
 };

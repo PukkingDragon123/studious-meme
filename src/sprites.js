@@ -355,7 +355,7 @@ class CrocChain {
   constructor(x, y, a) { this.nodes = []; for (let i = 0; i < CROC_LEN; i++) this.nodes.push({ x: x - i * 8 * Math.cos(a), y: y - i * 8 * Math.sin(a), a }); this.phase = 0; }
   reset(x, y, a) { for (let i = 0; i < CROC_LEN; i++) { const n = this.nodes[i]; n.x = x - i * 8 * Math.cos(a); n.y = y - i * 8 * Math.sin(a); n.a = a; } }
   // solve follow-the-leader with bend limit and swimming undulation
-  solve(hx, hy, ha, size, dt, swim) {
+  solve(hx, hy, ha, size, dt, swim, ground = false) {
     const n = this.nodes; n[0].x = hx; n[0].y = hy; n[0].a = ha;
     this.phase += dt * (4 + swim * 9);
     for (let i = 1; i < CROC_LEN; i++) {
@@ -368,6 +368,13 @@ class CrocChain {
       const wig = Math.sin(this.phase - i * 0.75) * (0.05 + swim * 0.16) * Math.pow(i / CROC_LEN, 1.4);
       const a = back + d + wig;
       s.x = p.x + Math.cos(a) * sp; s.y = p.y + Math.sin(a) * sp;
+      // walking, the belly rides the ground instead of sinking through the bank.
+      // only the position is lifted: feeding the lifted angle back into `back`
+      // for the next link makes one bump curl the whole tail up into a hook
+      if (ground) {
+        const fy = World.floorY(s.x) - 3 * size;
+        if (s.y > fy) s.y = fy;
+      }
       s.a = a + Math.PI;
     }
   }

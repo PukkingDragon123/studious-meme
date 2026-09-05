@@ -88,7 +88,9 @@ const Weather = {
     if (this.rain <= 0.02) return;
     const W = G.W, n = Math.round(this.rain * 90 * dt * 60 / 60 * 4);
     for (let i = 0; i < n; i++) {
-      const wx = cam.toWorldX(rand(-40, W + 40)), top = cam.toWorld(0, -10)[1];
+      const wx = cam.toWorldX(rand(-40, W + 40));
+      if (World.isIndoor(wx)) continue;  // there is a roof over the lab and the sewer
+      const top = cam.toWorld(0, -10)[1];
       G.fx.add({ type: 'rain', x: wx, y: Math.min(top, -300) + rand(-60, 0), vx: -this.wind * 60 + rand(-8, 8), vy: rand(420, 520), life: 3 });
     }
   },
