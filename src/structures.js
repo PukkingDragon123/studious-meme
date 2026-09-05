@@ -27,6 +27,7 @@ class Structure extends Entity {
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
       case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6 * this.ss; break; }
       case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8 * this.ss; break; }
+      case 'console': { this.name = 'CONSOLE'; this.hp = 26; this.r = 9 * this.ss; break; }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
@@ -200,11 +201,37 @@ class Structure extends Entity {
         break;
       }
       case 'sign': {
-        ctx.fillStyle = '#6b5033'; ctx.fillRect(-1, -14, 2, 14);
-        ctx.fillStyle = '#e8e8d8'; ctx.fillRect(-11, -26, 22, 13);
-        ctx.fillStyle = '#c02020'; ctx.fillRect(-11, -26, 22, 3);
-        Font.draw(ctx, 'NO', 0, -22, { color: '#202020', align: 'center' });
+        // post, board, red header, then two 7px text rows that do not collide
+        ctx.fillStyle = '#6b5033'; ctx.fillRect(-1, -12, 2, 12);
+        ctx.fillStyle = '#8a6a44'; ctx.fillRect(-1, -12, 1, 12);
+        ctx.fillStyle = '#e8e8d8'; ctx.fillRect(-14, -31, 28, 19);
+        ctx.fillStyle = '#f6f6ec'; ctx.fillRect(-14, -31, 28, 2);
+        ctx.fillStyle = '#c02020'; ctx.fillRect(-14, -31, 28, 4);
+        ctx.fillStyle = '#8a1414'; ctx.fillRect(-14, -28, 28, 1);
+        Font.draw(ctx, 'NO', 0, -26, { color: '#202020', align: 'center' });
         Font.draw(ctx, 'SWIM', 0, -19, { color: '#202020', align: 'center' });
+        break;
+      }
+      case 'console': {
+        // lab monitor bank on a stand: the thing the coats watched you through
+        const lit = this.hp > 0;
+        ctx.fillStyle = '#3a4246'; ctx.fillRect(-3, -12, 6, 12);
+        ctx.fillStyle = '#2a3034'; ctx.fillRect(-9, -3, 18, 3);
+        ctx.fillStyle = '#20282c'; ctx.fillRect(-15, -30, 30, 18);
+        ctx.fillStyle = '#39454a'; ctx.fillRect(-15, -30, 30, 1);
+        ctx.fillStyle = '#141a1c'; ctx.fillRect(-13, -28, 26, 14);
+        if (lit) {
+          ctx.fillStyle = '#123a2a'; ctx.fillRect(-13, -28, 26, 14);
+          ctx.fillStyle = '#2fd08a';
+          for (let i = 0; i < 5; i++) { const w = 4 + ((i * 7 + Math.floor(this.t * 2 + i)) % 16); ctx.fillRect(-11, -26 + i * 3, w, 1); }
+          ctx.fillStyle = 'rgba(120,255,200,0.13)';
+          for (let i = 0; i < 7; i++) ctx.fillRect(-13, -28 + i * 2, 26, 1);
+          ctx.fillStyle = Math.sin(this.t * 4) > 0 ? '#ff5030' : '#5a2018'; ctx.fillRect(11, -11, 3, 2);
+          ctx.fillStyle = '#40ff80'; ctx.fillRect(6, -11, 3, 2);
+        }
+        ctx.fillStyle = '#39454a'; ctx.fillRect(-11, -11, 22, 4);
+        ctx.fillStyle = '#1c2226';
+        for (let i = 0; i < 9; i++) ctx.fillRect(-10 + i * 2.4, -10, 1, 1);
         break;
       }
       case 'shop': {

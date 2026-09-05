@@ -173,7 +173,7 @@ const G = {
     for (const [ox, dir] of [[-72, 1], [-104, 1], [78, -1]]) {
       const s2 = new LandAnimal(TANK + ox, 'scientist'); s2.facing = dir; s2.state = 'idle'; s2.stateT = 99; s2.watching = true; this.add(s2);
     }
-    const desk = new Structure(TANK + 150, 'sign'); desk.name = 'CONSOLE'; this.add(desk);
+    const desk = new Structure(TANK + 150, 'console'); this.add(desk);
     // the grate at the end of the run
     const grate = new Structure(-150, 'grate'); this.add(grate); this.intro.grate = grate;
     // a few rats and roaches to eat on the way out
@@ -520,7 +520,7 @@ const G = {
         if (Input.hit('Escape', 'KeyG', 'KeyE', 'Tab', 'Enter')) { this.state = 'play'; SFX.ui(); break; }
         const cells = UI.geneCells();
         if (Input.mouse.moved || Input.mouse.clicked) {
-          let best = null, bd = 26;
+          let best = null, bd = (cells[0] ? cells[0].R : 25) + 1;
           for (const c of cells) { const d = dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy); if (d < bd) { bd = d; best = c; } }
           if (best) this.geneSel = best.g.id;
         }
@@ -532,7 +532,7 @@ const G = {
           for (const c of cells) { if (c === cur) continue; const ox = c.sx - cur.sx, oy = c.sy - cur.sy; if (ox * dx + oy * dy <= 4) continue; const d = Math.hypot(ox, oy) + Math.abs(ox * dy - oy * dx) * 1.5; if (d < bd) { bd = d; best = c; } }
           if (best) { this.geneSel = best.g.id; SFX.ui(); }
         }
-        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < 26));
+        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < c.R + 1));
         if (take) {
           const g = GENE_BY_ID[this.geneSel];
           if (g && Genome.buy(P, g)) {

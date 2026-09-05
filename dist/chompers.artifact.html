@@ -4619,6 +4619,7 @@ class Structure extends Entity {
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
       case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6 * this.ss; break; }
       case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8 * this.ss; break; }
+      case 'console': { this.name = 'CONSOLE'; this.hp = 26; this.r = 9 * this.ss; break; }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
@@ -4792,11 +4793,37 @@ class Structure extends Entity {
         break;
       }
       case 'sign': {
-        ctx.fillStyle = '#6b5033'; ctx.fillRect(-1, -14, 2, 14);
-        ctx.fillStyle = '#e8e8d8'; ctx.fillRect(-11, -26, 22, 13);
-        ctx.fillStyle = '#c02020'; ctx.fillRect(-11, -26, 22, 3);
-        Font.draw(ctx, 'NO', 0, -22, { color: '#202020', align: 'center' });
+        // post, board, red header, then two 7px text rows that do not collide
+        ctx.fillStyle = '#6b5033'; ctx.fillRect(-1, -12, 2, 12);
+        ctx.fillStyle = '#8a6a44'; ctx.fillRect(-1, -12, 1, 12);
+        ctx.fillStyle = '#e8e8d8'; ctx.fillRect(-14, -31, 28, 19);
+        ctx.fillStyle = '#f6f6ec'; ctx.fillRect(-14, -31, 28, 2);
+        ctx.fillStyle = '#c02020'; ctx.fillRect(-14, -31, 28, 4);
+        ctx.fillStyle = '#8a1414'; ctx.fillRect(-14, -28, 28, 1);
+        Font.draw(ctx, 'NO', 0, -26, { color: '#202020', align: 'center' });
         Font.draw(ctx, 'SWIM', 0, -19, { color: '#202020', align: 'center' });
+        break;
+      }
+      case 'console': {
+        // lab monitor bank on a stand: the thing the coats watched you through
+        const lit = this.hp > 0;
+        ctx.fillStyle = '#3a4246'; ctx.fillRect(-3, -12, 6, 12);
+        ctx.fillStyle = '#2a3034'; ctx.fillRect(-9, -3, 18, 3);
+        ctx.fillStyle = '#20282c'; ctx.fillRect(-15, -30, 30, 18);
+        ctx.fillStyle = '#39454a'; ctx.fillRect(-15, -30, 30, 1);
+        ctx.fillStyle = '#141a1c'; ctx.fillRect(-13, -28, 26, 14);
+        if (lit) {
+          ctx.fillStyle = '#123a2a'; ctx.fillRect(-13, -28, 26, 14);
+          ctx.fillStyle = '#2fd08a';
+          for (let i = 0; i < 5; i++) { const w = 4 + ((i * 7 + Math.floor(this.t * 2 + i)) % 16); ctx.fillRect(-11, -26 + i * 3, w, 1); }
+          ctx.fillStyle = 'rgba(120,255,200,0.13)';
+          for (let i = 0; i < 7; i++) ctx.fillRect(-13, -28 + i * 2, 26, 1);
+          ctx.fillStyle = Math.sin(this.t * 4) > 0 ? '#ff5030' : '#5a2018'; ctx.fillRect(11, -11, 3, 2);
+          ctx.fillStyle = '#40ff80'; ctx.fillRect(6, -11, 3, 2);
+        }
+        ctx.fillStyle = '#39454a'; ctx.fillRect(-11, -11, 22, 4);
+        ctx.fillStyle = '#1c2226';
+        for (let i = 0; i < 9; i++) ctx.fillRect(-10 + i * 2.4, -10, 1, 1);
         break;
       }
       case 'shop': {
@@ -5626,11 +5653,17 @@ const UI = {
     // biome name, bottom right
     const B = Biome.at(P.x);
     Font.draw(ctx, B.name, W - 10, H - 12, { color: '#7f9a90', align: 'right' });
-    // hints
-    if (P.latched) Font.draw(ctx, 'LATCHED! BITE TO DEATH ROLL', W / 2, H - 30, { color: '#ff9080', align: 'center', shadow: true });
-    if (P.grabbed) Font.draw(ctx, 'MASH BITE TO BREAK FREE!', W / 2, H - 30, { color: '#ff6040', align: 'center', shadow: true, scale: Math.floor(t * 8) % 2 ? 1 : 2 });
-    if (P.tether) Font.draw(ctx, 'HARPOONED! BITE TO SNAP THE LINE', W / 2, H - 30, { color: '#ff8040', align: 'center', shadow: true });
-    if (P.onLand) Font.draw(ctx, 'ON LAND: UP TO HOP', W / 2, H - 20, { color: '#c8d8a0', align: 'center', shadow: true });
+    // hints, stacked upward so two warnings never print on the same line
+    const hints = [];
+    if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
+    if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
+    if (P.latched) hints.push(['LATCHED! BITE TO DEATH ROLL', '#ff9080', 1]);
+    if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
+    let hy = H - 20;
+    for (const [txt, col, sc] of hints) {
+      Font.draw(ctx, txt, W / 2, hy - (sc - 1) * Font.H, { color: col, align: 'center', shadow: true, scale: sc });
+      hy -= Font.H * sc + 3;
+    }
     // boss bar
     if (G.boss && !G.boss.dead) {
       const b = G.boss, frac = b.hp / b.maxHp;
@@ -5662,7 +5695,21 @@ const UI = {
   },
   // screen positions of every gene cell
   geneCells() {
-    const cx = G.W / 2, cy = G.H / 2 + 6, R = 25;
+    // fit the whole hex field between the header and the footer, whatever its extent
+    const W = G.W, H = G.H;
+    if (!this._geneFit) {
+      let minX = 0, maxX = 0, minY = 0, maxY = 0;
+      for (const g of GENES) {
+        const ux = 1.5 * g.q, uy = 1.732 * (g.r + g.q / 2);
+        if (ux < minX) minX = ux; if (ux > maxX) maxX = ux;
+        if (uy < minY) minY = uy; if (uy > maxY) maxY = uy;
+      }
+      this._geneFit = { minX, maxX, minY, maxY };
+    }
+    const f = this._geneFit, top = 44, bot = H - 16, pad = 1.3;
+    const R = Math.min(26, (W - 12) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
+    const cx = W / 2 - (f.minX + f.maxX) * 0.5 * R;
+    const cy = (top + bot) * 0.5 - (f.minY + f.maxY) * 0.5 * R;
     return GENES.map(g => { const [sx, sy] = Genome.pos(g, cx, cy, R); return { g, sx, sy, R }; });
   },
   drawGenes(ctx) {
@@ -5707,14 +5754,14 @@ const UI = {
     for (const k of LIN_KEYS) {
       const L = LINEAGES[k], f = Genome.affinityPct(P, k);
       Font.draw(ctx, L.name, 8, ay, { color: f > 0.05 ? L.color : '#4a5a56' });
-      this.meter(ctx, 54, ay, 34, 4, f, L.color, '#131c1a');
-      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 92, ay, { color: shade(L.color, 0.85) });
+      this.meter(ctx, 60, ay, 34, 4, f, L.color, '#131c1a');
+      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 98, ay, { color: shade(L.color, 0.85) });
       ay += 11;
     }
     // detail panel for the selected gene
     const g = GENE_BY_ID[G.geneSel] || GENES[0], own = Genome.has(P, g.id), open = Genome.unlocked(P, g);
     const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
-    const pw = 214, px3 = W - pw - 8, py3 = H - 92;
+    const pw = 214, px3 = W - pw - 8, py3 = 8;
     this.panel(ctx, px3, py3, pw, 84, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
     Font.draw(ctx, L ? L.name + (g.hybrid ? ' HYBRID' : g.apex ? ' APEX' : ' TIER ' + g.ring) : 'ORIGIN', px3 + 8, py3 + 18, { color: '#8aa89c' });
@@ -5723,7 +5770,7 @@ const UI = {
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
     else if (!open) Font.draw(ctx, 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
-    Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 9, { color: '#7f9a90', align: 'center' });
+    Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
   },
   drawLogo(ctx, x, y, scale, t) {
     const txt = 'CHOMPERS', w = Font.width(txt, scale);
@@ -6185,7 +6232,7 @@ const G = {
     for (const [ox, dir] of [[-72, 1], [-104, 1], [78, -1]]) {
       const s2 = new LandAnimal(TANK + ox, 'scientist'); s2.facing = dir; s2.state = 'idle'; s2.stateT = 99; s2.watching = true; this.add(s2);
     }
-    const desk = new Structure(TANK + 150, 'sign'); desk.name = 'CONSOLE'; this.add(desk);
+    const desk = new Structure(TANK + 150, 'console'); this.add(desk);
     // the grate at the end of the run
     const grate = new Structure(-150, 'grate'); this.add(grate); this.intro.grate = grate;
     // a few rats and roaches to eat on the way out
@@ -6532,7 +6579,7 @@ const G = {
         if (Input.hit('Escape', 'KeyG', 'KeyE', 'Tab', 'Enter')) { this.state = 'play'; SFX.ui(); break; }
         const cells = UI.geneCells();
         if (Input.mouse.moved || Input.mouse.clicked) {
-          let best = null, bd = 26;
+          let best = null, bd = (cells[0] ? cells[0].R : 25) + 1;
           for (const c of cells) { const d = dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy); if (d < bd) { bd = d; best = c; } }
           if (best) this.geneSel = best.g.id;
         }
@@ -6544,7 +6591,7 @@ const G = {
           for (const c of cells) { if (c === cur) continue; const ox = c.sx - cur.sx, oy = c.sy - cur.sy; if (ox * dx + oy * dy <= 4) continue; const d = Math.hypot(ox, oy) + Math.abs(ox * dy - oy * dx) * 1.5; if (d < bd) { bd = d; best = c; } }
           if (best) { this.geneSel = best.g.id; SFX.ui(); }
         }
-        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < 26));
+        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < c.R + 1));
         if (take) {
           const g = GENE_BY_ID[this.geneSel];
           if (g && Genome.buy(P, g)) {

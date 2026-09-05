@@ -86,11 +86,17 @@ const UI = {
     // biome name, bottom right
     const B = Biome.at(P.x);
     Font.draw(ctx, B.name, W - 10, H - 12, { color: '#7f9a90', align: 'right' });
-    // hints
-    if (P.latched) Font.draw(ctx, 'LATCHED! BITE TO DEATH ROLL', W / 2, H - 30, { color: '#ff9080', align: 'center', shadow: true });
-    if (P.grabbed) Font.draw(ctx, 'MASH BITE TO BREAK FREE!', W / 2, H - 30, { color: '#ff6040', align: 'center', shadow: true, scale: Math.floor(t * 8) % 2 ? 1 : 2 });
-    if (P.tether) Font.draw(ctx, 'HARPOONED! BITE TO SNAP THE LINE', W / 2, H - 30, { color: '#ff8040', align: 'center', shadow: true });
-    if (P.onLand) Font.draw(ctx, 'ON LAND: UP TO HOP', W / 2, H - 20, { color: '#c8d8a0', align: 'center', shadow: true });
+    // hints, stacked upward so two warnings never print on the same line
+    const hints = [];
+    if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
+    if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
+    if (P.latched) hints.push(['LATCHED! BITE TO DEATH ROLL', '#ff9080', 1]);
+    if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
+    let hy = H - 20;
+    for (const [txt, col, sc] of hints) {
+      Font.draw(ctx, txt, W / 2, hy - (sc - 1) * Font.H, { color: col, align: 'center', shadow: true, scale: sc });
+      hy -= Font.H * sc + 3;
+    }
     // boss bar
     if (G.boss && !G.boss.dead) {
       const b = G.boss, frac = b.hp / b.maxHp;
@@ -122,7 +128,21 @@ const UI = {
   },
   // screen positions of every gene cell
   geneCells() {
-    const cx = G.W / 2, cy = G.H / 2 + 6, R = 25;
+    // fit the whole hex field between the header and the footer, whatever its extent
+    const W = G.W, H = G.H;
+    if (!this._geneFit) {
+      let minX = 0, maxX = 0, minY = 0, maxY = 0;
+      for (const g of GENES) {
+        const ux = 1.5 * g.q, uy = 1.732 * (g.r + g.q / 2);
+        if (ux < minX) minX = ux; if (ux > maxX) maxX = ux;
+        if (uy < minY) minY = uy; if (uy > maxY) maxY = uy;
+      }
+      this._geneFit = { minX, maxX, minY, maxY };
+    }
+    const f = this._geneFit, top = 44, bot = H - 16, pad = 1.3;
+    const R = Math.min(26, (W - 12) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
+    const cx = W / 2 - (f.minX + f.maxX) * 0.5 * R;
+    const cy = (top + bot) * 0.5 - (f.minY + f.maxY) * 0.5 * R;
     return GENES.map(g => { const [sx, sy] = Genome.pos(g, cx, cy, R); return { g, sx, sy, R }; });
   },
   drawGenes(ctx) {
@@ -167,14 +187,14 @@ const UI = {
     for (const k of LIN_KEYS) {
       const L = LINEAGES[k], f = Genome.affinityPct(P, k);
       Font.draw(ctx, L.name, 8, ay, { color: f > 0.05 ? L.color : '#4a5a56' });
-      this.meter(ctx, 54, ay, 34, 4, f, L.color, '#131c1a');
-      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 92, ay, { color: shade(L.color, 0.85) });
+      this.meter(ctx, 60, ay, 34, 4, f, L.color, '#131c1a');
+      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 98, ay, { color: shade(L.color, 0.85) });
       ay += 11;
     }
     // detail panel for the selected gene
     const g = GENE_BY_ID[G.geneSel] || GENES[0], own = Genome.has(P, g.id), open = Genome.unlocked(P, g);
     const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
-    const pw = 214, px3 = W - pw - 8, py3 = H - 92;
+    const pw = 214, px3 = W - pw - 8, py3 = 8;
     this.panel(ctx, px3, py3, pw, 84, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
     Font.draw(ctx, L ? L.name + (g.hybrid ? ' HYBRID' : g.apex ? ' APEX' : ' TIER ' + g.ring) : 'ORIGIN', px3 + 8, py3 + 18, { color: '#8aa89c' });
@@ -183,7 +203,7 @@ const UI = {
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
     else if (!open) Font.draw(ctx, 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
-    Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 9, { color: '#7f9a90', align: 'center' });
+    Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
   },
   drawLogo(ctx, x, y, scale, t) {
     const txt = 'CHOMPERS', w = Font.width(txt, scale);
