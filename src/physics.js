@@ -14,7 +14,14 @@ const Water = {
     for (let i = 0; i < this.N; i++) { const j = i + shift; if (j >= 0 && j < this.N) { h[i] = this.h[j]; v[i] = this.v[j]; } }
     this.h = h; this.v = v; this.x0 += shift * this.DX;
   },
-  ambient(x) { const t = this.t; return Math.sin(x * 0.026 + t * 1.9) * 1.7 + Math.sin(x * 0.061 - t * 3.1) * 0.9 + Math.sin(x * 0.0083 + t * 0.6) * (1.4 + this.wind * 2.4); },
+  // background swell the springs ride on: a long roller, a mid wave and fine chop
+  ambient(x) {
+    const t = this.t, w = this.wind;
+    return Math.sin(x * 0.0083 + t * 0.62) * (1.5 + w * 2.6)
+      + Math.sin(x * 0.026 + t * 1.9) * (1.5 + w * 0.8)
+      + Math.sin(x * 0.049 - t * 2.6) * (0.7 + w * 0.7)
+      + Math.sin(x * 0.107 - t * 4.1) * (0.28 + w * 0.5);
+  },
   surface(x) {
     if (!this.h) return this.ambient(x);
     const f = (x - this.x0) / this.DX, i = Math.floor(f);
@@ -23,17 +30,25 @@ const Water = {
     return this.ambient(x) + this.h[i] * (1 - u) + this.h[i + 1] * u;
   },
   // vertical velocity of the surface at x (for foam and spray)
-  velocity(x) { if (!this.h) return 0; const i = Math.round((x - this.x0) / this.DX); return i >= 0 && i < this.N ? this.v[i] : 0; },
+  velocity(x) { if (!this.h) return 0; const f = (x - this.x0) / this.DX, i = Math.floor(f); if (i < 0 || i >= this.N - 1) return 0; const u = f - i; return this.v[i] * (1 - u) + this.v[i + 1] * u; },
   update(dt) {
     if (!this.h) return; this.t += dt;
-    const h = this.h, v = this.v, N = this.N, K = 24, D = 0.62, S = 1500;
-    dt = Math.min(dt, 1 / 40);
-    for (let i = 0; i < N; i++) v[i] += (-h[i] * K - v[i] * D) * dt;
-    for (let pass = 0; pass < 3; pass++) {
-      for (let i = 1; i < N - 1; i++) v[i] += S * (h[i - 1] + h[i + 1] - 2 * h[i]) * dt / 3;
+    const h = this.h, v = this.v, N = this.N;
+    dt = Math.min(dt, 1 / 30);
+    // The old solver ran three Laplacian passes without ever advancing h, which
+    // is one step of size S*dt, not three of S*dt/3 — far past the CFL limit, so
+    // the surface sat in permanent grid-scale chatter held down by clamps.
+    // Proper substepping instead: C2 is (cells/sec)^2, and sqrt(C2)*sdt stays
+    // well under 1.
+    const SUB = 4, sdt = dt / SUB, C2 = 900, K = 16, D = 0.85;
+    for (let s = 0; s < SUB; s++) {
+      for (let i = 1; i < N - 1; i++) v[i] += (C2 * (h[i - 1] + h[i + 1] - 2 * h[i]) - K * h[i] - D * v[i]) * sdt;
+      for (let i = 1; i < N - 1; i++) h[i] += v[i] * sdt;
+      // soak waves up at the ends rather than reflecting them back into view
+      h[0] = h[1] * 0.55; h[N - 1] = h[N - 2] * 0.55;
+      v[0] = v[1] * 0.45; v[N - 1] = v[N - 2] * 0.45;
     }
-    for (let i = 0; i < N; i++) { h[i] += v[i] * dt; if (h[i] > 70) h[i] = 70; else if (h[i] < -70) h[i] = -70; }
-    v[0] = v[N - 1] = 0; h[0] *= 0.9; h[N - 1] *= 0.9;
+    for (let i = 0; i < N; i++) { if (h[i] > 60) h[i] = 60; else if (h[i] < -60) h[i] = -60; }
   },
   // push the surface down (force > 0) or up around x
   splash(x, force, width = 14) {

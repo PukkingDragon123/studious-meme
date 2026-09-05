@@ -162,91 +162,203 @@ const World = {
     return [[0, top], [60, mixColor(top, mid, 0.45)], [150, mid], [300, mixColor(mid, deep, 0.5)], [520, deep], [820, shade(deep, 0.7)]];
   },
   drawWater(ctx, cam, day) {
-    const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1];
+    const W = G.W, H = G.H, z = cam.zoom, hy = cam.toScreen(0, 0)[1];
     if (hy > H) return;
-    const bands = this.waterBands(day), light = this.light(day);
-    for (let i = bands.length - 1; i >= 0; i--) {
-      const y0 = cam.toScreen(0, bands[i][0])[1];
-      if (y0 > H) continue;
-      ctx.fillStyle = bands[i][1]; ctx.fillRect(0, Math.max(Math.round(y0), Math.round(hy)), W, H - Math.max(y0, hy) + 2);
+    const light = this.light(day), B = Biome.mixPal(cam.x), tint = B.water;
+    const top = mixColor(tint[0], '#08202a', 1 - light);
+    const mid = mixColor(tint[1], '#06181f', 1 - light);
+    const deep = mixColor(tint[2], '#030c10', 1 - light);
+    const y0 = Math.max(Math.round(hy), 0);
+    // --- depth ramp anchored to world depth, so the water does not slide with the camera
+    const yA = cam.toScreen(0, -10)[1], yB = cam.toScreen(0, 820)[1];
+    if (yB - yA > 1) {
+      const g = ctx.createLinearGradient(0, yA, 0, yB);
+      g.addColorStop(0, mixColor(top, '#ffffff', 0.06));
+      g.addColorStop(0.06, top);
+      g.addColorStop(0.2, mixColor(top, mid, 0.6));
+      g.addColorStop(0.38, mid);
+      g.addColorStop(0.64, mixColor(mid, deep, 0.72));
+      g.addColorStop(1, deep);
+      ctx.fillStyle = g;
+    } else ctx.fillStyle = deep;
+    ctx.fillRect(0, y0, W, H - y0 + 2);
+    // keep a little pixel grain in the ramp so it never reads as an airbrush
+    ctx.save(); ctx.beginPath(); ctx.rect(0, y0, W, H - y0 + 2); ctx.clip();
+    Tex.fill(ctx, Tex.dither(mixColor(mid, '#ffffff', 0.5), 0.12), cam.x * 0.6, cam.y * 0.6, z, 0.09);
+    ctx.restore();
+    // --- caustics: two counter-drifting meshes shimmering under the surface
+    if (light > 0.22) {
+      const cau = Tex.caustic('#ccfff0');
+      // two bands: bright right under the surface, a hint further down
+      const bands = [[-4, 46, 0.075], [46, 130, 0.035]];
+      for (const [d0, d1, a] of bands) {
+        const cTop = cam.toScreen(0, d0)[1], cBot = cam.toScreen(0, d1)[1];
+        const yT = Math.max(y0, cTop), yB2 = Math.min(H, cBot);
+        if (yB2 <= yT) continue;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, yT, W, yB2 - yT); ctx.clip();
+        Tex.fill(ctx, cau, cam.x * 0.5 - this.t * 9, cam.y * 0.5 - this.t * 2, z, a * light, 'lighter');
+        Tex.fill(ctx, cau, -cam.x * 0.4 - this.t * 5, cam.y * 0.4 + this.t * 3, z, a * 0.7 * light, 'lighter');
+        ctx.restore();
+      }
     }
-    // sun shafts: chunky angled bars
+    // --- god rays: soft wedges falling from the surface
     if (light > 0.3) {
-      ctx.globalAlpha = 0.07 * light; ctx.fillStyle = '#d8fff0';
-      for (let i = 0; i < 5; i++) {
-        const rx = ((ihash(i, 55) * 900 - cam.x * 0.35 * cam.zoom) % 900 + 900) % 900 - 120 + Math.sin(this.t * 0.35 + i) * 12;
-        const rw = (10 + ihash(i, 56) * 16) * cam.zoom, len = 260 * cam.zoom;
-        for (let k = 0; k < 10; k++) { const yy = hy + k * len / 10; if (yy > H) break; ctx.fillRect(Math.round(rx + k * 5), Math.round(yy), Math.round(rw), Math.ceil(len / 10) + 1); }
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 6; i++) {
+        const seed = ihash(i, 55), sway = Math.sin(this.t * 0.28 + i * 1.7) * 14 * z;
+        const bx = (((seed * 1400 - cam.x * 0.4 * z) % 1400) + 1400) % 1400 - 240 + sway;
+        const bw = (14 + ihash(i, 56) * 26) * z, len = (200 + ihash(i, 57) * 220) * z;
+        const gy0 = hy, gy1 = hy + len;
+        if (gy0 > H || gy1 < 0) continue;
+        const gr = ctx.createLinearGradient(0, gy0, 0, gy1);
+        gr.addColorStop(0, `rgba(215,255,240,${(0.11 * light).toFixed(3)})`);
+        gr.addColorStop(0.45, `rgba(200,248,235,${(0.05 * light).toFixed(3)})`);
+        gr.addColorStop(1, 'rgba(190,240,230,0)');
+        ctx.fillStyle = gr;
+        ctx.beginPath();
+        ctx.moveTo(bx, gy0); ctx.lineTo(bx + bw, gy0);
+        ctx.lineTo(bx + bw + len * 0.24, gy1); ctx.lineTo(bx + len * 0.24, gy1);
+        ctx.closePath(); ctx.fill();
       }
-      ctx.globalAlpha = 1;
+      ctx.restore();
     }
-    // caustic blobs just under the surface
-    if (light > 0.25) {
-      ctx.globalAlpha = 0.1 * light; ctx.fillStyle = '#dafff2';
-      for (let sx2 = -8; sx2 < W + 8; sx2 += 7) {
-        const wx = cam.toWorldX(sx2), band = Math.sin(wx * 0.06 + this.t * 1.8) + Math.sin(wx * 0.026 - this.t * 1.2);
-        if (band > 0.75) { const sy2 = cam.toScreen(wx, this.surface(wx) + 4)[1]; const hgt = Math.round((3 + band * 3) * cam.zoom); ctx.fillRect(sx2, Math.round(sy2), Math.round(5 * cam.zoom), hgt); }
-      }
-      ctx.globalAlpha = 1;
-    }
-    // drifting specks
-    ctx.fillStyle = '#9ad0c0'; ctx.globalAlpha = 0.25;
-    for (let i = 0; i < 34; i++) {
-      const wx = cam.x + ((ihash(i, 70) * 900 - 450) + Math.sin(this.t * 0.3 + i) * 20);
-      const wy = 20 + ihash(i, 71) * 700 + Math.sin(this.t * 0.5 + i * 2) * 10;
-      const [px2, py2] = cam.toScreen(wx, wy);
-      if (px2 < 0 || px2 > W || py2 < hy || py2 > H) continue;
-      ctx.fillRect(Math.round(px2), Math.round(py2), 1, ihash(i, 72) > 0.7 ? 2 : 1);
-    }
-    ctx.globalAlpha = 1;
+    // --- suspended silt on two parallax layers
+    ctx.save(); ctx.beginPath(); ctx.rect(0, y0, W, H - y0 + 2); ctx.clip();
+    const mo = Tex.motes('#cfe8dc');
+    Tex.fill(ctx, mo, cam.x * 0.9 + Math.sin(this.t * 0.2) * 9, cam.y * 0.9 - this.t * 3, z, 0.3);
+    Tex.fill(ctx, mo, cam.x * 0.55 - 40 + Math.sin(this.t * 0.14 + 2) * 6, cam.y * 0.55 - this.t * 1.4, z, 0.16);
+    ctx.restore();
   },
   drawTerrain(ctx, cam) {
-    const W = G.W, H = G.H, step = 4, BP = Biome.mixPal(cam.x);
+    const W = G.W, H = G.H, z = cam.zoom, BP = Biome.mixPal(cam.x), step = 3;
+    // contour of the ground across the screen, sampled once and reused
     const pts = [];
     for (let sx = -step; sx <= W + step; sx += step) { const wx = cam.toWorldX(sx); pts.push([sx, cam.toScreen(wx, this.floorY(wx))[1], wx]); }
-    // mud body
-    ctx.fillStyle = BP.ground[1];
-    ctx.beginPath(); ctx.moveTo(pts[0][0], H + 10);
-    for (const p of pts) ctx.lineTo(p[0], p[1]);
-    ctx.lineTo(pts[pts.length - 1][0], H + 10); ctx.closePath(); ctx.fill();
-    // strata + roots
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p = pts[i], wx = p[2];
-      for (let k = 0; k < 4; k++) {
-        const depth = 10 + k * 34 + Math.sin(wx * (0.02 + k * 0.007) + k) * 4 + vnoise(wx * 0.05, k) * 6;
-        const y = p[1] + depth * cam.zoom; if (y > H) break;
-        ctx.fillStyle = k % 2 ? BP.ground[2] : BP.ground[0]; ctx.fillRect(p[0], Math.round(y), step, Math.max(1, Math.round((k % 2 ? 2 : 1.5) * cam.zoom)));
-      }
-      if (ihash(Math.floor(wx / 4), 17) < 0.06 && this.floorY(wx) < 0) { ctx.fillStyle = '#2a1e12'; const ry = p[1] + (3 + ihash(Math.floor(wx / 4), 18) * 20) * cam.zoom; ctx.fillRect(p[0], Math.round(ry), Math.max(1, Math.round(cam.zoom)), Math.round((6 + ihash(Math.floor(wx / 4), 19) * 16) * cam.zoom)); }
-      // limestone shelf and old shell layer
-      const ls = p[1] + (52 + Math.sin(wx * 0.006) * 12) * cam.zoom;
-      if (ls < H) { ctx.fillStyle = '#6b6455'; ctx.fillRect(p[0], Math.round(ls), step, Math.max(1, Math.round(3 * cam.zoom))); ctx.fillStyle = '#57503f'; ctx.fillRect(p[0], Math.round(ls + 3 * cam.zoom), step, Math.max(1, Math.round(cam.zoom))); }
-      const sh = p[1] + (26 + Math.sin(wx * 0.011 + 2) * 6) * cam.zoom;
-      if (sh < H && ihash(Math.floor(wx / 4), 23) < 0.35) { ctx.fillStyle = '#b3a98d'; ctx.fillRect(p[0], Math.round(sh), Math.max(1, Math.round(2 * cam.zoom)), Math.max(1, Math.round(cam.zoom))); }
-      if (ihash(Math.floor(wx / 4), 27) < 0.2) { ctx.fillStyle = '#241a10'; ctx.fillRect(p[0], Math.round(p[1] + (8 + ihash(Math.floor(wx / 4), 28) * 34) * cam.zoom), Math.max(1, Math.round(cam.zoom)), Math.max(1, Math.round(cam.zoom))); }
+    const last = pts.length - 1;
+    const capTop = (off) => { ctx.beginPath(); ctx.moveTo(pts[0][0], H + 30); for (const p of pts) ctx.lineTo(p[0], p[1] + off); ctx.lineTo(pts[last][0], H + 30); ctx.closePath(); };
+    const band = (a, b) => {
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1] + a);
+      for (const p of pts) ctx.lineTo(p[0], p[1] + a);
+      for (let i = last; i >= 0; i--) ctx.lineTo(pts[i][0], pts[i][1] + b);
+      ctx.closePath();
+    };
+    // --- strata, shallow first: each fill covers everything below its own line,
+    // so drawing deeper layers later lets the deep colours win at depth
+    const g0 = BP.ground[0], g1 = BP.ground[1], g2 = BP.ground[2];
+    const strata = [
+      [0, mixColor(g0, '#ffffff', 0.07)],
+      [4, g0],
+      [11, mixColor(g0, g1, 0.45)],
+      [21, mixColor(g0, g1, 0.8)],
+      [36, g1],
+      [60, mixColor(g1, g2, 0.45)],
+      [96, mixColor(g1, g2, 0.8)],
+      [150, g2],
+      [240, shade(g2, 0.68)],
+      [380, shade(g2, 0.46)],
+    ];
+    for (const [off, col] of strata) { const y = off * z; capTop(y); ctx.fillStyle = col; ctx.fill(); }
+    // --- dithered seams so the strata read as sediment, not painted stripes
+    for (let i = 1; i < strata.length; i++) {
+      const top = strata[i][0] * z, h2 = (strata[i][0] - strata[i - 1][0]) * z * 0.55;
+      if (h2 < 1.5) continue;
+      const col = strata[i][1];
+      ctx.save(); band(top - h2, top); ctx.clip();
+      Tex.fill(ctx, Tex.dither(col, 0.45), cam.x, cam.y, z, 0.85);
+      ctx.restore();
+      ctx.save(); band(top - h2 * 1.9, top - h2); ctx.clip();
+      Tex.fill(ctx, Tex.dither(col, 0.16), cam.x, cam.y, z, 0.8);
+      ctx.restore();
     }
-    // top band
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p = pts[i], wx = p[2], fy = this.floorY(wx);
-      const md = Mud.depth(wx) * cam.zoom;
-      const ty = Math.round(p[1] + md);
-      if (md > 0.8) { ctx.fillStyle = '#2e2216'; ctx.fillRect(p[0], Math.round(p[1]), step, Math.round(md)); }
-      const gz = Math.max(1, Math.round(2 * cam.zoom));
-      if (fy < 0) { // land: a bright grass lip with tufts hanging over the bank
-        ctx.fillStyle = BP.grass; ctx.fillRect(p[0], ty - gz, step, gz * 1.5);
-        ctx.fillStyle = shade(BP.grass, 0.7); ctx.fillRect(p[0], ty + gz * 0.5, step, gz);
-        ctx.fillStyle = BP.ground[0]; ctx.fillRect(p[0], ty + gz * 1.5, step, gz);
-        if (ihash(Math.floor(wx / 4), 5) < 0.35) { ctx.fillStyle = mixColor(BP.grass, '#ffffff', 0.25); ctx.fillRect(p[0], ty - gz - Math.round(cam.zoom), Math.max(1, Math.round(cam.zoom)), Math.max(1, Math.round(cam.zoom * 2))); }
-        if (fy > -26 && ihash(Math.floor(wx / 7), 15) < 0.4) { ctx.fillStyle = shade(BP.grass, 0.55); ctx.fillRect(p[0], ty + gz * 1.2, Math.max(1, Math.round(cam.zoom)), Math.round((3 + ihash(Math.floor(wx / 7), 16) * 5) * cam.zoom)); }
-      } else if (fy < 34) { // wet shore: pale sand fading into mud
-        ctx.fillStyle = mixColor(BP.ground[0], '#d8c8a0', 0.45 - fy * 0.008); ctx.fillRect(p[0], ty, step, gz * 1.5);
-        ctx.fillStyle = BP.ground[0]; ctx.fillRect(p[0], ty + gz * 1.5, step, gz);
-      } else {
-        ctx.fillStyle = fy > 450 ? BP.ground[2] : BP.ground[0]; ctx.fillRect(p[0], ty, step, Math.max(1, Math.round(1.5 * cam.zoom)));
+    // --- grain over the whole body: grit, specks and small stones
+    ctx.save(); capTop(0); ctx.clip();
+    Tex.fill(ctx, Tex.strata(shade(g2, 0.4), mixColor(g0, '#f0e4c4', 0.55)), cam.x, cam.y, z, 1);
+    Tex.fill(ctx, Tex.soil(shade(g2, 0.5), mixColor(g0, '#e8dcc0', 0.5), mixColor(g1, '#8a8068', 0.55)), cam.x, cam.y, z, 0.75);
+    ctx.restore();
+    // --- features on a fixed world grid, so density never changes with zoom
+    const left = cam.toWorldX(-40), right = cam.toWorldX(W + 40);
+    const GRID = 11, x0 = Math.floor(left / GRID) * GRID;
+    const px = (sx, sy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(sx), Math.round(sy), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const rockLit = mixColor(g1, '#cfc6a8', 0.62), rockMid = mixColor(g1, '#7d7460', 0.6), rockDark = shade(g2, 0.62);
+    const rootCol = mixColor(g2, '#40301c', 0.55), rootLit = mixColor(g1, '#7a5c38', 0.55);
+    for (let wx = x0; wx < right; wx += GRID) {
+      const cell = Math.floor(wx / GRID), fy = this.floorY(wx), [sx, sy] = cam.toScreen(wx, fy);
+      if (sy > H + 40) continue;
+      const r1 = ihash(cell, 301), r2 = ihash(cell, 302), r3 = ihash(cell, 303), r4 = ihash(cell, 304);
+      // limestone lumps: a lit cap, a body and a shadow line
+      if (r1 < 0.44) {
+        const y = sy + (14 + r2 * 230) * z;
+        if (y < H + 10) {
+          const w = (2.5 + r3 * 5) * z, h = (1.8 + r4 * 3) * z;
+          px(sx - w / 2, y, w, h, rockMid);
+          px(sx - w / 2, y, w - z * 0.8, z * 0.8, rockLit);
+          px(sx - w / 2, y + h - z * 0.7, w, z * 0.7, rockDark);
+        }
       }
-      // pebbles / roots texture
-      const r = ihash(Math.floor(wx / 4), 9);
-      if (r < 0.12) { ctx.fillStyle = r < 0.05 ? '#5a4a34' : '#2a1e12'; ctx.fillRect(p[0], ty + Math.round((4 + r * 120) * cam.zoom), Math.max(1, Math.round(cam.zoom)), Math.max(1, Math.round(cam.zoom))); }
+      // roots reaching down out of the bank: thin, tapering, never a fence post
+      if (fy < 4 && r2 < 0.3) {
+        const len = (9 + r3 * 40) * z, lean = (r4 - 0.5) * 2.4, wig = 0.6 + r1 * 1.4;
+        const steps2 = Math.max(3, Math.round(len));
+        let cx2 = sx, cy2 = sy + 1.5 * z;
+        for (let k = 0; k < steps2; k++) {
+          const u = k / steps2;
+          if (cy2 > H + 4) break;
+          const tw = Math.max(1, Math.round(z * (1.3 - u * 1.0)));
+          ctx.fillStyle = u < 0.25 ? rootLit : rootCol;
+          ctx.fillRect(Math.round(cx2), Math.round(cy2), tw, 1);
+          cx2 += Math.sin(lean + u * wig * 5) * 0.45 * z; cy2 += 1;
+        }
+      }
+      // pale shell and sand lenses in the upper metre
+      if (r3 < 0.4) {
+        const y = sy + (5 + r1 * 52) * z;
+        if (y < H) px(sx, y, (1.5 + r4 * 3) * z, Math.max(1, z * 0.8), mixColor(g0, '#e6dcbe', 0.7));
+      }
+      // charcoal flecks and buried grit
+      if (r4 < 0.55) { const y = sy + (6 + r2 * 280) * z; if (y < H) px(sx + r1 * GRID * z * 0.5, y, z * 0.8, z * 0.8, shade(g2, 0.42)); }
+    }
+    // --- the surface itself: grass lip, wet shore or river bed
+    const grassLit = mixColor(BP.grass, '#f0ffd0', 0.35), grassDark = shade(BP.grass, 0.6), grassDeep = shade(BP.grass, 0.42);
+    for (let i = 0; i <= last; i++) {
+      const p = pts[i], wx = p[2], fy = this.floorY(wx);
+      const md = Mud.depth(wx) * z, ty = p[1] + md;
+      if (ty > H + 6) continue;
+      if (md > 0.8) { ctx.fillStyle = shade(g2, 0.72); ctx.fillRect(p[0], Math.round(p[1]), step, Math.round(md)); }
+      const gz = Math.max(1, Math.round(2 * z));
+      if (fy < 0) {
+        // turf: a bright lip, a shaded underside, then soil
+        ctx.fillStyle = BP.grass; ctx.fillRect(p[0], Math.round(ty - gz), step, Math.round(gz * 1.6));
+        ctx.fillStyle = grassLit; ctx.fillRect(p[0], Math.round(ty - gz), step, Math.max(1, Math.round(z)));
+        ctx.fillStyle = grassDark; ctx.fillRect(p[0], Math.round(ty + gz * 0.6), step, gz);
+        ctx.fillStyle = mixColor(g0, grassDeep, 0.45); ctx.fillRect(p[0], Math.round(ty + gz * 1.6), step, gz);
+      } else if (fy < 34) {
+        const wet = clamp(1 - fy / 34, 0, 1);
+        ctx.fillStyle = mixColor(g0, '#ded0a8', 0.2 + wet * 0.4); ctx.fillRect(p[0], Math.round(ty), step, Math.round(gz * 1.6));
+        ctx.fillStyle = mixColor(g0, '#6e6248', 0.4); ctx.fillRect(p[0], Math.round(ty + gz * 1.6), step, gz);
+      } else {
+        ctx.fillStyle = mixColor(fy > 450 ? g2 : g0, '#000000', 0.12); ctx.fillRect(p[0], Math.round(ty), step, Math.max(1, Math.round(2 * z)));
+      }
+    }
+    // grass blades and shore pebbles, again on the world grid
+    for (let wx = x0; wx < right; wx += 5) {
+      const cell = Math.floor(wx / 5), fy = this.floorY(wx);
+      const [sx, sy0] = cam.toScreen(wx, fy), sy = sy0 + Mud.depth(wx) * z;
+      if (sy > H || sy < -20) continue;
+      const r1 = ihash(cell, 411), r2 = ihash(cell, 412);
+      if (fy < -2) {
+        if (r1 < 0.55) {
+          const bh = (2 + r2 * 5) * z, lean = (r1 - 0.27) * 6 * z;
+          ctx.fillStyle = r2 < 0.4 ? grassLit : BP.grass;
+          const steps2 = Math.max(1, Math.round(bh));
+          for (let k = 0; k < steps2; k++) ctx.fillRect(Math.round(sx + lean * (k / steps2)), Math.round(sy - 2 * z - k), Math.max(1, Math.round(z * 0.7)), 1);
+        }
+      } else if (fy < 40 && r1 < 0.3) {
+        const w = (2 + r2 * 4) * z;
+        ctx.fillStyle = mixColor(g1, '#b8ae90', 0.55); ctx.fillRect(Math.round(sx), Math.round(sy + z), Math.round(w), Math.max(1, Math.round(z * 1.4)));
+        ctx.fillStyle = mixColor(g0, '#e8e0c4', 0.6); ctx.fillRect(Math.round(sx), Math.round(sy + z), Math.round(w - z * 0.5), Math.max(1, Math.round(z * 0.6)));
+      }
     }
   },
   // concrete shell of the lab and sewer: ceiling, back wall, ribs and lamps
@@ -296,13 +408,19 @@ const World = {
       if (chance(0.02)) G.fx.add({ type: 'drop', x: lx + rand(-30, 30), y: lr + 8, vx: 0, vy: 20, s: 1, color: '#9ab0b8', life: 3 });
     }
   },
+  // Aerial perspective under water. Fading toward the deep water colour keeps the
+  // ground readable at depth; fading to black just erased all of its texture.
   drawDepthShade(ctx, cam) {
     const H = G.H, hy = cam.toScreen(0, 0)[1];
-    const y0 = cam.toScreen(0, 220)[1];
+    const y0 = cam.toScreen(0, 90)[1];
     if (y0 > H) return;
-    const g = ctx.createLinearGradient(0, Math.max(y0, hy), 0, H);
-    g.addColorStop(0, 'rgba(2,8,10,0)'); g.addColorStop(1, 'rgba(2,8,10,0.55)');
-    ctx.fillStyle = g; ctx.fillRect(0, Math.max(y0, hy), G.W, H);
+    const B = Biome.mixPal(cam.x), haze = hexToRgb(mixColor(B.water[1], '#04141a', 0.45));
+    const yT = Math.max(y0, hy);
+    const g = ctx.createLinearGradient(0, yT, 0, cam.toScreen(0, 760)[1]);
+    g.addColorStop(0, `rgba(${haze[0]},${haze[1]},${haze[2]},0)`);
+    g.addColorStop(0.45, `rgba(${haze[0]},${haze[1]},${haze[2]},0.3)`);
+    g.addColorStop(1, `rgba(${haze[0]},${haze[1]},${haze[2]},0.62)`);
+    ctx.fillStyle = g; ctx.fillRect(0, yT, G.W, H - yT);
   },
   drawDecor(ctx, cam, layer, day) {
     // layer 0 = behind entities (weeds, rocks, logs, reeds, trees), 1 = in front (lilies, sawgrass, fireflies)
@@ -481,10 +599,13 @@ const World = {
           for (let b = -2; b <= 2; b++) { const sway = (Math.sin(t * 1.4 + d.ph + b) * 1.5 + (d.bend || 0) * 3) * z, len = (13 - Math.abs(b) * 2) * d.s * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + b * 4 * z + sway, sy - len * 0.7, sx + b * 7 * z + sway, sy - len); ctx.stroke(); }
           break; }
         case 'bush': if (layer !== 1) break; {
-          const cols = ['#2f5a24', '#3a6a2a', '#27491d'], w = 16 * d.s * z, h = 12 * d.s * z;
-          ctx.fillStyle = cols[d.v]; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.round(w), Math.round(h));
-          ctx.fillStyle = cols[(d.v + 1) % 3]; ctx.fillRect(Math.round(sx - w / 2 + 2 * z), Math.round(sy - h - 3 * z), Math.round(w - 4 * z), Math.round(4 * z));
-          ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - 2 * z), Math.round(w), Math.round(2 * z));
+          const bw = Math.round(17 * d.s), bh = Math.round(13 * d.s);
+          const cv = Leaf.mass(bw, bh, '#1f3d17', '#336126', '#5c9440', d.v * 7 + bw);
+          // a few twigs poking out of the base
+          ctx.fillStyle = '#3a2c1c';
+          for (let i = 0; i < 3; i++) { const ox = (ihash(d.v * 5 + i, 61) - 0.5) * bw * z * 0.7; ctx.fillRect(Math.round(sx + ox), Math.round(sy - 3 * z), Math.max(1, Math.round(z)), Math.round(3 * z)); }
+          Leaf.draw(ctx, cv, sx, sy - bh * z * 0.5, z);
+          ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(Math.round(sx - bw * z * 0.5), Math.round(sy - z), Math.round(bw * z), Math.max(1, Math.round(1.6 * z)));
           break; }
         case 'flower': if (layer !== 1) break; {
           const cols = ['#e8d84a', '#e87ab0', '#f0f0e0', '#c880e8'];
@@ -515,10 +636,10 @@ const World = {
           ctx.fillStyle = '#4a3a26'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.max(1, Math.round(tw * 0.4)), Math.round(h));
           ctx.strokeStyle = '#3a2a1c'; ctx.lineWidth = Math.max(1, 2 * z);
           for (const bd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.6); ctx.quadraticCurveTo(sx + bd * 14 * z, sy - h * 0.75, sx + bd * 22 * z, sy - h * 0.95); ctx.stroke(); }
-          const cols = ['#2f5a2a', '#356630', '#27491d'];
           for (let i = 0; i < 5; i++) {
-            const cx2 = sx + (ihash(d.v * 9 + i, 31) - 0.5) * 44 * z, cy2 = sy - h - (ihash(i, 32) - 0.2) * 14 * z, rw = (16 + ihash(i, 33) * 14) * z;
-            ctx.fillStyle = cols[i % 3]; ctx.fillRect(Math.round(cx2 - rw / 2), Math.round(cy2), Math.round(rw), Math.round(rw * 0.62));
+            const cx2 = sx + (ihash(d.v * 9 + i, 31) - 0.5) * 44 * z, cy2 = sy - h - (ihash(i, 32) - 0.35) * 14 * z;
+            const mw = Math.round(20 + ihash(i, 33) * 16);
+            Leaf.draw(ctx, Leaf.mass(mw, Math.round(mw * 0.72), '#1d3a19', '#2f5a2a', '#598f3e', d.v * 13 + i), cx2, cy2, z);
           }
           if (d.moss) { ctx.fillStyle = '#93a077'; for (let j = 0; j < 6; j++) { const mx = sx + (ihash(d.v * 5 + j, 34) - 0.5) * 46 * z; ctx.fillRect(Math.round(mx), Math.round(sy - h + 2 * z), Math.max(1, Math.round(z)), Math.round((10 + ihash(j, 35) * 20) * z)); } }
           break; }
@@ -527,8 +648,10 @@ const World = {
           ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.round(tw), Math.round(h + 2));
           ctx.fillRect(Math.round(sx - tw * 1.5), Math.round(sy - 8 * z), Math.round(tw * 3), Math.round(8 * z)); // buttress
           ctx.fillStyle = '#2a1e12'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.max(1, Math.round(z)), Math.round(h));
-          const cols = ['#2f5a2a', '#3a6a30', '#2a4a22'];
-          for (let j = 0; j < 5; j++) { const cw = (30 - j * 5) * z * (0.8 + ihash(d.v * 7 + j, 3) * 0.5), cy = sy - h * (0.4 + j * 0.15); ctx.fillStyle = cols[(j + d.v) % 3]; ctx.fillRect(Math.round(sx - cw / 2), Math.round(cy), Math.round(cw), Math.round(h * 0.08 + 2 * z)); }
+          for (let j = 0; j < 5; j++) {
+            const cw = Math.round((30 - j * 5) * (0.8 + ihash(d.v * 7 + j, 3) * 0.5)), cy = sy - h * (0.4 + j * 0.15);
+            Leaf.draw(ctx, Leaf.mass(Math.max(6, cw), Math.max(4, Math.round(cw * 0.42)), '#1b361a', '#2f5a2a', '#4f8437', d.v * 3 + j), sx, cy, z);
+          }
           if (d.knees) { ctx.fillStyle = '#4a3a26'; for (let j = 0; j < 4; j++) { const kx = sx + (ihash(d.v * 3 + j, 41) - 0.5) * 34 * z, kh = (5 + ihash(j, 42) * 9) * z; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(3 * z)), Math.round(kh)); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(z)), Math.round(kh)); ctx.fillStyle = '#4a3a26'; } }
           if (d.moss) { ctx.fillStyle = '#8a9a6a'; for (let j = 0; j < 4; j++) { const mx = sx + (ihash(d.v * 11 + j, 4) - 0.5) * 26 * z, my = sy - h * (0.5 + ihash(j, 5) * 0.3); ctx.fillRect(Math.round(mx), Math.round(my), Math.max(1, Math.round(z)), Math.round((8 + ihash(j, 6) * 12) * z)); } }
           if (d.shake) ctx.restore();
@@ -538,8 +661,8 @@ const World = {
           ctx.strokeStyle = '#4a3a24'; ctx.lineWidth = Math.max(1, 2 * z);
           const top = sy - 30 * d.s * z;
           for (let j = -2; j <= 2; j++) { ctx.beginPath(); ctx.moveTo(sx + j * 2 * z, top); ctx.quadraticCurveTo(sx + j * 12 * d.s * z, top + 14 * z, sx + j * 16 * d.s * z + d.dir * 6 * z, sy + 12 * z); ctx.stroke(); }
-          ctx.fillStyle = '#2f5a2a'; ctx.fillRect(Math.round(sx - 18 * d.s * z), Math.round(top - 12 * z), Math.round(36 * d.s * z), Math.round(12 * z));
-          ctx.fillStyle = '#3f7a3a'; ctx.fillRect(Math.round(sx - 12 * d.s * z), Math.round(top - 18 * z), Math.round(24 * d.s * z), Math.round(8 * z));
+          const mw2 = Math.round(38 * d.s);
+          Leaf.draw(ctx, Leaf.mass(mw2, Math.round(mw2 * 0.55), '#1b3d22', '#2f6a34', '#55a04a', d.v * 17 + 5), sx, top - 10 * z, z);
           break; }
       }
     }

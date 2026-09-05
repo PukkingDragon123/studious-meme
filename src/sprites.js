@@ -224,6 +224,9 @@ function buildCrocParts(L) {
   const OL = mixColor(shade(L.dark, 0.75), '#150e08', 0.45);
   // a 2px dark edge, so the toon outline survives being drawn at half scale
   const edge = o => { R.outline(o, OL); R.outline(o, OL); };
+  // body links only get a top/bottom edge; a full box would draw a seam between
+  // every pair of segments and turn the animal into a stack of crates
+  const edgeV = o => { R.outlineTB(o, OL); R.outlineTB(o, OL); };
   const spikes = L.spikes || 0;
   const crest = Math.max(spikes ? 7 : 0, L.fin ? 13 : 0, L.shell ? 6 : 0, L.mane ? 7 : 0);
   // ------------------------------------------------ HEAD: rounded skull, long snout, big eye
@@ -279,7 +282,17 @@ function buildCrocParts(L) {
     const w = 22, h = 24 + crest, o = mk(w, h), y0 = crest, cy = y0 + 11, half = 8.4 - Math.abs(i - 1.4) * 0.35;
     for (let x = 1; x < w - 1; x++) {
       const hh = half * (1 - Math.pow(Math.abs(x - w / 2) / (w / 1.7), 4));
-      for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.34 ? L.back : f < 0.36 ? L.mid : L.belly); }
+      for (let j = -hh; j <= hh; j++) {
+        const f = j / hh, bay = BAYER4[((cy + j) & 3) * 4 + (x & 3)] * 0.0625 - 0.5;
+        let col = f < -0.34 + bay * 0.2 ? L.back : f < 0.36 + bay * 0.22 ? L.mid : L.belly;
+        // scute grid: raised plates catch light, the grooves between them do not
+        const row = ((cy + j) >> 1), gx = (x + (row & 1) * 2) % 4;
+        if (gx === 0) col = shade(col, 0.85);
+        else if (gx === 1 && ((cy + j) & 1) === 0) col = mixColor(col, '#ffffff', 0.12);
+        if (f < -0.78) col = mixColor(col, '#ffffff', 0.18);
+        if (f > 0.8) col = shade(col, 0.8);
+        px(o, x, cy + j, col);
+      }
       if (x % 3 === (i % 3)) px(o, x, cy - hh, hi(L.back));
       px(o, x, cy + hh - 1, lo(L.belly));
     }
@@ -302,7 +315,7 @@ function buildCrocParts(L) {
     if (L.fin && (i === 1 || i === 2)) { const fh = i === 1 ? 13 : 9, fc = L.fin; for (let f = 0; f < fh; f++) { const fw = Math.max(2, Math.round((fh - f) * 1.4)); px(o, 7 + Math.round(f * 0.4), cy - half - f, fc, fw, 1); px(o, 7 + Math.round(f * 0.4), cy - half - f, shade(fc, 0.65), 1, 1); } }
     if (L.gills && i === 0) for (const gx of [4, 8, 12]) px(o, gx, cy - 1, shade(L.mouth, 1.1), 2, 5);
     if (spikes) for (let s2 = off; s2 < w - 2; s2 += 5) { px(o, s2, cy - half - 3, L.dark, 3, 3); if (spikes >= 2) px(o, s2, cy - half - 6, L.belly, 3, 3); }
-    edge(o);
+    edgeV(o);
     parts.body.push({ c: o.c, w, h, ox: 11, oy: cy });
   }
   // ------------------------------------------------ TAIL x6: tapering with a crest
@@ -325,7 +338,7 @@ function buildCrocParts(L) {
     if (L.barb && k >= 4) { px(o, 7, cy - th - 5, L.tooth, 2, 5); if (k === 5) px(o, 8, cy - th - 10, L.tooth, 2, 5); }
     if (L.paddle && k >= 4) { const pc = L.paddle; for (let f = 1; f <= 6; f++) px(o, 11 + f, cy - f, pc, 1, th * 2 + f * 2); }
     if (spikes && k < 3) for (const s2 of [2, 9]) { px(o, s2, cy - th - 6, L.dark, 3, 3); if (spikes >= 2) px(o, s2, cy - th - 9, L.belly, 3, 3); }
-    edge(o);
+    edgeV(o);
     parts.tail.push({ c: o.c, w, h, ox: 9, oy: cy });
   }
   // ------------------------------------------------ LEGS x2 frames

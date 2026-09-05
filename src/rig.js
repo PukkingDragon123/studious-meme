@@ -43,6 +43,7 @@ function rigOf(spec, variant = 0) {
   return rig;
 }
 // ---- toon painter ----
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const R = {
   mk(w, h) { w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); const c = mkCanvas(w, h); return { c, x: c.getContext('2d'), w, h }; },
   px(o, i, j, col, w = 1, h = 1) { o.x.fillStyle = col; o.x.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); },
@@ -53,15 +54,44 @@ const R = {
     if (r < 1) { R.px(o, cx - 0.5, cy - 0.5, col); return; }
     for (let j = Math.floor(cy - r); j <= Math.ceil(cy + r); j++) { const dy = j + 0.5 - cy; const hw = Math.sqrt(Math.max(0, r * r - dy * dy)); if (hw < 0.4) continue; R.px(o, Math.round(cx - hw), j, col, Math.round(cx + hw) - Math.round(cx - hw), 1); }
   },
-  // toon-shaded ellipse: base colour, darker underside, a highlight spot up and forward
+  // Toon-shaded ellipse. Five tones ramped by a light direction with an ordered
+  // dither on every terminator, a rim along the lit edge, contact shadow at the
+  // bottom, and an optional coat texture (fur, scales, feathers, hide).
   blob(o, cx, cy, rx, ry, base, opts = {}) {
-    const light = opts.light || R.hi(base), dark = opts.shade || R.lo(base), hl = opts.hl !== false && rx >= 3 && ry >= 3;
+    const light = opts.light || R.hi(base), dark = opts.shade || R.lo(base);
+    const deep = opts.deep || R.lo2(base), rim = opts.rim || R.hi2(base);
+    const hl = opts.hl !== false && rx >= 3 && ry >= 3;
+    const hx = opts.hx ?? 0.25, tex = rx >= 4 && ry >= 3 ? opts.tex : null, sd = opts.seed || 0;
+    const lx = -hx * 0.7, ly = -0.88;   // light comes from up and slightly forward
     for (let j = Math.floor(cy - ry); j <= Math.ceil(cy + ry); j++) for (let i = Math.floor(cx - rx); i <= Math.ceil(cx + rx); i++) {
       const u = (i + 0.5 - cx) / rx, v = (j + 0.5 - cy) / ry, d = u * u + v * v;
       if (d > 1) continue;
-      let col = base;
-      if (v > 0.4 || (d > 0.72 && v > 0.05)) col = dark;
-      if (hl && (u - (opts.hx ?? 0.25)) * (u - (opts.hx ?? 0.25)) + (v + 0.5) * (v + 0.5) < 0.09) col = light;
+      const bay = BAYER4[(j & 3) * 4 + (i & 3)] * 0.0625 - 0.5;
+      const lam = -(u * lx + v * ly);
+      let col;
+      if (lam < -0.30 + bay * 0.26) col = deep;
+      else if (lam < 0.16 + bay * 0.3) col = dark;
+      else if (hl && lam > 0.66 + bay * 0.26) col = light;
+      else col = base;
+      if (hl && d > 0.66 && lam > 0.52) col = rim;              // lit rim
+      if (d > 0.72 && v > 0.34 - bay * 0.2) col = deep;          // contact shadow
+      if (tex) {
+        const h1 = ihash((i >> 1) * 71 + (j >> 1) * 131, sd + 5);
+        if (tex === 'fur') {
+          // short strokes lying along the body
+          if (ihash(i * 7 + (j >> 1) * 313, sd) < 0.3) col = shade(col, 0.87);
+          else if (h1 > 0.86) col = mixColor(col, light, 0.4);
+        } else if (tex === 'scale') {
+          const row = (j >> 1), off = (row & 1) * 2;
+          if (((i + off) % 4) === 0) col = shade(col, 0.86);
+          else if (((i + off) % 4) === 1 && (j & 1) === 0) col = mixColor(col, light, 0.28);
+        } else if (tex === 'feather') {
+          if (((j + ((i >> 1) & 1)) % 3) === 0) col = shade(col, 0.9);
+          if (h1 > 0.9) col = mixColor(col, light, 0.35);
+        } else if (tex === 'hide') {
+          if (h1 > 0.8) col = shade(col, 0.9); else if (h1 < 0.12) col = mixColor(col, light, 0.25);
+        }
+      }
       if (opts.pat) { const pc = opts.pat(i, j, u, v); if (pc) col = pc; }
       o.x.fillStyle = col; o.x.fillRect(i, j, 1, 1);
     }
@@ -69,6 +99,19 @@ const R = {
   // rounded rectangle
   rrect(o, x, y, w, h, r, col) {
     for (let j = 0; j < h; j++) { let inset = 0; if (j < r) inset = r - Math.round(Math.sqrt(r * r - (r - j - 0.5) * (r - j - 0.5))); else if (j >= h - r) inset = r - Math.round(Math.sqrt(r * r - (j + 0.5 - (h - r)) * (j + 0.5 - (h - r)))); R.px(o, x + inset, y + j, col, w - inset * 2, 1); }
+  },
+  // Vertical-only outline: marks empty pixels above or below solid ones but never
+  // beside them, so a chain of body segments reads as one animal instead of a
+  // row of separately boxed-in blocks.
+  outlineTB(o, col = '#1c1410') {
+    const { w, h } = o, img = o.x.getImageData(0, 0, w, h), d = img.data, a = new Uint8Array(w * h);
+    for (let k = 0; k < w * h; k++) a[k] = d[k * 4 + 3] > 40 ? 1 : 0;
+    const [r, g, b] = hexToRgb(col);
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const k = j * w + i; if (a[k]) continue;
+      if ((j > 0 && a[k - w]) || (j < h - 1 && a[k + w])) { d[k * 4] = r; d[k * 4 + 1] = g; d[k * 4 + 2] = b; d[k * 4 + 3] = 255; }
+    }
+    o.x.putImageData(img, 0, 0);
   },
   // 1px dark outline around everything opaque on the canvas
   outline(o, col = '#1c1410') {
@@ -86,10 +129,11 @@ const R = {
     const ring = opts.ring || '#1c1410';
     if (r < 1.6) { R.px(o, x - 1, y - 1, ring, 3, 3); R.px(o, x - 1, y - 1, '#ffffff', 2, 2); R.px(o, x, y, '#141414'); return; }
     const rr = opts.scared ? r * 1.25 : r;
-    R.disc(o, x, y, rr + 1, ring); R.disc(o, x, y, rr, '#ffffff');
-    const pr = Math.max(1, Math.round(rr * (opts.scared ? 0.38 : 0.58)));
+    R.disc(o, x, y, rr + 1, ring); R.disc(o, x, y, rr, opts.sclera || '#f2ece0');
+    R.disc(o, x, y + rr * 0.35, rr * 0.8, mixColor(opts.sclera || '#f2ece0', ring, 0.24));   // lid shadow
+    const pr = Math.max(1, Math.round(rr * (opts.scared ? 0.42 : 0.66)));
     const look = opts.look || [0.35, 0.05], lx = look[0] * Math.max(0, rr - pr), ly = look[1] * Math.max(0, rr - pr);
-    if (opts.iris) R.disc(o, x + lx, y + ly, Math.min(rr - 0.5, pr + 1), opts.iris);
+    if (opts.iris) R.disc(o, x + lx, y + ly, Math.min(rr - 0.4, pr + 1.2), opts.iris);
     R.disc(o, x + lx, y + ly, pr, opts.pupil || '#141414');
     R.px(o, x + lx - Math.max(0, pr - 1), y + ly - Math.max(0, pr - 1), '#ffffff');
     if (opts.lid) { R.px(o, x - rr - 1, y - rr - 1, opts.lid, rr * 2 + 3, Math.round(rr * 0.7)); }
@@ -157,9 +201,23 @@ function buildFish(s) {
       if (s.tail === 'eel') p = Math.max(p * 0.6, 0.5 + 0.5 * Math.min(1, u * 1.6));
       return Math.max(0.14, p);
     };
+    // three tones, but each carries a scale grid, a lit spine and a shaded keel;
+    // palettes are built once here so the pixel loop never re-parses a colour
+    const ramp = c => [c, shade(c, 0.89), mixColor(c, '#ffffff', 0.1), shade(c, 0.8), mixColor(c, '#ffffff', 0.16)];
+    const TB = ramp(s.back), TM = ramp(s.mid), TL = ramp(s.belly);
     for (let i = 0; i < L; i++) {
       const u = (i + 0.5) / L, hh = H / 2 * prof(u), x = 2 + i, top = Math.round(cy - hh), bot = Math.round(cy + hh);
-      for (let j = top; j <= bot; j++) { const f = (j + 0.5 - cy) / Math.max(1, hh); const col = f < -0.3 ? s.back : f < 0.42 ? s.mid : s.belly; R.px(o, x, j, col); }
+      for (let j = top; j <= bot; j++) {
+        const f = (j + 0.5 - cy) / Math.max(1, hh);
+        const bay = BAYER4[(j & 3) * 4 + (i & 3)] * 0.0625 - 0.5;
+        const T = f < -0.3 + bay * 0.2 ? TB : f < 0.42 + bay * 0.24 ? TM : TL;
+        let k = 0;
+        const row = j >> 1, off = (row & 1) * 2;
+        if (((i + off) & 3) === 0) k = 1;
+        else if (((i + off) & 3) === 1 && (j & 1) === 0) k = 2;
+        if (f > 0.8) k = 3; else if (f < -0.7) k = 4;
+        R.px(o, x, j, T[k]);
+      }
       if (hh >= 2.5 && u < 0.92) R.px(o, x, top, R.hi(s.back));
     }
     // highlight spot behind the eye
@@ -222,14 +280,14 @@ function buildBird(s) {
   { // body: plump oval with tail feathers
     const o = R.mk(L + 12, H + 6), cx = 8 + L / 2, cy = 3 + H / 2;
     for (let k = -1; k <= 1; k++) { R.px(o, 2, cy + k * Math.max(1, H * 0.16) - 1, s.wing || R.lo(s.body), L * 0.3, Math.max(1, H * 0.14)); }
-    R.blob(o, cx, cy, L / 2, H / 2, s.body, { pat: (i, j, u, v) => (v > 0.15 && u * u + v * v < 0.98 ? (v > 0.55 ? R.lo(s.belly || R.hi(s.body)) : (s.belly || R.hi(s.body))) : null) });
+    R.blob(o, cx, cy, L / 2, H / 2, s.body, { tex: 'feather', seed: L * 7 + 2, pat: (i, j, u, v) => (v > 0.15 && u * u + v * v < 0.98 ? (v > 0.55 ? R.lo(s.belly || R.hi(s.body)) : (s.belly || R.hi(s.body))) : null) });
     R.outline(o, OL);
     parts.body = R.part(o, cx, cy);
   }
   { // head: round with a big eye and a beak
     const bl = Math.round(hs * (s.beak === 'spear' || s.beak === 'spoon' ? 1.7 : s.beak === 'pouch' ? 1.5 : s.beak === 'curve' ? 1.4 : 0.8));
     const o = R.mk(hs * 2 + bl + 6, hs * 2 + 8), hx = 3 + hs, hy = 4 + hs, hc = s.head || s.body, bc = s.beakCol || '#e0b040';
-    R.blob(o, hx, hy, hs, hs, hc);
+    R.blob(o, hx, hy, hs, hs, hc, { tex: s.coat || 'fur', seed: hs * 5 + 3 });
     if (s.crest) for (let k = 0; k < 3; k++) R.px(o, hx - hs * 0.4 - k * 2, hy - hs - 1 - k, s.crest, 2, 2 + k);
     const bx = hx + hs - 1, by = hy + hs * 0.1;
     if (s.beak === 'spear') for (let i = 0; i < bl; i++) R.px(o, bx + i, by - 1 + Math.round(i * 0.06), bc, 1, Math.max(1, 3 - i * 2.2 / bl));
@@ -299,13 +357,22 @@ function buildQuad(s) {
   const legLen = Math.max(3, Math.round(H * (0.24 + (s.legs || 0.5) * 0.52))), hs = Math.max(4, Math.round(H * 0.64));
   {
     const o = R.mk(L + 6, H + 8), cx = 3 + L / 2, cy = 4 + H / 2, belly = s.belly || R.hi(s.body);
-    R.blob(o, cx, cy, L / 2, H / 2, s.body, { pat: (i, j, u, v) => {
+    const coat = s.coat || (s.pattern === 'bands' ? 'hide' : 'fur');
+    R.blob(o, cx, cy, L / 2, H / 2, s.body, { tex: coat, seed: L * 3 + 11, pat: (i, j, u, v) => {
       if (s.pattern === 'spots' && ((ihash(Math.floor(i / 3) * 7 + Math.floor(j / 3), 11) > 0.72))) return s.spot || '#f0ead8';
       if (s.pattern === 'stripes' && Math.floor((i + j * 0.3) / 3) % 3 === 0 && v < 0.3) return R.lo2(s.body);
       if (s.pattern === 'bands' && Math.floor(i / 4) % 2 === 0 && v < 0.4) return R.lo(s.body);
       if (v > 0.52 && u * u + v * v < 0.94) return v > 0.78 ? R.lo(belly) : belly;
       return null;
     } });
+    // haunch and shoulder masses: without them every quad is one flat ellipse
+    const hq = { tex: coat, seed: L * 5 + 21, hl: false, hx: -0.1 };
+    R.blob(o, cx - L * 0.27, cy + H * 0.05, L * 0.23, H * 0.45, s.body, hq);
+    R.blob(o, cx + L * 0.25, cy + H * 0.02, L * 0.2, H * 0.42, s.body, { tex: coat, seed: L * 5 + 7, hl: false, hx: 0.3 });
+    // crease where the shoulder meets the barrel
+    for (let j = -Math.round(H * 0.22); j <= Math.round(H * 0.3); j++) R.px(o, cx + L * 0.12, cy + j, R.lo2(s.body), 1, 1);
+    // neck stub reaching toward the head
+    R.blob(o, cx + L * 0.42, cy - H * 0.2, L * 0.13, H * 0.3, s.head || s.body, { tex: coat, seed: L + 3, hl: false });
     if (s.mane) R.px(o, cx, cy - H / 2 - 2, s.mane, L * 0.3, 3);
     R.outline(o, OL);
     parts.body = R.part(o, cx, cy);
@@ -316,19 +383,47 @@ function buildQuad(s) {
     if (el) { R.blob(o, hx - hs * 0.35, hy - hs - el * 0.3, Math.max(1.5, hs * 0.22), el * 0.6, hc, { hl: false }); R.blob(o, hx + hs * 0.25, hy - hs - el * 0.25, Math.max(1.5, hs * 0.22), el * 0.55, hc, { hl: false }); R.px(o, hx - hs * 0.35, hy - hs - el * 0.3, R.hi(s.belly || hc), 1, el * 0.35); }
     if (s.antlers) { const ac = '#7a5a34'; for (const ox of [-hs * 0.4, hs * 0.1]) { R.px(o, hx + ox, hy - hs - 6, ac, 1, 7); R.px(o, hx + ox - 2, hy - hs - 5, ac, 5, 1); R.px(o, hx + ox - 2, hy - hs - 7, ac, 1, 3); R.px(o, hx + ox + 2, hy - hs - 8, ac, 1, 4); } }
     if (s.horns) { R.px(o, hx - hs * 0.5, hy - hs - 3, '#d8c8a0', 3, 4); R.px(o, hx + hs * 0.3, hy - hs - 3, '#d8c8a0', 3, 4); }
-    R.blob(o, hx, hy, hs, hs, hc);
+    R.blob(o, hx, hy, hs, hs, hc, { tex: s.coat || 'fur', seed: hs * 5 + 3 });
     R.blob(o, hx + hs * 0.7, hy + hs * 0.25, sn * 0.75, Math.max(2, hs * 0.5), hc, { hl: false, pat: (i, j, u, v) => (v > 0.2 ? (s.belly ? R.lo(s.belly) : R.lo(hc)) : null) });
     if (s.mask) R.px(o, hx - hs * 0.3, hy - hs * 0.45, R.lo2(hc), hs * 1.1, hs * 0.5);
     R.disc(o, hx + hs * 0.7 + sn * 0.6, hy + hs * 0.05, Math.max(1, hs * 0.16), '#1a1410');           // nose
     R.px(o, hx + hs * 0.7 + sn * 0.3, hy + hs * 0.5, R.lo2(hc), sn * 0.5, 1);                          // mouth
     if (s.tusks) { R.px(o, hx + hs * 0.7 + sn * 0.5, hy + hs * 0.45, '#f4f0e0', 1, 3); R.px(o, hx + hs * 0.7 + sn * 0.5 - 1, hy + hs * 0.45 + 2, '#f4f0e0', 1, 2); }
-    R.eye(o, hx + hs * 0.25, hy - hs * 0.2, Math.max(1.5, hs * 0.3), { ring: OL, iris: s.eye, look: [0.35, 0.1] });
+    R.eye(o, hx + hs * 0.3, hy - hs * 0.18, Math.max(1.5, hs * 0.24), { ring: OL, iris: s.eye, look: [0.35, 0.1] });
     R.outline(o, OL);
     parts.head = R.part(o, hx - hs * 0.6, hy + hs * 0.4);   // pivot at the neck
   }
-  { const lc = s.legCol || s.body, o = R.mk(7, legLen + 4), lw = Math.max(2, Math.round(H * 0.16)); R.px(o, 3 - lw / 2, 1, lc, lw, legLen); R.px(o, 3 - lw / 2, 1, R.lo(lc), 1, legLen); R.px(o, 2 - lw / 2, legLen, s.hoof || R.lo2(lc), lw + 2, 2); R.outline(o, OL); parts.leg = R.part(o, 3, 1); }
+  { // tapered limb: thigh into shank, lit down the leading edge, real foot at the bottom
+    const lc = s.legCol || s.body, lw = Math.max(2, Math.round(H * 0.2));
+    const o = R.mk(lw + 6, legLen + 6), cx = 3 + lw / 2;
+    const lit = R.hi(lc), shd = R.lo(lc), foot = s.hoof || R.lo2(lc);
+    for (let j = 0; j < legLen; j++) {
+      const u = j / Math.max(1, legLen), w = Math.max(1.4, lw * (1 - u * 0.4));
+      R.px(o, cx - w / 2, 1 + j, lc, w, 1);
+      R.px(o, cx - w / 2, 1 + j, lit, Math.max(1, w * 0.3), 1);
+      R.px(o, cx + w / 2 - Math.max(1, w * 0.26), 1 + j, shd, Math.max(1, w * 0.26), 1);
+    }
+    const pw = lw + 2, fy = 1 + legLen;
+    R.px(o, cx - pw / 2, fy - 1, foot, pw, 2);
+    if (!s.hoof) { R.px(o, cx - pw / 2 - 1, fy, foot, pw + 1, 1); R.px(o, cx - pw / 2, fy + 1, R.lo2(foot), 1, 1); R.px(o, cx - pw / 2 + 2, fy + 1, R.lo2(foot), 1, 1); }
+    else R.px(o, cx - pw / 2, fy + 1, R.lo2(foot), pw, 1);
+    R.outline(o, OL); parts.leg = R.part(o, cx, 1); }
   { const tl = s.tail === 'long' || s.tail === 'bushy' ? Math.round(L * 0.5) : s.tail === 'none' ? 0 : Math.round(L * 0.14), tc = s.tailCol || s.body;
-    if (tl) { const o = R.mk(tl + 4, (s.tail === 'bushy' ? 9 : 5)); const th = s.tail === 'bushy' ? 3 : 1.5; for (let i = 0; i < tl; i++) { const hh = s.tail === 'bushy' ? th * Math.sin((i + 1) / (tl + 1) * Math.PI) ** 0.5 + 0.8 : th; R.px(o, 1 + i, o.h / 2 - hh, i < tl * 0.25 && s.tailTip ? s.tailTip : tc, 1, hh * 2); } R.outline(o, OL); parts.tail = R.part(o, tl + 1, o.h / 2); }
+    if (tl) {
+      const bushy = s.tail === 'bushy', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.4 : 1.9;
+      const lit = R.hi(tc), shd = R.lo(tc);
+      for (let i = 0; i < tl; i++) {
+        const u = (i + 1) / (tl + 1);
+        // base is thick and it thins toward the tip; bushy tails swell in the middle
+        const hh = bushy ? th * Math.pow(Math.sin(u * Math.PI), 0.45) + 0.9 : Math.max(0.7, th * (1 - u * 0.55));
+        const col = i < tl * 0.25 && s.tailTip ? s.tailTip : tc;
+        R.px(o, 1 + i, o.h / 2 - hh, col, 1, hh * 2);
+        R.px(o, 1 + i, o.h / 2 - hh, lit, 1, Math.max(1, hh * 0.5));
+        R.px(o, 1 + i, o.h / 2 + hh - Math.max(1, hh * 0.45), shd, 1, Math.max(1, hh * 0.45));
+        if (bushy && ihash(i * 13, 91) > 0.65) R.px(o, 1 + i, o.h / 2 - hh - 1, col, 1, 1);
+      }
+      R.outline(o, OL); parts.tail = R.part(o, tl + 1, o.h / 2);
+    }
   }
   const rig = { kind: 'quad', parts, len: L + hs * 1.2, height: H + legLen, foot: H * 0.35 + legLen };
   rig.pose = anim => {
