@@ -10,7 +10,7 @@ const World = {
   landY(x) { const m = this.bankMask(x); return -18 - vnoise(x * 0.009, this.seed + 11) * 22 - m * m * 26; },
   floorY(x) { const m = this.bankMask(x); if (m <= 0) return this.waterFloor(x); return lerp(this.waterFloor(x), this.landY(x), m); },
   isLand(x) { return this.floorY(x) < 0; },
-  surface(x) { const t = this.t; return Math.sin(x * 0.021 + t * 2.1) * 1.6 + Math.sin(x * 0.053 - t * 3.3) * 0.9 + Math.sin(x * 0.0071 + t * 0.7) * 1.2; },
+  surface(x) { return Water.surface(x); },
   // nearest x (searching outward) where predicate holds, or null
   findX(fromX, pred, maxD = 4000, step = 24) {
     for (let d = 0; d < maxD; d += step) { if (pred(fromX + d)) return fromX + d; if (pred(fromX - d)) return fromX - d; }
@@ -74,13 +74,15 @@ const World = {
     const a = keys[i], b = keys[i + 1], t = clamp((day - a[0]) / (b[0] - a[0]), 0, 1);
     return { top: mixColor(a[1], b[1], t), bot: mixColor(a[2], b[2], t) };
   },
-  light(day) { return clamp(0.5 + 0.62 * Math.cos((day - 0.25) * TAU), 0.08, 1); },
+  light(day) { return clamp(0.5 + 0.62 * Math.cos((day - 0.25) * TAU), 0.08, 1) * (1 - 0.45 * (Weather ? Weather.rain : 0)); },
   drawSky(ctx, cam, day) {
     const W = G.W, H = G.H, sc = this.skyColors(day);
     const hy = cam.toScreen(0, 0)[1];
     const g = ctx.createLinearGradient(0, Math.min(hy - 220 * cam.zoom, 0), 0, hy);
     g.addColorStop(0, sc.top); g.addColorStop(1, sc.bot);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, Math.max(0, hy));
+    if (Weather.rain > 0.02) { ctx.fillStyle = `rgba(60,70,80,${(Weather.rain * 0.55).toFixed(3)})`; ctx.fillRect(0, 0, W, Math.max(0, hy)); }
+    if (Weather.flash > 0) { ctx.fillStyle = `rgba(230,240,255,${(Weather.flash * 0.7).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     const light = this.light(day), night = 1 - light;
     // stars
     if (night > 0.15) {
@@ -242,7 +244,9 @@ const World = {
     // top band
     for (let i = 0; i < pts.length - 1; i++) {
       const p = pts[i], wx = p[2], fy = this.floorY(wx);
-      const ty = Math.round(p[1]);
+      const md = Mud.depth(wx) * cam.zoom;
+      const ty = Math.round(p[1] + md);
+      if (md > 0.8) { ctx.fillStyle = '#2e2216'; ctx.fillRect(p[0], Math.round(p[1]), step, Math.round(md)); }
       if (fy < 0) { // land: grass
         ctx.fillStyle = '#5d8a2f'; ctx.fillRect(p[0], ty, step, Math.max(1, Math.round(2 * cam.zoom)));
         ctx.fillStyle = '#3f6a22'; ctx.fillRect(p[0], ty + Math.max(1, Math.round(2 * cam.zoom)), step, Math.max(1, Math.round(2 * cam.zoom)));
@@ -268,7 +272,7 @@ const World = {
         case 'weed': if (layer !== 0) break; {
           ctx.strokeStyle = d.v ? '#2f6a3a' : '#3f7a44'; ctx.lineWidth = Math.max(1, z);
           for (let b = -1; b <= 1; b++) {
-            const sway = Math.sin(t * 1.3 + d.ph + b) * 4 * z;
+            const sway = (Math.sin(t * 1.3 + d.ph + b) * 4 + (d.bend || 0) * 3) * z;
             ctx.beginPath(); ctx.moveTo(sx + b * 2 * z, sy); ctx.quadraticCurveTo(sx + b * 3 * z + sway * 0.5, sy - d.h * z * 0.6, sx + b * 4 * z + sway, sy - d.h * z); ctx.stroke();
           }
           break; }
@@ -277,14 +281,14 @@ const World = {
         case 'skull': if (layer !== 0) break; drawSpr(ctx, SPR.skull, sx, sy - 2 * z, 0, z, z); break;
         case 'lily': if (layer !== 1) break; { const s = SPR.lily[d.v]; const wy = cam.toScreen(d.x, this.surface(d.x))[1]; drawSpr(ctx, s, sx, wy - 1 * z, 0, z, z, s.w / 2, s.h - 1); break; }
         case 'reed': if (layer !== 0) break; {
-          const top = cam.toScreen(d.x, d.top)[1]; const sway = Math.sin(t * 1.1 + d.ph) * 3 * z;
+          const top = cam.toScreen(d.x, d.top)[1]; const sway = (Math.sin(t * 1.1 + d.ph) * 3 + (d.bend || 0) * 4) * z;
           ctx.strokeStyle = '#4f7a3a'; ctx.lineWidth = Math.max(1, z); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.3, (sy + top) / 2, sx + sway, top); ctx.stroke();
           if (d.v) { ctx.fillStyle = '#6b4a2e'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 8 * z), Math.max(1, Math.round(2 * z)), Math.max(2, Math.round(7 * z))); }
           else { ctx.strokeStyle = '#7fae5f'; ctx.beginPath(); ctx.moveTo(sx + sway, top); ctx.lineTo(sx + sway + 4 * z, top - 6 * z); ctx.stroke(); }
           break; }
         case 'sawgrass': if (layer !== 1) break; {
           ctx.strokeStyle = '#7a9a3a'; ctx.lineWidth = Math.max(1, z);
-          for (let b = -2; b <= 2; b++) { const sway = Math.sin(t * 1.6 + d.ph + b * 0.4) * 2 * z; ctx.beginPath(); ctx.moveTo(sx, sy + 1); ctx.lineTo(sx + b * 3 * z * d.s + sway, sy - (9 + Math.abs(b) * -1.5) * d.s * z); ctx.stroke(); }
+          for (let b = -2; b <= 2; b++) { const sway = (Math.sin(t * 1.6 + d.ph + b * 0.4) * 2 + (d.bend || 0) * 2.5) * z; ctx.beginPath(); ctx.moveTo(sx, sy + 1); ctx.lineTo(sx + b * 3 * z * d.s + sway, sy - (9 + Math.abs(b) * -1.5) * d.s * z); ctx.stroke(); }
           if (d.fly && night > 0.3) { // firefly
             const fx = sx + Math.sin(t * 0.9 + d.ph) * 14 * z, fy = sy - (14 + Math.sin(t * 1.7 + d.ph * 2) * 8) * z;
             const pulse = 0.5 + 0.5 * Math.sin(t * 3 + d.ph * 5);
@@ -293,7 +297,7 @@ const World = {
           break; }
         case 'palmetto': if (layer !== 1) break; {
           ctx.strokeStyle = '#3f7a3a'; ctx.lineWidth = Math.max(1, 1.5 * z);
-          for (let b = -3; b <= 3; b++) { const sway = Math.sin(t * 1.2 + d.ph) * 1.5 * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + b * 4 * z * d.s + sway, sy - (16 - Math.abs(b) * 2.5) * d.s * z); ctx.stroke(); }
+          for (let b = -3; b <= 3; b++) { const sway = (Math.sin(t * 1.2 + d.ph) * 1.5 + (d.bend || 0) * 3) * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + b * 4 * z * d.s + sway, sy - (16 - Math.abs(b) * 2.5) * d.s * z); ctx.stroke(); }
           break; }
         case 'duckweed': if (layer !== 1) break; {
           const wy = cam.toScreen(d.x, this.surface(d.x))[1], ww = d.w * z;
@@ -358,13 +362,13 @@ const World = {
           for (let k = 1; k <= 4; k++) { const kk = k / 5, vy = lerp(top, sy, kk), vx = sx + Math.sin(t * 0.6 + d.ph + kk * 4) * 5 * z * kk; ctx.fillRect(Math.round(vx + 2 * z), Math.round(vy), Math.max(1, Math.round(3 * z)), Math.max(1, Math.round(2 * z))); }
           break; }
         case 'cattail': if (layer !== 1) break; {
-          const top = cam.toScreen(d.x, d.top)[1], sway = Math.sin(t * 1.3 + d.ph) * 3 * z;
+          const top = cam.toScreen(d.x, d.top)[1], sway = (Math.sin(t * 1.3 + d.ph) * 3 + (d.bend || 0) * 4) * z;
           ctx.strokeStyle = '#5a7a3a'; ctx.lineWidth = Math.max(1, z); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.4, (sy + top) / 2, sx + sway, top); ctx.stroke();
           ctx.fillStyle = '#5a3a20'; ctx.fillRect(Math.round(sx + sway - z * 0.5), Math.round(top - 1), Math.max(1, Math.round(1.6 * z)), Math.max(2, Math.round(8 * z)));
           break; }
         case 'fern': if (layer !== 1) break; {
           ctx.strokeStyle = '#3f6a2a'; ctx.lineWidth = Math.max(1, z);
-          for (let b = -2; b <= 2; b++) { const sway = Math.sin(t * 1.4 + d.ph + b) * 1.5 * z, len = (13 - Math.abs(b) * 2) * d.s * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + b * 4 * z + sway, sy - len * 0.7, sx + b * 7 * z + sway, sy - len); ctx.stroke(); }
+          for (let b = -2; b <= 2; b++) { const sway = (Math.sin(t * 1.4 + d.ph + b) * 1.5 + (d.bend || 0) * 3) * z, len = (13 - Math.abs(b) * 2) * d.s * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + b * 4 * z + sway, sy - len * 0.7, sx + b * 7 * z + sway, sy - len); ctx.stroke(); }
           break; }
         case 'bush': if (layer !== 1) break; {
           const cols = ['#2f5a24', '#3a6a2a', '#27491d'], w = 16 * d.s * z, h = 12 * d.s * z;
@@ -409,7 +413,7 @@ const World = {
           if (d.moss) { ctx.fillStyle = '#93a077'; for (let j = 0; j < 6; j++) { const mx = sx + (ihash(d.v * 5 + j, 34) - 0.5) * 46 * z; ctx.fillRect(Math.round(mx), Math.round(sy - h + 2 * z), Math.max(1, Math.round(z)), Math.round((10 + ihash(j, 35) * 20) * z)); } }
           break; }
         case 'cypress': if (layer !== 0) break; {
-          const h = d.h * z, tw = 4 * z;
+          const h = d.h * z, tw = 4 * z; if (d.shake) { ctx.save(); ctx.translate(Math.sin(t * 40) * d.shake * 2 * z, 0); }
           ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.round(tw), Math.round(h + 2));
           ctx.fillRect(Math.round(sx - tw * 1.5), Math.round(sy - 8 * z), Math.round(tw * 3), Math.round(8 * z)); // buttress
           ctx.fillStyle = '#2a1e12'; ctx.fillRect(Math.round(sx - tw / 2), Math.round(sy - h), Math.max(1, Math.round(z)), Math.round(h));
@@ -417,6 +421,7 @@ const World = {
           for (let j = 0; j < 5; j++) { const cw = (30 - j * 5) * z * (0.8 + ihash(d.v * 7 + j, 3) * 0.5), cy = sy - h * (0.4 + j * 0.15); ctx.fillStyle = cols[(j + d.v) % 3]; ctx.fillRect(Math.round(sx - cw / 2), Math.round(cy), Math.round(cw), Math.round(h * 0.08 + 2 * z)); }
           if (d.knees) { ctx.fillStyle = '#4a3a26'; for (let j = 0; j < 4; j++) { const kx = sx + (ihash(d.v * 3 + j, 41) - 0.5) * 34 * z, kh = (5 + ihash(j, 42) * 9) * z; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(3 * z)), Math.round(kh)); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round(kx), Math.round(sy - kh), Math.max(1, Math.round(z)), Math.round(kh)); ctx.fillStyle = '#4a3a26'; } }
           if (d.moss) { ctx.fillStyle = '#8a9a6a'; for (let j = 0; j < 4; j++) { const mx = sx + (ihash(d.v * 11 + j, 4) - 0.5) * 26 * z, my = sy - h * (0.5 + ihash(j, 5) * 0.3); ctx.fillRect(Math.round(mx), Math.round(my), Math.max(1, Math.round(z)), Math.round((8 + ihash(j, 6) * 12) * z)); } }
+          if (d.shake) ctx.restore();
           break; }
         case 'stump': if (layer !== 0) break; ctx.fillStyle = '#4a3524'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy - 8 * z), Math.round(8 * z), Math.round(9 * z)); ctx.fillStyle = '#6b5a3a'; ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy - 8 * z), Math.round(6 * z), Math.max(1, Math.round(z))); break;
         case 'mangrove': if (layer !== 0) break; {
@@ -447,6 +452,9 @@ const World = {
     ctx.beginPath();
     for (let sx = 0; sx <= W; sx += 2) { const wx = cam.toWorldX(sx); const sy = cam.toScreen(wx, this.surface(wx))[1]; if (sx === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy); }
     ctx.strokeStyle = mixColor('#b8ece6', '#3a6a68', 1 - light); ctx.stroke();
+    ctx.fillStyle = '#eafaf6';
+    for (let sx = 0; sx <= W; sx += 2) { const wx = cam.toWorldX(sx); const vv = Math.abs(Water.velocity(wx)); if (vv > 26) { const sy = cam.toScreen(wx, this.surface(wx))[1]; ctx.globalAlpha = clamp((vv - 26) / 60, 0, 0.9); ctx.fillRect(sx, Math.round(sy) - 1, 2, Math.max(1, Math.round(z))); } }
+    ctx.globalAlpha = 1;
     // organic scum riding the surface film
     ctx.globalAlpha = 0.2; ctx.fillStyle = '#6a7a4a';
     for (let sx2 = 0; sx2 < W; sx2 += 3) {

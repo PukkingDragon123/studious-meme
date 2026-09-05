@@ -1,0 +1,131 @@
+'use strict';
+// ---------------------------------------------------------------------------
+// Sandbox physics: a simulated water surface, deformable shore mud with tracks,
+// silt plumes, reactive vegetation and weather. Everything here is a small
+// spring system; the visuals fall out of the state.
+// ---------------------------------------------------------------------------
+const Water = {
+  DX: 4, N: 720, x0: 0, h: null, v: null, t: 0, wind: 0,
+  init(cx) { this.h = new Float32Array(this.N); this.v = new Float32Array(this.N); this.x0 = cx - this.N * this.DX / 2; },
+  recenter(cx) {
+    const mid = this.x0 + this.N * this.DX / 2, shift = Math.round((cx - mid) / this.DX);
+    if (Math.abs(shift) < this.N / 6) return;
+    const h = new Float32Array(this.N), v = new Float32Array(this.N);
+    for (let i = 0; i < this.N; i++) { const j = i + shift; if (j >= 0 && j < this.N) { h[i] = this.h[j]; v[i] = this.v[j]; } }
+    this.h = h; this.v = v; this.x0 += shift * this.DX;
+  },
+  ambient(x) { const t = this.t; return Math.sin(x * 0.021 + t * 2.1) * 1.2 + Math.sin(x * 0.053 - t * 3.3) * 0.7 + Math.sin(x * 0.0071 + t * 0.7) * (1 + this.wind * 2); },
+  surface(x) {
+    if (!this.h) return this.ambient(x);
+    const f = (x - this.x0) / this.DX, i = Math.floor(f);
+    if (i < 0 || i >= this.N - 1) return this.ambient(x);
+    const u = f - i;
+    return this.ambient(x) + this.h[i] * (1 - u) + this.h[i + 1] * u;
+  },
+  // vertical velocity of the surface at x (for foam and spray)
+  velocity(x) { if (!this.h) return 0; const i = Math.round((x - this.x0) / this.DX); return i >= 0 && i < this.N ? this.v[i] : 0; },
+  update(dt) {
+    if (!this.h) return; this.t += dt;
+    const h = this.h, v = this.v, N = this.N, K = 38, D = 1.3, S = 900;
+    dt = Math.min(dt, 1 / 40);
+    for (let i = 0; i < N; i++) v[i] += (-h[i] * K - v[i] * D) * dt;
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = 1; i < N - 1; i++) v[i] += S * (h[i - 1] + h[i + 1] - 2 * h[i]) * dt / 3;
+    }
+    for (let i = 0; i < N; i++) { h[i] += v[i] * dt; if (h[i] > 60) h[i] = 60; else if (h[i] < -60) h[i] = -60; }
+    v[0] = v[N - 1] = 0; h[0] *= 0.9; h[N - 1] *= 0.9;
+  },
+  // push the surface down (force > 0) or up around x
+  splash(x, force, width = 14) {
+    if (!this.h) return;
+    const c = (x - this.x0) / this.DX, w = Math.max(1, width / this.DX);
+    const a = Math.max(1, Math.floor(c - w)), b = Math.min(this.N - 2, Math.ceil(c + w));
+    for (let i = a; i <= b; i++) { const d = Math.abs(i - c) / w; if (d > 1) continue; const k = 0.5 * (1 + Math.cos(d * Math.PI)); this.v[i] += force * k; }
+  },
+  // a moving body dragging the surface along
+  wake(x, vx, size, dt) { if (Math.abs(vx) < 20) return; this.splash(x, clamp(Math.abs(vx) * 0.09, 2, 22) * size * dt * 60 * 0.12, 10 * size); this.splash(x - sign(vx) * 12 * size, -clamp(Math.abs(vx) * 0.05, 1, 14) * size * dt * 60 * 0.12, 8 * size); },
+};
+
+// shore mud: a recovering depression field along x, plus footprints
+const Mud = {
+  DX: 6, N: 400, x0: 0, d: null,
+  init(cx) { this.d = new Float32Array(this.N); this.x0 = cx - this.N * this.DX / 2; },
+  recenter(cx) {
+    const mid = this.x0 + this.N * this.DX / 2, shift = Math.round((cx - mid) / this.DX);
+    if (Math.abs(shift) < this.N / 6) return;
+    const d = new Float32Array(this.N);
+    for (let i = 0; i < this.N; i++) { const j = i + shift; if (j >= 0 && j < this.N) d[i] = this.d[j]; }
+    this.d = d; this.x0 += shift * this.DX;
+  },
+  depth(x) { if (!this.d) return 0; const f = (x - this.x0) / this.DX, i = Math.floor(f); if (i < 0 || i >= this.N - 1) return 0; const u = f - i; return this.d[i] * (1 - u) + this.d[i + 1] * u; },
+  // how soft the ground is at x: 1 at the waterline, 0 well inland or under deep water
+  softness(x) { const fy = World.floorY(x); if (fy > 0) return clamp(1 - fy / 60, 0, 1) * 0.6; return clamp(1 + fy / 45, 0, 1); },
+  press(x, amount, width = 10) {
+    if (!this.d) return; const soft = this.softness(x); if (soft <= 0) return;
+    const c = (x - this.x0) / this.DX, w = Math.max(1, width / this.DX);
+    const a = Math.max(0, Math.floor(c - w)), b = Math.min(this.N - 1, Math.ceil(c + w));
+    for (let i = a; i <= b; i++) { const k = 1 - Math.abs(i - c) / w; if (k <= 0) continue; const target = amount * soft * k; if (this.d[i] < target) this.d[i] = Math.min(target, this.d[i] + target * 0.3); }
+  },
+  update(dt) { if (!this.d) return; const r = Math.exp(-0.06 * dt); for (let i = 0; i < this.N; i++) this.d[i] *= r; },
+};
+
+// weather: rain showers roll through, with lightning
+const Weather = {
+  rain: 0, target: 0, timer: 40, thunder: 0, flash: 0, wind: 0,
+  update(dt) {
+    this.timer -= dt;
+    if (this.timer <= 0) { if (this.target > 0) { this.target = 0; this.timer = rand(70, 200); } else { this.target = rand(0.4, 1); this.timer = rand(30, 75); } }
+    this.rain = approach(this.rain, this.target, dt * 0.12);
+    this.wind = lerp(this.wind, this.rain * 0.8, dt * 0.2); Water.wind = this.wind;
+    if (this.flash > 0) this.flash -= dt * 3;
+    if (this.rain > 0.6 && chance(dt * 0.05 * this.rain)) { this.flash = 1; this.thunder = rand(0.6, 2.2); SFX.lightning && SFX.lightning(); }
+    if (this.thunder > 0) { this.thunder -= dt; if (this.thunder <= 0) SFX.thunder && SFX.thunder(); }
+  },
+  // rain drops around the camera; each drop that hits the surface disturbs it
+  spawn(dt, cam) {
+    if (this.rain <= 0.02) return;
+    const W = G.W, n = Math.round(this.rain * 90 * dt * 60 / 60 * 4);
+    for (let i = 0; i < n; i++) {
+      const wx = cam.toWorldX(rand(-40, W + 40)), top = cam.toWorld(0, -10)[1];
+      G.fx.add({ type: 'rain', x: wx, y: Math.min(top, -300) + rand(-60, 0), vx: -this.wind * 60 + rand(-8, 8), vy: rand(420, 520), life: 3 });
+    }
+  },
+};
+
+// reactive plants: decor items get a bend spring that things push on
+const Foliage = {
+  // apply a push to plants near (x, y) moving with vx; r is the body radius
+  disturb(x, y, vx, r) {
+    const D = World.decor; if (!D.length) return;
+    // decor is sorted by x: find the window
+    let lo = 0, hi = D.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (D[m].x < x - r - 20) lo = m + 1; else hi = m; }
+    for (let i = lo; i < D.length; i++) {
+      const d = D[i]; if (d.x > x + r + 20) break;
+      const k = FOLIAGE_KIND[d.type]; if (!k) continue;
+      const top = k.top(d), base = d.y;
+      if (y < Math.min(top, base) - 6 || y > Math.max(top, base) + 6) continue;
+      const push = clamp(vx * 0.05, -6, 6) + (x < d.x ? 1.2 : -1.2);
+      d.bv = (d.bv || 0) + push * 3;
+      if (k.tree && Math.abs(vx) > 60) { d.shake = 1; if (chance(0.5)) G.fx.leaf(d.x + rand(-14, 14), top + rand(0, 20), k.leaf || '#4f7a2a'); }
+      if (k.water && chance(0.3)) G.fx.bubbles(d.x, y, 1, 3);
+    }
+  },
+  update(dt) {
+    const D = World.decor;
+    for (const d of D) {
+      if (d.bv === undefined && !d.shake) continue;
+      d.bend = (d.bend || 0); d.bv = (d.bv || 0);
+      d.bv += (-d.bend * 22 - d.bv * 3.2) * dt; d.bend += d.bv * dt;
+      if (d.shake) { d.shake = Math.max(0, d.shake - dt * 1.6); }
+      if (Math.abs(d.bend) < 0.02 && Math.abs(d.bv) < 0.02 && !d.shake) { d.bend = 0; d.bv = 0; }
+    }
+  },
+};
+const FOLIAGE_KIND = {
+  weed: { top: d => d.y - d.h, water: true }, algae: { top: d => d.y - d.h, water: true }, reed: { top: d => d.top }, cattail: { top: d => d.top },
+  sawgrass: { top: d => d.y - 12 * d.s }, palmetto: { top: d => d.y - 16 * d.s }, fern: { top: d => d.y - 13 * d.s }, bush: { top: d => d.y - 12 * d.s },
+  hyacinth: { top: d => -10, water: true }, duckweed: { top: d => -3, water: true }, lily: { top: d => -3, water: true },
+  cypress: { top: d => d.y - d.h, tree: true, leaf: '#3a6a30' }, oak: { top: d => d.y - d.h, tree: true, leaf: '#4a7a3a' }, palm: { top: d => d.y - d.h, tree: true, leaf: '#5a8a3a' },
+  mangrove: { top: d => d.y - 30 * d.s, tree: true, leaf: '#3f7a3a' }, vine: { top: d => d.y - d.h }, flower: { top: d => d.y - 10 },
+};

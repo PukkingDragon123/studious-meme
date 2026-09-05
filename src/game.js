@@ -145,6 +145,7 @@ const G = {
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
+    Water.init(0); Mud.init(0); Weather.rain = 0; Weather.target = 0; Weather.timer = rand(40, 120);
     if (demo) this.seedNursery(0, 1);
     if (!demo) { this.runs++; this.save.runs++; this.storeSave(); this.beginEgg(); }
   },
@@ -224,13 +225,13 @@ const G = {
       else if (r < 0.5) Spawn.school(x, clamp(30 + rng() * 200, 10, fy - 15), D > 0.3 ? 'bass' : 'tilapia');
       else if (r < 0.57) this.add(new Frog(x));
       else if (r < 0.64 && D > 0.3) this.add(new Turtle(x, clamp(40 + rng() * 100, 10, fy - 15)));
-      else if (r < 0.7) this.add(new Bottom(x, rng() < 0.5 ? 'crayfish' : rng() < 0.6 ? 'crab' : 'snail'));
+      else if (r < 0.7) this.add(new Bottom(x, rng() < 0.4 ? 'crayfish' : rng() < 0.5 ? 'crab' : rng() < 0.5 ? 'snail' : rng() < 0.5 ? 'shrimp' : 'fiddler'));
       else if (r < 0.76) Spawn.duck(x);
       else if (r < 0.8) this.add(new Dragonfly(x));
       else if (r < 0.84 && fy > 250) Spawn.school(x, fy - 30, rng() < 0.5 ? 'catfish' : 'eel');
       else if (r < 0.88 && fy > 200 && D > 0.6) this.add(new Ray(x));
       else if (r < 0.92 && D > 1.2) Spawn.school(x, clamp(40 + rng() * 200, 10, fy - 15), rng() < 0.5 ? 'gar' : 'bowfin');
-      else if (r < 0.96 && D > 0.5) Spawn.school(x, clamp(10 + rng() * 60, 8, fy - 15), 'babygator');
+      else if (r < 0.96 && D > 0.5) Spawn.school(x, clamp(10 + rng() * 60, 8, fy - 15), rng() < 0.5 ? 'babygator' : 'shiner');
     }
   },
   add(e) { this.ents.push(e); return e; },
@@ -288,9 +289,9 @@ const G = {
     this.shedPending = true; this.shedTier = Math.min(P.tier + 1, TIERS.length - 1); this.shedT = 0; this.state = 'shedding';
     this.slowmo(0.12, 1.4); SFX.shed(); this.whiteFlash(0.8); this.shake(6);
     const n = P.chain.nodes;
-    for (let i = 0; i < n.length; i++) { const part = i === 0 ? P.parts.head : i <= 5 ? P.parts.body[i - 1] : P.parts.tail[i - 6]; this.fx.husk(part.c, 0, 0, part.w, part.h, n[i].x, n[i].y, n[i].a, P.size / CROC_PX, P.facing); }
-    for (let i = 0; i < 14; i++) this.fx.glow(P.x + rand(-40, 40) * P.size, P.y + rand(-16, 16) * P.size, rand(2, 5) * P.size, '#ffffff', rand(0.4, 1.0));
-    this.fx.bubbles(P.x, P.y, 30, 30 * P.size, -20);
+    for (let i = 0; i < n.length; i++) { const part = i === 0 ? P.parts.head : i <= 5 ? P.parts.body[i - 1] : P.parts.tail[i - 6]; this.fx.husk(part.c, 0, 0, part.w, part.h, n[i].x, n[i].y, n[i].a, P.vis / CROC_PX, P.facing); }
+    for (let i = 0; i < 14; i++) this.fx.glow(P.x + rand(-40, 40) * P.vis, P.y + rand(-16, 16) * P.vis, rand(2, 5) * P.vis, '#ffffff', rand(0.4, 1.0));
+    this.fx.bubbles(P.x, P.y, 30, 30 * P.vis, -20);
     this.fx.text(P.x, P.y - 30 * P.size, 'SHEDDING!', { color: '#ffffff', scale: 3, life: 1.5 });
   },
   finishShed(card) {
@@ -298,7 +299,7 @@ const G = {
     applyCard(P, card); P.tier = this.shedTier; P.sheds++; P.hp = P.maxHp; P.lastMax = P.maxHp; P.invuln = 2.5; P.hunger = Math.max(P.hunger, 60);
     this.shedPending = false; this.state = 'play'; this.slowT = 0; this.slowScale = 1; this.timeScale = 1;
     this.banner = { text: 'NEW FORM: ' + TIERS[P.tier].name, sub: card.node.name, t: 3.5, max: 3.5, color: card.path ? PATHS[card.path].color : '#ffffff' };
-    SFX.pick(); SFX.roar(P.size); this.whiteFlash(0.5); this.fx.glow(P.x, P.y, 60 * P.size, '#ffffff', 0.8); this.addScore(500 * P.tier);
+    SFX.pick(); SFX.roar(P.size); this.whiteFlash(0.5); this.fx.glow(P.x, P.y, 60 * P.vis, '#ffffff', 0.8); this.addScore(500 * P.tier);
     if (card.node.evo) this.fx.text(P.x, P.y - 40 * P.size, 'EVOLVED!', { color: card.path ? PATHS[card.path].color : '#fff', scale: 3, life: 2 });
     if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
     if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
@@ -324,28 +325,31 @@ const G = {
       const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(80, 520)), fy = World.floorY(x);
       if (fy < 20) { this.spawnLand(x, D); }
       else {
+        const night = World.light(this.day) < 0.4;
         const table = [
-          ['minnow', 4], ['bluegill', 3.5], ['mullet', 3], ['tilapia', 2.5], ['babygator', 1.6],
-          ['bass', D >= 0.3 ? 2.5 : 0.5], ['peacock', D >= 0.5 ? 2 : 0], ['bowfin', D >= 0.8 ? 1.6 : 0], ['snook', D >= 1 ? 1.6 : 0],
-          ['catfish', fy > 250 && D >= 0.8 ? 1.6 : 0], ['eel', fy > 300 && D >= 1 ? 1.2 : 0],
-          ['gar', D >= 1.5 ? 1.6 : 0], ['tarpon', D >= 2.5 ? 1.6 : 0], ['otter', D >= 1.5 ? 1 : 0], ['nutria', D >= 0.5 ? 1.4 : 0],
-          ['manatee', D >= 3 && fy > 200 ? 0.7 : 0], ['grouper', D >= 3.5 && fy > 420 ? 0.8 : 0], ['sawfish', D >= 4 && fy > 260 ? 0.7 : 0],
-          ['frog', 2], ['turtle', D >= 0.4 ? 2.2 : 0.8], ['bottom', 2.4], ['ray', fy > 180 && D >= 0.6 ? 1.2 : 0],
-          ['duck', 1.2], ['heron', 1], ['divebird', 1.6], ['vulture', 0.7], ['dragonfly', 1.2],
+          ['minnow', 4], ['shiner', 3], ['sunfish', 3], ['bluegill', 3.5], ['mullet', 3], ['ladyfish', 1.5], ['tilapia', 2.5], ['snapper', 1.6], ['babygator', 1.4],
+          ['bass', D >= 0.3 ? 2.5 : 0.5], ['peacock', D >= 0.5 ? 2 : 0], ['sheepshead', D >= 0.5 ? 1.2 : 0], ['walkingcat', D >= 0.4 ? 1.2 : 0], ['bowfin', D >= 0.8 ? 1.6 : 0], ['snook', D >= 1 ? 1.6 : 0], ['redfish', D >= 1 ? 1.2 : 0], ['snakehead', D >= 1.2 ? 1.2 : 0],
+          ['catfish', fy > 250 && D >= 0.8 ? 1.6 : 0], ['eel', fy > 300 && D >= 1 ? 1.2 : 0], ['flgar', D >= 0.8 ? 1.6 : 0],
+          ['gar', D >= 1.5 ? 1.4 : 0], ['tarpon', D >= 2.5 ? 1.6 : 0], ['bonnet', D >= 2 && fy > 200 ? 1 : 0], ['otter', D >= 1.5 ? 1 : 0], ['nutria', D >= 0.5 ? 1.4 : 0],
+          ['manatee', D >= 3 && fy > 200 ? 0.7 : 0], ['dolphin', D >= 3.5 && fy > 260 ? 0.6 : 0], ['grouper', D >= 3.5 && fy > 420 ? 0.8 : 0], ['sawfish', D >= 4 && fy > 260 ? 0.7 : 0],
+          ['frog', 2], ['pigfrog', 1.2], ['treefrog', 1], ['turtle', D >= 0.4 ? 2.2 : 0.8], ['slider', 1.6], ['cooter', 1.2], ['softshell', D >= 0.6 ? 1 : 0], ['gatorsnapper', D >= 1.5 && fy > 120 ? 0.8 : 0],
+          ['bottom', 2.4], ['ray', fy > 180 && D >= 0.6 ? 1.2 : 0],
+          ['duck', 1.2], ['heron', 1.2], ['divebird', 1.6], ['vulture', 0.6], ['skybird', 1], ['dragonfly', 1.2],
           ['kayak', D >= 2 ? 0.7 : 0], ['pontoon', D >= 1.5 ? 0.7 : 0], ['moccasin', D >= 1 ? 1 : 0],
         ];
         const kind = weightedPick(table);
         if (kind === 'mullet') { const n = randi(4, 8); const lead = new Mullet(x, clamp(rand(10, 70), 8, fy - 15)); this.add(lead); for (let i = 1; i < n; i++) this.add(new Mullet(x + rand(-30, 30), lead.y + rand(-16, 16), lead)); }
         else if (FISH[kind]) { const d = FISH[kind]; const y = d.nearFloor ? fy - 30 : clamp(rand(d.band[0], d.band[1]), 10, fy - 15); Spawn.school(x, y, kind); }
-        else if (kind === 'frog') this.add(new Frog(x));
-        else if (kind === 'turtle') this.add(new Turtle(x, clamp(rand(30, 150), 10, fy - 15)));
-        else if (kind === 'bottom') { const n = randi(1, 3); for (let i = 0; i < n; i++) this.add(new Bottom(x + rand(-40, 40), weightedPick([['crayfish', 3], ['crab', 2], ['snail', 1.5]]))); }
+        else if (kind === 'frog' || kind === 'pigfrog' || kind === 'treefrog') this.add(new Frog(x, kind));
+        else if (kind === 'turtle' || kind === 'slider' || kind === 'cooter' || kind === 'softshell' || kind === 'gatorsnapper') this.add(new Turtle(x, clamp(rand(30, 150), 10, fy - 15), kind));
+        else if (kind === 'bottom') { const n = randi(1, 3); for (let i = 0; i < n; i++) this.add(new Bottom(x + rand(-40, 40), weightedPick([['crayfish', 3], ['crab', 2], ['snail', 1.5], ['fiddler', 1.5], ['shrimp', 2]]))); }
+        else if (kind === 'skybird') { const k2 = weightedPick([['kite', 1.5], ['hawk', 1.2], ['owl', night ? 2 : 0], ['eagle', D >= 1.5 ? 0.8 : 0], ['egret', 1], ['woodstork', 0.8], ['ibis', 1]]); Spawn.flock(x, -side, k2, k2 === 'ibis' || k2 === 'egret' ? randi(2, 5) : 1); }
         else if (kind === 'ray') this.add(new Ray(x));
         else if (kind === 'duck') Spawn.duck(x);
         else if (kind === 'dragonfly') { const n = randi(1, 3); for (let i = 0; i < n; i++) this.add(new Dragonfly(x + rand(-40, 40))); }
-        else if (kind === 'divebird') { const k2 = choice(['anhinga', 'osprey', 'pelican', 'anhinga']); this.add(new DiveBird(x, -rand(70, 150), k2, -side)); }
+        else if (kind === 'divebird') { const k2 = choice(['anhinga', 'osprey', 'pelican', 'anhinga', 'cormorant', 'kingfisher', 'kingfisher']); this.add(new DiveBird(x, -rand(70, 150), k2, -side)); }
         else if (kind === 'vulture') this.add(new Vulture(x, -rand(120, 180), -side));
-        else if (kind === 'heron') { const hx = World.findX(x, xx => { const f = World.floorY(xx); return f > 4 && f < 40; }, 500, 12); if (hx !== null) { if (chance(0.25)) { const b = new Bird(hx, 0, 'spoonbill', 'wade'); this.add(b); } else Spawn.heron(hx); } else Spawn.flock(x, -side, 'egret', 2); }
+        else if (kind === 'heron') { const hx = World.findX(x, xx => { const f = World.floorY(xx); return f > 4 && f < 40; }, 500, 12); if (hx !== null) { const k2 = weightedPick([['heron', 3], ['egret', 2], ['snowy', 2], ['littleblue', 1.2], ['tricolor', 1.2], ['ibis', 1.5], ['spoonbill', 1], ['woodstork', 0.8], ['limpkin', 1], ['gallinule', 1]]); this.add(new Bird(hx, 0, k2, 'wade')); } else Spawn.flock(x, -side, 'egret', 2); }
         else if (kind === 'kayak') this.add(new Kayak(x, -side));
         else if (kind === 'pontoon') { const wx = World.findX(x, xx => World.floorY(xx) > 60, 500, 30); if (wx !== null) Spawn.boat(wx, chance(0.5) ? 'pontoon' : 'jon', -side); }
         else if (kind === 'moccasin') this.add(new Snake(x, 4, 'moccasin'));
@@ -356,8 +360,9 @@ const G = {
   spawnLand(x, D) {
     if (World.floorY(x) > -3) return;
     const table = [
-      ['raccoon', 3], ['armadillo', 2.2], ['iguana', 2], ['deer', D >= 0.6 ? 2.5 : 0.6], ['coyote', D >= 1 ? 1.6 : 0],
-      ['boar', D >= 1.6 ? 1.5 : 0], ['panther', D >= 2.4 ? 1.2 : 0], ['bear', D >= 3 ? 0.9 : 0],
+      ['raccoon', 3], ['rabbit', 2.5], ['armadillo', 2.2], ['iguana', 2], ['opossum', World.light(this.day) < 0.5 ? 2 : 0.6], ['deer', D >= 0.6 ? 2 : 0.6], ['doe', D >= 0.4 ? 2 : 0.8],
+      ['fox', D >= 0.8 ? 1.2 : 0], ['coyote', D >= 1 ? 1.4 : 0], ['bobcat', D >= 1.2 ? 1 : 0], ['dog', D >= 1 ? 0.8 : 0],
+      ['boar', D >= 1.6 ? 1.5 : 0], ['panther', D >= 2.4 ? 1.2 : 0], ['bear', D >= 3 ? 0.9 : 0], ['cow', D >= 2.5 ? 0.6 : 0],
       ['fisherman', D >= 1 ? 1.4 : 0], ['ranger', D >= 1.6 ? 1 : 0], ['survivor', D >= 0.6 ? 0.8 : 0], ['heron', 1.5],
     ];
     const k = weightedPick(table); if (k === 'heron') Spawn.heron(x); else this.add(new LandAnimal(x, k));
@@ -500,7 +505,7 @@ const G = {
     Input.tickTouch(raw);
     Input.mouse.moved = false;
     const P = this.player;
-    SFX.update({ dt: raw, night: 1 - World.light(this.day), danger: this.state === 'play' ? this.dangerLevel() : 0, engine: this.engineNear, underwater: P && P.inWater && this.state !== 'title' ? 1 : 0 });
+    SFX.update({ dt: raw, night: 1 - World.light(this.day), danger: this.state === 'play' ? this.dangerLevel() : 0, engine: this.engineNear, underwater: P && P.inWater && this.state !== 'title' ? 1 : 0, rain: Weather.rain });
   },
   demoInput() {
     const P = this.player, t = this.titleT;
@@ -525,6 +530,8 @@ const G = {
     this.engineNear = 0;
     P.update(dt, inp);
     World.ensure(P.x, this.W / this.cam.zoom + 900);
+    Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
+    Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -538,7 +545,7 @@ const G = {
   },
   updateCamera(dt) {
     const P = this.player, c = this.cam;
-    const tz = clamp(1.7 / Math.pow(P.size, 0.55), 0.3, 1.7) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
+    const tz = clamp(1.45 / Math.pow(P.vis, 0.95), 0.26, 1.45) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
     c.zoom = lerp(c.zoom, tz, 1 - Math.exp(-2.5 * dt));
     const tx = P.x + P.vx * 0.22; let ty = P.y + P.vy * 0.12;
     if (this.state === 'title') ty = Math.max(ty, 75);
@@ -571,6 +578,9 @@ const G = {
     this.fx.drawClouds(ctx, cam);
     // world space
     ctx.save(); ctx.translate(this.W / 2 + this.shakeX, this.H / 2 + this.shakeY); ctx.scale(cam.zoom, cam.zoom); ctx.translate(-cam.x, -cam.y);
+    // zoomed out past 1:1 the rigged sprites are minified; nearest sampling turns their dithered scales into moire,
+    // so let the browser box-filter them (mipmapped at 'medium') and go back to crisp pixels for the HUD
+    ctx.imageSmoothingEnabled = cam.zoom < 0.97; ctx.imageSmoothingQuality = 'medium';
     const left = cam.toWorldX(-120), right = cam.toWorldX(this.W + 120);
     const vis = [];
     for (const e of this.ents) if (e.x > left - e.r * e.size * 4 && e.x < right + e.r * e.size * 4) vis.push(e);
@@ -581,12 +591,12 @@ const G = {
     if (this.state === 'egg') this.drawEgg(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
+    ctx.imageSmoothingEnabled = false;
     this.fx.draw(ctx, cam);
     World.drawDecor(ctx, cam, 1, day);
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
-    this.fx.drawTexts(ctx, cam);
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;

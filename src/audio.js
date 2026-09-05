@@ -149,6 +149,8 @@ const SFX = {
   death() { this.roar(2); this.noise({ t: 1.8, v: 0.4, a: 0.1, filter: { f: 600, f2: 40 } }); this.tone({ type: 'sine', f: 50, f2: 20, t: 2.0, v: 0.4, a: 0.1 }); },
   levelup() { [440, 554, 659, 880].forEach((f, i) => this.tone({ type: 'square', f, t: 0.22, v: 0.09, delay: i * 0.07, filter: { f: 2500 } })); },
   breach(pan = 0) { this.splash(1.3, pan); this.noise({ t: 0.5, v: 0.2, a: 0.02, filter: { type: 'highpass', f: 2500, f2: 600 }, pan }); },
+  thunder() { this.noise({ t: 2.4, v: 0.5, a: 0.05, filter: { f: 260, f2: 40 } }); this.tone({ type: 'sine', f: 48, f2: 22, t: 2.2, v: 0.45, a: 0.08 }); this.noise({ delay: 0.3, t: 1.6, v: 0.25, filter: { f: 120 } }); },
+  lightning() { this.noise({ t: 0.08, v: 0.25, filter: { type: 'highpass', f: 3000 } }); },
   // ---------- ambient layer ----------
   startAmbient() {
     const c = this.ctx;
@@ -170,7 +172,11 @@ const SFX = {
     const ef = c.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 500;
     const eg = c.createGain(); eg.gain.value = 0;
     eo.connect(ef); eo2.connect(ef); ef.connect(eg); eg.connect(this.sfxBus); eo.start(); eo2.start();
-    this.amb = { water: g, uw: ug, engine: eg, t: 0, nextBird: 1, nextFrog: 2, nextCricket: 0.5 };
+    // rain hiss
+    const rs = c.createBufferSource(); rs.buffer = this.noiseBuf; rs.loop = true;
+    const rf = c.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 2600; rf.Q.value = 0.6;
+    const rg = c.createGain(); rg.gain.value = 0; rs.connect(rf); rf.connect(rg); rg.connect(this.musicBus); rs.start();
+    this.amb = { water: g, uw: ug, engine: eg, rain: rg, t: 0, nextBird: 1, nextFrog: 2, nextCricket: 0.5 };
   },
   startMusic() {
     const c = this.ctx;
@@ -198,6 +204,7 @@ const SFX = {
     a.uw.gain.value = lerp(a.uw.gain.value, env.underwater * 0.09, 0.1);
     a.engine.gain.value = lerp(a.engine.gain.value, env.engine * 0.12, 0.08);
     a.water.gain.value = lerp(a.water.gain.value, env.underwater > 0.5 ? 0.01 : 0.035, 0.05);
+    a.rain.gain.value = lerp(a.rain.gain.value, (env.rain || 0) * (env.underwater > 0.5 ? 0.02 : 0.09), 0.05);
     const night = env.night;
     a.nextBird -= dt; if (a.nextBird <= 0) { a.nextBird = rand(2, 7) + night * 12; if (night < 0.6 && chance(0.7)) this.bird(rand(-0.8, 0.8)); }
     a.nextFrog -= dt; if (a.nextFrog <= 0) { a.nextFrog = rand(1.5, 5) - night * 1; if (chance(0.3 + night * 0.6)) this.frog(rand(-0.8, 0.8)); }

@@ -86,42 +86,6 @@
 })();
 
 // ---------------------------------------------------------------------------
-// data tables
-// ---------------------------------------------------------------------------
-Object.assign(FISH, {
-  mullet: { frames: SPR.mullet, r: 4, hp: 3, mass: 4, speed: 95, band: [8, 90], school: [4, 8], sizeClass: 0.3, name: 'MULLET', flee: 110, gibs: 2, jumper: true },
-  tilapia: { frames: SPR.tilapia, r: 4, hp: 4, mass: 5, speed: 60, band: [15, 220], school: [3, 6], sizeClass: 0.35, name: 'TILAPIA', flee: 100, gibs: 2 },
-  peacock: { frames: SPR.peacock, r: 5, hp: 12, mass: 10, speed: 105, band: [20, 260], school: [1, 3], sizeClass: 0.6, name: 'PEACOCK BASS', flee: 130, gibs: 3, aggr: 4, aggrMax: 1.3 },
-  bowfin: { frames: SPR.bowfin, r: 5, hp: 18, mass: 14, speed: 70, band: [60, 400], school: [1, 2], sizeClass: 0.7, name: 'BOWFIN', flee: 90, gibs: 3, aggr: 5, aggrMax: 1.5 },
-  snook: { frames: SPR.snook, r: 6, hp: 22, mass: 20, speed: 120, band: [20, 300], school: [1, 3], sizeClass: 0.9, name: 'SNOOK', flee: 140, gibs: 3 },
-  eel: { frames: SPR.eel, r: 4, hp: 16, mass: 12, speed: 80, band: [300, 900], nearFloor: true, school: [1, 1], sizeClass: 0.6, name: 'AMERICAN EEL', flee: 80, gibs: 3, shock: 6 },
-  grouper: { frames: SPR.grouper, r: 12, hp: 300, mass: 380, speed: 55, band: [400, 900], school: [1, 1], sizeClass: 4.2, name: 'GOLIATH GROUPER', flee: 70, gibs: 6, pred: 16 },
-  sawfish: { frames: SPR.sawfish, r: 10, hp: 240, mass: 320, speed: 110, band: [200, 800], school: [1, 1], sizeClass: 4.0, name: 'SMALLTOOTH SAWFISH', flee: 90, gibs: 5, aggr: 14, aggrMax: 5 },
-  nutria: { frames: SPR.nutria, r: 5, hp: 14, mass: 20, speed: 110, band: [4, 60], school: [1, 3], sizeClass: 0.8, name: 'NUTRIA', flee: 150, gibs: 3, mammal: true },
-  babygator: { frames: SPR.babygator, r: 4, hp: 8, mass: 10, speed: 85, band: [4, 120], school: [2, 5], sizeClass: 0.5, name: 'GATOR HATCHLING', flee: 120, gibs: 2 },
-});
-const BOTTOM = {
-  crayfish: { frames: SPR.crayfish, r: 3, hp: 4, mass: 3, sizeClass: 0.18, name: 'CRAYFISH', speed: 26, armor: 3, gibs: 2, shell: true },
-  crab: { frames: SPR.crab, r: 4, hp: 8, mass: 5, sizeClass: 0.3, name: 'BLUE CRAB', speed: 34, armor: 6, gibs: 2, pinch: 3, shell: true },
-  snail: { frames: SPR.snail, r: 3, hp: 3, mass: 2, sizeClass: 0.15, name: 'APPLE SNAIL', speed: 6, armor: 4, gibs: 1, shell: true },
-};
-Object.assign(BIRDS, {
-  anhinga: { fly: SPR.anhingaFly, hp: 12, mass: 18, sizeClass: 0.8, name: 'ANHINGA', feathers: '#2a2a2a', speed: 105, r: 6, diver: 'swim' },
-  osprey: { fly: SPR.ospreyFly, hp: 14, mass: 22, sizeClass: 0.9, name: 'OSPREY', feathers: '#c8c0b0', speed: 140, r: 7, diver: 'plunge' },
-  spoonbill: { fly: SPR.spoonbillFly, stand: SPR.heron, hp: 12, mass: 20, sizeClass: 0.8, name: 'ROSEATE SPOONBILL', feathers: '#f0a0b0', speed: 100, r: 6, flee: 130 },
-  pelican: { fly: SPR.pelicanFly, hp: 18, mass: 30, sizeClass: 1.0, name: 'BROWN PELICAN', feathers: '#d8d8d0', speed: 115, r: 8, diver: 'plunge' },
-  vulture: { fly: SPR.vultureFly, hp: 10, mass: 16, sizeClass: 0.7, name: 'BLACK VULTURE', feathers: '#2a2a2a', speed: 85, r: 6, scavenger: true },
-});
-Object.assign(LAND, {
-  panther: { spr: SPR.panther, hp: 80, mass: 110, sizeClass: 2.3, name: 'FLORIDA PANTHER', speed: 220, flee: 60, r: 10, gibs: 5, charge: 22, h: 9, hunter: true },
-  bear: { spr: SPR.bear, hp: 160, mass: 260, sizeClass: 3.2, name: 'BLACK BEAR', speed: 130, flee: 50, r: 12, gibs: 6, charge: 30, h: 6 },
-  armadillo: { spr: SPR.armadillo, hp: 14, mass: 12, sizeClass: 0.6, name: 'ARMADILLO', speed: 70, flee: 80, r: 6, gibs: 3, h: 3, armor: 6 },
-  iguana: { spr: SPR.iguana, hp: 16, mass: 18, sizeClass: 0.9, name: 'GREEN IGUANA', speed: 120, flee: 110, r: 7, gibs: 3, h: 5 },
-  coyote: { spr: SPR.coyote, hp: 34, mass: 45, sizeClass: 1.4, name: 'COYOTE', speed: 180, flee: 90, r: 8, gibs: 4, charge: 10, h: 5, hunter: true },
-  ranger: { spr: SPR.ranger, hp: 25, mass: 70, sizeClass: 2.0, name: 'RANGER', speed: 140, flee: 130, r: 6, gibs: 4, human: true, h: 6 },
-});
-
-// ---------------------------------------------------------------------------
 // NPC predation: the swamp eats itself
 // ---------------------------------------------------------------------------
 const Eco = {
@@ -156,14 +120,13 @@ const Eco = {
 // ---------------------------------------------------------------------------
 class Bottom extends Entity {
   constructor(x, kind) {
-    super(x, 0); const d = BOTTOM[kind]; this.def = d; this.kind = kind;
-    Object.assign(this, { frames: d.frames, r: d.r, hp: d.hp, maxHp: d.hp, mass: d.mass, sizeClass: d.sizeClass, name: d.name, armor: d.armor || 0, gibs: d.gibs });
-    this.type = 'bottom'; this.y = World.floorY(x) - 2; this.dir = chance(0.5) ? 1 : -1; this.facing = this.dir; this.layer = -1;
+    super(x, 0); const d = BOTTOM[kind]; this.useSpecies(kind); this.def = d;
+    this.type = 'bottom'; this.y = World.floorY(x) - this.groundOff; this.dir = chance(0.5) ? 1 : -1; this.facing = this.dir; this.layer = -1;
     this.retarget = rand(0.5, 2); this.scuttle = 0; this.bloodColors = ['#7a3010', '#a05020', '#c07040'];
   }
   update(dt) {
     this.tick(dt); const P = G.player;
-    this.y = World.floorY(this.x) - 2;
+    this.y = World.floorY(this.x) - this.groundOff;
     this.retarget -= dt;
     const scared = this.senses(60) || (P.st.magnet && this.distTo(P) < P.st.magnet);
     if (scared) { this.dir = sign(this.x - P.x) || 1; this.scuttle = 0.8; }
@@ -172,7 +135,7 @@ class Bottom extends Entity {
     if (this.scuttle > 0) this.scuttle -= dt;
     this.x += this.dir * sp * dt; this.facing = this.dir;
     if (this.def.pinch && !P.dead && P.size < 1.2 && P.nearestDist(this.x, this.y) < 10 && chance(dt * 1.5)) { P.hurt(this.def.pinch, this, 'bite'); SFX.clank(this.pan); }
-    this.animate(dt, this.scuttle > 0 ? 12 : 4);
+    this.anim.phase += dt * (this.scuttle > 0 ? 12 : 4);
     if (chance(dt * 0.4)) G.fx.add({ type: 'foam', x: this.x, y: this.y + 2, vx: 0, vy: 0, s: 1, life: 0.4 });
   }
   takeDamage(dmg, src, opts) {
@@ -188,7 +151,7 @@ class Bottom extends Entity {
 // ---------------------------------------------------------------------------
 class Ray extends Entity {
   constructor(x) {
-    super(x, 0); this.frames = SPR.ray; this.r = 7; this.hp = 26; this.maxHp = 26; this.mass = 30; this.sizeClass = 1.1; this.name = 'SOUTHERN STINGRAY'; this.type = 'ray'; this.gibs = 4;
+    super(x, 0); this.useSpecies('ray'); this.type = 'ray';
     this.y = World.floorY(x) - 3; this.buried = true; this.glide = 0; this.retarget = rand(3, 8); this.stingCd = 0; this.layer = -1;
   }
   update(dt) {
@@ -206,9 +169,10 @@ class Ray extends Entity {
     if (near && this.stingCd <= 0 && !P.dead) { this.stingCd = 3; P.hurt(9, this, 'bite'); P.envenom(4, 4); G.fx.text(P.x, P.y - 20, 'STUNG!', { color: '#60ff60' }); SFX.hurt(); }
   }
   draw(ctx) {
-    const s = this.spr, img = this.flash > 0 ? spriteWhite(s) : s;
-    if (this.buried) { ctx.globalAlpha = 0.55; drawSpr(ctx, img, this.x, this.y, 0, this.facing, 0.7); ctx.globalAlpha = 1; }
-    else drawSpr(ctx, img, this.x, this.y, clamp(this.vy / 200, -0.3, 0.3), this.facing, 1 + Math.sin(this.t * 4) * 0.12);
+    this.anim.phase += 0.016 * 4; this.anim.speed = this.buried ? 0 : 1;
+    if (this.buried) ctx.globalAlpha = 0.55;
+    this.rig.draw(ctx, this.x, this.y, this.facing, this.buried ? 0 : clamp(this.vy / 200, -0.3, 0.3), this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
+    ctx.globalAlpha = 1;
   }
 }
 // ---------------------------------------------------------------------------
@@ -278,9 +242,11 @@ class DiveBird extends Bird {
     if (this.phase === 'leave') { this.splashed = false; if (this.phaseT <= 0) { this.phase = 'cruise'; this.phaseT = rand(3, 8); } if (this.mode !== 'drown') { this.escaping = Math.max(this.escaping || 0, 0.2); } }
     super.update(dt);
   }
-  get spr() {
-    if (this.def.diver === 'swim' && (this.phase === 'swimdive' && this.y > World.surface(this.x))) return SPR.anhingaSwim[this.frame % 2];
-    return super.spr;
+  draw(ctx) {
+    const inWater = this.y > World.surface(this.x);
+    const mode = this.phase === 'plunge' ? 'dive' : (this.phase === 'swimdive' && inWater) ? 'swim' : this.mode === 'fly' ? 'fly' : this.mode === 'drown' ? 'swim' : 'stand';
+    this.anim.mode = mode;
+    this.rig.draw(ctx, this.x, this.y, this.facing, mode === 'stand' ? 0 : this.angle, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
   }
 }
 // ---------------------------------------------------------------------------
@@ -330,7 +296,7 @@ class Mullet extends Fish {
     if (this.airborne) {
       this.tick(dt); this.vy += 620 * dt; this.move(dt);
       this.angle = clamp(Math.atan2(this.vy, this.vx), -1.2, 1.2); this.facing = sign(this.vx || 1);
-      this.animate(dt, 14);
+      this.anim.phase += dt * 14; this.anim.speed = 1;
       if (this.y > s) { this.airborne = false; G.fx.splash(this.x, 0.5, this.vx); SFX.splash(0.4, this.pan); this.vy *= 0.3; }
       return;
     }

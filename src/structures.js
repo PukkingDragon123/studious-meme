@@ -8,37 +8,38 @@ class Structure extends Entity {
     super(x, 0); this.kind = kind; this.type = 'structure'; this.edible = false; this.bleeds = false; this.latchable = false;
     this.persistent = true; this.layer = 1; this.mass = 0; this.threat = 0; this.armor = 10; this.collapsed = false; this.collapseT = 0;
     this.occupants = []; this.seed = ihash(Math.round(x), 13); this.lightOn = false;
+    this.ss = ftToPx(5.8) / 60;   // local units are drawn so a person is a real 5.8 ft
     const surf = 0;
     switch (kind) {
       case 'dock': {
         this.name = 'FISHING DOCK'; this.len = 40 + Math.round(this.seed * 46); this.hp = 120; this.deckY = -13;
         this.dir = World.floorY(x - 60) < 0 ? 1 : -1; // extend out over the water
         this.pilings = []; for (let i = 1; i <= 4; i++) this.pilings.push({ ox: this.dir * (i * this.len / 4), hp: 30, dead: false });
-        this.r = this.len; break;
+        this.r = this.len * this.ss; break;
       }
       case 'stilthouse': {
         this.name = 'FISH CAMP'; this.hp = 220; this.deckY = -34; this.w = 46; this.r = 34;
         this.pilings = []; for (let i = 0; i < 4; i++) this.pilings.push({ ox: -18 + i * 12, hp: 45, dead: false });
-        this.r = 30; break;
+        this.r = 30 * this.ss; break;
       }
-      case 'boatramp': { this.name = 'BOAT RAMP'; this.hp = 400; this.armor = 40; this.r = 30; this.dir = World.floorY(x - 50) < 0 ? 1 : -1; break; }
-      case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16; this.deckY = -58; break; }
-      case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
-      case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6; break; }
-      case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8; break; }
-      case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10; break; }
+      case 'boatramp': { this.name = 'BOAT RAMP'; this.hp = 400; this.armor = 40; this.r = 30 * this.ss; this.dir = World.floorY(x - 50) < 0 ? 1 : -1; break; }
+      case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16 * this.ss; this.deckY = -58; break; }
+      case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
+      case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6 * this.ss; break; }
+      case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8 * this.ss; break; }
+      case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
     }
     this.maxHp = this.hp;
     this.y = kind === 'crabtrap' ? World.surface(x) : kind === 'buoy' ? World.surface(x) : World.floorY(x);
     if (kind === 'dock' || kind === 'stilthouse' || kind === 'tower' || kind === 'campfire') this.y = Math.min(0, World.floorY(x));
   }
-  addOccupant(type, ox, oy) { this.occupants.push({ type, ox, oy, alive: true, t: rand(10), flash: 0 }); }
+  addOccupant(type, ox, oy) { const sp = SPECIES[type] || SPECIES.tourist; this.occupants.push({ type, ox, oy, alive: true, t: rand(10), flash: 0, rig: rigOf(sp), h: ftToPx(sp.ft) }); }
   get alivePeople() { return this.occupants.filter(o => o.alive); }
-  occPos(o) { return [this.x + o.ox, this.y + o.oy]; }
+  occPos(o) { return [this.x + o.ox * this.ss, this.y + o.oy * this.ss - o.h * 0.5]; }
   hitTest(x, y, r) {
     if (this.collapsed) return false;
-    for (const o of this.alivePeople) { const [px, py] = this.occPos(o); if (dist(x, y, px, py) < r + 7) return true; }
-    if (this.pilings) { for (const p of this.pilings) { if (p.dead) continue; if (Math.abs(x - (this.x + p.ox)) < r + 4 && y > this.y + (this.deckY || -10) && y < World.floorY(this.x) + 4) return true; } }
+    for (const o of this.alivePeople) { const [px, py] = this.occPos(o); if (Math.abs(x - px) < r + o.h * 0.18 && Math.abs(y - py) < r + o.h * 0.5) return true; }
+    if (this.pilings) { for (const p of this.pilings) { if (p.dead) continue; if (Math.abs(x - (this.x + p.ox * this.ss)) < r + 4 * this.ss && y > this.y + (this.deckY || -10) * this.ss && y < World.floorY(this.x) + 4) return true; } }
     if (this.kind === 'crabtrap' || this.kind === 'buoy' || this.kind === 'sign') return dist(x, y, this.x, this.y) < r + this.r;
     return false;
   }
@@ -47,7 +48,7 @@ class Structure extends Entity {
     // people first
     for (const o of this.alivePeople) {
       const [px, py] = this.occPos(o);
-      if (dist(sx, sy, px, py) < P.biteRange + 7) { this.eatOccupant(o, P, dx, dy); return; }
+      if (Math.abs(sx - px) < P.biteRange + o.h * 0.2 && Math.abs(sy - py) < P.biteRange + o.h * 0.5) { this.eatOccupant(o, P, dx, dy); return; }
     }
     if (this.kind === 'crabtrap') {
       this.hp = 0; G.fx.splinters(this.x, this.y, 12, 100); SFX.splinter(this.pan); Meta.event('crack');
@@ -59,11 +60,11 @@ class Structure extends Entity {
     const dmg = P.biteDmg * (P.st.hullMul || 1) * (P.st.pierce ? 2.5 : 1);
     if (dmg < this.armor && !P.st.pierce) { G.fx.sparks(sx, sy, 6, dx, dy); SFX.clank(this.pan); G.fx.text(this.x, this.y - 24, 'TOO SOLID', { color: '#c0c0c0' }); return; }
     let hitP = null;
-    if (this.pilings) { let best = 1e9; for (const p of this.pilings) { if (p.dead) continue; const d = Math.abs(sx - (this.x + p.ox)); if (d < best) { best = d; hitP = p; } } }
+    if (this.pilings) { let best = 1e9; for (const p of this.pilings) { if (p.dead) continue; const d = Math.abs(sx - (this.x + p.ox * this.ss)); if (d < best) { best = d; hitP = p; } } }
     G.fx.splinters(sx, sy, 12, 120); SFX.splinter(this.pan); G.hitstop(0.05); G.shake(5);
     G.fx.text(sx, sy - 12, choice(['CRACK!', 'SPLINTER!', 'CRUNCH!']), { color: '#e0c080' });
     Meta.event('crack');
-    if (hitP) { hitP.hp -= dmg; if (hitP.hp <= 0) { hitP.dead = true; G.fx.splinters(this.x + hitP.ox, this.y, 16, 140); G.shake(7); } }
+    if (hitP) { hitP.hp -= dmg; if (hitP.hp <= 0) { hitP.dead = true; G.fx.splinters(this.x + hitP.ox * this.ss, this.y, 16, 140); G.shake(7); } }
     this.hp -= dmg;
     if (P.st.ironStomach) P.eatMass(5, sx, sy);
     const standing = this.pilings ? this.pilings.filter(p => !p.dead).length : 1;
@@ -94,17 +95,17 @@ class Structure extends Entity {
     if (this.collapsed) { this.collapseT += dt; if (this.collapseT > 8) this.remove = true; if (chance(dt * 2)) G.fx.bubbles(this.x + rand(-20, 20), World.surface(this.x) + 6, 1, 4); return; }
     if (this.kind === 'crabtrap') { this.y = World.surface(this.x); }
     if (this.kind === 'buoy') { this.y = World.surface(this.x) - 4; }
-    if (this.kind === 'campfire' && chance(dt * 22)) G.fx.add({ type: 'smoke', x: this.x + rand(-2, 2), y: this.y - 6, vx: rand(-6, 6), vy: -rand(14, 28), s: rand(1.5, 3), color: '#6a6a6a', life: rand(0.8, 1.8), t: 0, maxLife: 1.4 });
-    if (this.kind === 'campfire' && this.lightOn) G.fx.glow(this.x, this.y - 4, 14 + Math.sin(this.t * 9) * 3, '#ff8020', 0.12);
+    if (this.kind === 'campfire' && chance(dt * 22)) G.fx.add({ type: 'smoke', x: this.x + rand(-2, 2) * this.ss, y: this.y - 6 * this.ss, vx: rand(-6, 6), vy: -rand(14, 28), s: rand(1.5, 3), color: '#6a6a6a', life: rand(0.8, 1.8), t: 0, maxLife: 1.4 });
+    if (this.kind === 'campfire' && this.lightOn) G.fx.glow(this.x, this.y - 4 * this.ss, (14 + Math.sin(this.t * 9) * 3) * this.ss, '#ff8020', 0.12);
     for (const o of this.alivePeople) {
       o.t += dt; if (o.panic > 0) o.panic -= dt;
-      if (!P.dead && P.size > 1.2 && dist(P.x, P.y, this.x + o.ox, this.y + o.oy) < 90 && chance(dt * 0.35)) { o.panic = 2; SFX.yell(this.pan); }
+      if (!P.dead && P.size > 1.2 && dist(P.x, P.y, this.x + o.ox * this.ss, this.y + o.oy * this.ss) < 90 + this.r && chance(dt * 0.35)) { o.panic = 2; SFX.yell(this.pan); }
     }
   }
   draw(ctx) {
     const f = this.kind === 'dock' || this.kind === 'boatramp' ? (this.dir || 1) : 1;
-    const y = this.y, fy = World.floorY(this.x), sag = this.collapsed ? Math.min(1, this.collapseT * 0.9) : 0;
-    ctx.save(); ctx.translate(this.x, y);
+    const y = this.y, fy = World.floorY(this.x), sag = this.collapsed ? Math.min(1, this.collapseT * 0.9) : 0, ss = this.ss;
+    ctx.save(); ctx.translate(this.x, y); ctx.scale(ss, ss);
     if (sag) { ctx.rotate(sag * 0.4 * f); ctx.translate(0, sag * 14); ctx.globalAlpha = Math.max(0, 1 - this.collapseT / 8); }
     const wood = '#6b5033', woodD = '#4a3524', woodL = '#8a6a44';
     const piling = (ox, top, bot, dead) => {
@@ -112,12 +113,12 @@ class Structure extends Entity {
       ctx.fillStyle = woodD; ctx.fillRect(Math.round(ox - 2), Math.round(top), 4, Math.round(bot - top));
       ctx.fillStyle = wood; ctx.fillRect(Math.round(ox - 2), Math.round(top), 2, Math.round(bot - top));
       // algae at the waterline
-      ctx.fillStyle = '#3a5a3a'; ctx.fillRect(Math.round(ox - 2), Math.round(World.surface(this.x + ox) - y), 4, 3);
+      ctx.fillStyle = '#3a5a3a'; ctx.fillRect(Math.round(ox - 2), Math.round((World.surface(this.x + ox * ss) - y) / ss), 4, 3);
     };
     switch (this.kind) {
       case 'dock': {
         const L = this.len, dY = this.deckY;
-        for (const p of this.pilings) piling(p.ox, dY, fy - y, p.dead);
+        for (const p of this.pilings) piling(p.ox, dY, (fy - y) / ss, p.dead);
         ctx.fillStyle = woodD; ctx.fillRect(Math.round(Math.min(0, f * L)), Math.round(dY), Math.round(L), 3);
         ctx.fillStyle = wood; ctx.fillRect(Math.round(Math.min(0, f * L)), Math.round(dY), Math.round(L), 2);
         for (let i = 0; i < L; i += 6) { ctx.fillStyle = woodD; ctx.fillRect(Math.round(Math.min(0, f * L) + i), Math.round(dY), 1, 2); }
@@ -129,7 +130,7 @@ class Structure extends Entity {
       }
       case 'stilthouse': {
         const dY = this.deckY, W = this.w;
-        for (const p of this.pilings) piling(p.ox, dY, fy - y, p.dead);
+        for (const p of this.pilings) piling(p.ox, dY, (fy - y) / ss, p.dead);
         ctx.fillStyle = woodD; ctx.fillRect(-W / 2 - 3, dY, W + 6, 3);
         ctx.fillStyle = wood; ctx.fillRect(-W / 2 - 3, dY, W + 6, 2);
         // walls
@@ -164,7 +165,7 @@ class Structure extends Entity {
       }
       case 'crabtrap': {
         ctx.fillStyle = '#e04030'; ctx.fillRect(-3, -3, 6, 5); ctx.fillStyle = '#f0f0f0'; ctx.fillRect(-3, -3, 6, 2);
-        const bot = this.deep - y;
+        const bot = (this.deep - y) / ss;
         ctx.strokeStyle = 'rgba(220,220,200,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(2, bot); ctx.stroke();
         ctx.fillStyle = '#4a5a4a'; ctx.fillRect(-6, Math.round(bot - 6), 14, 7);
         ctx.fillStyle = '#7a8a7a'; for (let i = 0; i < 14; i += 3) ctx.fillRect(-6 + i, Math.round(bot - 6), 1, 7);
@@ -194,30 +195,30 @@ class Structure extends Entity {
         break;
       }
     }
-    // people
+    ctx.restore();
+    // people, rigged and animated
     for (const o of this.occupants) {
       if (!o.alive) continue;
-      const spr = o.type === 'ranger' ? SPR.ranger[0] : o.type === 'poacher' ? SPR.poacher[0] : o.type === 'fisherman' ? SPR.human[0] : SPR.tourist[0];
-      const shake = o.panic > 0 ? rand(-1, 1) : 0, bob = o.panic > 0 ? Math.abs(Math.sin(o.t * 14)) * -2 : Math.sin(o.t * 1.4) * 0.4;
-      ctx.drawImage(spr.c, Math.round(o.ox - 4 + shake), Math.round(o.oy - 12 + bob));
-      if (o.type === 'fisherman' && o.panic <= 0) {
-        ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(o.ox + 3, o.oy - 4); ctx.lineTo(o.ox + 16, o.oy - 14); ctx.stroke();
-        ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.moveTo(o.ox + 16, o.oy - 14); ctx.lineTo(o.ox + 22, World.surface(this.x + o.ox + 22) - this.y + Math.sin(o.t) * 1); ctx.stroke();
+      const [px, py] = this.occPos(o); const face = o.panic > 0 ? sign(px - G.player.x) || 1 : (o.ox >= 0 ? 1 : -1);
+      o.rig.draw(ctx, px, py + o.h * 0.5, face, 0, { phase: o.t, speed: o.panic > 0 ? 0.6 : 0, panic: o.panic > 0 ? 1 : 0 }, { scale: o.rig.scale });
+      if (o.type === 'fisherman' && !(o.panic > 0)) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px + face * o.h * 0.5, py - o.h * 0.35); ctx.lineTo(px + face * o.h * 0.9, World.surface(this.x + o.ox + face * o.h * 0.9) + 3 + Math.sin(o.t) * 1); ctx.stroke();
       }
     }
+    ctx.save(); ctx.translate(this.x, this.y); ctx.scale(ss, ss);
     ctx.restore();
   }
 }
 // place a structure appropriate to the terrain at x
 function trySpawnStructure(x, rng, difficulty) {
   const fy = World.floorY(x), r = rng();
-  const deepAt = dx => World.floorY(x + dx) > 60;
+  const deepAt = dx => World.floorY(x + dx * 3.4) > 60;
   if (fy < -6) { // on a bank
     if (r < 0.3 && (deepAt(70) || deepAt(-70))) {
       const s = new Structure(x, 'dock');
       const n = randi(1, 2); for (let i = 0; i < n; i++) s.addOccupant(chance(0.7) ? 'fisherman' : 'tourist', s.dir * (14 + i * 16), s.deckY);
       G.add(s);
-      if (chance(0.4)) { const b = new Boat(x + s.dir * (s.len + 20), 'jon', -s.dir); b.engineOn = false; b.moored = true; G.add(b); }
+      if (chance(0.4)) { const b = new Boat(x + s.dir * (s.len * s.ss + 120), 'jon', -s.dir); b.engineOn = false; b.moored = true; G.add(b); }
       return true;
     }
     if (r < 0.45) { G.add(new Structure(x, 'boatramp')); return true; }

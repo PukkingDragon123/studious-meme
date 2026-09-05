@@ -25,22 +25,24 @@ class Player {
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
-    this.frozen = false; this.hidden = false;
+    this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
   }
+  // visual/geometric scale: the same compression every other creature uses, so a 27 ft croc is drawn 27 ft long
+  get vis() { return Math.pow(this.size, 0.58); }
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
   get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * (this.frenzyT > 0 ? 1.3 : 1); }
-  get biteRange() { return (9 + 6 * this.size) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
-  get snout() { const h = this.chain.nodes[0], L = 16 * this.size; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
+  get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
+  get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
   get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * (this.frenzyT > 0 ? 1.4 : 1); }
   get inWater() { return this.y > World.surface(this.x); }
-  nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.size; }
+  nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
   rebuildLook() { this.look = computeLook(this); this.parts = buildCrocParts(this.look); }
 
   update(dt, inp) {
     if (this.dead) { this.updateDead(dt); return; }
-    if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.size, dt, 0); return; }
+    if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
@@ -51,7 +53,7 @@ class Player {
     this.hunger -= dt * 1.3 * this.st.hungerRate * (1 + this.size * 0.04);
     if (this.hunger <= 0) {
       this.hunger = 0; this.starving = true; this.hp -= this.maxHp * 0.035 * dt; SFX.heartbeat();
-      if (chance(dt * 0.8)) G.fx.text(this.x, this.y - 22 * this.size, 'STARVING', { color: '#ff8040' });
+      if (chance(dt * 0.8)) G.fx.text(this.x, this.y - 22 * this.vis, 'STARVING', { color: '#ff8040' });
       if (this.hp <= 0) return this.die('STARVED');
     } else this.starving = false;
     if (this.st.regen > 0 && this.hunger > 25) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.regen * dt);
@@ -74,30 +76,48 @@ class Player {
       if (sp > max && this.dashT <= 0) { const k = 1 - Math.min(1, 5 * dt) * (1 - max / sp); this.vx *= k; this.vy *= k; }
       const dragK = this.moving ? 1.0 : 2.4; this.vx *= Math.exp(-dragK * dt); this.vy *= Math.exp(-dragK * dt);
       this.vy -= 5 * dt;
-      if (this.wasAir) { this.wasAir = false; const p = clamp(Math.hypot(this.vx, this.vy) / 200, 0.4, 3) * Math.sqrt(this.size); G.fx.splash(this.x, p, this.vx); SFX.splash(p); G.shake(p * 1.5); G.fx.bubbles(this.x, this.y + 8, Math.round(8 * p), 10 * this.size, 20); }
+      if (this.wasAir) { this.wasAir = false; const p = clamp(Math.hypot(this.vx, this.vy) / 200, 0.4, 3) * Math.sqrt(this.vis); G.fx.splash(this.x, p, this.vx); Water.splash(this.x, p * 90, 16 * this.size); SFX.splash(p); G.shake(p * 1.5); G.fx.bubbles(this.x, this.y + 8, Math.round(8 * p), 10 * this.size, 20); if (this.mudT > 0.2) { G.fx.silt(this.x, this.y, 8, 30); this.mudT = 0; } }
       this.onLand = false; this.airT = 0;
     } else {
       this.vy += 900 * dt;
-      if (landHere && this.y >= fy - 5 * this.size - 1) {
-        this.onLand = true; this.y = fy - 5 * this.size; if (this.vy > 0) this.vy = 0;
+      if (landHere && this.y >= fy - 5 * this.vis - 1) {
+        this.onLand = true; this.y = fy - 5 * this.vis; if (this.vy > 0) this.vy = 0;
         const landSpeed = this.speedMax * 0.38 * this.st.landSpeed;
         this.vx += (ix * landSpeed - this.vx) * Math.min(1, 5 * dt);
-        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.size, 3, '#6b5a3a'); }
-        if (Math.abs(this.vx) > 20 && chance(dt * 8)) G.fx.smoke(this.x - sign(this.vx) * 8 * this.size, this.y + 4 * this.size, 1, '#7a6a4a');
+        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); }
+        if (Math.abs(this.vx) > 20 && chance(dt * 8)) G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a');
         if (this.wasAir) { this.wasAir = false; SFX.thud(); G.shake(2); }
       } else {
         this.onLand = false; this.vx += ix * 140 * dt; this.airT += dt;
         if (!this.wasAir) {
-          this.wasAir = true; const p = clamp(Math.hypot(this.vx, this.vy) / 220, 0.5, 3) * Math.sqrt(this.size);
+          this.wasAir = true; const p = clamp(Math.hypot(this.vx, this.vy) / 220, 0.5, 3) * Math.sqrt(this.vis);
           G.fx.splash(this.x, p, this.vx); SFX.breach(); this.vy *= this.st.leapMul;
           if (this.st.wraith) G.slowmo(0.35, 0.7);
-          if (this.vy < -160) G.fx.text(this.x, this.y - 20 * this.size, 'BREACH!', { color: '#a0e0ff' });
+          if (this.vy < -160) G.fx.text(this.x, this.y - 20 * this.vis, 'BREACH!', { color: '#a0e0ff' });
         }
       }
     }
+    // --- sandbox interactions ---
+    const sp = Math.hypot(this.vx, this.vy);
+    if (this.mudT > 0) this.mudT -= dt * 0.25;
+    if (Math.abs(this.y - surf) < 14 * this.vis && Math.abs(this.vx) > 30) Water.wake(this.x, this.vx, this.vis, dt);
+    if (this.onLand) {
+      const soft = Mud.softness(this.x);
+      if (soft > 0.1) {
+        for (const n of this.chain.nodes) Mud.press(n.x, 1.8 * this.vis, 6 * this.vis);
+        this.mudT = Math.max(this.mudT, soft);
+        this.printT -= dt * Math.abs(this.vx);
+        if (this.printT <= 0 && Math.abs(this.vx) > 8) { this.printT = 16 * this.vis; const legs = [this.chain.nodes[1], this.chain.nodes[4]]; for (const l of legs) G.fx.print(l.x, World.floorY(l.x) - 1, 5 * this.vis, this.facing); }
+      }
+      Foliage.disturb(this.x, this.y, this.vx, 10 * this.vis);
+    } else if (under) {
+      const fy0 = World.floorY(this.x);
+      if (this.y > fy0 - 9 * this.vis && sp > 40 && chance(dt * 10)) G.fx.silt(this.x, fy0, 3, 25 + sp * 0.2);
+      Foliage.disturb(this.x, this.y, this.vx, 9 * this.vis);
+    }
     // dash
     if (this.dashT > 0) {
-      this.dashT -= dt; if (under && chance(0.9)) G.fx.bubbles(this.x, this.y, 2, 6 * this.size, 0);
+      this.dashT -= dt; if (under && chance(0.9)) G.fx.bubbles(this.x, this.y, 2, 6 * this.vis, 0);
       if (this.st.bullRush || this.st.dashBite) this.ramCheck();
       this.ghostT -= dt; if (this.ghostT <= 0) { this.ghostT = 0.04; this.pushGhost(0.35); }
     } else this.ramHit.clear();
@@ -106,10 +126,9 @@ class Player {
     // integrate
     this.x += this.vx * dt; this.y += this.vy * dt;
     const fy2 = World.floorY(this.x);
-    if (this.y > fy2 - 5 * this.size) { this.y = fy2 - 5 * this.size; if (this.vy > 0) this.vy *= -0.15; if (fy2 < 0) this.onLand = true; }
+    if (this.y > fy2 - 5 * this.vis) { this.y = fy2 - 5 * this.vis; if (this.vy > 0) this.vy *= -0.15; if (fy2 < 0) this.onLand = true; }
     if (this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
     // heading
-    const sp = Math.hypot(this.vx, this.vy);
     let targetA = this.angle;
     if (this.onLand) {
       if (Math.abs(this.vx) > 8) this.facing = sign(this.vx);
@@ -121,7 +140,7 @@ class Player {
     if (!this.onLand) this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
     // body
     const swim = clamp(sp / this.speedMax, 0, 1.3);
-    this.chain.solve(this.x, this.y, this.angle, this.size, dt, this.onLand ? 0.15 : swim);
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim);
     this.legPhase += dt * (2 + swim * 7 + (this.onLand ? Math.abs(this.vx) * 0.06 : 0));
     // jaws
     if (this.biteT > 0) {
@@ -148,14 +167,14 @@ class Player {
       this.rollT -= dt * 2.4 * this.st.rollSpeed;
       this.roll = (1 - Math.max(0, this.rollT)) * TAU;
       G.shake(1.2);
-      if (under) { G.fx.bubbles(this.x, this.y, 2, 12 * this.size, -20); if (chance(0.5)) G.fx.add({ type: 'foam', x: this.x + rand(-14, 14) * this.size, y: World.surface(this.x), vx: rand(-30, 30), vy: 0, s: 1, life: 0.5 }); }
+      if (under) { G.fx.bubbles(this.x, this.y, 2, 12 * this.vis, -20); if (chance(0.5)) G.fx.add({ type: 'foam', x: this.x + rand(-14, 14) * this.vis, y: World.surface(this.x), vx: rand(-30, 30), vy: 0, s: 1, life: 0.5 }); }
       if (this.rollT <= 0) { this.roll = 0; this.rollT = 0; this.rollHit(); }
     }
     if (this.gulpT > 0) this.gulpT -= dt;
-    if (this.st.lure && chance(dt * 3)) G.fx.glow(this.x, this.y, 8 * this.size, '#40f0c8', 0.6);
+    if (this.st.lure && chance(dt * 3)) G.fx.glow(this.x, this.y, 8 * this.vis, '#40f0c8', 0.6);
     this.magnetTick(dt);
     if (this.st.barb) this.barbTick(dt);
-    if (under && sp > this.speedMax * 0.5 && chance(dt * 5)) G.fx.bubbles(this.x - Math.cos(this.angle) * 10 * this.size, this.y, 1, 3 * this.size);
+    if (under && sp > this.speedMax * 0.5 && chance(dt * 5)) G.fx.bubbles(this.x - Math.cos(this.angle) * 10 * this.vis, this.y, 1, 3 * this.vis);
     // shed
     const tier = tierFor(this.sizeTarget);
     if (tier > this.tier && !G.shedPending && G.state === 'play') G.startShed(tier);
@@ -164,7 +183,7 @@ class Player {
   // it automatically, so a parked crocodile still eats.
   magnetTick(dt) {
     const R = this.st.magnet; if (!R) return;
-    const [sx, sy] = this.snout, maxSize = this.size * 0.5 * this.st.swallow;
+    const [sx, sy] = this.snout, maxSize = this.vis * 0.5 * this.st.swallow;
     for (const e of G.ents) {
       if (e.dead || e.remove || !e.edible) continue;
       if (e.type === 'proj' || e.type === 'boat' || e.type === 'structure') continue;
@@ -177,7 +196,7 @@ class Player {
       if (this.st.autoEat && d < this.biteRange * 0.85) { this.gulp(e); this.biteT = Math.max(this.biteT, 0.12); this.biteHit = true; }
       else if (chance(dt * 0.6)) G.fx.add({ type: 'bubble', x: e.x, y: e.y, vx: 0, vy: -20, s: 1, seed: rand(TAU), life: 0.5 });
     }
-    if (chance(dt * 6)) G.fx.glow(sx, sy, 5 * this.size, '#ff8a4a', 0.35);
+    if (chance(dt * 6)) G.fx.glow(sx, sy, 5 * this.vis, '#ff8a4a', 0.35);
   }
   // CAUDAL BARB: the tail stabs anything crowding you from behind
   barbTick(dt) {
@@ -186,7 +205,7 @@ class Player {
     for (const e of G.ents) {
       if (e.dead || e.remove || e.type === 'gib' || e.type === 'proj' || !e.takeDamage) continue;
       const d = e.nearestDist ? e.nearestDist(tail.x, tail.y) : dist(tail.x, tail.y, e.x, e.y) - e.r * e.size;
-      if (d > 10 * this.size) continue;
+      if (d > 10 * this.vis) continue;
       this.barbCd = 0.7;
       e.takeDamage(this.st.barb * Math.sqrt(this.size), this, { dx: 0, dy: 0, pierce: true });
       e.poison = Math.max(e.poison, 3); e.poisonDmg = this.st.barb * 0.3;
@@ -199,13 +218,13 @@ class Player {
     if (this.biteCd > 0) return;
     if (this.grabbed) {
       this.breakFree++; this.biteCd = 0.25; this.rollT = 1; SFX.chomp(this.size); G.shake(4); G.fx.bubbles(this.x, this.y, 6, 10 * this.size);
-      G.fx.text(this.x, this.y - 20 * this.size, this.breakFree >= 3 ? 'BROKE FREE!' : 'STRUGGLE! ' + (3 - this.breakFree), { color: '#ffd060' });
+      G.fx.text(this.x, this.y - 20 * this.vis, this.breakFree >= 3 ? 'BROKE FREE!' : 'STRUGGLE! ' + (3 - this.breakFree), { color: '#ffd060' });
       if (this.breakFree >= 3) { const g = this.grabbed; this.grabbed = null; this.breakFree = 0; if (g.release) g.release(); if (g.takeDamage) g.takeDamage(this.biteDmg * 1.5, this, { pierce: true }); this.invuln = 0.8; }
       return;
     }
     if (this.tether) {
       this.breakFree++; this.biteCd = 0.25; SFX.chomp(this.size); G.fx.sparks(this.x, this.y, 5);
-      if (this.breakFree >= 3) { const T = this.tether; this.tether = null; if (T.boat) T.boat.cutTether(); this.breakFree = 0; G.fx.text(this.x, this.y - 20 * this.size, 'LINE SNAPPED!', { color: '#ffd060' }); }
+      if (this.breakFree >= 3) { const T = this.tether; this.tether = null; if (T.boat) T.boat.cutTether(); this.breakFree = 0; G.fx.text(this.x, this.y - 20 * this.vis, 'LINE SNAPPED!', { color: '#ffd060' }); }
       return;
     }
     if (this.latched && this.rollT <= 0) { this.rollT = 1; this.biteCd = 0.45 / this.st.rollSpeed; G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return; }
@@ -244,7 +263,7 @@ class Player {
     if (this.st.venom && !e.dead) { e.poison = Math.max(e.poison, 3); e.poisonDmg = dmg * this.st.venom / 3; }
     if (this.st.bleed && !e.dead) { e.bleedT = 3; e.bleedDmg = dmg * 0.12; }
     if (!e.dead && e.latchable && e.sizeClass <= this.size * this.st.latchMul && e.sizeClass > this.size * 0.5 && !this.latched) {
-      this.latched = e; this.latchT = 0; G.fx.text(this.x, this.y - 22 * this.size, 'LATCHED! BITE TO ROLL', { color: '#ff9080' });
+      this.latched = e; this.latchT = 0; G.fx.text(this.x, this.y - 22 * this.vis, 'LATCHED! BITE TO ROLL', { color: '#ff9080' });
     }
   }
   gulp(e) {
@@ -265,7 +284,7 @@ class Player {
   ramCheck() {
     for (const e of G.ents) {
       if (e.dead || e.remove || this.ramHit.has(e.id) || e.type === 'proj' || e.type === 'gib') continue;
-      const near = e.nearestDist ? e.nearestDist(this.x, this.y) < 6 * this.size : e.hitTest(this.x, this.y, 6 * this.size);
+      const near = e.nearestDist ? e.nearestDist(this.x, this.y) < 6 * this.vis : e.hitTest(this.x, this.y, 6 * this.vis);
       if (!near) continue;
       this.ramHit.add(e.id);
       const dx = Math.cos(this.angle), dy = Math.sin(this.angle);
@@ -278,9 +297,9 @@ class Player {
     }
   }
   shockwave() {
-    const R = 70 * Math.sqrt(this.size) + 40;
+    const R = 70 * Math.sqrt(this.vis) + 40;
     G.fx.shock(this.x, this.y, R, '#40f0c8', 0.6); G.fx.glow(this.x, this.y, R * 0.22, '#40f0c8', 0.35); SFX.shock(); G.shake(10); G.hitstop(0.06);
-    G.fx.text(this.x, this.y - 24 * this.size, 'SHOCKWAVE!', { color: '#40f0c8', scale: 2 });
+    G.fx.text(this.x, this.y - 24 * this.vis, 'SHOCKWAVE!', { color: '#40f0c8', scale: 2 });
     for (const e of G.ents) {
       if (e.dead || e.remove || e.type === 'proj' || e.type === 'gib') continue;
       const d = e.nearestDist ? e.nearestDist(this.x, this.y) : dist(this.x, this.y, e.x, e.y) - e.r * e.size;
@@ -298,8 +317,8 @@ class Player {
     const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
     const p = this.speedMax * 2.4 * this.st.dashDist; this.vx = dx * p; this.vy = dy * p; this.dashT = 0.22 * this.st.dashDist;
     if (this.latched) { this.latched.vx = -dx * 100; this.latched = null; }
-    SFX.dash(); if (this.inWater) G.fx.bubbles(this.x, this.y, 12, 8 * this.size, 0);
-    if (this.st.bullRush) { G.fx.text(this.x, this.y - 20 * this.size, 'BULL RUSH!', { color: '#e0b050' }); G.shake(3); }
+    SFX.dash(); if (this.inWater) G.fx.bubbles(this.x, this.y, 12, 8 * this.vis, 0);
+    if (this.st.bullRush) { G.fx.text(this.x, this.y - 20 * this.vis, 'BULL RUSH!', { color: '#e0b050' }); G.shake(3); }
     this.ramHit.clear();
   }
   eat(e) {
@@ -309,7 +328,7 @@ class Player {
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));
     this.combo++; this.comboT = 2.4;
     const pan = G.panOf(e.x);
-    if (this.combo > 1) { G.fx.text(this.x, this.y - 20 * this.size, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
+    if (this.combo > 1) { G.fx.text(this.x, this.y - 20 * this.vis, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
     G.addScore(Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1)));
     if (e.type !== 'gib') G.fx.text(e.x, e.y + 6, '+' + Math.round(gain), { color: '#ffd860', vy: -18 });
     if (e.mass >= 60) { G.slowmo(0.3, 0.55); G.zoomPunch(1.07); G.fx.text(e.x, e.y - 30, e.threat ? 'PREDATOR SLAIN!' : 'DEVOURED!', { scale: 2, color: '#ff6040', life: 1.5 }); SFX.roar(this.size, pan); }
@@ -332,13 +351,13 @@ class Player {
     this.hp -= dmg; this.hurtT = G.t;
     if (!dot) {
       this.invuln = 0.4; this.hurtFlash = 0.1; G.shake(4 + Math.min(dmg, 40) * 0.25); G.redFlash(0.4); SFX.hurt();
-      G.fx.blood(this.x, this.y, Math.round(6 + Math.min(dmg, 40)), 0, 0, 90); G.fx.cloud(this.x, this.y, (10 + Math.min(dmg, 30) * 0.3) * Math.sqrt(this.size));
+      G.fx.blood(this.x, this.y, Math.round(6 + Math.min(dmg, 40)), 0, 0, 90); G.fx.cloud(this.x, this.y, (10 + Math.min(dmg, 30) * 0.3) * Math.sqrt(this.vis));
     } else if (chance(0.15)) G.redFlash(0.12);
     if (this.st.reflect > 0 && src && src.takeDamage && kind === 'bite') {
       src.takeDamage(dmg * this.st.reflect, this, { dx: 0, dy: 0, pierce: true });
       G.fx.sparks(this.x, this.y, 6); SFX.clank(this.pan);
     }
-    if (this.st.toxicBlood && src && src.takeDamage && kind !== 'venom') { G.fx.cloud(this.x, this.y, 30 * Math.sqrt(this.size), '#30a050', 2); src.poison = Math.max(src.poison || 0, 3); src.poisonDmg = this.biteDmg * 0.25; }
+    if (this.st.toxicBlood && src && src.takeDamage && kind !== 'venom') { G.fx.cloud(this.x, this.y, 30 * Math.sqrt(this.vis), '#30a050', 2); src.poison = Math.max(src.poison || 0, 3); src.poisonDmg = this.biteDmg * 0.25; }
     if (this.hp <= 0) this.die(kind === 'bullet' ? 'SHOT' : kind === 'crush' ? 'CRUSHED' : kind === 'venom' ? 'POISONED' : 'EATEN', src);
     return dmg;
   }
@@ -347,7 +366,7 @@ class Player {
     if (this.dead) return; this.dead = true; this.deathT = 0; this.cause = cause; this.killer = src && src.name ? src.name : null; this.hp = 0;
     if (this.grabbed && this.grabbed.release) this.grabbed.release(); this.grabbed = null; this.latched = null;
     if (this.tether) { if (this.tether.boat) this.tether.boat.cutTether(); this.tether = null; }
-    G.fx.gore(this.x, this.y, 140 * Math.sqrt(this.size), 0, 0, true); G.fx.flesh(this.x, this.y, 20, 100);
+    G.fx.gore(this.x, this.y, 140 * Math.sqrt(this.vis), 0, 0, true); G.fx.flesh(this.x, this.y, 20, 100);
     SFX.death(); G.shake(20); G.slowmo(0.25, 2.5);
     G.onPlayerDeath(cause, src);
   }
@@ -355,19 +374,20 @@ class Player {
     this.deathT += dt; const under = this.inWater;
     if (under) { this.vx *= 0.97; this.vy = approach(this.vy, 18, 40 * dt); } else this.vy += 600 * dt;
     this.x += this.vx * dt; this.y += this.vy * dt;
-    const fy = World.floorY(this.x); if (this.y > fy - 5 * this.size) { this.y = fy - 5 * this.size; this.vy = 0; }
-    this.chain.solve(this.x, this.y, this.angle, this.size, dt, 0.05);
+    const fy = World.floorY(this.x); if (this.y > fy - 5 * this.vis) { this.y = fy - 5 * this.vis; this.vy = 0; }
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0.05);
     this.roll = lerp(this.roll, Math.PI, 1 - Math.exp(-2 * dt));
-    if (chance(dt * 8)) G.fx.blood(this.x + rand(-20, 20) * this.size, this.y, 2, 0, 0, 20);
-    if (under && chance(dt * 3)) G.fx.bubbles(this.x, this.y, 1, 8 * this.size);
+    if (chance(dt * 8)) G.fx.blood(this.x + rand(-20, 20) * this.vis, this.y, 2, 0, 0, 20);
+    if (under && chance(dt * 3)) G.fx.bubbles(this.x, this.y, 1, 8 * this.vis);
   }
   draw(ctx) {
     if (this.hidden) return;
-    for (const g of this.ghosts) drawCroc(ctx, { nodes: g.nodes }, this.parts, this.size, { flipY: g.flip, alpha: g.life * 0.7 });
+    for (const g of this.ghosts) drawCroc(ctx, { nodes: g.nodes }, this.parts, this.vis, { flipY: g.flip, alpha: g.life * 0.7 });
     const blink = this.invuln > 0 && !this.dead && Math.floor(G.t * 30) % 2 === 0 && this.hurtFlash <= 0;
-    if (this.st.lure) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(64,240,200,0.08)'; ctx.beginPath(); ctx.arc(this.x, this.y, 30 * this.size, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
-    drawCroc(ctx, this.chain, this.parts, this.size, { jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll, alpha: blink ? 0.5 : 1 });
-    if (this.poisonT > 0) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#40ff60'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 3 * this.size, n.y - 3 * this.size, 6 * this.size, 6 * this.size); ctx.globalAlpha = 1; }
-    if (this.frenzyT > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,60,30,${(0.06 + 0.04 * Math.sin(G.t * 20)).toFixed(3)})`; ctx.beginPath(); ctx.arc(this.x, this.y, 26 * this.size, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+    if (this.st.lure) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(64,240,200,0.08)'; ctx.beginPath(); ctx.arc(this.x, this.y, 30 * this.vis, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+    drawCroc(ctx, this.chain, this.parts, this.vis, { jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll, alpha: blink ? 0.5 : 1 });
+    if (this.mudT > 0.05) { ctx.globalAlpha = 0.35 * Math.min(1, this.mudT); ctx.fillStyle = '#4a3a24'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 4 * this.vis, n.y - 1 * this.vis, 8 * this.vis, 5 * this.vis); ctx.globalAlpha = 1; }
+    if (this.poisonT > 0) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#40ff60'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 3 * this.vis, n.y - 3 * this.vis, 6 * this.vis, 6 * this.vis); ctx.globalAlpha = 1; }
+    if (this.frenzyT > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,60,30,${(0.06 + 0.04 * Math.sin(G.t * 20)).toFixed(3)})`; ctx.beginPath(); ctx.arc(this.x, this.y, 26 * this.vis, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
   }
 }

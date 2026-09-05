@@ -4,8 +4,9 @@ A 2D pixel-art, side-scrolling **eater roguelike** set in the Florida Everglades
 Hatch small, eat everything that fits in your jaws, grow, shed your skin, and graft on traits from the
 animals you devour until you are the swamp god. Then something bigger finds you and you start again.
 
-Inspired by the *Hungry Shark* games, with roguelike runs, a procedural swamp, a living ecosystem and
-a skill tree of animal traits you unlock permanently.
+Inspired by the *Hungry Shark* games, with roguelike runs, a procedural swamp with simulated water,
+mud, weather and vegetation, a living ecosystem of ninety real-size species, and a skill tree of
+animal traits you unlock permanently.
 
 ## Play
 
@@ -99,11 +100,27 @@ which lists every trait and your progress toward the locked ones.
 
 The ecosystem runs with or without you. Ospreys and pelicans plunge out of the sky for fish, anhingas
 chase them underwater, vultures circle and land on carrion, panthers and coyotes stalk raccoons along
-the banks, and predatory fish eat the schools. Around forty creature types live here, from apple
-snails and crayfish on the bottom to goliath grouper, sawfish and manatees in the deep channels.
+the banks, herons spear hatchlings in the shallows, and predatory fish eat the schools. Eighty-nine
+species live here, from fiddler crabs and apple snails on the bottom to goliath grouper, sawfish,
+manatees and bull sharks in the deep channels, with cottonmouths, rat snakes, indigo snakes and
+Burmese pythons on the banks and a rumoured skunk ape in the deep forest.
+
+**Everything is drawn at its real size.** Every species carries its true length and weight (a 1.5 ft
+hatchling, a 4 ft great blue heron, a 6 ft tarpon, a 15 ft python, a 22 ft pontoon boat), mapped
+through one shared scale so a bass really is a third of a young crocodile and a kayak really does dwarf
+it. Your own crocodile grows on the same curve, and the camera pulls back as you do.
+
+**The swamp is simulated, not painted.** The water surface is a spring-mass wave field: every splash,
+bite, breach, boat hull and swimming body pushes it, waves travel and reflect, foam forms where the
+surface moves fastest, and rain pocks it. The mud is a deformable bed that your belly and feet press
+into and that softens toward the waterline, leaving tracks and silt clouds behind you. Weather rolls
+through in showers with gusting wind, lightning and delayed thunder, and the sky, water tint and
+lighting follow it. Trees, bushes, cattails, ferns and lilies are sprung, so they bend, shake and shed
+leaves when you crash through them or a boat's wake reaches them.
 
 People are everywhere too: fishing docks, stilt-house fish camps lit up at night, ranger towers, boat
-ramps, crab traps, channel markers and campfires, plus airboats, party pontoons, jon boats and kayaks.
+ramps, crab traps, channel markers and campfires, plus airboats, party pontoons, jon boats, poacher
+skiffs and kayaks, all at real scale with rigged people aboard who fish, point, panic and shoot.
 Most of it can be smashed, and everyone on it can be eaten.
 
 ## Art
@@ -114,6 +131,15 @@ the snout tip, paired dorsal scute keels, dithered lateral scale rows, rectangul
 interlocking teeth and clawed feet. Traits redraw it: a keeled turtle carapace, ganoid diamond scales,
 shark denticles, a dorsal sail, tusks, a tail barb.
 
+Every other animal is a **rigged, jointed creature** generated from its species description at the
+same double density: fish with articulated tails, fins and gill plates; birds with two-part flapping
+wings, folded wings on the ground, necks that peck and spear, and trailing legs in flight; quadrupeds
+with four swinging legs and a head that dips to drink; people with walking legs and arms that cast,
+aim and flail; turtles that pull into their shells, frogs that kick, crabs that scuttle, snakes that
+slither as chains of segments. Boats are detailed hulls with rigging, rails, consoles, fans and cargo.
+Nothing floats over the world as text any more: damage, growth and unlocks are told through the
+bodies, the blood, the orb and the HUD.
+
 The swamp is layered. Four parallax bands of cypress, palm and oak sit behind live oaks with hanging
 moss, cypress knees, palmettos, ferns, cattails, vines and flowers on the banks. Underwater there is
 duckweed and flowering water hyacinth on the surface film, algae strands, sunken branches, shell beds,
@@ -123,8 +149,10 @@ mud. Dawn and dusk raise mist off the water.
 ## Tech
 
 Plain HTML5 canvas and vanilla JavaScript. Everything is procedural: pixel sprites are defined in
-code, the crocodile is built from parts and drawn as an undulating segment chain, terrain is a noise
-heightmap, gore is sprite slicing plus particles, and all audio is synthesized with WebAudio.
+code, creatures are rigs generated from a species catalogue, the crocodile is built from parts and
+drawn as an undulating segment chain, terrain is a noise heightmap, water is a damped spring-mass
+surface, mud is a pressure field, gore is sprite slicing plus particles, and all audio is synthesized
+with WebAudio.
 
 ```
 index.html
@@ -134,7 +162,10 @@ src/util.js         math, noise, colors
 src/font.js         5x7 bitmap font
 src/audio.js        synthesized SFX, ambience, music
 src/sprites.js      pixel sprites, procedural crocodile, segment chain
-src/particles.js    blood, gibs, bubbles, splashes, popups
+src/rig.js          rigged creature generators: fish, birds, quadrupeds, people, turtles, snakes...
+src/species.js      the species catalogue: real lengths and weights, behaviour, colours
+src/particles.js    blood, gibs, bubbles, splashes, silt, leaves, footprints, rain
+src/physics.js      water waves, mud deformation, weather, sprung foliage
 src/world.js        terrain, chunks, sky/day cycle, water, forest
 src/traits.js       animal traits, unlock milestones, saved progress
 src/dna.js          animated animal icons and the DNA genome orb
