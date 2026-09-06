@@ -97,7 +97,12 @@ class Player {
         if (Math.abs(this.vx) > 14) {
           this.stepT = (this.stepT || 0) + Math.abs(this.vx) * dt;
           const stride = 13 * this.vis;
-          if (this.stepT > stride) { this.stepT = 0; G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a'); }
+          if (this.stepT > stride) {
+            this.stepT = 0;
+            G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a');
+            // past leviathan the footfalls themselves are an event
+            if (this.size >= 8) { G.shake(Math.min(7, (this.size - 7) * 1.6)); SFX.thud && SFX.thud(); G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#8a7a5a'); }
+          }
         } else this.stepT = 0;
         if (this.wasAir) { this.wasAir = false; SFX.thud(); G.shake(2); }
       } else {

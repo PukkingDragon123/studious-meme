@@ -2833,7 +2833,7 @@ const World = {
     ctx.globalAlpha = 1;
   },
   drawParallax(ctx, cam, day) {
-    const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
+    const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
     // furthest ridge: bare hills, no trees, barely separated from the sky
@@ -3188,6 +3188,42 @@ const World = {
   },
   // Aerial perspective under water. Fading toward the deep water colour keeps the
   // ground readable at depth; fading to black just erased all of its texture.
+  // Searchlights sweeping the harbour. Drawn late, after the water body, or the
+  // water fill covers them completely.
+  drawKaiju(ctx, cam, day) {
+    const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1], light = this.light(day), night = 1 - light, t = this.t;
+  // under one. Only in the kaiju biome, and only worth drawing after dusk.
+  const BK = Biome.at(cam.x);
+  if (BK.kaiju) {
+    const P = G.player, dark = clamp(night * 1.5, 0.25, 1);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 5; i++) {
+      const bx = (((ihash(i, 121) * 900 + i * 180 - cam.x * 0.3) % 900) + 900) % 900 - 130;
+      if (bx < -320 || bx > W + 320) continue;
+      const by = hy - 44 - ihash(i, 122) * 46;
+      const sweep = Math.sin(t * (0.22 + ihash(i, 123) * 0.16) + i * 2.1);
+      // lock on when the sweep happens to be pointing at the player
+      const px2 = P ? cam.toScreen(P.x, P.y)[1] : 0, pxs = P ? cam.toScreen(P.x, P.y)[0] : -999;
+      const aim = bx + sweep * 260;
+      const onTarget = P && !P.dead && Math.abs(pxs - aim) < 60 && P.y < 40;
+      const len = H + 120, wTop = 5, wBot = 34 + Math.abs(sweep) * 30;
+      const col = onTarget ? '255,120,90' : '210,235,255';
+      const gr = ctx.createLinearGradient(bx, by, aim, by + len);
+      gr.addColorStop(0, `rgba(${col},${(0.3 * dark).toFixed(3)})`);
+      gr.addColorStop(0.5, `rgba(${col},${(0.09 * dark).toFixed(3)})`);
+      gr.addColorStop(1, `rgba(${col},0)`);
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      ctx.moveTo(bx - wTop, by); ctx.lineTo(bx + wTop, by);
+      ctx.lineTo(aim + wBot, by + len); ctx.lineTo(aim - wBot, by + len);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = onTarget ? 'rgba(255,180,150,0.9)' : 'rgba(230,245,255,0.75)';
+      ctx.fillRect(Math.round(bx - 2), Math.round(by - 2), 4, 4);
+    }
+    ctx.restore();
+  }
+
+  },
   drawDepthShade(ctx, cam) {
     const H = G.H, hy = cam.toScreen(0, 0)[1];
     const y0 = cam.toScreen(0, 90)[1];
@@ -5982,7 +6018,12 @@ class Player {
         if (Math.abs(this.vx) > 14) {
           this.stepT = (this.stepT || 0) + Math.abs(this.vx) * dt;
           const stride = 13 * this.vis;
-          if (this.stepT > stride) { this.stepT = 0; G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a'); }
+          if (this.stepT > stride) {
+            this.stepT = 0;
+            G.fx.smoke(this.x - sign(this.vx) * 8 * this.vis, this.y + 4 * this.vis, 1, '#7a6a4a');
+            // past leviathan the footfalls themselves are an event
+            if (this.size >= 8) { G.shake(Math.min(7, (this.size - 7) * 1.6)); SFX.thud && SFX.thud(); G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#8a7a5a'); }
+          }
         } else this.stepT = 0;
         if (this.wasAir) { this.wasAir = false; SFX.thud(); G.shake(2); }
       } else {
@@ -7911,6 +7952,7 @@ const G = {
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
+    World.drawKaiju(ctx, cam, day);
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;
