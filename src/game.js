@@ -103,7 +103,7 @@ const G = {
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
   player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
-  engineNear: 0, menuT: 0, menuShake: 0, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
+  engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
@@ -289,6 +289,7 @@ const G = {
       // land on the furthest stage the save has opened, that is where you left off
       let best = 0; STAGES.forEach((st, i) => { if (Stages.unlocked(st)) best = i; });
       this.stageSel = best;
+      this.globeSpin = STAGES[best].lon;
     }
     SFX.ui();
   },
@@ -511,6 +512,14 @@ const G = {
       case 'stages': {
         this.menuT += raw; this.updateWorld(dt, true);
         const list = STAGES;
+        // the globe eases round to whichever site is selected, and drifts a
+        // little while you decide so it never looks frozen
+        {
+          const want = list[this.stageSel] ? list[this.stageSel].lon : 0;
+          let d2 = angleDiff(this.globeSpin, want);
+          this.globeSpin += d2 * Math.min(1, raw * 4.5) + raw * 0.045;
+          this.globeTilt = 0.3 + Math.sin(this.menuT * 0.35) * 0.06;
+        }
         if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
         const rows = UI.stageRows();
         if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }

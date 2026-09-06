@@ -33,25 +33,34 @@ const UI = {
     const P = G.player, W = G.W, H = G.H, t = G.t;
     const lowHp = P.hp / P.maxHp < 0.3;
     // vitals block
-    ctx.fillStyle = 'rgba(6,12,12,0.55)'; ctx.fillRect(6, 6, 148, 30);
-    this.meter(ctx, 30, 10, 118, 8, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff7a6a' : '#d83a2a', '#2a0e0c');
-    this.meter(ctx, 30, 23, 118, 6, P.hunger / 100, P.starving && Math.floor(t * 8) % 2 ? '#ffe080' : '#e0902a', '#2a1c0a');
+    ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, 6, 130, 30);
+    this.bracket(ctx, 6, 6, 130, 30, 'rgba(120,220,200,0.45)', 5);
+    this.meter(ctx, 30, 10, 100, 8, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff7a6a' : '#d83a2a', '#2a0e0c');
+    this.meter(ctx, 30, 23, 100, 6, P.hunger / 100, P.starving && Math.floor(t * 8) % 2 ? '#ffe080' : '#e0902a', '#2a1c0a');
     // heart + jaw icons
     ctx.fillStyle = lowHp && Math.floor(t * 6) % 2 ? '#ff8a7a' : '#d83a2a';
     ctx.fillRect(12, 11, 4, 5); ctx.fillRect(18, 11, 4, 5); ctx.fillRect(11, 13, 12, 3); ctx.fillRect(13, 16, 8, 2); ctx.fillRect(15, 18, 4, 2);
     ctx.fillStyle = '#e0902a'; ctx.fillRect(12, 23, 11, 3); ctx.fillStyle = '#f4f0e0';
     for (let i = 0; i < 4; i++) ctx.fillRect(13 + i * 3, 26, 2, 2);
     ctx.fillRect(12, 28, 11, 2);
-    Font.draw(ctx, Math.ceil(P.hp) + '/' + P.maxHp, 146, 11, { color: '#ffe0d8', align: 'right', shadow: true });
-    if (P.poisonT > 0) Font.draw(ctx, 'POISONED', 158, 10, { color: '#60ff60', shadow: true });
-    if (P.frenzyT > 0) Font.draw(ctx, 'FRENZY', 158, 20, { color: '#ff5030', shadow: true });
-    if (P.missingLimbs) Font.draw(ctx, 'BLEEDING', 158, 30, { color: '#ff6060', shadow: true });
+    // status reads as a column of lit tabs rather than three words
+    let ty2 = 8;
+    const tab = (col, on) => { if (!on) return; ctx.fillStyle = Math.floor(t * 5) % 2 ? col : mixColor(col, '#101816', 0.45); ctx.fillRect(140, ty2, 4, 8); ty2 += 10; };
+    tab('#60ff60', P.poisonT > 0);
+    tab('#ff5030', P.frenzyT > 0);
+    tab('#ff6060', !!P.missingLimbs);
     // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
-    Font.draw(ctx, tier.name + '  ' + P.lengthFt.toFixed(1) + ' FT', W / 2, 8, { color: '#eaf2dc', align: 'center', shadow: true });
+    Font.draw(ctx, P.lengthFt.toFixed(1), W / 2 - 12, 6, { color: '#eaf2dc', align: 'right', scale: 2, outline: '#0a1a08' });
+    Font.draw(ctx, 'FT', W / 2 - 8, 12, { color: '#7f9a90' });
+    // tier as a row of notches: the name was a word doing a pip's job
+    for (let i = 0; i < TIERS.length; i++) {
+      ctx.fillStyle = i < P.tier ? '#6ad040' : i === P.tier ? '#b8ffa0' : '#20301c';
+      ctx.fillRect(W / 2 + 6 + i * 5, 8 + (i === P.tier ? -1 : 1), 3, i === P.tier ? 10 : 6);
+    }
     if (next) {
       const m0 = sizeToMass(tier.size), m1 = sizeToMass(next.size);
-      this.meter(ctx, W / 2 - 62, 18, 124, 5, (P.mass - m0) / (m1 - m0), '#6ad040', '#0d2010');
+      this.meter(ctx, W / 2 - 62, 22, 124, 4, (P.mass - m0) / (m1 - m0), '#6ad040', '#0d2010');
     }
     // gene points: a hex chip that pulses when you can spend
     const gp = P.genePoints, canBuy = GENES.some(g => Genome.unlocked(P, g) && Genome.cost(P, g) <= gp);
@@ -60,7 +69,7 @@ const UI = {
     Font.draw(ctx, String(gp), gx, gy - 4, { color: canBuy ? '#b8ffe8' : '#8aa89c', align: 'center', scale: gp > 99 ? 1 : 2, outline: '#06110e' });
     const touchUI = G.touchUI || Input.touch.active;
     if (touchUI) { ctx.globalAlpha = canBuy ? 0.8 : 0.35; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(gx, gy, 17, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
-    Font.draw(ctx, touchUI ? (canBuy ? 'TAP: SPLICE' : 'GENES') : (canBuy ? 'G: SPLICE' : 'GENES'), gx, gy + 17, { color: canBuy ? '#40f0c8' : '#7f9a90', align: 'center' });
+    if (canBuy) { ctx.fillStyle = Math.floor(t * 4) % 2 ? '#40f0c8' : '#1a3a34'; for (let i = 0; i < 3; i++) ctx.fillRect(gx - 4 + i * 4, gy + 16, 2, 2); }
     if (P.newPoints > 0 && G.state === 'play') Font.draw(ctx, '+' + P.newPoints, gx - 20, gy - 3, { color: '#b8ffe8', align: 'right', shadow: true });
     // score
     Font.draw(ctx, fmt(G.score), W - 10, 46, { color: '#fff0a0', align: 'right', shadow: true });
@@ -73,17 +82,17 @@ const UI = {
     for (const k of LIN_KEYS) {
       const d = Genome.depth(P, k); if (!d) continue;
       const L = LINEAGES[k];
-      ctx.fillStyle = L.color; ctx.fillRect(px2, py2, 3, 3 + d * 2);
-      Font.draw(ctx, L.name.slice(0, 3), px2 + 5, py2, { color: L.color });
-      px2 += 24;
+      ctx.fillStyle = '#0d1512'; ctx.fillRect(px2 - 1, py2 - 1, 5, 13);
+      ctx.fillStyle = L.color;
+      for (let k = 0; k < d; k++) ctx.fillRect(px2, py2 + 9 - k * 3, 3, 2);
+      px2 += 8;
     }
-    if (P.apex) Font.draw(ctx, LINEAGES[P.apex].name + ' APEX', 10, H - 30, { color: LINEAGES[P.apex].color, shadow: true });
+    if (P.apex) { const AC = LINEAGES[P.apex].color; this.hex(ctx, 16, H - 26, 7, AC, '#04120e', 1); ctx.fillStyle = '#04120e'; ctx.fillRect(15, H - 28, 3, 5); }
     // dash pips
-    Font.draw(ctx, 'DASH', 10, H - 14, { color: '#c0d0e0', shadow: true });
     for (let i = 0; i < P.st.dashCharges; i++) {
-      const full = i < P.dashCharges; ctx.fillStyle = '#0d1210'; ctx.fillRect(38 + i * 10, H - 15, 8, 8);
-      ctx.fillStyle = full ? '#60c0ff' : '#203040'; ctx.fillRect(39 + i * 10, H - 14, 6, 6);
-      if (!full && i === P.dashCharges) { const f = 1 - clamp(P.dashCd / (1.6 * P.st.dashCd), 0, 1); ctx.fillStyle = '#60c0ff'; ctx.fillRect(39 + i * 10, H - 14 + 6 - Math.round(6 * f), 6, Math.round(6 * f)); }
+      const full = i < P.dashCharges; ctx.fillStyle = '#0d1210'; ctx.fillRect(10 + i * 10, H - 15, 8, 8);
+      ctx.fillStyle = full ? '#60c0ff' : '#203040'; ctx.fillRect(11 + i * 10, H - 14, 6, 6);
+      if (!full && i === P.dashCharges) { const f = 1 - clamp(P.dashCd / (1.6 * P.st.dashCd), 0, 1); ctx.fillStyle = '#60c0ff'; ctx.fillRect(11 + i * 10, H - 14 + 6 - Math.round(6 * f), 6, Math.round(6 * f)); }
     }
     // biome name, bottom right
     const B = Biome.at(P.x);
@@ -287,61 +296,50 @@ const UI = {
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
     if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
   },
-  // ---------- stage select: an illustrated world map ----------
-  mapRect() { return { x: 16, y: 52, w: G.W - 32, h: 128 }; },
-  stageRows() {
-    // hit targets are the landmark pins on the map, not a list of rows
-    const R = this.mapRect(), x0 = -3200, x1 = 19000;
-    return STAGES.map((st, i) => {
-      const u = (st.x - x0) / (x1 - x0);
-      const px2 = R.x + u * R.w;
-      return { x: px2 - 13, y: R.y - 4, w: 26, h: R.h + 8, st, i, px: px2 };
-    });
-  },
-  // one small landmark drawn above the shoreline for each stage
+  // a small landmark icon standing in for the paragraph a site used to need
   drawLandmark(ctx, kind, x, y, on) {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
     const dim = c => (on ? c : mixColor(c, '#20302c', 0.62));
     switch (kind) {
-      case 'outfall':                              // concrete pipe mouth
+      case 'outfall':
         px(-7, -9, 14, 9, dim('#6a6d72')); px(-7, -9, 14, 2, dim('#8b8e94'));
         px(-4, -7, 8, 6, dim('#161c1e')); px(-4, -7, 8, 1, dim('#2a3436'));
         px(-9, 0, 18, 2, dim('#4a4d52'));
         break;
-      case 'mangrove':                             // clump on stilt roots
+      case 'mangrove':
         px(-8, -13, 16, 7, dim('#2f6a34')); px(-6, -16, 12, 4, dim('#3f8a42'));
         px(-5, -15, 4, 2, dim('#58a852'));
         for (let i = -6; i <= 6; i += 3) px(i, -6, 1, 7, dim('#4a3a24'));
         break;
-      case 'camp':                                 // shack over the water
+      case 'camp':
         px(-9, -3, 18, 4, dim('#6b5033')); px(-9, -10, 18, 7, dim('#8a6a44'));
         px(-11, -13, 22, 3, dim('#a03a2a')); px(-3, -8, 4, 5, dim('#2a2018'));
         for (let i = -7; i <= 7; i += 5) px(i, 1, 1, 5, dim('#4a3524'));
         break;
-      case 'cypress':                              // tiered conifers with knees
+      case 'cypress':
         for (const ox of [-6, 2]) { px(ox, -6, 2, 7, dim('#3a2a1a')); for (let k = 0; k < 3; k++) px(ox - 4 + k, -14 + k * 4, 10 - k * 2, 3, dim(k ? '#2f5a2a' : '#3f7a34')); }
         px(-9, 0, 1, 3, dim('#4a3a26')); px(8, 0, 1, 3, dim('#4a3a26'));
         break;
-      case 'prairie':                              // sawgrass on a flat
+      case 'prairie':
         for (let i = -9; i <= 9; i += 3) { const h = 6 + ((i + 9) % 5); px(i, -h, 1, h, dim('#7a9a4a')); px(i + 1, -h + 1, 1, h - 1, dim('#5f7f34')); }
         px(-10, 0, 20, 2, dim('#6a7a44'));
         break;
-      case 'river':                                // channel markers over deep water
+      case 'river':
         px(-8, -12, 2, 13, dim('#c8c8b8')); px(-9, -14, 4, 3, dim('#20a040'));
         px(6, -10, 2, 11, dim('#c8c8b8')); px(5, -12, 4, 3, dim('#e04040'));
         px(-11, 0, 22, 2, dim('#2a5a68'));
         break;
-      case 'campground':                           // two tents and a fire
+      case 'campground':
         px(-10, -8, 9, 8, dim('#3a6ab0')); px(-6, -11, 1, 4, dim('#c8c8b8'));
         px(1, -7, 8, 7, dim('#e0a020')); px(4, -10, 1, 4, dim('#c8c8b8'));
         px(-2, -3, 3, 3, dim('#e06030')); px(-1, -5, 1, 2, dim('#ffd060'));
         break;
-      case 'bay':                                  // buoy on the horizon
+      case 'bay':
         px(-1, -13, 3, 10, dim('#20a040')); px(-3, -3, 7, 4, dim('#e0e0d0'));
         px(-3, -3, 7, 1, dim('#20a040')); px(-2, -15, 1, 2, dim('#40ff60'));
         px(-11, 1, 22, 1, dim('#2a7a8a'));
         break;
-      case 'seawall':                              // skyline behind a wall
+      case 'seawall':
         px(-11, -6, 22, 7, dim('#5e6068')); px(-11, -6, 22, 1, dim('#8a8c92'));
         for (const [ox, h, w] of [[-9, 14, 5], [-3, 20, 6], [4, 11, 4], [8, 17, 4]]) {
           px(ox, -6 - h, w, h, dim('#2c3140'));
@@ -350,100 +348,111 @@ const UI = {
         break;
     }
   },
+  // ---------- release-site display: a spinning globe ----------
+  globeGeom() { return { cx: G.W * 0.34, cy: G.H * 0.53, r: Math.round(G.H * 0.32) }; },
+  stageRows() {
+    // hit targets are the pins on the near face of the globe
+    const gg = this.globeGeom(), spin = G.globeSpin || 0;
+    return STAGES.map((st, i) => {
+      const [px2, py2, z2, vis] = Globe.project(st.lon, st.lat, gg.cx, gg.cy, gg.r, spin, G.globeTilt || 0.32);
+      return { x: px2 - 8, y: py2 - 8, w: 16, h: 16, st, i, px: px2, py: py2, z: z2, vis };
+    });
+  },
+  // small corner brackets: the readouts all sit inside instrument frames
+  bracket(ctx, x, y, w, h, col, len = 6) {
+    ctx.fillStyle = col;
+    for (const [bx, by, dx, dy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) {
+      ctx.fillRect(Math.round(bx + (dx < 0 ? -len : 0)), Math.round(by + (dy < 0 ? -1 : 0)), len, 1);
+      ctx.fillRect(Math.round(bx + (dx < 0 ? -1 : 0)), Math.round(by + (dy < 0 ? -len : 0)), 1, len);
+    }
+  },
   drawStages(ctx) {
-    const W = G.W, H = G.H, t = G.menuT, R = this.mapRect();
-    ctx.fillStyle = 'rgba(3,9,11,0.93)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'CHOOSE YOUR WATER', W / 2, 14, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
-    Font.draw(ctx, 'THE PIPE RUNS ALL THE WAY TO THE SEA', W / 2, 34, { color: '#7fd8b8', align: 'center' });
+    const W = G.W, H = G.H, t = G.menuT, gg = this.globeGeom();
+    const spin = G.globeSpin || 0, tilt = G.globeTilt || 0.32;
+    ctx.fillStyle = '#050a0c'; ctx.fillRect(0, 0, W, H);
+    // instrument backdrop: faint grid and scan lines
+    ctx.fillStyle = 'rgba(60,140,120,0.07)';
+    for (let x2 = 0; x2 < W; x2 += 16) ctx.fillRect(x2, 0, 1, H);
+    for (let y2 = 0; y2 < H; y2 += 16) ctx.fillRect(0, y2, W, 1);
 
-    // --- the whole map drawn as a cross-section: sky, water, ground
-    const x0 = -3200, x1 = 19000, wl = R.y + 38, dScale = (R.h - 38) / 960;
-    const sky = ctx.createLinearGradient(0, R.y, 0, wl);
-    sky.addColorStop(0, '#1b3a52'); sky.addColorStop(1, '#4c7d92');
-    ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
-    ctx.fillStyle = sky; ctx.fillRect(R.x, R.y, R.w, wl - R.y);
-    const wg = ctx.createLinearGradient(0, wl, 0, R.y + R.h);
-    wg.addColorStop(0, '#2f7f86'); wg.addColorStop(1, '#08222e');
-    ctx.fillStyle = wg; ctx.fillRect(R.x, wl, R.w, R.h - (wl - R.y));
-    // ground silhouette across the whole world
-    ctx.beginPath(); ctx.moveTo(R.x, R.y + R.h + 4);
-    for (let sx = 0; sx <= R.w; sx += 2) {
-      const wx = x0 + (sx / R.w) * (x1 - x0);
-      ctx.lineTo(R.x + sx, wl + MapData.floorY(wx) * dScale);
-    }
-    ctx.lineTo(R.x + R.w, R.y + R.h + 4); ctx.closePath();
-    ctx.fillStyle = '#4a4230'; ctx.fill();
-    // a turf lip and a paler shelf under it
-    for (let sx = 0; sx <= R.w; sx += 2) {
-      const wx = x0 + (sx / R.w) * (x1 - x0), fy = MapData.floorY(wx), gy = wl + fy * dScale;
-      ctx.fillStyle = fy < 0 ? '#5f8a3f' : mixColor('#6a6250', '#2a3a3e', clamp(fy / 700, 0, 1));
-      ctx.fillRect(R.x + sx, Math.round(gy), 2, 2);
-    }
-    ctx.fillStyle = 'rgba(230,250,255,0.35)'; ctx.fillRect(R.x, Math.round(wl), R.w, 1);
-    ctx.restore();
-    this.panel(ctx, R.x, R.y, R.w, R.h, 'rgba(0,0,0,0)', 'rgba(120,180,170,0.4)');
+    // --- the globe, with a soft glow behind it
+    ctx.globalCompositeOperation = 'lighter';
+    const gl = ctx.createRadialGradient(gg.cx, gg.cy, gg.r * 0.7, gg.cx, gg.cy, gg.r * 1.8);
+    gl.addColorStop(0, 'rgba(40,120,150,0.18)'); gl.addColorStop(1, 'rgba(40,120,150,0)');
+    ctx.fillStyle = gl; ctx.fillRect(gg.cx - gg.r * 2, gg.cy - gg.r * 2, gg.r * 4, gg.r * 4);
+    ctx.globalCompositeOperation = 'source-over';
+    Globe.draw(ctx, gg.cx, gg.cy, gg.r, spin, tilt, t);
+    // targeting reticle around the sphere
+    ctx.strokeStyle = 'rgba(120,220,200,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(gg.cx, gg.cy, gg.r + 7, 0, TAU); ctx.stroke();
+    ctx.fillStyle = 'rgba(120,220,200,0.5)';
+    for (let a = 0; a < 4; a++) { const an = a * Math.PI / 2 + t * 0.25; ctx.fillRect(Math.round(gg.cx + Math.cos(an) * (gg.r + 7) - 1), Math.round(gg.cy + Math.sin(an) * (gg.r + 7) - 1), 3, 3); }
 
-    // --- the route: a dashed line along the surface from the pipe to the sea
-    const rows = this.stageRows();
-    ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
-    for (let i = 0; i < rows.length - 1; i++) {
-      const a = rows[i], b = rows[i + 1];
-      const openBoth = Stages.unlocked(a.st) && Stages.unlocked(b.st);
-      ctx.fillStyle = openBoth ? 'rgba(143,232,200,0.5)' : 'rgba(110,130,126,0.25)';
-      for (let px2 = a.px; px2 < b.px; px2 += 5) {
-        const wx2 = x0 + ((px2 - R.x) / R.w) * (x1 - x0);
-        const yy = Math.max(wl, wl + MapData.floorY(wx2) * dScale) + 4;
-        ctx.fillRect(Math.round(px2), Math.round(Math.min(R.y + R.h - 6, yy)), 3, 1);
-      }
-    }
-    ctx.restore();
-    // --- landmarks and pins
+    // --- pins, far side first so near ones sit on top
+    const rows = this.stageRows().slice().sort((a, b) => a.z - b.z);
     for (const r of rows) {
       const st = r.st, open = Stages.unlocked(st), sel = r.i === G.stageSel;
-      const wx = st.x, gy = wl + MapData.floorY(wx) * dScale;
-      const base = Math.min(gy, wl) - 1;
-      this.drawLandmark(ctx, st.id, r.px, base, open);
-      // the marker sits on the shoreline right under its landmark
-      const col = st.kaiju ? '#ff7a40' : open ? '#8fe8c8' : '#5f6f6a';
-      // markers sit in a tidy row just under the surface; dangling them down to
-      // the seabed made the deep stages look like dropped plumb lines
-      const pinY = wl + 6;
+      if (!r.vis) continue;
+      const fade = clamp(r.z * 2.4, 0, 1);
+      const col = st.kaiju ? '#ff7a40' : open ? '#7fffd8' : '#5f7f78';
+      ctx.globalAlpha = fade;
+      if (sel) {
+        const pr = 7 + Math.sin(t * 5) * 1.6;
+        ctx.strokeStyle = col; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(r.px, r.py, pr, 0, TAU); ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.fillRect(Math.round(r.px - pr - 4), Math.round(r.py), 3, 1);
+        ctx.fillRect(Math.round(r.px + pr + 2), Math.round(r.py), 3, 1);
+      }
       ctx.fillStyle = col;
-      ctx.fillRect(Math.round(r.px), Math.round(base), 1, Math.max(1, pinY - base - 3));
-      const rr = sel ? 4 + Math.sin(t * 5) * 0.8 : 2.6;
-      ctx.beginPath(); ctx.arc(r.px, pinY, rr, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#06120f'; ctx.beginPath(); ctx.arc(r.px, pinY, rr - 1.5, 0, TAU); ctx.fill();
-      if (!open) { ctx.fillStyle = col; ctx.fillRect(Math.round(r.px - 2), Math.round(pinY - 1), 4, 3); ctx.fillRect(Math.round(r.px - 1), Math.round(pinY - 3), 2, 2); }
-      else if (sel) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(r.px, pinY, 1.4, 0, TAU); ctx.fill(); }
-      if (sel) Font.draw(ctx, st.name, clamp(r.px, 46, W - 46), Math.max(R.y + 3, base - 20), { color: col, align: 'center', outline: '#04120e' });
+      ctx.fillRect(Math.round(r.px - 2), Math.round(r.py - 2), 4, 4);
+      ctx.fillStyle = '#04100c'; ctx.fillRect(Math.round(r.px - 1), Math.round(r.py - 1), 2, 2);
+      if (open) { ctx.fillStyle = col; ctx.fillRect(Math.round(r.px), Math.round(r.py), 1, 1); }
+      ctx.globalAlpha = 1;
     }
 
-    // --- detail card for the pin under the cursor
+    // --- readout column on the right: icon, name, two numbers, nothing else
     const cur = STAGES[G.stageSel] || STAGES[0], open = Stages.unlocked(cur);
-    const cy2 = R.y + R.h + 12, shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
-    const accent = cur.kaiju ? '#ff7a40' : open ? '#8fe8c8' : '#a08070';
-    this.panel(ctx, 16 + shake, cy2, W - 32, 52, 'rgba(8,18,20,0.92)', accent);
-    Font.draw(ctx, open ? cur.name : 'UNCHARTED', 26 + shake, cy2 + 8, { color: accent, scale: 2, outline: '#04120e' });
-    Font.draw(ctx, open ? cur.sub : Stages.hint(cur.need), 26 + shake, cy2 + 26, { color: open ? '#c8d8d0' : '#a08070' });
+    const accent = cur.kaiju ? '#ff7a40' : open ? '#7fffd8' : '#a08070';
+    const px0 = W * 0.62, shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
+    Font.draw(ctx, 'RELEASE SITE', px0 + shake, 26, { color: '#4f7f74' });
+    Font.draw(ctx, String(G.stageSel + 1).padStart(2, '0') + ' / ' + String(STAGES.length).padStart(2, '0'), W - 22, 26, { color: '#4f7f74', align: 'right' });
+    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(px0 + shake, 36, W - 22 - px0, 1);
+    // the landmark icon, large, standing in for a paragraph of description
+    const iw = 54;
+    this.bracket(ctx, px0 + shake, 46, iw, iw, 'rgba(120,220,200,0.4)');
+    ctx.save(); ctx.translate(px0 + iw / 2 + shake, 46 + iw * 0.72); ctx.scale(1.7, 1.7);
+    this.drawLandmark(ctx, cur.id, 0, 0, open);
+    ctx.restore();
+    Font.draw(ctx, open ? cur.name : 'SEALED', px0 + iw + 10 + shake, 52, { color: accent, scale: 2, outline: '#04120e' });
     if (open) {
-      Font.draw(ctx, 'START ' + (cur.size * 3.2).toFixed(1) + ' FT', W - 26 + shake, cy2 + 8, { color: '#d4e0d0', align: 'right' });
-      Font.draw(ctx, 'THREAT', W - 26 + shake, cy2 + 22, { color: '#8aa89c', align: 'right' });
-      const sk = Math.min(5, Math.round(cur.diff + 1));
-      for (let k = 0; k < 5; k++) { ctx.fillStyle = k < sk ? (cur.kaiju ? '#ff7a40' : '#e0a040') : '#2c3a36'; ctx.fillRect(Math.round(W - 26 - 40 + k * 8 + shake), cy2 + 32, 6, 6); }
-    } else Font.draw(ctx, 'LOCKED', W - 26 + shake, cy2 + 8, { color: '#a08070', align: 'right' });
-    Font.draw(ctx, open ? 'ENTER TO DEPLOY' : 'NOT YET', 26 + shake, cy2 + 38, { color: open ? '#ffe060' : '#ff8060' });
+      Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 72, { color: '#c8d8d0' });
+      for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 8 + shake), 84, 6, 6); }
+    } else Font.draw(ctx, Stages.hint(cur.need), px0 + iw + 10 + shake, 72, { color: '#a08070' });
 
-    // what the save knows, so the empty half of the screen earns its place
+    // --- the chain of sites as a strip of blips, so progress reads at a glance
+    const sy2 = 122, sw2 = W - 22 - px0;
+    for (let i = 0; i < STAGES.length; i++) {
+      const st = STAGES[i], o2 = Stages.unlocked(st), on = i === G.stageSel;
+      const bx = px0 + (i + 0.5) * (sw2 / STAGES.length);
+      ctx.fillStyle = on ? accent : o2 ? '#3f6f66' : '#26332f';
+      ctx.fillRect(Math.round(bx - 3), sy2 + (on ? -2 : 0), 6, on ? 10 : 6);
+    }
+    ctx.fillStyle = 'rgba(120,220,200,0.2)'; ctx.fillRect(px0, sy2 + 14, sw2, 1);
+
+    // --- what the save knows, as four numbers
     const sv = G.save, opened = STAGES.filter(x2 => Stages.unlocked(x2)).length;
-    const by = cy2 + 62;
-    this.panel(ctx, 16, by, W - 32, 46, 'rgba(6,14,16,0.85)', 'rgba(100,150,140,0.28)');
-    const stat = (lab, val, cx3) => { Font.draw(ctx, lab, cx3, by + 9, { color: '#7f9a90', align: 'center' }); Font.draw(ctx, val, cx3, by + 22, { color: '#d8e8de', align: 'center', scale: 2, outline: '#04120e' }); };
-    const q = (W - 32) / 4;
-    stat('WATERS OPEN', opened + '/' + STAGES.length, 16 + q * 0.5);
-    stat('LONGEST', (sv.bestLen || 0).toFixed(1) + ' FT', 16 + q * 1.5);
-    stat('BEST SCORE', fmt(sv.best || 0), 16 + q * 2.5);
-    stat('RUNS', String(sv.runs || 0), 16 + q * 3.5);
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A PIN, TAP AGAIN TO DEPLOY' : 'LEFT / RIGHT ALONG THE MAP      ENTER: DEPLOY      ESC: BACK', W / 2, H - 12, { color: '#7f9a90', align: 'center' });
+    const by = 146, cells = [[opened + '/' + STAGES.length, 'SITES'], [(sv.bestLen || 0).toFixed(0) + 'FT', 'BEST'], [fmt(sv.best || 0), 'SCORE'], [String(sv.runs || 0), 'RUNS']];
+    cells.forEach((c, i) => {
+      const bx = px0 + (i % 2) * (sw2 / 2), byy = by + Math.floor(i / 2) * 30;
+      Font.draw(ctx, c[0], bx, byy, { color: '#d8e8de', scale: 2, outline: '#04120e' });
+      Font.draw(ctx, c[1], bx, byy + 17, { color: '#4f7f74' });
+    });
+
+    // --- prompt
+    const okCol = open ? '#ffe060' : '#ff8060';
+    Font.draw(ctx, open ? 'ENTER' : 'LOCKED', px0 + shake, H - 30, { color: okCol, scale: 2, outline: '#2a1a00' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A SITE' : 'ARROWS  SPIN', px0 + shake, H - 12, { color: '#4f7f74' });
   },
   // ---------- loadout: the splice bay, with you in the tank ----------
   loadoutCells() {

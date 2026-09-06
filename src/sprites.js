@@ -221,7 +221,7 @@ function buildCrocParts(L) {
   const mk = (w, h) => { const c = mkCanvas(w, h); return { c, x: c.getContext('2d'), w, h }; };
   const px = (o, i, j, col, w = 1, h = 1) => { o.x.fillStyle = col; o.x.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
   const hi = c => mixColor(c, '#ffffff', 0.3), lo = c => shade(c, 0.72), lo2 = c => shade(c, 0.5);
-  const OL = mixColor(shade(L.dark, 0.75), '#150e08', 0.45);
+  const OL = mixColor(shade(L.dark, 0.8), '#1a140e', 0.3);
   // a 2px dark edge, so the toon outline survives being drawn at half scale
   const edge = o => { R.outline(o, OL); R.outline(o, OL); };
   // body links only get a top/bottom edge; a full box would draw a seam between
@@ -248,7 +248,7 @@ function buildCrocParts(L) {
     px(o, 4, cy + 4, lo(L.belly), 12, 1);
     // eye turret: raised bump, big cartoon eye
     R.disc({ c: o.c, x: o.x, w, h }, 8, cy - 7, 4.2, L.back);
-    R.eye({ c: o.c, x: o.x, w, h }, 8, cy - 7, 3, { ring: OL, iris: L.eye, pupil: L.pupil, look: [0.45, 0.05] });
+    R.eye({ c: o.c, x: o.x, w, h }, 8, cy - 7, 2.3, { ring: OL, iris: L.eye, pupil: L.pupil, look: [0.45, 0.05] });
     px(o, 6, cy - 10, hi(L.back), 5, 1);
     // upper teeth
     for (const tx of [19, 23, 27, 31, 35, 39]) { px(o, tx, cy + 4, L.tooth, 2, 3); px(o, tx, cy + 6, shade(L.tooth, 0.82), 2, 1); }

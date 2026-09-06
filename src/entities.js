@@ -48,9 +48,21 @@ class Entity {
     if (sp > 5) { const a = clamp(Math.atan2(this.vy, Math.abs(this.vx)), -pitchMax, pitchMax); this.angle = angleLerp(this.angle, a, turn); }
   }
   clampWater(margin = 6) {
-    const fy = World.floorY(this.x);
-    if (this.y > fy - margin) { this.y = fy - margin; if (this.vy > 0) this.vy *= -0.3; }
-    const s = World.surface(this.x) + margin;
+    const surf = World.surface(this.x), fy = World.floorY(this.x);
+    // A column with no real water in it is not somewhere a swimmer can be. Back
+    // out to the last wet spot instead of trying to place the body somewhere in
+    // the mud or the air, neither of which is a position a fish should hold.
+    if (fy < surf + 6) {
+      if (this._wetX !== undefined) this.x = this._wetX;
+      this.vx *= -0.5;
+      const f2 = World.floorY(this.x), s2 = World.surface(this.x);
+      this.y = clamp(this.y, s2 + Math.min(margin, (f2 - s2) * 0.3), f2 - Math.min(margin, (f2 - s2) * 0.3));
+      return;
+    }
+    this._wetX = this.x;
+    const s = surf + margin, bed = fy - margin;
+    if (bed <= s) { this.y = (surf + fy) * 0.5; if (this.vy > 0) this.vy = 0; return; }
+    if (this.y > bed) { this.y = bed; if (this.vy > 0) this.vy *= -0.3; }
     if (this.y < s) { this.y = s; if (this.vy < 0) this.vy *= -0.3; }
   }
   animate(dt, rate) { this.animT += dt * rate; this.frame = Math.floor(this.animT); this.anim.phase += dt * rate * 1.6; }
@@ -221,8 +233,7 @@ class Fish extends Entity {
         break;
       }
     }
-    this.clampWater(4 + this.r * this.size * 0.5);
-    this.move(dt); this.faceVel(0.5);
+    this.move(dt); this.clampWater(4 + this.r * this.size * 0.5); this.faceVel(0.5);
     const spd = Math.hypot(this.vx, this.vy); this.anim.phase += dt * (3 + spd / 14); this.anim.speed = clamp(spd / (this.speed || 60), 0, 1.2);
   }
 }
@@ -237,7 +248,7 @@ class Turtle extends Entity {
     this.swimToward(this.tx, this.ty, 22 * (1 - this.slow), 1.5, dt);
     const P = G.player; this.snapCd -= dt;
     if (!P.dead && P.size < this.sizeClass * 2.2 && P.nearestDist(this.x, this.y) < this.r + 8 * P.vis && this.snapCd <= 0) { P.hurt(this.snap, this, 'bite'); this.snapCd = 2; SFX.chomp(0.8, this.pan); }
-    this.clampWater(this.r); this.move(dt); this.faceVel(0.3);
+    this.move(dt); this.clampWater(this.r); this.faceVel(0.3);
     const spd = Math.hypot(this.vx, this.vy); this.anim.phase += dt * (1.5 + spd / 10); this.anim.speed = clamp(spd / 30, 0, 1);
   }
   takeDamage(dmg, src, opts) {
@@ -499,8 +510,9 @@ class Snake extends Entity {
     // environment
     const surfaceSwimmer = this.kind === 'moccasin' || this.kind === 'ratsnake';
     if (land && !surfaceSwimmer) { const fy = World.floorY(this.x); this.y = fy - this.r; this.vy = 0; }
-    else { if (surfaceSwimmer) { this.y = lerp(this.y, surf + this.r * 0.6, 0.1); } this.clampWater(this.r); }
+    else if (surfaceSwimmer) this.y = lerp(this.y, surf + this.r * 0.6, 0.1);
     this.move(dt);
+    if (!land) this.clampWater(this.r);
     if (!surfaceSwimmer && this.y < surf && !land) { this.vy += 400 * dt; }
     // chain follow with sine slither
     this.phase += dt * (3 + Math.hypot(this.vx, this.vy) * 0.05);

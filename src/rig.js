@@ -48,7 +48,7 @@ const R = {
   mk(w, h) { w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); const c = mkCanvas(w, h); return { c, x: c.getContext('2d'), w, h }; },
   px(o, i, j, col, w = 1, h = 1) { o.x.fillStyle = col; o.x.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); },
   hi: c => mixColor(c, '#ffffff', 0.28), hi2: c => mixColor(c, '#ffffff', 0.5), lo: c => shade(c, 0.72), lo2: c => shade(c, 0.5),
-  ol: c => mixColor(shade(c, 0.35), '#140c08', 0.5),
+  ol: c => mixColor(shade(c, 0.42), '#181410', 0.34),
   // solid disc
   disc(o, cx, cy, r, col) {
     if (r < 1) { R.px(o, cx - 0.5, cy - 0.5, col); return; }
@@ -131,7 +131,7 @@ const R = {
     const rr = opts.scared ? r * 1.25 : r;
     R.disc(o, x, y, rr + 1, ring); R.disc(o, x, y, rr, opts.sclera || '#f2ece0');
     R.disc(o, x, y + rr * 0.35, rr * 0.8, mixColor(opts.sclera || '#f2ece0', ring, 0.24));   // lid shadow
-    const pr = Math.max(1, Math.round(rr * (opts.scared ? 0.42 : 0.66)));
+    const pr = Math.max(1, Math.round(rr * (opts.scared ? 0.36 : 0.52)));
     const look = opts.look || [0.35, 0.05], lx = look[0] * Math.max(0, rr - pr), ly = look[1] * Math.max(0, rr - pr);
     if (opts.iris) R.disc(o, x + lx, y + ly, Math.min(rr - 0.4, pr + 1.2), opts.iris);
     R.disc(o, x + lx, y + ly, pr, opts.pupil || '#141414');
@@ -323,7 +323,7 @@ function buildBird(s) {
     else if (s.beak === 'hook') { R.px(o, bx, by - 1, bc, bl, 3); R.px(o, bx + bl - 2, by + 2, R.lo(bc), 2, 2); }
     else if (s.beak === 'curve') for (let i = 0; i < bl; i++) R.px(o, bx + i, by + Math.round(i * i * 0.08), bc, 1, 2);
     else { R.px(o, bx, by, bc, bl, 2); R.px(o, bx, by + 1, R.lo(bc), bl, 1); }
-    R.eye(o, hx + hs * 0.34, hy - hs * 0.16, Math.max(1.5, hs * 0.27), { ring: OL, iris: s.eye || '#c8a030', look: [0.4, 0.1] });
+    R.eye(o, hx + hs * 0.38, hy - hs * 0.14, Math.max(1.4, hs * 0.19), { ring: OL, iris: s.eye || '#c8a030', look: [0.4, 0.1] });
     R.outline(o, OL);
     parts.head = R.part(o, hx, hy + hs * 0.6);   // pivot at the top of the neck
   }
@@ -453,7 +453,7 @@ function buildQuad(s) {
     R.disc(o, hx + hs * 0.7 + sn * 0.6, hy + hs * 0.05, Math.max(1, hs * 0.16), '#1a1410');           // nose
     R.px(o, hx + hs * 0.7 + sn * 0.3, hy + hs * 0.5, R.lo2(hc), sn * 0.5, 1);                          // mouth
     if (s.tusks) { R.px(o, hx + hs * 0.7 + sn * 0.5, hy + hs * 0.45, '#f4f0e0', 1, 3); R.px(o, hx + hs * 0.7 + sn * 0.5 - 1, hy + hs * 0.45 + 2, '#f4f0e0', 1, 2); }
-    R.eye(o, hx + hs * 0.3, hy - hs * 0.18, Math.max(1.5, hs * 0.24), { ring: OL, iris: s.eye, look: [0.35, 0.1] });
+    R.eye(o, hx + hs * 0.34, hy - hs * 0.16, Math.max(1.4, hs * 0.17), { ring: OL, iris: s.eye, look: [0.35, 0.1] });
     R.outline(o, OL);
     parts.head = R.part(o, hx - hs * 0.6, hy + hs * 0.4);   // pivot at the neck
   }
@@ -542,7 +542,7 @@ function buildBiped(s) {
     if (hs !== 'bald') { R.blob(o, hx - 1, hy - hr * 0.55, hr * 0.95, hr * 0.55, hair, { hl: false }); if (hs === 'long') { R.px(o, hx - hr - 1, hy - hr * 0.5, hair, 2, hr * 1.4); R.px(o, hx - hr * 0.6, hy + hr * 0.3, hair, 1, hr * 0.7); } if (hs === 'bun') R.disc(o, hx - hr * 0.7, hy - hr * 0.9, Math.max(1.5, hr * 0.35), hair); if (hs === 'mohawk') R.px(o, hx - 1, hy - hr * 1.7, hair, 3, hr * 0.8); if (hs === 'curly') { R.disc(o, hx - hr * 0.8, hy - hr * 0.5, hr * 0.4, hair); R.disc(o, hx + hr * 0.6, hy - hr * 0.6, hr * 0.4, hair); } }
     if (s.beard) R.blob(o, hx + hr * 0.15, hy + hr * 0.62, hr * 0.62, hr * 0.42, hair, { hl: false });
     // eyes: big, wide apart; scared = wider with tiny pupils
-    const er = Math.max(1.6, hr * 0.3), ey = hy - hr * 0.05;
+    const er = Math.max(1.3, hr * 0.2), ey = hy - hr * 0.02;
     R.eye(o, hx + hr * 0.5, ey, er, { ring: OL, look: [0.3, 0.15], scared });
     R.eye(o, hx - hr * 0.2, ey, er * 0.9, { ring: OL, look: [0.4, 0.15], scared });
     if (s.glasses) { R.px(o, hx - hr * 0.2 - er - 1, ey - er, '#1c1410', hr * 0.7 + er * 2 + 2, 1); R.px(o, hx + hr * 0.5 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
@@ -699,7 +699,7 @@ function buildTurtle(s) {
     R.blob(o, hx, hy, hs * 1.15, hs * 0.92, s.skin, { tex: 'hide', seed: hs * 3 });
     R.blob(o, hx + hs * 0.6, hy + hs * 0.3, hs * 0.5, hs * 0.4, mixColor(s.skin, '#e8dcb0', 0.35), { hl: false });   // jaw
     if (s.stripe) for (let k = 0; k < 3; k++) R.px(o, hx - hs * 0.5 + k * hs * 0.45, hy - hs * 0.55, s.stripe, 1, hs * 0.5);
-    R.eye(o, hx + hs * 0.4, hy - hs * 0.24, Math.max(1.2, hs * 0.3), { ring: OL, iris: s.eye || '#c07030', look: [0.4, 0.1] });
+    R.eye(o, hx + hs * 0.44, hy - hs * 0.22, Math.max(1.2, hs * 0.21), { ring: OL, iris: s.eye || '#c07030', look: [0.4, 0.1] });
     R.px(o, hx + hs * 0.85, hy + hs * 0.28, R.lo2(s.skin), hs * 0.5, 1);
     if (s.hooked) R.px(o, hx + hs * 1.3, hy + hs * 0.15, R.lo2(s.skin), 1, 2);
     R.outline(o, OL); parts.head = R.part(o, 2, hy); }

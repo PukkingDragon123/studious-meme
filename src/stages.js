@@ -5,15 +5,15 @@
 // bigger and against a harder table. The last stage is the city.
 // ---------------------------------------------------------------------------
 const STAGES = [
-  { id: 'outfall', name: 'THE OUTFALL', sub: 'WHERE THE PIPE SPITS YOU OUT', x: 320, size: 1.0, diff: 0, intro: true },
-  { id: 'mangrove', name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
-  { id: 'camp', name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
-  { id: 'cypress', name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
-  { id: 'prairie', name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
-  { id: 'river', name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
-  { id: 'campground', name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
-  { id: 'bay', name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
-  { id: 'seawall', name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+  { id: 'outfall', lat: -0.36, lon: 0.10, name: 'THE OUTFALL', sub: 'WHERE THE PIPE SPITS YOU OUT', x: 320, size: 1.0, diff: 0, intro: true },
+  { id: 'mangrove', lat: -0.22, lon: 0.42, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
+  { id: 'camp', lat: -0.06, lon: 0.72, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
+  { id: 'cypress', lat: 0.10, lon: 0.98, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
+  { id: 'prairie', lat: 0.26, lon: 1.24, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
+  { id: 'river', lat: 0.36, lon: 1.54, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
+  { id: 'campground', lat: 0.24, lon: 1.86, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
+  { id: 'bay', lat: 0.06, lon: 2.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
+  { id: 'seawall', lat: -0.14, lon: 2.50, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
