@@ -595,6 +595,19 @@ const G = {
   },
   updateWorld(dt, demo) {
     this.t += dt; World.t += dt;
+    // ambience: the swamp is never completely still
+    this.ambT = (this.ambT || 0) - dt;
+    if (this.ambT <= 0) {
+      this.ambT = 0.13;
+      const halfW = this.W / this.cam.zoom / 2 + 70, wx = this.cam.x + rand(-halfW, halfW);
+      const fy = World.floorY(wx), su = World.surface(wx);
+      if (fy > su + 24) {
+        if (chance(0.45)) this.fx.bubbles(wx, fy - rand(1, 6), 1, 3, 8);        // marsh gas off the bed
+        else if (chance(0.2)) this.fx.ripple(wx, 2, 0.22);                       // something rising
+      } else if (fy < -6 && !World.isIndoor(wx) && chance(0.4)) {
+        this.fx.leaf(wx, fy - rand(24, 140), choice(['#7a8a4a', '#9aa860', '#c8b070', '#8a9a58']));
+      }
+    }
     const prevDay = this.day; this.day = (this.day + dt / 420) % 1;
     if (this.state === 'play') {
       if (prevDay < 0.62 && this.day >= 0.62) this.nightCounted = false;
@@ -665,6 +678,24 @@ const G = {
     const vis = [];
     for (const e of this.ents) if (e.x > left - e.r * e.size * 4 && e.x < right + e.r * e.size * 4) vis.push(e);
     vis.sort((a, b) => a.layer - b.layer);
+    // contact shadows: anything on or just above land gets one, so creatures sit
+    // on the ground instead of hovering over it
+    ctx.globalAlpha = 0.26; ctx.fillStyle = '#080d06';
+    const shadow = (ex, ey, rr) => {
+      const fy = World.floorY(ex);
+      if (fy > 8) return;
+      const d = fy - ey;
+      if (d < -6 || d > 40) return;
+      const k = 1 - Math.max(0, d) / 40, w = Math.max(1.5, rr * 1.6 * k);
+      // stacked rects rather than an arc: matches the pixel look and costs a
+      // fraction of a filled path when a hundred creatures are on screen
+      const h = Math.max(1, w * 0.26);
+      ctx.fillRect(ex - w, fy - 1 - h * 0.5, w * 2, h);
+      ctx.fillRect(ex - w * 0.72, fy - 1 - h, w * 1.44, h * 2);
+    };
+    for (const e of vis) { if (e.type === 'gib' || e.type === 'proj' || e.type === 'structure') continue; shadow(e.x, e.y, (e.r || 5) * (e.size || 1)); }
+    if (P.onLand || World.floorY(P.x) < 8) shadow(P.x, P.y, 9 * P.vis);
+    ctx.globalAlpha = 1;
     let drewPlayer = false;
     for (const e of vis) { if (!drewPlayer && e.layer >= 2) { P.draw(ctx); drewPlayer = true; } e.draw(ctx); }
     if (!drewPlayer) P.draw(ctx);

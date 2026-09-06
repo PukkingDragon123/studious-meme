@@ -2134,7 +2134,15 @@ class FXSystem {
       }
     }
     const C = this.clouds;
-    for (let i = C.length - 1; i >= 0; i--) { const c = C[i]; c.life -= dt; if (c.life <= 0) { C.splice(i, 1); continue; } c.r = lerp(c.r, c.r1, 1 - Math.exp(-2 * dt)); c.x += c.vx * dt; c.y += c.vy * dt; }
+    for (let i = C.length - 1; i >= 0; i--) {
+      const c = C[i]; c.life -= dt;
+      if (c.life <= 0) { C.splice(i, 1); continue; }
+      c.r = lerp(c.r, c.r1, 1 - Math.exp(-2 * dt));
+      // blood underwater rides the current and slowly sinks
+      const drift = Water.velocity(c.x) * 0.02 + Math.sin(World.t * 0.5 + c.x * 0.01) * 2.2 + Water.wind * 6;
+      c.x += (c.vx + drift) * dt; c.y += (c.vy + 3) * dt;
+      c.vx *= Math.exp(-0.6 * dt); c.vy *= Math.exp(-0.6 * dt);
+    }
     const T = this.texts;
     for (let i = T.length - 1; i >= 0; i--) { const t = T[i]; t.life -= dt; t.t += dt; if (t.life <= 0) { T.splice(i, 1); continue; } t.y += t.vy * dt; t.x += t.vx * dt; t.vy *= 0.95; }
   }
@@ -2231,6 +2239,8 @@ const Gore = {
     const pool = ['gut', 'gut', 'heart', 'liver', 'rope', 'meat', 'bone', 'eye'];
     for (let i = 0; i < n; i++) Gore.organ(e.x + rand(-4, 4), e.y + rand(-4, 4), choice(pool), power, e.bloodColors);
     if (big) Gore.organ(e.x, e.y, 'skull', power, e.bloodColors);
+    const bc3 = (e.bloodColors || BLOOD_COLORS)[0];
+    for (let k = 0; k < (big ? 5 : 3); k++) G.fx.cloud(e.x + rand(-7, 7), e.y + rand(-5, 5), rand(7, 16) * Math.sqrt(power), bc3, rand(2.6, 5));
     Gore.slick(e.x, e.y, 6 + Math.min(26, e.mass * 0.25));
     SFX.gib(e.pan);
   },
@@ -2246,9 +2256,13 @@ const Gore = {
     g.rot = pl.wa; g.mass = e.edible ? Math.max(2, e.mass * 0.14) : 0; g.edible = g.mass > 0; g.bleedFx = rand(3, 6); g.name = 'LIMB';
     g.vx = e.vx * 0.3 + (dx || rand(-1, 1)) * rand(60, 160); g.vy = e.vy * 0.3 + (dy || 0) * 90 - rand(20, 90); g.vr = rand(-10, 10);
     G.add(g);
-    G.fx.blood(pl.wx, pl.wy, 16, dx, dy, 110, e.bloodColors);
+    G.fx.blood(pl.wx, pl.wy, 22, dx, dy, 130, e.bloodColors);
     Gore.organ(pl.wx, pl.wy, chance(0.5) ? 'rope' : 'meat', 0.7, e.bloodColors);
     Gore.slick(pl.wx, pl.wy, 8);
+    // a mist of fine droplets and a lingering plume at the wound
+    const bc = (e.bloodColors || BLOOD_COLORS)[0];
+    for (let k = 0; k < 3; k++) G.fx.cloud(pl.wx + rand(-3, 3), pl.wy + rand(-3, 3), rand(5, 11), bc, rand(2.4, 4.6));
+    G.fx.sparks && G.fx.flesh(pl.wx, pl.wy, 4, 70);
     SFX.gib(e.pan); G.hitstop(0.05); G.shake(4);
     e.dismembered = (e.dismembered || 0) + 1;
     return true;
@@ -2288,6 +2302,10 @@ const Gore = {
       G.add(g);
     }
     for (let i = 0; i < 6; i++) Gore.organ(e.x + rand(-6, 6), e.y, choice(['gut', 'gut', 'rope', 'heart', 'liver', 'meat']), 1.2, e.bloodColors);
+    for (let i = 0; i < 3; i++) Gore.organ(e.x + rand(-8, 8), e.y + rand(-4, 4), 'bone', 1.1, e.bloodColors);
+    const bc2 = (e.bloodColors || BLOOD_COLORS)[0];
+    for (let k = 0; k < 6; k++) G.fx.cloud(e.x + rand(-9, 9), e.y + rand(-6, 6), rand(9, 20), bc2, rand(3.2, 6));
+    G.fx.flesh(e.x, e.y, 10, 120);
     G.fx.gore(e.x, e.y, 150, dx, dy, true); Gore.slick(e.x, e.y, 24);
     G.hitstop(0.1); G.shake(11); SFX.gib(e.pan); SFX.crunch(2, e.pan);
   },
@@ -7400,6 +7418,19 @@ const G = {
   },
   updateWorld(dt, demo) {
     this.t += dt; World.t += dt;
+    // ambience: the swamp is never completely still
+    this.ambT = (this.ambT || 0) - dt;
+    if (this.ambT <= 0) {
+      this.ambT = 0.13;
+      const halfW = this.W / this.cam.zoom / 2 + 70, wx = this.cam.x + rand(-halfW, halfW);
+      const fy = World.floorY(wx), su = World.surface(wx);
+      if (fy > su + 24) {
+        if (chance(0.45)) this.fx.bubbles(wx, fy - rand(1, 6), 1, 3, 8);        // marsh gas off the bed
+        else if (chance(0.2)) this.fx.ripple(wx, 2, 0.22);                       // something rising
+      } else if (fy < -6 && !World.isIndoor(wx) && chance(0.4)) {
+        this.fx.leaf(wx, fy - rand(24, 140), choice(['#7a8a4a', '#9aa860', '#c8b070', '#8a9a58']));
+      }
+    }
     const prevDay = this.day; this.day = (this.day + dt / 420) % 1;
     if (this.state === 'play') {
       if (prevDay < 0.62 && this.day >= 0.62) this.nightCounted = false;
@@ -7470,6 +7501,24 @@ const G = {
     const vis = [];
     for (const e of this.ents) if (e.x > left - e.r * e.size * 4 && e.x < right + e.r * e.size * 4) vis.push(e);
     vis.sort((a, b) => a.layer - b.layer);
+    // contact shadows: anything on or just above land gets one, so creatures sit
+    // on the ground instead of hovering over it
+    ctx.globalAlpha = 0.26; ctx.fillStyle = '#080d06';
+    const shadow = (ex, ey, rr) => {
+      const fy = World.floorY(ex);
+      if (fy > 8) return;
+      const d = fy - ey;
+      if (d < -6 || d > 40) return;
+      const k = 1 - Math.max(0, d) / 40, w = Math.max(1.5, rr * 1.6 * k);
+      // stacked rects rather than an arc: matches the pixel look and costs a
+      // fraction of a filled path when a hundred creatures are on screen
+      const h = Math.max(1, w * 0.26);
+      ctx.fillRect(ex - w, fy - 1 - h * 0.5, w * 2, h);
+      ctx.fillRect(ex - w * 0.72, fy - 1 - h, w * 1.44, h * 2);
+    };
+    for (const e of vis) { if (e.type === 'gib' || e.type === 'proj' || e.type === 'structure') continue; shadow(e.x, e.y, (e.r || 5) * (e.size || 1)); }
+    if (P.onLand || World.floorY(P.x) < 8) shadow(P.x, P.y, 9 * P.vis);
+    ctx.globalAlpha = 1;
     let drewPlayer = false;
     for (const e of vis) { if (!drewPlayer && e.layer >= 2) { P.draw(ctx); drewPlayer = true; } e.draw(ctx); }
     if (!drewPlayer) P.draw(ctx);

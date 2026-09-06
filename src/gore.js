@@ -34,6 +34,8 @@ const Gore = {
     const pool = ['gut', 'gut', 'heart', 'liver', 'rope', 'meat', 'bone', 'eye'];
     for (let i = 0; i < n; i++) Gore.organ(e.x + rand(-4, 4), e.y + rand(-4, 4), choice(pool), power, e.bloodColors);
     if (big) Gore.organ(e.x, e.y, 'skull', power, e.bloodColors);
+    const bc3 = (e.bloodColors || BLOOD_COLORS)[0];
+    for (let k = 0; k < (big ? 5 : 3); k++) G.fx.cloud(e.x + rand(-7, 7), e.y + rand(-5, 5), rand(7, 16) * Math.sqrt(power), bc3, rand(2.6, 5));
     Gore.slick(e.x, e.y, 6 + Math.min(26, e.mass * 0.25));
     SFX.gib(e.pan);
   },
@@ -49,9 +51,13 @@ const Gore = {
     g.rot = pl.wa; g.mass = e.edible ? Math.max(2, e.mass * 0.14) : 0; g.edible = g.mass > 0; g.bleedFx = rand(3, 6); g.name = 'LIMB';
     g.vx = e.vx * 0.3 + (dx || rand(-1, 1)) * rand(60, 160); g.vy = e.vy * 0.3 + (dy || 0) * 90 - rand(20, 90); g.vr = rand(-10, 10);
     G.add(g);
-    G.fx.blood(pl.wx, pl.wy, 16, dx, dy, 110, e.bloodColors);
+    G.fx.blood(pl.wx, pl.wy, 22, dx, dy, 130, e.bloodColors);
     Gore.organ(pl.wx, pl.wy, chance(0.5) ? 'rope' : 'meat', 0.7, e.bloodColors);
     Gore.slick(pl.wx, pl.wy, 8);
+    // a mist of fine droplets and a lingering plume at the wound
+    const bc = (e.bloodColors || BLOOD_COLORS)[0];
+    for (let k = 0; k < 3; k++) G.fx.cloud(pl.wx + rand(-3, 3), pl.wy + rand(-3, 3), rand(5, 11), bc, rand(2.4, 4.6));
+    G.fx.sparks && G.fx.flesh(pl.wx, pl.wy, 4, 70);
     SFX.gib(e.pan); G.hitstop(0.05); G.shake(4);
     e.dismembered = (e.dismembered || 0) + 1;
     return true;
@@ -91,6 +97,10 @@ const Gore = {
       G.add(g);
     }
     for (let i = 0; i < 6; i++) Gore.organ(e.x + rand(-6, 6), e.y, choice(['gut', 'gut', 'rope', 'heart', 'liver', 'meat']), 1.2, e.bloodColors);
+    for (let i = 0; i < 3; i++) Gore.organ(e.x + rand(-8, 8), e.y + rand(-4, 4), 'bone', 1.1, e.bloodColors);
+    const bc2 = (e.bloodColors || BLOOD_COLORS)[0];
+    for (let k = 0; k < 6; k++) G.fx.cloud(e.x + rand(-9, 9), e.y + rand(-6, 6), rand(9, 20), bc2, rand(3.2, 6));
+    G.fx.flesh(e.x, e.y, 10, 120);
     G.fx.gore(e.x, e.y, 150, dx, dy, true); Gore.slick(e.x, e.y, 24);
     G.hitstop(0.1); G.shake(11); SFX.gib(e.pan); SFX.crunch(2, e.pan);
   },

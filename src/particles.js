@@ -119,7 +119,15 @@ class FXSystem {
       }
     }
     const C = this.clouds;
-    for (let i = C.length - 1; i >= 0; i--) { const c = C[i]; c.life -= dt; if (c.life <= 0) { C.splice(i, 1); continue; } c.r = lerp(c.r, c.r1, 1 - Math.exp(-2 * dt)); c.x += c.vx * dt; c.y += c.vy * dt; }
+    for (let i = C.length - 1; i >= 0; i--) {
+      const c = C[i]; c.life -= dt;
+      if (c.life <= 0) { C.splice(i, 1); continue; }
+      c.r = lerp(c.r, c.r1, 1 - Math.exp(-2 * dt));
+      // blood underwater rides the current and slowly sinks
+      const drift = Water.velocity(c.x) * 0.02 + Math.sin(World.t * 0.5 + c.x * 0.01) * 2.2 + Water.wind * 6;
+      c.x += (c.vx + drift) * dt; c.y += (c.vy + 3) * dt;
+      c.vx *= Math.exp(-0.6 * dt); c.vy *= Math.exp(-0.6 * dt);
+    }
     const T = this.texts;
     for (let i = T.length - 1; i >= 0; i--) { const t = T[i]; t.life -= dt; t.t += dt; if (t.life <= 0) { T.splice(i, 1); continue; } t.y += t.vy * dt; t.x += t.vx * dt; t.vy *= 0.95; }
   }
