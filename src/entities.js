@@ -84,6 +84,8 @@ class Entity {
       this.flash = 0.08; this.knock(opts.dx, opts.dy, 60); this.aware = true; this.awareT = 3;
       return 0;
     }
+    if (this.invulnB) { G.fx.sparks(this.x, this.y, 8, opts.dx, opts.dy); SFX.clank(this.pan); this.flash = 0.08; return 0; }
+    if (this.staggered) dmg *= 0.35;   // the opening is the finisher, not free damage
     this.hp -= dmg; this.flash = 0.1; this.lastHitT = G.t; this.aware = true; this.awareT = 3;
     this.squash = 1;
     if (this.bleeds) {
@@ -135,6 +137,7 @@ class Entity {
     this.slow = 0;
     if (this.poison > 0) { this.poison -= dt; this.slow = 0.6; this.hp -= this.poisonDmg * dt; if (chance(dt * 8)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030', '#80ff80']); if (this.hp <= 0) this.die(G.player); }
     if (this.bleedT > 0) { this.bleedT -= dt; this.hp -= this.bleedDmg * dt; if (chance(dt * 10)) G.fx.blood(this.x, this.y, 1, 0, 0, 15, this.bloodColors); if (this.hp <= 0) this.die(G.player); }
+    if (this.isBoss && this.bossMax) Boss.tick(this, dt);
   }
   update(dt) { this.tick(dt); }
   draw(ctx) {
@@ -578,11 +581,11 @@ class Gator extends Entity {
         if (this.roarCd <= 0 && dP < 300) { this.roarCd = rand(5, 9); SFX.growl(this.pan); }
         const lead = 0.25; let tx = P.x + P.vx * lead, ty = P.y + P.vy * lead;
         if (this.biteCd > 0 && this.biteCd < 1.0) { const dx = this.x - P.x, dy = this.y - P.y, d = Math.hypot(dx, dy) || 1; tx = P.x + dx / d * 120; ty = P.y + dy / d * 40; }
-        this.swimToward(tx, ty, maxSp * (this.isBoss ? 1.15 : 1), 3.5, dt);
+        this.swimToward(tx, ty, maxSp * (this.isBoss ? 1.15 * (this.bossSpd || 1) : 1), 3.5, dt);
         const [sx, sy] = this.snout;
         if (this.biteCd <= 0 && P.nearestDist(sx, sy) < 8 + 5 * P.vis + 4 * this.vis) {
-          this.biteT = 0.16; this.biteCd = this.isBoss ? 1.2 : 1.6;
-          const dmg = 11 * Math.pow(this.size, 0.8) * (this.isBoss ? 1.1 : 1);
+          this.biteT = 0.16; this.biteCd = (this.isBoss ? 1.2 : 1.6) / (this.bossSpd || 1);
+          const dmg = 11 * Math.pow(this.size, 0.8) * (this.isBoss ? 1.1 * (this.bossDmg || 1) : 1);
           if (P.hurt(dmg, this, 'bite') > 0) {
             SFX.chomp(this.size, this.pan); G.hitstop(0.05);
             const dx = P.x - this.x, dy = P.y - this.y, d = Math.hypot(dx, dy) || 1; if (!P.st.knockImmune) { P.vx += dx / d * 180; P.vy += dy / d * 120; }
@@ -710,7 +713,7 @@ class Boat extends Entity {
     G.fx.splinters(this.x, this.y, 40, 190); G.fx.splash(this.x, 3, this.vx); Water.splash(this.x, 220, this.r); SFX.splinter(this.pan); SFX.splash(2, this.pan); G.shake(12); G.slowmo(0.4, 0.6);
     for (const p of this.alivePass) { const [px, py] = this.passPos(p); const h = new Human(px, py + 6, p.type); h.vx = rand(-60, 60); h.vy = -rand(40, 120); G.add(h); p.alive = false; }
     if (this.tether) this.cutTether();
-    G.addScore(this.war ? 5000 : 800); G.stats.boats++; Meta.event('boat');
+    G.addScore(this.war ? 5000 : 800); G.stats.boats++; Meta.event('boat'); Missions.onWreck();
     if (this.war) G.onBossKilled(this);
   }
   cutTether() { if (this.tether && G.player.tether === this.tether) G.player.tether = null; this.tether = null; }
@@ -917,16 +920,16 @@ class SkunkApe extends Entity {
     }
     this.y = fy - this.hh * 0.5; this.vy = 0;
     if (!this.rage && this.hp < this.maxHp * 0.35) { this.rage = true; SFX.roar(3, this.pan); G.fx.text(this.x, this.y - 40, 'ENRAGED!', { color: '#ff4020', scale: 2 }); G.shake(10); }
-    const spd = this.rage ? 110 : 70; const dP = this.distTo(P);
+    const spd = (this.rage ? 110 : 70) * (this.bossSpd || 1); const dP = this.distTo(P);
     this.throwCd -= dt; this.poundCd -= dt; this.roarCd -= dt;
     if (this.roarCd <= 0 && dP < 400) { this.roarCd = rand(6, 10); SFX.roar(2.5, this.pan); }
     const dir = sign(P.x - this.x); this.facing = dir;
     const canWalk = World.floorY(this.x + dir * 16) < -2;
     if (P.dead) { this.vx = 0; }
     else if (dP < this.hh * 0.35 + 5 * P.vis && this.poundCd <= 0) {
-      this.poundCd = 1.8; P.hurt(28, this, 'crush'); P.vx += dir * 300; P.vy -= 150; G.shake(14); SFX.thud(this.pan); SFX.shock(this.pan); G.fx.shock(this.x, this.y + 20, 60, '#c0a080'); G.fx.smoke(this.x + dir * 20, this.y + 20, 6, '#6b5a3a');
+      this.poundCd = 1.8 / (this.bossSpd || 1); P.hurt(28 * (this.bossDmg || 1), this, 'crush'); P.vx += dir * 300; P.vy -= 150; G.shake(14); SFX.thud(this.pan); SFX.shock(this.pan); G.fx.shock(this.x, this.y + 20, 60, '#c0a080'); G.fx.smoke(this.x + dir * 20, this.y + 20, 6, '#6b5a3a');
     } else if (P.y > 10 && dP < 420 && this.throwCd <= 0) {
-      this.throwCd = this.rage ? 1.6 : 2.6; const tx = P.x + P.vx * 0.5, ty = P.y;
+      this.throwCd = (this.rage ? 1.6 : 2.6) / (this.bossSpd || 1); const tx = P.x + P.vx * 0.5, ty = P.y;
       const dx = tx - this.x, T = clamp(Math.abs(dx) / 260, 0.6, 1.4); const vx = dx / T, vy = (ty - (this.y - 20)) / T - 0.5 * 620 * T;
       G.add(new Projectile(this.x + dir * 12, this.y - 20, vx, vy, 'rock', this)); this.throwAnim = 0.3;
       G.fx.text(this.x, this.y - 44, 'HRRAAGH!', { color: '#ff8060' });

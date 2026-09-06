@@ -1,7 +1,7 @@
 'use strict';
 const Input = {
   keys: {}, pressed: {}, mouse: { x: 0, y: 0, down: false, rdown: false, clicked: false, rclicked: false, moved: false },
-  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, biteHeld: false, biteId: null, dashId: null, holdT: 0, autoBite: false },
+  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, brace: false, biteHeld: false, biteId: null, dashId: null, braceId: null, holdT: 0, autoBite: false },
   init(canvas) {
     window.addEventListener('keydown', e => {
       if (!this.keys[e.code]) this.pressed[e.code] = true; this.keys[e.code] = true;
@@ -22,6 +22,7 @@ const Input = {
     return {
       bite: { x: W - 54, y: H - 54, r: 30, label: 'BITE' },
       dash: { x: W - 112, y: H - 34, r: 21, label: 'DASH' },
+      brace: { x: W - 100, y: H - 88, r: 21, label: 'BRACE' },
       pause: { x: W - 15, y: 15, r: 13, label: 'II' },
       genes: { x: W - 42, y: 19, r: 16, label: 'G' },
       joyMax: W * 0.52,
@@ -44,6 +45,7 @@ const Input = {
         if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; continue; }
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
         else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashId = t.identifier; }
+        else if (this.inPad(P.brace, x, y)) { T.brace = true; T.braceId = t.identifier; }
         else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
         else if (G.state === 'play' && this.inPad(P.genes, x, y)) this.pressed.KeyG = true;
         else if (x < P.joyMax && !T.joy) { T.joy = true; T.jid = t.identifier; T.sx = x; T.sy = y; T.cx = x; T.cy = y; T.jx = 0; T.jy = 0; }
@@ -66,6 +68,7 @@ const Input = {
         if (t.identifier === T.jid) { T.joy = false; T.jid = null; T.jx = 0; T.jy = 0; }
         if (t.identifier === T.biteId) { T.biteHeld = false; T.biteId = null; }
         if (t.identifier === T.dashId) T.dashId = null;
+        if (t.identifier === T.braceId) T.braceId = null;
       }
     };
     canvas.addEventListener('touchend', end); canvas.addEventListener('touchcancel', end);
@@ -78,7 +81,7 @@ const Input = {
   setMouse(e) { const p = G.toCanvas(e.clientX, e.clientY); this.mouse.x = p[0]; this.mouse.y = p[1]; },
   down(...codes) { return codes.some(c => this.keys[c]); },
   hit(...codes) { return codes.some(c => this.pressed[c]); },
-  endFrame() { this.pressed = {}; this.mouse.clicked = false; this.mouse.rclicked = false; this.touch.bite = false; this.touch.dash = false; },
+  endFrame() { this.pressed = {}; this.mouse.clicked = false; this.mouse.rclicked = false; this.touch.bite = false; this.touch.dash = false; this.touch.brace = false; },
   axis() {
     let x = 0, y = 0;
     if (this.down('ArrowLeft', 'KeyA')) x -= 1; if (this.down('ArrowRight', 'KeyD')) x += 1; if (this.down('ArrowUp', 'KeyW')) y -= 1; if (this.down('ArrowDown', 'KeyS')) y += 1;
@@ -88,9 +91,20 @@ const Input = {
   },
   bitePressed() { return this.hit('Space', 'KeyJ', 'KeyZ') || this.mouse.rclicked || this.touch.bite || this.touch.autoBite; },
   dashPressed() { return this.hit('ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX') || this.touch.dash; },
+  // third action: a short brace that turns an incoming hit into a counter
+  bracePressed() { return this.hit('KeyL', 'KeyV', 'ControlLeft') || this.touch.brace; },
 };
 
 const BOSSES = { 2: 'oldscar', 4: 'warboat', 6: 'python', 8: 'skunkape', 10: 'shark' };
+// how many phase breaks a boss walks through, what it calls in, and the line
+// it gets on each break
+const BOSS_SPEC = {
+  oldscar:  { phases: 3, hp: 1.6, adds: ['gator', 'gator', 'moccasin'], cue: ['IT REMEMBERS YOU', 'NOTHING LEFT TO LOSE'] },
+  warboat:  { phases: 3, hp: 1.5, adds: ['poacher'], cue: ['THEY CALLED IT IN', 'ALL GUNS'] },
+  python:   { phases: 3, hp: 1.5, adds: ['moccasin', 'moccasin'], cue: ['THE NEST WOKE UP', 'IT COILS TIGHTER'] },
+  skunkape: { phases: 4, hp: 1.4, adds: ['boar', 'boar'], cue: ['IT STOPPED THROWING', 'THE TREES COME WITH IT', 'NOTHING HUMAN LEFT'] },
+  shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
+};
 function weightedPick(table) { const t = table.filter(e => e[1] > 0); let tot = t.reduce((s, e) => s + e[1], 0), r = Math.random() * tot; for (const e of t) { r -= e[1]; if (r <= 0) return e[0]; } return t.length ? t[t.length - 1][0] : null; }
 
 const G = {
@@ -102,7 +116,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -140,11 +154,11 @@ const G = {
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, s = this.scale || 1;
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
-  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
+  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
-    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null;
+    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
@@ -175,17 +189,20 @@ const G = {
         else P.genePoints += 1;                       // unspliced trades the gene for a point
         P.rebuildLook();
       }
+      Missions.applyAll(P);                           // relics you have already carried out
+      P.recomputeStats();
       this.stage = stage || STAGES[0];
       this.storeSave();
       if (this.stage.intro) this.beginIntro();
       else this.beginAtStage(this.stage);
+      Missions.start(this.stage);
     }
   },
   // drop straight into a stretch of the swamp, already grown, already hunted
   beginAtStage(st) {
     const P = this.player, x = st.x;
     P.size = st.size; P.sizeTarget = st.size; P.mass = sizeToMass(st.size); P.tier = tierFor(st.size);
-    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90;
+    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90; P.sheds = P.tier;
     P.x = x; P.y = Math.max(24, World.floorY(x) * 0.4); P.chain.reset(P.x, P.y, 0);
     this.cam.x = x; this.cam.y = P.y;
     World.ensure(x, 2200); Water.init(x); Mud.init(x);
@@ -330,6 +347,7 @@ const G = {
       if (!gulped) e.explode(1);
       if (e.type !== 'gib') { this.stats.kills++; this.save.kills++; }
       if (e.isBoss) this.onBossKilled(e);
+      Missions.onKill(e, true);
     } else if (e.type !== 'gib' && e.bleeds) e.explode(0.6);
     if (this.boss === e) this.boss = null;
   },
@@ -390,7 +408,7 @@ const G = {
   runDirector(dt) {
     const d = this.director, P = this.player, D = this.difficulty();
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
-    d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(30 - D * 2.2, 10, 30) * rand(0.8, 1.25); this.spawnPredator(D); }
+    d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(26 - D * 2.6, 7, 26) * rand(0.8, 1.25); this.spawnPredator(D); }
     d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     if (d.bossQueue && !this.boss) { d.bossT -= dt; if (d.bossT <= 0) this.spawnBoss(d.bossQueue); }
     // hard cap
@@ -483,6 +501,7 @@ const G = {
     else if (kind === 'skunkape') { const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
     else if (kind === 'shark') { const wx = World.findX(x, xx => World.floorY(xx) > 200, 1500, 40); if (wx !== null) { boss = this.add(new Fish(wx, clamp(150, 60, World.floorY(wx) - 40), 'shark')); boss.size = 2.2; boss.sizeClass = Math.max(10, P.size * 1.3); boss.hp = boss.maxHp = 1400; boss.mass = 1500; boss.name = 'BIG BULL'; boss.isBoss = true; boss.persistent = true; boss.speed = 200; boss.gibs = 6; } }
     if (!boss) { this.director.bossT = 8; return; }
+    Boss.init(boss, BOSS_SPEC[kind] || { phases: 3, hp: 1.3 });
     this.boss = boss; this.director.bossQueue = null;
     this.banner = { text: 'WARNING', sub: boss.name + ' APPROACHES', t: 4, max: 4, color: '#ff3030' }; SFX.warning(); this.shake(6);
   },
@@ -590,9 +609,13 @@ const G = {
       }
       case 'play':
         if (Input.hit('Escape', 'KeyP')) { this.state = 'pause'; SFX.ui(); break; }
-        if (Input.hit('KeyG', 'KeyE', 'Tab')) { this.openGenes(); break; }
-        if (Input.hit('KeyH')) { this.prevState = 'play'; this.state = 'help'; break; }
-        this.updateWorld(dt, false); this.runDirector(dt);
+        if (this.finisher) Finisher.update(raw);
+        else {
+          if (Input.hit('KeyG', 'KeyE', 'Tab')) { this.openGenes(); break; }
+          if (Input.hit('KeyH')) { this.prevState = 'play'; this.state = 'help'; break; }
+          if (this.boss && Boss.canFinish(this.boss) && Input.bitePressed()) Finisher.begin(this.boss);
+        }
+        this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
         break;
       case 'shedding':
         this.updateWorld(dt, false); this.shedT += raw;
@@ -689,7 +712,7 @@ const G = {
     if (P.x > 500) x = -1; if (P.x < -500) x = 1;
     let bite = false;
     for (const e of this.ents) if (e.type === 'fish' && !e.dead && dist(e.x, e.y, P.x, P.y) < 60) { const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; x = dx / d; y = dy / d; if (d < 26 && P.biteCd <= 0) bite = true; break; }
-    return { x, y, bite, dash: false };
+    return { x, y, bite, dash: false, brace: false };
   },
   updateWorld(dt, demo) {
     this.t += dt; World.t += dt;
@@ -715,7 +738,9 @@ const G = {
     const [ax, ay] = Input.axis();
     if (demo === 'egg') demo = false;
     const act = this.state === 'play' || (this.state === 'intro' && this.intro && this.intro.phase !== 'tank');
-    const inp = demo ? this.demoInput() : { x: ax, y: ay, bite: act && Input.bitePressed(), dash: act && Input.dashPressed() };
+    const fin = !!this.finisher;
+    const inp = demo ? this.demoInput()
+      : { x: fin ? 0 : ax, y: fin ? 0 : ay, bite: act && !fin && Input.bitePressed(), dash: act && !fin && Input.dashPressed(), brace: act && !fin && Input.bracePressed() };
     this.engineNear = 0;
     P.update(dt, inp);
     World.ensure(P.x, this.W / this.cam.zoom + 900);
@@ -821,6 +846,7 @@ const G = {
       case 'help': UI.drawHelp(ctx); break;
       case 'codex': UI.drawCodex(ctx); break;
     }
+    if (this.finisher) UI.drawFinisher(ctx);
     if ((this.state === 'play' || this.state === 'intro') && (this.touchUI || Input.touch.active) && this.settings.touch !== false) UI.drawTouch(ctx);
     if (this.settings.fps) Font.draw(ctx, this.fps + ' FPS', 4, this.H - 24, { color: '#80ff80' });
   },

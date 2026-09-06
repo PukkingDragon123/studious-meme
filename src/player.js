@@ -1,11 +1,13 @@
 'use strict';
+// death-roll timing: the window sits three quarters through each beat
+const QTE_AT = 0.74, QTE_PERFECT = 0.075, QTE_GOOD = 0.17;
 class Player {
   constructor() { this.reset(); }
   reset() {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
-    this.hide = 'wild'; this.primeGene = null;
+    this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
     this.st = {
       speed: 1, accel: 1, bite: 1, biteRadius: 1, hpMul: 1, armor: 0, bulletArmor: 0, hungerRate: 1, regen: 0, lifesteal: 0,
@@ -24,6 +26,7 @@ class Player {
     this.latched = null; this.latchT = 0; this.rollT = 0; this.roll = 0; this.rollCount = 0;
     this.grabbed = null; this.tether = null; this.breakFree = 0;
     this.dashCd = 0; this.dashCharges = 1; this.dashT = 0; this.ramHit = new Set();
+    this.braceT = 0; this.braceCd = 0; this.braceFlash = 0; this.parries = 0; this.strainBonus = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
@@ -32,11 +35,12 @@ class Player {
   // visual/geometric scale: the same compression every other creature uses, so a 27 ft croc is drawn 27 ft long
   get vis() { return Math.pow(this.size, 0.58); }
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
-  get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * (this.frenzyT > 0 ? 1.3 : 1); }
+  get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1); }
   get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
-  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * (this.frenzyT > 0 ? 1.4 : 1); }
+  get strainMul() { return 1 / (1 + (this.strain || 0) * 0.6); }
+  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * (this.frenzyT > 0 ? 1.4 : 1); }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -58,6 +62,18 @@ class Player {
       if (chance(dt * 0.8)) G.fx.text(this.x, this.y - 22 * this.vis, 'STARVING', { color: '#ff8040' });
       if (this.hp <= 0) return this.die('STARVED');
     } else this.starving = false;
+    // genetic rejection: past the body's tolerance the splices start fighting.
+    // Growing a tier raises the limit, so an overloaded build is survivable if
+    // you can feed through it.
+    this.strain = Genome.strain(this);
+    if (this.strain > 0) {
+      this.hp -= this.maxHp * 0.012 * this.strain * dt;
+      if (chance(dt * 2.4 * Math.min(1, this.strain))) {
+        G.fx.blood(this.x, this.y + rand(-6, 6) * this.vis, 1, 0, 0, 24, ['#7a1030', '#a02040']);
+        if (chance(0.25)) G.fx.text(this.x, this.y - 20 * this.vis, 'REJECTION', { color: '#ff5090', life: 1 });
+      }
+      if (this.hp <= 0) return this.die('REJECTED');
+    }
     if (this.st.regen > 0 && this.hunger > 25) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.regen * dt);
     if (this.st.landRegen > 0 && this.onLand) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.landRegen * dt);
     if (this.poisonT > 0) { this.poisonT -= dt; this.hp -= this.venomDps * dt; if (chance(dt * 6)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030']); if (this.hp <= 0) return this.die('POISONED'); }
@@ -67,6 +83,10 @@ class Player {
     if (this.moving) { if (this.stillT > 0.5) { this.ambushReady = true; this.ambushT = 0.5; } this.stillT = 0; } else this.stillT += dt;
     if (this.ambushT > 0) { this.ambushT -= dt; if (this.ambushT <= 0) this.ambushReady = false; }
     if (this.stillT > 0.5) this.ambushReady = true;
+    if (this.braceCd > 0) this.braceCd -= dt;
+    if (this.braceT > 0) this.braceT -= dt;
+    if (this.braceFlash > 0) this.braceFlash -= dt;
+    if (inp.brace) this.brace();
     if (inp.bite) this.bite();
     if (inp.dash) this.dash(ix, iy);
     const surf = World.surface(this.x), fy = World.floorY(this.x), under = this.y > surf, landHere = fy < 0;
@@ -189,13 +209,16 @@ class Player {
         if (chance(dt * 6)) G.fx.blood(e.x, e.y, 2, 0, 0, 30, e.bloodColors);
       }
     }
-    // death roll
+    // death roll: a timing test, not a cutscene
     if (this.rollT > 0) {
-      this.rollT -= dt * 2.4 * this.st.rollSpeed;
+      this.rollT -= dt * 0.9 * this.st.rollSpeed;
       this.roll = (1 - Math.max(0, this.rollT)) * TAU;
       G.shake(1.2);
+      // the marker sweeps once per beat; the window sits at the far side
+      this.qteT = (this.qteT || 0) + dt * 2.6 * this.st.rollSpeed;
+      if (this.qteT >= 1) { this.qteT -= 1; this.qteMissed = true; this.qteBeats = (this.qteBeats || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); SFX.hurt && SFX.hurt(); }
       if (under) { G.fx.bubbles(this.x, this.y, 2, 12 * this.vis, -20); if (chance(0.5)) G.fx.add({ type: 'foam', x: this.x + rand(-14, 14) * this.vis, y: World.surface(this.x), vx: rand(-30, 30), vy: 0, s: 1, life: 0.5 }); }
-      if (this.rollT <= 0) { this.roll = 0; this.rollT = 0; this.rollHit(); }
+      if (this.rollT <= 0) { this.roll = 0; this.rollT = 0; this.qteT = 0; this.rollHit(); }
     }
     if (this.gulpT > 0) this.gulpT -= dt;
     if (this.st.lure && chance(dt * 3)) G.fx.glow(this.x, this.y, 8 * this.vis, '#40f0c8', 0.6);
@@ -254,7 +277,22 @@ class Player {
       if (this.breakFree >= 3) { const T = this.tether; this.tether = null; if (T.boat) T.boat.cutTether(); this.breakFree = 0; G.fx.text(this.x, this.y - 20 * this.vis, 'LINE SNAPPED!', { color: '#ffd060' }); }
       return;
     }
-    if (this.latched && this.rollT <= 0) { this.rollT = 1; this.biteCd = 0.45 / this.st.rollSpeed; G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return; }
+    if (this.rollT > 0) {
+      // scoring the beat: dead centre of the window is a tear, the edges graze
+      const ph = this.qteT || 0, off = Math.abs(ph - QTE_AT);
+      if (off < QTE_PERFECT) { this.qteHits = (this.qteHits || 0) + 2; G.fx.text(this.x, this.y - 24 * this.vis, 'TEAR!', { color: '#fff060', scale: 2 }); G.hitstop(0.07); G.shake(7); SFX.crunch(1.4, this.pan); }
+      else if (off < QTE_GOOD) { this.qteHits = (this.qteHits || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'GOOD', { color: '#9ef0c8' }); SFX.chomp(this.size, this.pan); }
+      else { this.qteMissed = true; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); }
+      this.qteBeats = (this.qteBeats || 0) + 1;
+      this.qteT = 0;
+      this.biteCd = 0.1;
+      return;
+    }
+    if (this.latched && this.rollT <= 0) {
+      this.rollT = 1; this.biteCd = 0.45 / this.st.rollSpeed;
+      this.qteT = 0; this.qteHits = 0; this.qteBeats = 0; this.qteMissed = false;
+      G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return;
+    }
     this.biteT = 0.18; this.biteHit = false; this.biteCd = 0.3;
     if (this.st.lunge) { this.vx += Math.cos(this.angle) * this.st.lunge; this.vy += Math.sin(this.angle) * this.st.lunge; }
   }
@@ -301,14 +339,27 @@ class Player {
   }
   rollHit() {
     const e = this.latched; if (!e || e.dead) return; this.rollCount++;
-    const dmg = this.biteDmg * 1.6 * this.st.rollDmg, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
+    // the roll is worth what you timed out of it: whiff every beat and it barely bruises
+    const beats = Math.max(1, this.qteBeats || 1), hits = this.qteHits || 0;
+    const acc = clamp(hits / (beats * 2), 0, 1);
+    const qmul = 0.35 + acc * 1.65;
+    if (this.qteMissed && acc < 0.34 && chance(0.5) && this.latched) {
+      // a fumbled roll loses the grip instead of paying out
+      const lost = this.latched; this.latched = null; this.latchT = 0;
+      lost.vx = -this.facing * 200; lost.vy = -50;
+      G.fx.text(lost.x, lost.y - 16 * lost.size, 'LOST GRIP', { color: '#ffb0b0', scale: 2 });
+      SFX.hurt && SFX.hurt();
+      return;
+    }
+    const dmg = this.biteDmg * 1.6 * this.st.rollDmg * qmul, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
     const lethal = e.hp <= dmg; this.lastKillHow = 'roll';
     e.takeDamage(dmg, this, { dx: -dx, dy: -dy, pierce: true });
     if (lethal && e.bleeds && G.settings.gore) { this.latched = null; Gore.bisect(e, dx, dy); }
     else if (e.bleeds && G.settings.gore && chance(0.6)) { const l = Gore.limbsOf(e).filter(q => !(e.missing && e.missing.has(q.id))); if (l.length) Gore.tear(e, choice(l).id, -dx, -dy); }
     G.fx.gore(e.x, e.y, 130, 0, 0, true); G.hitstop(0.08); G.shake(9); SFX.crunch(this.size * 1.5, e.pan); SFX.gib(e.pan);
     G.fx.text(e.x, e.y - 16 * e.size, choice(['TEAR!', 'SHRED!', 'RIP!']), { color: '#ff4040', scale: 2 });
-    G.addScore(25);
+    G.addScore(Math.round(25 * qmul));
+    if (acc >= 0.9) { G.fx.text(this.x, this.y - 30 * this.vis, 'PERFECT ROLL', { color: '#fff060', scale: 2, life: 1.2 }); G.addScore(120); }
     if (!e.dead) this.latchT = 0;
   }
   ramCheck() {
@@ -339,6 +390,38 @@ class Player {
       else e.takeDamage(this.biteDmg * 1.2, this, { dx: dx / dd, dy: dy / dd, pierce: true });
       e.knock(dx / dd, dy / dd, 200); e.stun = 0.8;
     }
+  }
+  // BRACE: a short guard. Anything that lands in the first sliver of it is
+  // turned back on whoever threw it; the rest of the window is only armour, so
+  // pressing it early still costs you the cooldown.
+  brace() {
+    if (this.braceCd > 0) return;
+    this.braceCd = 1.5; this.braceT = 0.30;
+    SFX.clank(this.pan); G.fx.shock(this.x, this.y, 16 * this.vis, '#9ad8ff', 0.22);
+    if (this.grabbed) {
+      // clamped in something's jaws, bracing is how you get an arm free
+      this.breakFree += 1;
+      G.fx.text(this.x, this.y - 20 * this.vis, this.breakFree >= 3 ? 'BROKE FREE!' : 'BRACED! ' + (3 - this.breakFree), { color: '#9ad8ff' });
+      G.shake(4); G.fx.bubbles(this.x, this.y, 6, 10 * this.size);
+      if (this.breakFree >= 3) { const g = this.grabbed; this.grabbed = null; this.breakFree = 0; if (g.release) g.release(); if (g.takeDamage) g.takeDamage(this.biteDmg * 1.5, this, { pierce: true }); this.invuln = 0.8; }
+    }
+  }
+  // returns true when the hit was turned
+  tryParry(dmg, src, kind) {
+    if (this.braceT <= 0.12) return false;          // late in the window it is only armour
+    this.braceT = 0; this.braceCd = 0.4; this.braceFlash = 0.25; this.invuln = 0.45; this.parries++;
+    G.hitstop(0.1); G.whiteFlash(0.35); G.shake(7); G.slowmo(0.35, 0.22);
+    SFX.clank(this.pan); SFX.crunch(this.size, this.pan);
+    G.fx.sparks(this.x, this.y, 14); G.fx.shock(this.x, this.y, 34 * this.vis, '#bfe8ff', 0.45);
+    G.fx.text(this.x, this.y - 26 * this.vis, 'PARRY!', { color: '#bfe8ff', scale: 2, life: 1 });
+    G.addScore(150);
+    if (src && src.takeDamage && kind !== 'bullet') {
+      const dx = sign(src.x - this.x) || 1;
+      src.takeDamage(this.biteDmg * 1.6, this, { dx, dy: 0, pierce: true, crit: true });
+      src.knock(dx, -0.3, 260); src.stun = Math.max(src.stun || 0, 1.3);
+      if (src.staggered !== undefined && src.isBoss) src.staggerT = (src.staggerT || 0) + 0.8;
+    }
+    return true;
   }
   dash(ix, iy) {
     if (this.dashCharges <= 0 || this.grabbed) return;
@@ -377,7 +460,11 @@ class Player {
     if (this.dead || dmg <= 0) return 0;
     const dot = kind === 'crush' || kind === 'venom';
     if (this.invuln > 0 && !dot) return 0;
+    if (this.braceT > 0 && kind !== 'venom' && this.tryParry(dmg, src, kind)) return 0;
     let mult = 1 - clamp(this.st.armor, 0, 0.75);
+    if (this.braceT > 0) mult *= 0.4;               // late brace still soaks most of it
+    // the swamp keeps pace with you: everything hits harder the longer you last
+    mult *= 1 + Math.min(0.5, G.difficulty() * 0.05);
     if (kind === 'bullet') mult *= (1 - clamp(this.st.bulletArmor, 0, 0.85)) / Math.pow(this.size, 0.55);
     dmg *= mult; if (dmg < 0.05) return 0;
     this.hp -= dmg; this.hurtT = G.t; Affinity.onHurtTaken(this, dmg);

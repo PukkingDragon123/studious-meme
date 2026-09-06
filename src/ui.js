@@ -94,14 +94,70 @@ const UI = {
       ctx.fillStyle = full ? '#60c0ff' : '#203040'; ctx.fillRect(11 + i * 10, H - 14, 6, 6);
       if (!full && i === P.dashCharges) { const f = 1 - clamp(P.dashCd / (1.6 * P.st.dashCd), 0, 1); ctx.fillStyle = '#60c0ff'; ctx.fillRect(11 + i * 10, H - 14 + 6 - Math.round(6 * f), 6, Math.round(6 * f)); }
     }
+    // brace: one bar that empties when you use it, so timing it is visible
+    {
+      const bw = 26, bx = 10 + P.st.dashCharges * 10 + 4, by = H - 13, f = 1 - clamp(P.braceCd / 1.5, 0, 1);
+      ctx.fillStyle = '#0d1210'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
+      ctx.fillStyle = P.braceT > 0 ? '#bfe8ff' : f >= 1 ? '#5f9fbf' : '#233440';
+      ctx.fillRect(bx, by, Math.round(bw * (P.braceT > 0 ? 1 : f)), 4);
+      if (P.braceFlash > 0) { ctx.globalAlpha = clamp(P.braceFlash * 4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6); ctx.globalAlpha = 1; }
+    }
+    // standing order: one line, a hairline of progress under it
+    const mh = Missions.hud();
+    if (mh) {
+      const my = 52, mw = 150;
+      ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, my - 2, mw, 13);
+      ctx.fillStyle = mh.col; ctx.fillRect(8, my - 2, 2, 13);
+      const flash = G.mission && G.mission.flashT > 0 && Math.floor(t * 12) % 2;
+      Font.draw(ctx, mh.text, 14, my, { color: flash ? '#ffffff' : mh.col });
+      ctx.fillStyle = '#16241f'; ctx.fillRect(10, my + 9, mw - 4, 1);
+      ctx.fillStyle = mh.col; ctx.fillRect(10, my + 9, Math.round((mw - 4) * clamp(mh.frac, 0, 1)), 1);
+    }
+    // a claimed-but-unreached relic gets an arrow, it is the point of the run
+    if (G.mission && G.mission.relic && !G.mission.relic.remove) {
+      const r = G.mission.relic, [rsx, rsy] = G.cam.toScreen(r.x, r.y);
+      if (rsx < 8 || rsx > W - 8 || rsy < 8 || rsy > H - 8) {
+        const ax = clamp(rsx, 14, W - 14), ay = clamp(rsy, 14, H - 14);
+        ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 6);
+        drawRelicGlyph(ctx, r.art, ax, ay, t);
+        ctx.globalAlpha = 1;
+      }
+    }
     // biome name, bottom right
     const B = Biome.at(P.x);
     Font.draw(ctx, B.name, W - 10, H - 12, { color: '#7f9a90', align: 'right' });
+    // death-roll timing ring: a marker sweeps and the window is the lit arc
+    if (P.rollT > 0) {
+      const [sx, sy] = G.cam.toScreen(P.x, P.y);
+      const R = 34, ph = P.qteT || 0;
+      ctx.save();
+      ctx.translate(sx, sy - 4);
+      ctx.strokeStyle = 'rgba(10,16,18,0.85)'; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
+      // the good window, then the perfect core inside it
+      const a0 = (QTE_AT - QTE_GOOD) * TAU - Math.PI / 2, a1 = (QTE_AT + QTE_GOOD) * TAU - Math.PI / 2;
+      ctx.strokeStyle = '#3f8f7a'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(0, 0, R, a0, a1); ctx.stroke();
+      const p0 = (QTE_AT - QTE_PERFECT) * TAU - Math.PI / 2, p1 = (QTE_AT + QTE_PERFECT) * TAU - Math.PI / 2;
+      ctx.strokeStyle = '#ffe060'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(0, 0, R, p0, p1); ctx.stroke();
+      // sweeping marker
+      const ma = ph * TAU - Math.PI / 2;
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(Math.cos(ma) * (R - 6), Math.sin(ma) * (R - 6)); ctx.lineTo(Math.cos(ma) * (R + 6), Math.sin(ma) * (R + 6)); ctx.stroke();
+      // beats landed so far
+      const beats = P.qteBeats || 0, hits = P.qteHits || 0;
+      ctx.fillStyle = '#ffe060';
+      for (let i = 0; i < Math.min(6, hits); i++) ctx.fillRect(-14 + i * 5, R + 8, 3, 3);
+      if (beats > 0 && hits === 0) { ctx.fillStyle = '#ff8070'; ctx.fillRect(-3, R + 8, 6, 3); }
+      ctx.restore();
+    }
     // hints, stacked upward so two warnings never print on the same line
     const hints = [];
     if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
     if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
-    if (P.latched) hints.push(['LATCHED! BITE TO DEATH ROLL', '#ff9080', 1]);
+    if (P.latched && P.rollT <= 0) hints.push(['BITE TO ROLL', '#ff9080', 1]);
+    if (P.rollT > 0) hints.push(['BITE ON THE GOLD', '#ffe060', 1]);
     if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
     let hy = H - 20;
     for (const [txt, col, sc] of hints) {
@@ -109,10 +165,26 @@ const UI = {
       hy -= Font.H * sc + 3;
     }
     // boss bar
-    if (G.boss && !G.boss.dead) {
+    if (G.boss && !G.boss.dead && !G.finisher) {
       const b = G.boss, frac = b.hp / b.maxHp;
-      Font.draw(ctx, b.name, W / 2, 32, { color: '#ff6060', align: 'center', shadow: true });
-      this.meter(ctx, W / 2 - 100, 41, 200, 6, frac, frac < 0.3 ? '#ffb020' : '#e02020', '#200808');
+      Font.draw(ctx, b.name, W / 2, 32, { color: b.staggered ? '#ffd060' : '#ff6060', align: 'center', shadow: true });
+      this.meter(ctx, W / 2 - 100, 41, 200, 6, frac, b.staggered ? '#ffd060' : frac < 0.3 ? '#ffb020' : '#e02020', '#200808');
+      // phase breaks marked on the bar, and the phase you are in as pips
+      if (b.bossMax) {
+        ctx.fillStyle = '#0a0404';
+        for (let i = 1; i < b.bossMax; i++) { const fx2 = W / 2 - 100 + Math.round(200 * (1 - i / b.bossMax)); ctx.fillRect(fx2, 41, 1, 6); }
+        for (let i = 0; i < b.bossMax; i++) { ctx.fillStyle = i < b.bossPhase ? '#ff8040' : '#3a1414'; ctx.fillRect(W / 2 - 100 + i * 5, 49, 3, 2); }
+        if (b.invulnB) { ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 20); Font.draw(ctx, 'BREAKING', W / 2 + 100, 49, { color: '#ff5030', align: 'right', shadow: true }); ctx.globalAlpha = 1; }
+        else if (b.staggered) { ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 12); Font.draw(ctx, 'STAGGERED', W / 2 + 100, 49, { color: '#ffd060', align: 'right', shadow: true }); ctx.globalAlpha = 1; }
+      }
+      if (b.staggered && !G.finisher) {
+        const near = Boss.canFinish(b);
+        const blink = Math.floor(t * 8) % 2;
+        Font.draw(ctx, near ? 'BITE TO FINISH' : 'CLOSE IN', W / 2, H * 0.72, { color: blink ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#3a2000' });
+        const sT = clamp(b.staggerT / 6, 0, 1);
+        ctx.fillStyle = '#2a2008'; ctx.fillRect(W / 2 - 50, H * 0.72 + 14, 100, 2);
+        ctx.fillStyle = '#ffd060'; ctx.fillRect(W / 2 - 50, H * 0.72 + 14, Math.round(100 * sT), 2);
+      }
       const [sx] = G.cam.toScreen(b.x, b.y);
       if (sx < 0 || sx > W) { const dir = sx < 0 ? -1 : 1; Font.draw(ctx, dir < 0 ? '<<' : '>>', dir < 0 ? 12 : W - 12, H / 2, { color: '#ff6060', align: 'center', shadow: true, scale: 2 }); }
     }
@@ -124,7 +196,7 @@ const UI = {
       if (b.sub) Font.draw(ctx, b.sub, W / 2, H * 0.3 + 20, { color: '#ffffff', align: 'center', outline: '#000' });
       ctx.globalAlpha = 1;
     }
-    if (G.t < 16 && G.state === 'play' && G.runs <= 1) {
+    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher) {
       const touch = G.touchUI || Input.touch.active;
       const msgs = touch
         ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   DASH PAD LUNGES', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
@@ -196,6 +268,19 @@ const UI = {
     this.hex(ctx, 26, 18, 13, '#16241f', '#40f0c8', 2);
     Font.draw(ctx, String(P.genePoints), 26, 12, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#06110e' });
     Font.draw(ctx, 'POINTS', 26, 32, { color: '#7f9a90', align: 'center' });
+    {
+      // strain: how much instability the body is carrying against what it can hold
+      const ld = Genome.load(P), lim = Genome.limit(P), over = ld > lim;
+      const frac = clamp(ld / Math.max(1, lim), 0, 1.6);
+      Font.draw(ctx, 'STRAIN', 62, 8, { color: over ? '#ff8a7a' : '#7f9a90' });
+      this.meter(ctx, 62, 18, 56, 5, Math.min(1, frac), over ? '#ff5a4a' : frac > 0.8 ? '#ffb060' : '#40f0c8', '#1a1210');
+      if (frac > 1) { ctx.fillStyle = '#ff5a4a'; ctx.fillRect(118, 17, Math.min(18, (frac - 1) * 40), 7); }
+      Font.draw(ctx, ld + '/' + Math.round(lim), 62, 26, { color: over ? '#ff8a7a' : '#7f9a90' });
+      if (over) Font.draw(ctx, 'REJECTING', 62, 36, { color: Math.floor(G.t * 4) % 2 ? '#ff5a4a' : '#8a3a34' });
+      // splice tax: every extra lineage in you marks up the next gene
+      const sp = Genome.spread(P);
+      if (sp > 1) Font.draw(ctx, 'SPREAD ' + sp + '  +' + Math.round((sp - 1) * 20) + '%', 128, 26, { color: sp > 2 ? '#ffb060' : '#7f9a90' });
+    }
     // affinity meters: what your playstyle is discounting
     let ay = 46;
     for (const k of LIN_KEYS) {
@@ -208,14 +293,16 @@ const UI = {
     // detail panel for the selected gene
     const g = GENE_BY_ID[G.geneSel] || GENES[0], own = Genome.has(P, g.id), open = Genome.unlocked(P, g);
     const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
-    const pw = 214, px3 = W - pw - 8, py3 = 8;
-    this.panel(ctx, px3, py3, pw, 84, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
+    const pw = 214, px3 = W - pw - 8, py3 = 8, phh = 96;
+    this.panel(ctx, px3, py3, pw, phh, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
     Font.draw(ctx, L ? L.name + (g.hybrid ? ' HYBRID' : g.apex ? ' APEX' : ' TIER ' + g.ring) : 'ORIGIN', px3 + 8, py3 + 18, { color: '#8aa89c' });
-    Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 32, pw - 16, { color: '#d8e4dc', lineHeight: 9 });
+    Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 30, pw - 16, { color: '#9ef0c8', lineHeight: 9 });
+    if (g.down) Font.drawWrapped(ctx, g.down, px3 + 8, py3 + 52, pw - 16, { color: '#ff8a7a', lineHeight: 9 });
+    if (g.load) Font.draw(ctx, '+' + g.load + ' STRAIN', px3 + pw - 8, py3 + 18, { color: '#ffb060', align: 'right' });
     const cost = Genome.cost(P, g);
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
-    else if (!open) Font.draw(ctx, 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
+    else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
     if (G.touchUI || Input.touch.active) {
       Font.draw(ctx, 'TAP A GENE TO SPLICE IT', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
@@ -275,8 +362,8 @@ const UI = {
 
     // controls: two tidy columns, keyboard or touch depending on the device
     const rows = touch
-      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
-      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['G', 'GENE TREE'], ['UP ON LAND', 'HOP'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
+      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['BRACE PAD', 'PARRY AND COUNTER'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
+      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['L / V', 'BRACE: PARRY'], ['G', 'GENE TREE'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
     const _stageHint = 'PICK A STAGE AND A PRIME MUTATION BEFORE EACH RUN';
     const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
     const boxH = per * 11 + 10, boxY = H - 74 - boxH;
@@ -440,14 +527,32 @@ const UI = {
     }
     ctx.fillStyle = 'rgba(120,220,200,0.2)'; ctx.fillRect(px0, sy2 + 14, sw2, 1);
 
-    // --- what the save knows, as four numbers
-    const sv = G.save, opened = STAGES.filter(x2 => Stages.unlocked(x2)).length;
-    const by = 146, cells = [[opened + '/' + STAGES.length, 'SITES'], [(sv.bestLen || 0).toFixed(0) + 'FT', 'BEST'], [fmt(sv.best || 0), 'SCORE'], [String(sv.runs || 0), 'RUNS']];
-    cells.forEach((c, i) => {
-      const bx = px0 + (i % 2) * (sw2 / 2), byy = by + Math.floor(i / 2) * 30;
-      Font.draw(ctx, c[0], bx, byy, { color: '#d8e8de', scale: 2, outline: '#04120e' });
-      Font.draw(ctx, c[1], bx, byy + 17, { color: '#4f7f74' });
+    // --- the standing order on this site, and what it is worth
+    const mdef = MISSIONS[cur.id], mart = ARTIFACTS.find(a2 => a2.stage === cur.id);
+    Font.draw(ctx, 'ORDER', px0 + shake, 146, { color: '#4f7f74' });
+    if (open && mdef) {
+      Font.draw(ctx, mdef.title, px0 + shake, 158, { color: '#d8e8de' });
+      Font.draw(ctx, mdef.line, px0 + shake, 170, { color: '#7f9a90' });
+    } else Font.draw(ctx, 'SEALED', px0 + shake, 158, { color: '#a08070' });
+
+    // --- the vault: nine relics, one per site, lit once carried out
+    const got = Missions.owned().length;
+    Font.draw(ctx, 'RELICS', px0 + shake, 190, { color: '#4f7f74' });
+    Font.draw(ctx, got + '/' + ARTIFACTS.length, W - 22, 190, { color: got ? '#ffd060' : '#4f7f74', align: 'right' });
+    const slotW = sw2 / ARTIFACTS.length;
+    ARTIFACTS.forEach((a2, i) => {
+      const bx = px0 + (i + 0.5) * slotW, byy = 212, have = Missions.has(a2.id), here = a2.stage === cur.id;
+      ctx.fillStyle = have ? 'rgba(255,208,96,0.10)' : 'rgba(120,220,200,0.05)';
+      ctx.fillRect(Math.round(bx - slotW / 2 + 1), byy - 11, Math.round(slotW - 2), 22);
+      if (here) this.bracket(ctx, Math.round(bx - slotW / 2 + 1), byy - 11, Math.round(slotW - 2), 22, accent, 4);
+      if (have) drawRelicGlyph(ctx, a2, Math.round(bx), byy, t * 0.6, 0.9);
+      else { ctx.fillStyle = '#22322e'; ctx.fillRect(Math.round(bx - 2), byy - 3, 5, 6); ctx.fillRect(Math.round(bx - 1), byy - 6, 3, 3); }
     });
+    if (mart) {
+      const have = Missions.has(mart.id);
+      Font.draw(ctx, have ? mart.name : 'UNCLAIMED RELIC', px0 + shake, 232, { color: have ? mart.col : '#5f7f78' });
+      Font.draw(ctx, have ? mart.boon : mart.line, px0 + shake, 244, { color: have ? '#7f9a90' : '#3f5f58' });
+    }
 
     // --- prompt
     const okCol = open ? '#ffe060' : '#ff8060';
@@ -690,6 +795,7 @@ const UI = {
     const rows = [
       ['FINAL FORM', TIERS[P.tier].name + '  (' + P.lengthFt.toFixed(1) + ' FT)'], ['SCORE', fmt(G.score) + (G.score >= G.save.best && G.score > 0 ? '  NEW BEST!' : '')], ['SURVIVED', mins + 'M ' + secs + 'S'],
       ['THINGS EATEN', String(s.eaten)], ['KILLS', String(s.kills)], ['BOSSES SLAIN', String(s.bosses)], ['BOATS AND CAMPS WRECKED', String(s.boats + (s.structures || 0))], ['BIGGEST MEAL', s.biggest || '-'],
+      ['ORDER', G.mission ? (G.mission.claimed ? 'RELIC TAKEN' : G.mission.done ? 'RELIC LEFT BEHIND' : G.mission.def.title + '  ' + Math.floor(G.mission.n) + '/' + G.mission.target) : '-'],
       ['EVOLUTION', P.picked.filter(p => !p.startsWith('mut')).map(p => PATHS[p.split(':')[0]].name[0] + (+p.split(':')[1] + 1)).join(' ') || 'NONE'],
       ['TRAITS', P.traits.length ? P.traits.map(id => (TRAIT_BY_ID[id] || {}).name || id).join(', ') : 'NONE'],
     ];
@@ -712,10 +818,10 @@ const UI = {
   drawHelpBody(ctx, y) {
     const W = G.W;
     const lines = [
-      'SWIM WITH WASD. BITE WITH SPACE. DASH WITH SHIFT.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY COMES APART.',
-      'BITE MEDIUM PREY TO LATCH ON, THEN BITE AGAIN TO DEATH ROLL IT IN HALF.', 'LEAP OUT OF THE WATER TO SNATCH BIRDS. CRAWL ONTO BANKS FOR DEER.',
-      'EVERY MEAL PAYS GENE POINTS. PRESS G AND SPEND THEM ON THE HEX TREE.', 'HOW YOU HUNT BUILDS AFFINITY, WHICH MAKES THAT LINEAGE CHEAPER.',
-      'POACHERS SHOOT FROM THE BANK AND FROM AIRBOATS. TAKE THEM UNDER.', 'HUNGER DRAINS. ALWAYS BE EATING.',
+      'SWIM WITH WASD. BITE WITH SPACE. DASH WITH SHIFT. BRACE WITH L.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY COMES APART.',
+      'BITE MEDIUM PREY TO LATCH ON, THEN BITE ON THE GOLD TO TEAR IT APART.', 'BRACE JUST BEFORE A HIT LANDS TO PARRY IT AND COUNTER.',
+      'EVERY GENE CARRIES A COST. TOO MANY AND YOUR BODY REJECTS THEM.', 'BOSSES BREAK INTO PHASES. STAGGER ONE AND BITE TO EXECUTE IT.',
+      'EACH SITE HAS ONE ORDER. FINISH IT AND A RELIC SURFACES. RELICS ARE FOREVER.', 'HUNGER DRAINS. ALWAYS BE EATING.',
     ];
     lines.forEach((l, i) => Font.draw(ctx, l, W / 2, y + i * 11, { color: i % 2 ? '#c8d8c0' : '#e8f0e0', align: 'center' }));
   },
@@ -761,6 +867,40 @@ const UI = {
         if (!far) { const f = 1 - clamp(grate.hp / grate.maxHp, 0, 1); this.meter(ctx, W / 2 - 50, H - 34, 100, 5, f, '#e0a020', '#2a1c0a'); }
       }
     }
+  },
+  // the execution: one prompt at a time, its ring closing, the sequence
+  // laid out underneath so you can see what is coming
+  drawFinisher(ctx) {
+    const F = G.finisher; if (!F) return;
+    const W = G.W, H = G.H, t = G.t;
+    ctx.fillStyle = 'rgba(6,2,2,0.4)'; ctx.fillRect(0, 0, W, H);
+    const done = F.over > 0;
+    Font.draw(ctx, done ? (F.won ? 'EXECUTED' : 'THROWN OFF') : 'EXECUTION', W / 2, H * 0.17, { color: done && !F.won ? '#ff5030' : '#ffd060', align: 'center', scale: 3, outline: '#2a1000' });
+    Font.draw(ctx, F.e && F.e.name ? F.e.name : '', W / 2, H * 0.17 + 24, { color: '#c8a870', align: 'center', outline: '#1a0c00' });
+    const cx = W / 2, cy = H / 2 + 4;
+    if (!done) {
+      const want = F.seq[F.i], f = clamp(F.t / F.dur, 0, 1);
+      const R = 28;
+      // the closing ring is the window: press before it reaches the rim
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = f > 0.82 ? '#ff5030' : '#ffd060'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, R + 30 - 30 * f, 0, TAU); ctx.stroke();
+      const bl = F.flash > 0 ? '#ffffff' : '#ffe090';
+      this.panel(ctx, cx - 32, cy - 10, 64, 20, 'rgba(10,6,4,0.92)', '#6a4a20');
+      Font.draw(ctx, FIN_LABEL[want], cx, cy - 4, { color: bl, align: 'center', scale: 2, outline: '#2a1000' });
+    }
+    // the sequence, and how it has gone, in its own band along the bottom
+    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, H - 34, W, 34);
+    const n = F.seq.length, sw = 30, x0 = cx - (n * sw) / 2;
+    for (let i = 0; i < n; i++) {
+      const past = i < F.i, now = i === F.i && !done;
+      const col = past ? (F.res[i] ? '#6ad040' : '#8a4038') : now ? '#ffd060' : '#4a5a54';
+      Font.draw(ctx, FIN_SHORT[F.seq[i]], Math.round(x0 + i * sw + (sw - 4) / 2), H - 30, { color: now && Math.floor(t * 10) % 2 ? '#ffffff' : col, align: 'center' });
+      ctx.fillStyle = col;
+      ctx.fillRect(Math.round(x0 + i * sw + 2), H - 20, sw - 8, 3);
+    }
+    Font.draw(ctx, 'TWO MISSES AND IT GETS UP', W / 2, H - 12, { color: '#c08070', align: 'center' });
   },
   drawEgg(ctx) {
     const W = G.W, H = G.H, e = G.egg; if (!e) return;
@@ -814,6 +954,18 @@ const UI = {
     disc(P.dash.x, P.dash.y, P.dash.r, ready ? 0.3 : 0.12, '#40a0ff');
     ring(P.dash.x, P.dash.y, P.dash.r, ready ? 0.7 : 0.3, '#ffffff');
     Font.draw(ctx, 'DASH', P.dash.x, P.dash.y - 3, { color: ready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
+    // brace pad, with the cooldown drawn as a wedge so the timing is readable
+    {
+      const bready = pl && pl.braceCd <= 0, guard = pl && pl.braceT > 0;
+      disc(P.brace.x, P.brace.y, P.brace.r, guard ? 0.65 : bready ? 0.3 : 0.12, guard ? '#ffffff' : '#7fd0ff');
+      ring(P.brace.x, P.brace.y, P.brace.r, bready ? 0.7 : 0.3, '#ffffff');
+      if (pl && pl.braceCd > 0) {
+        const f = 1 - clamp(pl.braceCd / 1.5, 0, 1);
+        ctx.globalAlpha = 0.5; ctx.strokeStyle = '#7fd0ff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(P.brace.x, P.brace.y, P.brace.r - 3, -Math.PI / 2, -Math.PI / 2 + f * TAU); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      Font.draw(ctx, 'BRACE', P.brace.x, P.brace.y - 3, { color: bready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
+    }
     // pause
     disc(P.pause.x, P.pause.y, P.pause.r, 0.25, '#ffffff');
     Font.draw(ctx, 'II', P.pause.x, P.pause.y - 3, { color: '#ffffff', align: 'center', outline: '#000' });

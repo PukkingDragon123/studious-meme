@@ -145,7 +145,7 @@ class Structure extends Entity {
     G.fx.text(this.x, this.y - 40, this.kind === 'stilthouse' ? 'FISH CAMP DESTROYED!' : 'DOCK DESTROYED!', { color: '#ffd060', scale: 2, life: 1.8 });
     for (const o of this.alivePeople) { const [px, py] = this.occPos(o); const h = new Human(px, py + 4, o.type); h.vx = rand(-70, 70); h.vy = -rand(30, 90); G.add(h); o.alive = false; }
     G.addScore(1200); Meta.event('structure');
-    if (P) G.stats.structures = (G.stats.structures || 0) + 1;
+    if (P) { G.stats.structures = (G.stats.structures || 0) + 1; Missions.onWreck(); }
   }
   update(dt) {
     this.tick(dt);

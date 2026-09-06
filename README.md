@@ -31,6 +31,7 @@ as a fragment for hosts that supply their own document shell).
 | Bite | `SPACE` / `J` / right mouse | `BITE` pad (hold to keep chomping) |
 | Death roll (while latched) | `SPACE` again | `BITE` pad again |
 | Dash / ram | `SHIFT` / `K` | `DASH` pad |
+| Brace (parry) | `L` / `V` | `BRACE` pad |
 | Steer with the mouse | hold left mouse | - |
 | Pause / settings | `P` / `ESC` | `II` button |
 | Gene tree | `G` / `E` / `TAB` | tap the gene chip |
@@ -52,8 +53,11 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 - **Gene points** drop from every meal. Press `G` at any moment, in the middle of a fight if you want, and spend them.
 - **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God. Each tier sheds your skin and pays two free points.
 - **Predators** hunt you while you are small and flee when you are big.
-- **Bosses** arrive after certain sheds: Old Scar, the Poacher Warboat, Mother Python, the Skunk Ape, and Big Bull.
-- Death is permanent, but the traits you unlock are not.
+- **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
+- **Bosses** arrive after certain sheds: Old Scar, the Poacher Warboat, Mother Python, the Skunk Ape, and Big Bull. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
+- **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight ends in a button sequence: three to five prompts, each with a closing window, drawn from bite, dash and brace. Miss two and it throws you off and gets back up with health.
+- **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run from the splice bay.
+- Death is permanent, but the traits and relics you unlock are not.
 
 ## The gene tree
 
@@ -69,6 +73,12 @@ you can drive straight down one branch or weave across the middle.
 | **Abyssal** | venom, regeneration, lure | Leviathan: shockwaves, toxic blood, venom immunity |
 | **Colossus** | growth, swallowing, bulk | Titan: quaking bites and a crushing ram |
 | **Savage** | land speed, night vision, people | Man-Eater: people panic, boats break like sticks |
+
+Every gene carries a **downside** as well as an upside — serrated teeth thin the skull, plating slows
+you down, an apex gene costs you a quarter of your health — and a **strain** load. Your body only
+tolerates so much at once (the limit grows as you do), and past it the splices start fighting: health
+bleeds away, and enough of it kills you outright. You can also only ever carry **one apex gene**, and
+every extra lineage in you marks the next gene up by 20%, so a scattered build is the expensive one.
 
 **Affinity** is the quiet half of the system. Rolling and dismembering feeds Ripper, ambush kills feed
 Phantom, taking hits feeds Bulwark, eating big meals feeds Colossus, and hunting people and land
@@ -152,6 +162,24 @@ People are everywhere: fishing docks, the bait shop, stilt-house camps lit at ni
 campsites, crab traps and channel markers, plus airboats, pontoons, jon boats, poacher skiffs and
 kayaks. Armed people hold their ground and shoot with lead on their aim, then break and run when you
 get inside their nerve. Watching a neighbour get eaten sets the whole group running.
+
+## Orders and relics
+
+Every release site carries one standing order and one thing worth taking off it. The order is tracked
+on the HUD; finish it and the relic surfaces in reachable water with a beam on it. Relics are stored in
+the vault on the globe screen and apply to every run afterwards.
+
+| Site | Order | Relic | What it does |
+| --- | --- | --- | --- |
+| The Outfall | reach open water | Subject Tag | start every run with 2 gene points |
+| Mangrove Tangle | take 14 fish | Drowned Man's Ring | +8% bite |
+| Gator Joe's Camp | wreck 3 builds | Gator Joe's Skull | +10% max health |
+| Cypress Swamp | kill 5 predators | Blackwater Knee | +2 strain tolerance |
+| Sawgrass Prairie | cross 1600m | Sawgrass Blade | bites cause bleeding |
+| The Deep Cut | kill a boss | Bent Propeller | +12% swim speed |
+| Paradise Campground | take 10 people | Camp Lantern | prey lured from further off |
+| Florida Bay | kill 4 sharks | Megalodon Tooth | +15% death roll damage |
+| The Seawall | wreck 8 boats or builds | Containment Core | +1 dash charge |
 
 ## Gore
 

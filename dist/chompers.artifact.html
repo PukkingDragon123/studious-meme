@@ -4206,61 +4206,61 @@ function gene(o) { GENES.push(o); return o; }
   gene({ id: 'core', lin: null, ring: 0, q: 0, r: 0, name: 'PRIMORDIAL CELL', cost: 0, desc: 'Every gene grows from here.', apply: () => {}, root: true });
   const T = {
     ripper: [
-      ['serrate', 'SERRATED TEETH', '+35% bite damage, and bites leave prey bleeding.', p => { p.st.bite *= 1.35; p.st.bleed = true; }, L => { L.tusks = true; }],
-      ['rollmaster', 'DEATH ROLL MASTER', 'Rolls hit 70% harder and faster. Latch onto prey 3.5x your size.', p => { p.st.rollDmg *= 1.7; p.st.rollSpeed *= 1.4; p.st.latchMul = 3.5; }, L => { L.scars = true; }],
-      ['frenzy', 'BLOOD FRENZY', 'Kills grant +40% speed and +30% damage for 4s. Heal 8% per kill.', p => { p.st.frenzy = true; p.st.lifesteal += 0.08; }, L => { L.eye = '#ff4a20'; }],
-      ['apex', 'APEX RIPPER', 'APEX: colossal jaws hit everything in reach, doubled gore, bites shatter armor.', p => { p.st.biteRadius *= 1.5; p.st.multiChomp = true; p.st.goreMul = 2; p.st.pierce = true; p.evo.ripper = true; }, L => { L.glow = '#ff3020'; L.spikes = Math.max(L.spikes || 0, 1); }],
+      ['serrate', 'SERRATED TEETH', '+35% bite damage, and bites leave prey bleeding.', p => { p.st.bite *= 1.35; p.st.bleed = true; }, L => { L.tusks = true; }, 'Bone-thin skull: -15% max HP.', p => { p.st.hpMul *= 0.85; }, 2],
+      ['rollmaster', 'DEATH ROLL MASTER', 'Rolls hit 70% harder and faster. Latch onto prey 3.5x your size.', p => { p.st.rollDmg *= 1.7; p.st.rollSpeed *= 1.4; p.st.latchMul = 3.5; }, L => { L.scars = true; }, 'You commit to the roll: -20% armour.', p => { p.st.armor -= 0.2; }, 3],
+      ['frenzy', 'BLOOD FRENZY', 'Kills grant +40% speed and +30% damage for 4s. Heal 8% per kill.', p => { p.st.frenzy = true; p.st.lifesteal += 0.08; }, L => { L.eye = '#ff4a20'; }, 'Burns through you: hunger drains 45% faster.', p => { p.st.hungerRate *= 1.45; }, 4],
+      ['apex', 'APEX RIPPER', 'APEX: colossal jaws hit everything in reach, doubled gore, bites shatter armor.', p => { p.st.biteRadius *= 1.5; p.st.multiChomp = true; p.st.goreMul = 2; p.st.pierce = true; p.evo.ripper = true; }, L => { L.glow = '#ff3020'; L.spikes = Math.max(L.spikes || 0, 1); }, 'All jaw, no body: -25% max HP.', p => { p.st.hpMul *= 0.75; }, 6],
     ],
     bulwark: [
-      ['hide', 'THICK HIDE', '-25% damage taken, +30% max HP.', p => { p.st.armor += 0.25; p.st.hpMul *= 1.3; }, L => { L.plates = true; }],
-      ['osteoderm', 'OSTEODERM PLATES', 'Bullets glance off. Immune to knockback and constriction.', p => { p.st.armor += 0.18; p.st.bulletArmor += 0.4; p.st.knockImmune = true; }, L => { L.shell = shade(L.back, 1.2); }],
-      ['ironstomach', 'IRON STOMACH', 'Shells, hulls and bone are food. Hunger drains 35% slower.', p => { p.st.ironStomach = true; p.st.hungerRate *= 0.65; }, L => { L.ganoid = true; }],
-      ['fortress', 'LIVING FORTRESS', 'APEX: attackers take 40% back, and you cannot be moved by anything.', p => { p.st.reflect += 0.4; p.st.armor += 0.15; p.st.knockImmune = true; p.evo.bulwark = true; }, L => { L.spikes = 2; L.plates = true; }],
+      ['hide', 'THICK HIDE', '-25% damage taken, +30% max HP.', p => { p.st.armor += 0.25; p.st.hpMul *= 1.3; }, L => { L.plates = true; }, 'All that plate is heavy: -15% swim speed.', p => { p.st.speed *= 0.85; }, 2],
+      ['osteoderm', 'OSTEODERM PLATES', 'Bullets glance off. Immune to knockback and constriction.', p => { p.st.armor += 0.18; p.st.bulletArmor += 0.4; p.st.knockImmune = true; }, L => { L.shell = shade(L.back, 1.2); }, 'Slow to get going: -25% acceleration.', p => { p.st.accel *= 0.75; }, 3],
+      ['ironstomach', 'IRON STOMACH', 'Shells, hulls and bone are food. Hunger drains 35% slower.', p => { p.st.ironStomach = true; p.st.hungerRate *= 0.65; }, L => { L.ganoid = true; }, 'Grinding jaws, blunt teeth: -20% bite.', p => { p.st.bite *= 0.8; }, 4],
+      ['fortress', 'LIVING FORTRESS', 'APEX: attackers take 40% back, and you cannot be moved by anything.', p => { p.st.reflect += 0.4; p.st.armor += 0.15; p.st.knockImmune = true; p.evo.bulwark = true; }, L => { L.spikes = 2; L.plates = true; }, 'A wall does not chase: -25% speed.', p => { p.st.speed *= 0.75; }, 6],
     ],
     phantom: [
-      ['sleek', 'SLEEK BODY', '+25% swim speed and acceleration.', p => { p.st.speed *= 1.25; p.st.accel *= 1.25; }, L => { L.stripes = true; }],
-      ['ambush', 'AMBUSH', 'Unaware prey take 2.5x. Striking from stillness always crits.', p => { p.st.ambush = true; }, L => { L.pupil = '#3060a0'; }],
-      ['silent', 'SILENT WAKE', 'Prey notice you at half range, and you leave no wake.', p => { p.st.stealth *= 0.5; }, L => { L.spots = '#5a7a9a'; }],
-      ['wraith', 'WRAITH', 'APEX: two dashes, +60% leap, time slows when you breach, afterimages.', p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; p.st.leapMul *= 1.6; p.st.wraith = true; p.evo.phantom = true; }, L => { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }],
+      ['sleek', 'SLEEK BODY', '+25% swim speed and acceleration.', p => { p.st.speed *= 1.25; p.st.accel *= 1.25; }, L => { L.stripes = true; }, 'Nothing spare on the frame: -20% max HP.', p => { p.st.hpMul *= 0.8; }, 2],
+      ['ambush', 'AMBUSH', 'Unaware prey take 2.5x. Striking from stillness always crits.', p => { p.st.ambush = true; }, L => { L.pupil = '#3060a0'; }, 'Built for one strike: -20% armour.', p => { p.st.armor -= 0.2; }, 3],
+      ['silent', 'SILENT WAKE', 'Prey notice you at half range, and you leave no wake.', p => { p.st.stealth *= 0.5; }, L => { L.spots = '#5a7a9a'; }, 'Soft mouth: -15% bite.', p => { p.st.bite *= 0.85; }, 4],
+      ['wraith', 'WRAITH', 'APEX: two dashes, +60% leap, time slows when you breach, afterimages.', p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; p.st.leapMul *= 1.6; p.st.wraith = true; p.evo.phantom = true; }, L => { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }, 'Barely there: -30% max HP.', p => { p.st.hpMul *= 0.7; }, 6],
     ],
     abyssal: [
-      ['venom', 'VENOM GLANDS', 'Bites poison: 40% extra damage over 3s, and poisoned prey crawls.', p => { p.st.venom += 0.4; }, L => { L.spots = '#40f0c8'; }],
-      ['regen', 'REGENERATION', 'Regenerate 2.5% HP a second while fed.', p => { p.st.regen += 0.025; }, L => { L.gills = true; }],
-      ['lure', 'BIOLUMINESCENT LURE', 'A glow draws small prey to your mouth.', p => { p.st.lure = 200; p.st.magnet = Math.max(p.st.magnet, 150); }, L => { L.glow = '#40f0c8'; }],
-      ['leviathan', 'LEVIATHAN', 'APEX: every 6th bite unleashes a shockwave. Toxic blood, immune to venom.', p => { p.st.leviathan = true; p.st.toxicBlood = true; p.st.venomImmune = true; p.evo.abyssal = true; }, L => { L.glow = '#40f0c8'; L.spots = '#80fff0'; L.fin = '#40f0c8'; }],
+      ['venom', 'VENOM GLANDS', 'Bites poison: 40% extra damage over 3s, and poisoned prey crawls.', p => { p.st.venom += 0.4; }, L => { L.spots = '#40f0c8'; }, 'Glands where muscle was: -15% bite.', p => { p.st.bite *= 0.85; }, 2],
+      ['regen', 'REGENERATION', 'Regenerate 2.5% HP a second while fed.', p => { p.st.regen += 0.025; }, L => { L.gills = true; }, 'Mending costs mass: -20% growth.', p => { p.st.growth *= 0.8; }, 3],
+      ['lure', 'BIOLUMINESCENT LURE', 'A glow draws small prey to your mouth.', p => { p.st.lure = 200; p.st.magnet = Math.max(p.st.magnet, 150); }, L => { L.glow = '#40f0c8'; }, 'An ambusher waits: -20% speed.', p => { p.st.speed *= 0.8; }, 4],
+      ['leviathan', 'LEVIATHAN', 'APEX: every 6th bite unleashes a shockwave. Toxic blood, immune to venom.', p => { p.st.leviathan = true; p.st.toxicBlood = true; p.st.venomImmune = true; p.evo.abyssal = true; }, L => { L.glow = '#40f0c8'; L.spots = '#80fff0'; L.fin = '#40f0c8'; }, 'Soft between the plates: -25% armour.', p => { p.st.armor -= 0.25; }, 6],
     ],
     colossus: [
-      ['gorge', 'GORGE', 'Meals grow you 30% more.', p => { p.st.growth *= 1.3; }, L => { L.belly = mixColor(L.belly, '#f0e8c0', 0.3); }],
-      ['unhinged', 'UNHINGED JAW', 'Swallow prey up to 90% of your size whole.', p => { p.st.swallow *= 1.8; p.st.hungerRestore *= 1.25; }, L => { L.stripe2 = true; }],
-      ['bulk', 'DENSE BULK', '+50% max HP and prey under 60% of your size flees in terror.', p => { p.st.hpMul *= 1.5; p.st.fearAura = true; }, L => { L.paddle = shade(L.mid, 0.8); }],
-      ['titan', 'TITAN', 'APEX: +40% growth again, bites shake the swamp, and you crush what you ram.', p => { p.st.growth *= 1.4; p.st.quake = true; p.st.bullRush = true; p.st.ramMul *= 1.5; p.evo.colossus = true; }, L => { L.spikes = 2; L.horn = true; }],
+      ['gorge', 'GORGE', 'Meals grow you 30% more.', p => { p.st.growth *= 1.3; }, L => { L.belly = mixColor(L.belly, '#f0e8c0', 0.3); }, 'Always hungry: hunger drains 30% faster.', p => { p.st.hungerRate *= 1.3; }, 2],
+      ['unhinged', 'UNHINGED JAW', 'Swallow prey up to 90% of your size whole.', p => { p.st.swallow *= 1.8; p.st.hungerRestore *= 1.25; }, L => { L.stripe2 = true; }, 'A loose jaw drags: -15% speed.', p => { p.st.speed *= 0.85; }, 3],
+      ['bulk', 'DENSE BULK', '+50% max HP and prey under 60% of your size flees in terror.', p => { p.st.hpMul *= 1.5; p.st.fearAura = true; }, L => { L.paddle = shade(L.mid, 0.8); }, 'Turns like a barge: -25% acceleration, -20% turn.', p => { p.st.accel *= 0.75; p.st.turn *= 0.8; }, 4],
+      ['titan', 'TITAN', 'APEX: +40% growth again, bites shake the swamp, and you crush what you ram.', p => { p.st.growth *= 1.4; p.st.quake = true; p.st.bullRush = true; p.st.ramMul *= 1.5; p.evo.colossus = true; }, L => { L.spikes = 2; L.horn = true; }, 'Mass is not momentum: -30% speed.', p => { p.st.speed *= 0.7; }, 6],
     ],
     savage: [
-      ['claws', 'RETRACTED CLAWS', '+80% land speed, +60% hop height.', p => { p.st.landSpeed *= 1.8; p.st.hop *= 1.6; }, L => { L.claws = true; }],
-      ['lungs', 'AMPHIBIOUS LUNGS', 'Regenerate on land and hop twice as high.', p => { p.st.hop *= 1.6; p.st.landRegen += 0.02; }, L => { L.frill = '#8fa3b5'; }],
-      ['nighteye', 'TAPETUM LUCIDUM', 'The night is bright to you, and ambushes always crit after dark.', p => { p.st.nightEyes = true; p.st.ambush = true; }, L => { L.glow = '#a0ffd0'; L.eye = '#c0ffe0'; }],
-      ['manhunter', 'MAN-EATER', 'APEX: people panic near you, are worth triple, and boats break like sticks.', p => { p.st.manEater = true; p.st.fearAura = true; p.st.hullMul = 3; p.st.airGrab = true; p.evo.savage = true; }, L => { L.scars = true; L.eye = '#ff2010'; L.mane = '#4a1010'; }],
+      ['claws', 'RETRACTED CLAWS', '+80% land speed, +60% hop height.', p => { p.st.landSpeed *= 1.8; p.st.hop *= 1.6; }, L => { L.claws = true; }, 'Legs are not fins: -15% swim speed.', p => { p.st.speed *= 0.85; }, 2],
+      ['lungs', 'AMPHIBIOUS LUNGS', 'Regenerate on land and hop twice as high.', p => { p.st.hop *= 1.6; p.st.landRegen += 0.02; }, L => { L.frill = '#8fa3b5'; }, 'Air costs blood: -15% max HP.', p => { p.st.hpMul *= 0.85; }, 3],
+      ['nighteye', 'TAPETUM LUCIDUM', 'The night is bright to you, and ambushes always crit after dark.', p => { p.st.nightEyes = true; p.st.ambush = true; }, L => { L.glow = '#a0ffd0'; L.eye = '#c0ffe0'; }, 'Daylight blinds you: -15% armour.', p => { p.st.armor -= 0.15; }, 4],
+      ['manhunter', 'MAN-EATER', 'APEX: people panic near you, are worth triple, and boats break like sticks.', p => { p.st.manEater = true; p.st.fearAura = true; p.st.hullMul = 3; p.st.airGrab = true; p.evo.savage = true; }, L => { L.scars = true; L.eye = '#ff2010'; L.mane = '#4a1010'; }, 'Lean and reckless: -25% max HP.', p => { p.st.hpMul *= 0.75; }, 6],
     ],
   };
   LIN_KEYS.forEach((lin, li) => {
     const dir = HEX_DIR[li], side = HEX_DIR[(li + 1) % 6];
     T[lin].forEach((n, i) => {
       const ring = i + 1;
-      gene({ id: lin + ':' + n[0], lin, ring, q: dir[0] * ring, r: dir[1] * ring, name: n[1], desc: n[2], apply: n[3], look: n[4], cost: [1, 2, 3, 5][i], apex: i === 3 });
+      gene({ id: lin + ':' + n[0], lin, ring, q: dir[0] * ring, r: dir[1] * ring, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [2, 4, 7, 12][i], apex: i === 3 });
     });
     // a cross-link gene sitting between this lineage and the next
     const cq = dir[0] * 2 + side[0], cr = dir[1] * 2 + side[1];
     const other = LIN_KEYS[(li + 1) % 6];
     const HYB = {
-      'ripper|bulwark': ['bonecrusher', 'BONE CRUSHER', 'Bites ignore armor and crack shells, hulls and bone. 20% crit.', p => { p.st.pierce = true; p.st.crit += 0.2; }, L => { L.horn = true; }],
-      'bulwark|phantom': ['keel', 'KEELED SCUTES', '-15% damage taken and +15% speed: armor that swims.', p => { p.st.armor += 0.15; p.st.speed *= 1.15; }, L => { L.denticle = true; }],
-      'phantom|abyssal': ['barb', 'CAUDAL BARB', 'Your tail stabs and poisons whatever crowds you.', p => { p.st.barb = 16; p.st.venom += 0.2; }, L => { L.barb = true; }],
-      'abyssal|colossus': ['gullet', 'GOLIATH GULLET', 'Swallow anything your own size, and gain 25% more mass.', p => { p.st.swallow *= 2; p.st.growth *= 1.25; }, L => { L.gills = true; }],
-      'colossus|savage': ['tusks', 'BOAR TUSKS', 'Dashing gores for 140% bite damage.', p => { p.st.bullRush = true; p.st.ramMul *= 1.4; }, L => { L.tusks = true; }],
-      'savage|ripper': ['scent', 'BLOOD SCENT', 'Wounded prey is marked and takes double damage.', p => { p.st.bloodScent = true; p.st.woundMul = 2; }, L => { L.eye = '#ff5030'; }],
+      'ripper|bulwark': ['bonecrusher', 'BONE CRUSHER', 'Bites ignore armor and crack shells, hulls and bone. 20% crit.', p => { p.st.pierce = true; p.st.crit += 0.2; }, L => { L.horn = true; }, 'Brittle enamel: -15% max HP.', p => { p.st.hpMul *= 0.85; }, 5],
+      'bulwark|phantom': ['keel', 'KEELED SCUTES', '-15% damage taken and +15% speed: armor that swims.', p => { p.st.armor += 0.15; p.st.speed *= 1.15; }, L => { L.denticle = true; }, 'Ridges catch: -15% acceleration.', p => { p.st.accel *= 0.85; }, 5],
+      'phantom|abyssal': ['barb', 'CAUDAL BARB', 'Your tail stabs and poisons whatever crowds you.', p => { p.st.barb = 16; p.st.venom += 0.2; }, L => { L.barb = true; }, 'Tail busy stabbing: -12% speed.', p => { p.st.speed *= 0.88; }, 5],
+      'abyssal|colossus': ['gullet', 'GOLIATH GULLET', 'Swallow anything your own size, and gain 25% more mass.', p => { p.st.swallow *= 2; p.st.growth *= 1.25; }, L => { L.gills = true; }, 'A full gullet is slow: -18% acceleration.', p => { p.st.accel *= 0.82; }, 5],
+      'colossus|savage': ['tusks', 'BOAR TUSKS', 'Dashing gores for 140% bite damage.', p => { p.st.bullRush = true; p.st.ramMul *= 1.4; }, L => { L.tusks = true; }, 'Tusks foul the bite: -12% bite.', p => { p.st.bite *= 0.88; }, 5],
+      'savage|ripper': ['scent', 'BLOOD SCENT', 'Wounded prey is marked and takes double damage.', p => { p.st.bloodScent = true; p.st.woundMul = 2; }, L => { L.eye = '#ff5030'; }, 'Nose over armour: -15% armour.', p => { p.st.armor -= 0.15; }, 5],
     };
     const h = HYB[lin + '|' + other];
-    if (h) gene({ id: 'hy:' + h[0], lin, lin2: other, ring: 2, q: cq, r: cr, name: h[1], desc: h[2], apply: h[3], look: h[4], cost: 3, hybrid: true });
+    if (h) gene({ id: 'hy:' + h[0], lin, lin2: other, ring: 2, q: cq, r: cr, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 6, hybrid: true });
   });
 })();
 const GENE_BY_ID = {};
@@ -4277,13 +4277,24 @@ const Genome = {
     if (g.root) return false;
     if (this.has(P, g.id)) return false;
     if (this.has(P, 'core') === false) return false;
+    // one apex per crocodile: the four ends of the tree are exclusive
+    if (g.apex && P.apex) return false;
     return hexNbrs(g).some(n => this.has(P, n.id));
   },
-  // affinity discounts: play a style and its lineage gets cheaper, down to half
+  // how many separate lineages the build has already opened
+  spread(P) { const set = {}; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin) set[g.lin] = 1; if (g && g.lin2) set[g.lin2] = 1; } return Object.keys(set).length; },
+  // Cost has three parts: the gene's own price, an affinity discount for
+  // playing to that lineage, and a splice tax for every OTHER lineage already
+  // in you. Scattering across the tree is the expensive way to build.
+  tax(P, g) {
+    const open = this.spread(P);
+    const mine = (g.lin && this.depth(P, g.lin) > 0) ? 1 : 0;
+    return 1 + 0.2 * Math.max(0, open - mine);
+  },
   cost(P, g) {
     const a = g.lin ? (P.affinity[LINEAGES[g.lin].affinity] || 0) : 0;
     const disc = clamp(a / 60, 0, 0.5);
-    return Math.max(1, Math.round(g.cost * (1 - disc)));
+    return Math.max(1, Math.round(g.cost * (1 - disc) * this.tax(P, g)));
   },
   affinityPct(P, lin) { return clamp((P.affinity[LINEAGES[lin].affinity] || 0) / 60, 0, 1); },
   buy(P, g) {
@@ -4292,10 +4303,17 @@ const Genome = {
     if (P.genePoints < c) return false;
     P.genePoints -= c; P.genes.push(g.id); P.geneSpent += c;
     g.apply(P);
+    if (g.downApply) g.downApply(P);
     if (g.apex) { P.apex = g.lin; Meta.event('apex'); }
     P.recomputeStats(); P.rebuildLook();
     return true;
   },
+  // total instability from everything spliced in
+  load(P) { let n = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.load) n += g.load; } return n; },
+  // what the body can carry: it grows with you, so late genes need late mass
+  limit(P) { return 9 + P.tier * 2.2 + (P.strainBonus || 0); },
+  // 0 while stable, rising past 1 once the genome is over its limit
+  strain(P) { const l = this.limit(P); return l <= 0 ? 0 : Math.max(0, (this.load(P) - l) / Math.max(4, l * 0.5)); },
   // how far down each lineage the player has gone
   depth(P, lin) { let d = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin === lin && !g.hybrid) d = Math.max(d, g.ring); } return d; },
   // Gene points from a meal. Deliberately scarce: a run should fund maybe two
@@ -4502,6 +4520,8 @@ class Entity {
       this.flash = 0.08; this.knock(opts.dx, opts.dy, 60); this.aware = true; this.awareT = 3;
       return 0;
     }
+    if (this.invulnB) { G.fx.sparks(this.x, this.y, 8, opts.dx, opts.dy); SFX.clank(this.pan); this.flash = 0.08; return 0; }
+    if (this.staggered) dmg *= 0.35;   // the opening is the finisher, not free damage
     this.hp -= dmg; this.flash = 0.1; this.lastHitT = G.t; this.aware = true; this.awareT = 3;
     this.squash = 1;
     if (this.bleeds) {
@@ -4553,6 +4573,7 @@ class Entity {
     this.slow = 0;
     if (this.poison > 0) { this.poison -= dt; this.slow = 0.6; this.hp -= this.poisonDmg * dt; if (chance(dt * 8)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030', '#80ff80']); if (this.hp <= 0) this.die(G.player); }
     if (this.bleedT > 0) { this.bleedT -= dt; this.hp -= this.bleedDmg * dt; if (chance(dt * 10)) G.fx.blood(this.x, this.y, 1, 0, 0, 15, this.bloodColors); if (this.hp <= 0) this.die(G.player); }
+    if (this.isBoss && this.bossMax) Boss.tick(this, dt);
   }
   update(dt) { this.tick(dt); }
   draw(ctx) {
@@ -4996,11 +5017,11 @@ class Gator extends Entity {
         if (this.roarCd <= 0 && dP < 300) { this.roarCd = rand(5, 9); SFX.growl(this.pan); }
         const lead = 0.25; let tx = P.x + P.vx * lead, ty = P.y + P.vy * lead;
         if (this.biteCd > 0 && this.biteCd < 1.0) { const dx = this.x - P.x, dy = this.y - P.y, d = Math.hypot(dx, dy) || 1; tx = P.x + dx / d * 120; ty = P.y + dy / d * 40; }
-        this.swimToward(tx, ty, maxSp * (this.isBoss ? 1.15 : 1), 3.5, dt);
+        this.swimToward(tx, ty, maxSp * (this.isBoss ? 1.15 * (this.bossSpd || 1) : 1), 3.5, dt);
         const [sx, sy] = this.snout;
         if (this.biteCd <= 0 && P.nearestDist(sx, sy) < 8 + 5 * P.vis + 4 * this.vis) {
-          this.biteT = 0.16; this.biteCd = this.isBoss ? 1.2 : 1.6;
-          const dmg = 11 * Math.pow(this.size, 0.8) * (this.isBoss ? 1.1 : 1);
+          this.biteT = 0.16; this.biteCd = (this.isBoss ? 1.2 : 1.6) / (this.bossSpd || 1);
+          const dmg = 11 * Math.pow(this.size, 0.8) * (this.isBoss ? 1.1 * (this.bossDmg || 1) : 1);
           if (P.hurt(dmg, this, 'bite') > 0) {
             SFX.chomp(this.size, this.pan); G.hitstop(0.05);
             const dx = P.x - this.x, dy = P.y - this.y, d = Math.hypot(dx, dy) || 1; if (!P.st.knockImmune) { P.vx += dx / d * 180; P.vy += dy / d * 120; }
@@ -5128,7 +5149,7 @@ class Boat extends Entity {
     G.fx.splinters(this.x, this.y, 40, 190); G.fx.splash(this.x, 3, this.vx); Water.splash(this.x, 220, this.r); SFX.splinter(this.pan); SFX.splash(2, this.pan); G.shake(12); G.slowmo(0.4, 0.6);
     for (const p of this.alivePass) { const [px, py] = this.passPos(p); const h = new Human(px, py + 6, p.type); h.vx = rand(-60, 60); h.vy = -rand(40, 120); G.add(h); p.alive = false; }
     if (this.tether) this.cutTether();
-    G.addScore(this.war ? 5000 : 800); G.stats.boats++; Meta.event('boat');
+    G.addScore(this.war ? 5000 : 800); G.stats.boats++; Meta.event('boat'); Missions.onWreck();
     if (this.war) G.onBossKilled(this);
   }
   cutTether() { if (this.tether && G.player.tether === this.tether) G.player.tether = null; this.tether = null; }
@@ -5335,16 +5356,16 @@ class SkunkApe extends Entity {
     }
     this.y = fy - this.hh * 0.5; this.vy = 0;
     if (!this.rage && this.hp < this.maxHp * 0.35) { this.rage = true; SFX.roar(3, this.pan); G.fx.text(this.x, this.y - 40, 'ENRAGED!', { color: '#ff4020', scale: 2 }); G.shake(10); }
-    const spd = this.rage ? 110 : 70; const dP = this.distTo(P);
+    const spd = (this.rage ? 110 : 70) * (this.bossSpd || 1); const dP = this.distTo(P);
     this.throwCd -= dt; this.poundCd -= dt; this.roarCd -= dt;
     if (this.roarCd <= 0 && dP < 400) { this.roarCd = rand(6, 10); SFX.roar(2.5, this.pan); }
     const dir = sign(P.x - this.x); this.facing = dir;
     const canWalk = World.floorY(this.x + dir * 16) < -2;
     if (P.dead) { this.vx = 0; }
     else if (dP < this.hh * 0.35 + 5 * P.vis && this.poundCd <= 0) {
-      this.poundCd = 1.8; P.hurt(28, this, 'crush'); P.vx += dir * 300; P.vy -= 150; G.shake(14); SFX.thud(this.pan); SFX.shock(this.pan); G.fx.shock(this.x, this.y + 20, 60, '#c0a080'); G.fx.smoke(this.x + dir * 20, this.y + 20, 6, '#6b5a3a');
+      this.poundCd = 1.8 / (this.bossSpd || 1); P.hurt(28 * (this.bossDmg || 1), this, 'crush'); P.vx += dir * 300; P.vy -= 150; G.shake(14); SFX.thud(this.pan); SFX.shock(this.pan); G.fx.shock(this.x, this.y + 20, 60, '#c0a080'); G.fx.smoke(this.x + dir * 20, this.y + 20, 6, '#6b5a3a');
     } else if (P.y > 10 && dP < 420 && this.throwCd <= 0) {
-      this.throwCd = this.rage ? 1.6 : 2.6; const tx = P.x + P.vx * 0.5, ty = P.y;
+      this.throwCd = (this.rage ? 1.6 : 2.6) / (this.bossSpd || 1); const tx = P.x + P.vx * 0.5, ty = P.y;
       const dx = tx - this.x, T = clamp(Math.abs(dx) / 260, 0.6, 1.4); const vx = dx / T, vy = (ty - (this.y - 20)) / T - 0.5 * 620 * T;
       G.add(new Projectile(this.x + dir * 12, this.y - 20, vx, vy, 'rock', this)); this.throwAnim = 0.3;
       G.fx.text(this.x, this.y - 44, 'HRRAAGH!', { color: '#ff8060' });
@@ -5845,7 +5866,7 @@ class Structure extends Entity {
     G.fx.text(this.x, this.y - 40, this.kind === 'stilthouse' ? 'FISH CAMP DESTROYED!' : 'DOCK DESTROYED!', { color: '#ffd060', scale: 2, life: 1.8 });
     for (const o of this.alivePeople) { const [px, py] = this.occPos(o); const h = new Human(px, py + 4, o.type); h.vx = rand(-70, 70); h.vy = -rand(30, 90); G.add(h); o.alive = false; }
     G.addScore(1200); Meta.event('structure');
-    if (P) G.stats.structures = (G.stats.structures || 0) + 1;
+    if (P) { G.stats.structures = (G.stats.structures || 0) + 1; Missions.onWreck(); }
   }
   update(dt) {
     this.tick(dt);
@@ -6164,15 +6185,383 @@ function trySpawnStructure(x, rng, difficulty) {
   return false;
 }
 
+/* ===== src/missions.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// Contracts and relics. Every release site carries one standing order and one
+// thing worth taking off it. Finish the order and the relic surfaces somewhere
+// nearby with a beacon on it; swim to it and it is yours for good. Relics are
+// the only progression that survives death, so they are the reason to go back
+// to a site you have already cleared.
+// ---------------------------------------------------------------------------
+const ARTIFACTS = [
+  { id: 'tag', stage: 'outfall', name: 'SUBJECT TAG', line: 'THE NUMBER THEY GAVE YOU. YOU KEPT IT.',
+    boon: 'START EVERY RUN WITH 2 GENE POINTS', col: '#9ad8c0', glyph: 'tag', apply: P => { P.genePoints += 2; } },
+  { id: 'oyster', stage: 'mangrove', name: "DROWNED MAN'S RING", line: 'PRISED OUT OF AN OYSTER BED WITH A FINGER STILL IN IT.',
+    boon: '+8% BITE', col: '#d8c8a0', glyph: 'ring', apply: P => { P.st.bite *= 1.08; } },
+  { id: 'skull', stage: 'camp', name: "GATOR JOE'S SKULL", line: 'HE NAMED THE CAMP AFTER HIMSELF. YOU KEPT THE REST.',
+    boon: '+10% MAX HEALTH', col: '#e4dcc4', glyph: 'skull', apply: P => { P.st.hpMul *= 1.10; } },
+  { id: 'knee', stage: 'cypress', name: 'BLACKWATER KNEE', line: 'A CYPRESS KNEE THAT GREW AROUND SOMETHING METAL.',
+    boon: '+2 STRAIN TOLERANCE', col: '#8a6a44', glyph: 'knee', apply: P => { P.strainBonus = (P.strainBonus || 0) + 2; } },
+  { id: 'blade', stage: 'prairie', name: 'SAWGRASS BLADE', line: 'ONE LEAF, HONED BY A HUNDRED MILES OF WIND.',
+    boon: 'BITES CAUSE BLEEDING', col: '#a8c060', glyph: 'blade', apply: P => { P.st.bleed = true; } },
+  { id: 'prop', stage: 'river', name: 'BENT PROPELLER', line: 'IT WENT THROUGH YOU ONCE. NOW YOU CARRY IT.',
+    boon: '+12% SWIM SPEED', col: '#b0b8c0', glyph: 'prop', apply: P => { P.st.speed *= 1.12; } },
+  { id: 'lantern', stage: 'campground', name: 'CAMP LANTERN', line: 'STILL LIT. NOBODY LEFT TO SEE BY IT.',
+    boon: 'PREY LURED FROM FURTHER OFF', col: '#ffd070', glyph: 'lantern', apply: P => { P.st.magnet = Math.max(P.st.magnet, 40); P.st.lure = Math.max(P.st.lure, 1); } },
+  { id: 'tooth', stage: 'bay', name: 'MEGALODON TOOTH', line: 'DREDGED UP FROM UNDER THE BAY. NOTHING THAT SIZE SWIMS NOW.',
+    boon: '+15% DEATH ROLL DAMAGE', col: '#cfc0a8', glyph: 'tooth', apply: P => { P.st.rollDmg *= 1.15; } },
+  { id: 'core', stage: 'seawall', name: 'CONTAINMENT CORE', line: 'THE THING THEY GREW YOU AROUND. IT STILL HUMS.',
+    boon: '+1 DASH CHARGE', col: '#40f0c8', glyph: 'core', apply: P => { P.st.dashCharges += 1; } },
+];
+const ARTIFACT_BY_ID = {};
+for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
+
+// One standing order per site. `kind` decides which hook counts.
+const MISSIONS = {
+  outfall:    { title: 'GET OUT', line: 'REACH OPEN WATER', kind: 'reach', atX: 980, unit: 'M' },
+  mangrove:   { title: 'THIN THE ROOTS', line: 'TAKE 14 FISH', kind: 'fish', target: 14 },
+  camp:       { title: 'CLOSE THE CAMP', line: 'WRECK 3 BUILDS', kind: 'wreck', target: 3 },
+  cypress:    { title: 'OWN THE DEEP', line: 'KILL 5 PREDATORS', kind: 'threat', target: 5 },
+  prairie:    { title: 'CROSS THE OPEN', line: 'CROSS THE OPEN', kind: 'travel', target: 1600, unit: 'M' },
+  river:      { title: 'RUN THE CHANNEL', line: 'KILL A BOSS', kind: 'boss', target: 1 },
+  campground: { title: 'HOLIDAY OVER', line: 'TAKE 10 PEOPLE', kind: 'human', target: 10 },
+  bay:        { title: 'SALT AND TEETH', line: 'KILL 4 SHARKS', kind: 'shark', target: 4 },
+  seawall:    { title: 'KAIJU PROTOCOL', line: 'WRECK 8 BOATS OR BUILDS', kind: 'wreck', target: 8 },
+};
+
+const Missions = {
+  owned() { const a = G.save && G.save.artifacts; return Array.isArray(a) ? a : []; },
+  has(id) { return this.owned().indexOf(id) >= 0; },
+  // the permanent half of progression: everything you have ever carried out
+  applyAll(P) {
+    for (const id of this.owned()) { const a = ARTIFACT_BY_ID[id]; if (a) a.apply(P); }
+  },
+  start(stage) {
+    const def = stage && MISSIONS[stage.id];
+    if (!def) { G.mission = null; return; }
+    const art = ARTIFACTS.find(a => a.stage === stage.id);
+    // a site you have already stripped still plays, it just has nothing left on it
+    const x0 = G.player.x;
+    // a "reach" order is a place, not a distance: the span depends on where the
+    // run actually starts, which for the outfall is back in the tank
+    const target = def.atX !== undefined ? Math.max(60, Math.round(def.atX - x0)) : def.target;
+    G.mission = { id: stage.id, def, art, target, n: 0, done: this.has(art && art.id), claimed: this.has(art && art.id), relic: null, x0, flashT: 0 };
+  },
+  bump(kind, n = 1) {
+    const m = G.mission; if (!m || m.done || m.def.kind !== kind) return;
+    m.n = Math.min(m.target, m.n + n);
+    m.flashT = 0.5;
+    if (m.n >= m.target) this.complete();
+    else SFX.ui && SFX.ui();
+  },
+  onKill(e, byPlayer) {
+    if (!byPlayer || !G.mission || G.mission.done) return;
+    if (e.type === 'gib' || e.type === 'proj') return;
+    if (e.isBoss) this.bump('boss');
+    if (e.human) this.bump('human');
+    if (e.threat) this.bump('threat');
+    if (e.type === 'fish') this.bump('fish');
+    if (e.kind === 'shark' || e.name === 'BIG BULL') this.bump('shark');
+  },
+  onWreck() { this.bump('wreck'); },
+  tick(dt) {
+    const m = G.mission; if (!m) return;
+    if (m.flashT > 0) m.flashT -= dt;
+    if (m.done) return;
+    const P = G.player;
+    if (m.def.kind === 'reach') { m.n = clamp(P.x - m.x0, 0, m.target); if (m.n >= m.target) this.complete(); }
+    if (m.def.kind === 'travel') { m.n = Math.max(m.n, clamp(Math.abs(P.x - m.x0), 0, m.target)); if (m.n >= m.target) this.complete(); }
+  },
+  complete() {
+    const m = G.mission; if (!m || m.done) return;
+    m.done = true; m.n = m.target;
+    G.addScore(4000);
+    if (!m.art || this.has(m.art.id)) {
+      G.banner = { text: 'ORDER COMPLETE', sub: m.def.title, t: 3.5, max: 3.5, color: '#ffd060' };
+      SFX.levelup(); return;
+    }
+    // drop the relic in reachable water ahead of you, with a beacon on it
+    const P = G.player, side = P.facing || 1;
+    let rx = null;
+    for (const d of [220, 340, 460, 160, 620]) {
+      const x = World.findX(P.x + side * d, xx => World.floorY(xx) > 34 && !World.isIndoor(xx), 400, 20);
+      if (x !== null) { rx = x; break; }
+    }
+    if (rx === null) rx = P.x + side * 200;
+    const fy = World.floorY(rx), su = World.surface(rx);
+    const ry = fy > su + 30 ? fy - 18 : (fy + su) * 0.5;
+    m.relic = G.add(new Relic(rx, ry, m.art));
+    G.banner = { text: 'ORDER COMPLETE', sub: 'A RELIC SURFACED. TAKE IT.', t: 4, max: 4, color: '#ffd060' };
+    SFX.levelup(); G.whiteFlash(0.3); G.slowmo(0.35, 0.6);
+  },
+  claim(art) {
+    const m = G.mission;
+    const list = this.owned();
+    if (list.indexOf(art.id) < 0) list.push(art.id);
+    G.save.artifacts = list;
+    if (m) { m.claimed = true; m.relic = null; }
+    const P = G.player;
+    P.genePoints += 3; P.newPoints += 3;
+    art.apply(P);
+    G.addScore(6000);
+    G.banner = { text: art.name, sub: art.boon, t: 5, max: 5, color: art.col };
+    G.fx.text(P.x, P.y - 34 * P.vis, 'RELIC CLAIMED', { color: art.col, scale: 3, life: 2 });
+    SFX.levelup(); SFX.pick(); G.whiteFlash(0.6); G.slowmo(0.25, 1.1); G.shake(8);
+    for (let i = 0; i < 26; i++) G.fx.glow(P.x + rand(-40, 40) * P.vis, P.y + rand(-26, 26) * P.vis, rand(2, 6), art.col, rand(0.4, 1));
+    G.storeSave();
+  },
+  // one short line for the HUD
+  hud() {
+    const m = G.mission; if (!m) return null;
+    if (m.claimed && m.done) return null;
+    if (m.done) return { text: 'TAKE THE RELIC', frac: 1, col: '#ffd060' };
+    const d = m.def;
+    // a place-based order just says the place; a counted one shows the count
+    const txt = d.atX !== undefined ? d.line : d.line + '  ' + Math.floor(m.n) + '/' + m.target + (d.unit || '');
+    return { text: txt, frac: m.n / m.target, col: '#8ce8a0' };
+  },
+};
+
+// ---------- the relic itself ----------
+class Relic extends Entity {
+  constructor(x, y, art) {
+    super(x, y);
+    this.art = art; this.type = 'relic'; this.name = art.name; this.edible = false; this.bleeds = false;
+    this.latchable = false; this.persistent = true; this.mass = 0; this.hp = this.maxHp = 1e9;
+    this.r = 9; this.size = 1; this.sizeClass = 0.2; this.bob = rand(TAU); this.y0 = y; this.pulse = 0;
+  }
+  takeDamage() { return 0; }
+  update(dt) {
+    this.bob += dt * 1.6; this.pulse += dt;
+    this.y = this.y0 + Math.sin(this.bob) * 4;
+    const P = G.player;
+    // beacon: a column of light so it can be found from off screen
+    if (chance(dt * 26)) G.fx.add({ type: 'bubble', x: this.x + rand(-6, 6), y: this.y, vx: rand(-6, 6), vy: -34, s: 1, seed: rand(TAU), life: 1.4 });
+    if (chance(dt * 9)) G.fx.glow(this.x + rand(-8, 8), this.y + rand(-8, 8), rand(2, 4), this.art.col, 0.5);
+    if (!P.dead && P.nearestDist(this.x, this.y) < 14 + 4 * P.vis) { Missions.claim(this.art); this.remove = true; }
+  }
+  draw(ctx) {
+    const a = this.art, x = Math.round(this.x), y = Math.round(this.y);
+    const k = 0.5 + 0.5 * Math.sin(this.pulse * 3);
+    // beam
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = a.col; ctx.globalAlpha = 0.05 + k * 0.05;
+    ctx.fillRect(x - 4, y - 260, 8, 260);
+    ctx.globalAlpha = 0.10 + k * 0.10;
+    ctx.beginPath(); ctx.arc(x, y, 14 + k * 5, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    drawRelicGlyph(ctx, a, x, y, this.bob * 0.4);
+  }
+}
+// small procedural pixel object, also used by the vault screen
+function drawRelicGlyph(ctx, art, x, y, spin = 0, s = 1) {
+  const c = art.col, d = shade(c, 0.5), l = shade(c, 1.5);
+  const w = (px, py, pw, ph, col) => { ctx.fillStyle = col; ctx.fillRect(Math.round(x + px * s), Math.round(y + py * s), Math.max(1, Math.round(pw * s)), Math.max(1, Math.round(ph * s))); };
+  const tilt = Math.sin(spin) * 1.4;
+  switch (art.glyph) {
+    case 'tag': w(-3 + tilt, -6, 6, 11, c); w(-3 + tilt, -6, 6, 1, l); w(-3 + tilt, 4, 6, 1, d); w(-1 + tilt, -4, 2, 2, d); w(-2 + tilt, 0, 4, 1, d); break;
+    case 'ring': w(-5 + tilt, -3, 10, 2, c); w(-5 + tilt, -1, 2, 4, c); w(3 + tilt, -1, 2, 4, c); w(-5 + tilt, 3, 10, 2, c); w(-1 + tilt, -5, 2, 2, l); break;
+    case 'skull': w(-5 + tilt, -5, 10, 7, c); w(-5 + tilt, -5, 10, 1, l); w(-3 + tilt, -3, 2, 2, d); w(1 + tilt, -3, 2, 2, d); w(-4 + tilt, 2, 8, 4, c); w(-3 + tilt, 3, 1, 3, d); w(0 + tilt, 3, 1, 3, d); w(3 + tilt, 3, 1, 3, d); break;
+    case 'knee': w(-2 + tilt, -6, 4, 12, c); w(-2 + tilt, -6, 1, 12, l); w(-4 + tilt, 2, 8, 3, d); w(1 + tilt, -2, 2, 2, '#b0b8c0'); break;
+    case 'blade': w(-1 + tilt, -7, 2, 13, c); w(-1 + tilt, -7, 1, 13, l); w(1 + tilt, -5, 1, 2, d); w(1 + tilt, -1, 1, 2, d); w(1 + tilt, 3, 1, 2, d); break;
+    case 'prop': w(-6 + tilt, -1, 12, 2, c); w(-1 + tilt, -6, 2, 12, c); w(-1 + tilt, -1, 2, 2, l); w(4 + tilt, -1, 2, 2, d); w(-1 + tilt, 4, 2, 2, d); break;
+    case 'lantern': w(-3 + tilt, -6, 6, 2, d); w(-4 + tilt, -4, 8, 8, c); w(-2 + tilt, -2, 4, 4, '#fff0a0'); w(-4 + tilt, 4, 8, 2, d); w(-1 + tilt, -8, 2, 2, d); break;
+    case 'tooth': w(-4 + tilt, -6, 8, 4, c); w(-4 + tilt, -6, 8, 1, l); w(-3 + tilt, -2, 6, 3, c); w(-2 + tilt, 1, 4, 3, c); w(-1 + tilt, 4, 2, 3, c); w(2 + tilt, -2, 1, 3, d); break;
+    default: w(-4 + tilt, -4, 8, 8, d); w(-3 + tilt, -3, 6, 6, c); w(-2 + tilt, -2, 4, 4, l); w(-1 + tilt, -6, 2, 2, c); w(-1 + tilt, 4, 2, 2, c); break;
+  }
+}
+
+/* ===== src/boss.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// Boss behaviour that sits on top of whatever the creature already does.
+// A boss walks down a set of health thresholds; each crossing is a phase break
+// that heals nothing but makes it faster, angrier and louder, and calls in
+// help. Below the last threshold it staggers, and a stagger is an invitation:
+// close the distance and the fight ends in a button sequence instead of one
+// more chomp.
+// ---------------------------------------------------------------------------
+const Boss = {
+  // extra scaling laid on top of the creature's own numbers
+  init(e, opts = {}) {
+    e.isBoss = true; e.persistent = true;
+    e.bossPhase = 1; e.bossMax = opts.phases || 3;
+    e.bossSpd = 1; e.bossDmg = 1;
+    e.bossBreakT = 0; e.staggerT = 0; e.staggered = false; e.finisherDone = false;
+    e.bossAdds = opts.adds || null;
+    e.bossTell = 0; e.bossTellT = 0;
+    e.hp = e.maxHp = Math.round(e.maxHp * (opts.hp || 1));
+    e.bossCue = opts.cue || null;
+    return e;
+  },
+  thresholds(e) {
+    const n = e.bossMax;
+    const out = [];
+    for (let i = 1; i < n; i++) out.push(1 - i / n);
+    return out;
+  },
+  // call once per frame from the boss's own update
+  tick(e, dt) {
+    if (e.dead) return;
+    if (e.bossBreakT > 0) { e.bossBreakT -= dt; e.stun = Math.max(e.stun, 0.05); e.invulnB = true; }
+    else e.invulnB = false;
+    const frac = e.hp / e.maxHp, th = this.thresholds(e);
+    const want = 1 + th.filter(t => frac < t).length;
+    if (want > e.bossPhase && e.bossPhase < e.bossMax) this.breakPhase(e, want);
+    // the last sliver of health is not a health bar, it is an opening
+    if (!e.staggered && !e.finisherDone && frac <= 0.13) this.stagger(e);
+    if (e.staggered) {
+      e.staggerT -= dt;
+      e.stun = Math.max(e.stun, 0.05);
+      if (chance(dt * 24)) G.fx.glow(e.x + rand(-16, 16) * e.size, e.y + rand(-12, 12) * e.size, rand(2, 5), '#ffd060', 0.6);
+      if (e.staggerT <= 0) this.recover(e, 0.24);
+    }
+  },
+  breakPhase(e, n) {
+    e.bossPhase = n;
+    e.bossBreakT = 0.9;
+    e.bossSpd *= 1.16; e.bossDmg *= 1.28;
+    e.hp = Math.max(e.hp, 1);
+    G.slowmo(0.22, 0.8); G.shake(14); G.whiteFlash(0.4); G.hitstop(0.1);
+    SFX.roar(3, e.pan); SFX.warning && SFX.warning();
+    G.fx.shock(e.x, e.y, 70 * Math.sqrt(e.size || 1), '#ff5030', 0.5);
+    for (let i = 0; i < 20; i++) G.fx.glow(e.x + rand(-30, 30), e.y + rand(-24, 24), rand(2, 6), '#ff6030', rand(0.3, 0.8));
+    G.fx.text(e.x, e.y - 36, 'PHASE ' + n, { color: '#ff5030', scale: 3, life: 1.6 });
+    G.banner = { text: e.name, sub: (e.bossCue && e.bossCue[n - 2]) || 'IT IS NOT DONE', t: 2.6, max: 2.6, color: '#ff5030' };
+    if (e.bossAdds) this.summon(e);
+  },
+  summon(e) {
+    const kinds = e.bossAdds, P = G.player;
+    for (let i = 0; i < 2; i++) {
+      const x = e.x + rand(-160, 160), fy = World.floorY(x), su = World.surface(x);
+      const k = choice(kinds);
+      if (k === 'gator' && fy > su + 40) Spawn.gator(x, clamp(su + 40, su + 10, fy - 20), Math.max(0.9, P.size * 0.55));
+      else if (k === 'moccasin' && fy > su + 20) G.add(new Snake(x, su + 6, 'moccasin'));
+      else if (k === 'boar') { const bx = World.findX(x, xx => World.floorY(xx) < -5, 700, 30); if (bx !== null) G.add(new LandAnimal(bx, 'boar')); }
+      else if (k === 'poacher') { const wx = World.findX(x, xx => World.floorY(xx) > 60, 600, 30); if (wx !== null) Spawn.boat(wx, 'poacher', sign(e.x - x) || 1); }
+      else if (fy > su + 40) Spawn.school(x, clamp(su + 50, su + 10, fy - 20), 'bass');
+    }
+    G.fx.text(e.x, e.y - 24, 'IT CALLED FOR HELP', { color: '#ffa060', life: 1.4 });
+  },
+  stagger(e) {
+    e.staggered = true; e.staggerT = 6;
+    e.vx *= 0.2; e.vy *= 0.2;
+    G.slowmo(0.3, 0.7); G.shake(9); SFX.roar(2, e.pan);
+    G.fx.text(e.x, e.y - 30, 'STAGGERED', { color: '#ffd060', scale: 3, life: 1.8 });
+    G.banner = { text: 'FINISH IT', sub: 'GET CLOSE AND BITE', t: 3, max: 3, color: '#ffd060' };
+  },
+  recover(e, frac) {
+    e.staggered = false; e.finisherDone = true; e.staggerT = 0;
+    e.hp = Math.max(e.hp, Math.round(e.maxHp * frac));
+    e.bossSpd *= 1.15; e.bossDmg *= 1.2; e.stun = 0;
+    G.fx.text(e.x, e.y - 30, 'IT GOT UP', { color: '#ff5030', scale: 2, life: 1.6 });
+    SFX.roar(3, e.pan); G.shake(10); G.redFlash(0.35);
+  },
+  // is the player close enough to start the execution?
+  canFinish(e) {
+    const P = G.player;
+    if (!e || e.dead || !e.staggered || P.dead) return false;
+    const d = e.nearestDist ? e.nearestDist(P.x, P.y) : dist(P.x, P.y, e.x, e.y);
+    return d < 40 + 14 * P.vis;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// The execution. Three to five prompts, each a different button, each with a
+// closing window. Miss two and the boss throws you off and gets back up.
+// ---------------------------------------------------------------------------
+const FIN_KEYS = ['bite', 'dash', 'brace'];
+const FIN_LABEL = { bite: 'BITE', dash: 'DASH', brace: 'BRACE' };
+const FIN_SHORT = { bite: 'BT', dash: 'DS', brace: 'BR' };
+const Finisher = {
+  begin(e) {
+    const steps = 3 + Math.min(2, (e.bossPhase || 1) - 1);
+    const seq = [];
+    let last = null;
+    for (let i = 0; i < steps; i++) { let k = choice(FIN_KEYS); if (k === last) k = FIN_KEYS[(FIN_KEYS.indexOf(k) + 1) % 3]; seq.push(k); last = k; }
+    G.finisher = { e, seq, res: [], i: 0, t: 0, dur: 1.05, hits: 0, misses: 0, flash: 0, over: 0, won: false };
+    G.banner = null;
+    G.slowmo(0.28, 0.5); G.shake(6); SFX.roar(2.4, e.pan); G.zoomPunch(1.18);
+    G.fx.text(G.player.x, G.player.y - 34 * G.player.vis, 'EXECUTION', { color: '#ffd060', scale: 3, life: 1.2 });
+    e.vx = 0; e.vy = 0;
+  },
+  // real-time: the sequence must not stretch with the slow-mo it causes
+  update(raw) {
+    const F = G.finisher; if (!F) return;
+    const e = F.e, P = G.player;
+    if (F.over > 0) { F.over -= raw; if (F.over <= 0) this.end(); return; }
+    if (!e || e.dead || P.dead) { G.finisher = null; return; }
+    if (F.flash > 0) F.flash -= raw;
+    // hold the two of them together while it plays
+    P.vx *= 0.8; P.vy *= 0.8; e.vx *= 0.8; e.vy *= 0.8;
+    P.invuln = Math.max(P.invuln, 0.2);
+    F.t += raw;
+    F.dur = 1.05 - F.i * 0.11;
+    const want = F.seq[F.i];
+    let got = null;
+    if (Input.bitePressed()) got = 'bite';
+    else if (Input.dashPressed()) got = 'dash';
+    else if (Input.bracePressed()) got = 'brace';
+    if (got) {
+      if (got === want) this.score(true); else this.score(false);
+    } else if (F.t >= F.dur) this.score(false);
+  },
+  score(hit) {
+    const F = G.finisher, e = F.e, P = G.player;
+    F.res.push(hit);
+    if (hit) {
+      F.hits++;
+      G.hitstop(0.06); G.shake(8); SFX.crunch(2, e.pan); SFX.gib(e.pan);
+      G.fx.gore(e.x, e.y, 90, 0, 0, true);
+      G.fx.text(e.x, e.y - 20 - F.i * 6, choice(['RIP!', 'TEAR!', 'CRUNCH!']), { color: '#fff060', scale: 2, life: 0.8 });
+      if (e.bleeds && G.settings.gore) { const l = Gore.limbsOf(e).filter(q => !(e.missing && e.missing.has(q.id))); if (l.length) Gore.tear(e, choice(l).id, rand(-1, 1), rand(-1, 0)); }
+    } else {
+      F.misses++;
+      G.shake(5); G.redFlash(0.3); SFX.hurt && SFX.hurt();
+      G.fx.text(P.x, P.y - 24 * P.vis, 'MISSED', { color: '#ff7060', scale: 2, life: 0.8 });
+    }
+    F.flash = 0.14; F.t = 0; F.i++;
+    if (F.misses >= 2) { F.over = 0.4; F.won = false; return; }
+    if (F.i >= F.seq.length) { F.over = 0.5; F.won = F.hits >= F.seq.length - 1; }
+  },
+  end() {
+    const F = G.finisher; if (!F) return;
+    const e = F.e, P = G.player;
+    G.finisher = null;
+    if (!e || e.dead) return;
+    if (F.won) {
+      G.fx.text(e.x, e.y - 40, 'EXECUTED', { color: '#ffd060', scale: 3, life: 2.2 });
+      G.slowmo(0.16, 1.4); G.whiteFlash(0.7); G.shake(18); SFX.roar(3, e.pan);
+      e.hp = 0;
+      P.lastKillHow = 'roll';
+      // a boat comes apart rather than dying, and takes its crew with it
+      if (e.sink) e.sink(P);
+      else { if (e.bleeds && G.settings.gore && Gore.bisect) Gore.bisect(e, P.facing, 0); e.die(P); }
+      P.hp = P.maxHp; P.hunger = Math.min(100, P.hunger + 40);
+      P.genePoints += 2; P.newPoints += 2;
+      G.addScore(8000);
+    } else {
+      Boss.recover(e, 0.3);
+      const dx = sign(P.x - e.x) || 1;
+      P.vx = dx * 320; P.vy = -160;
+      P.hurt(18 * (e.bossDmg || 1), e, 'crush');
+      G.fx.text(P.x, P.y - 26 * P.vis, 'THROWN OFF', { color: '#ff5030', scale: 2, life: 1.4 });
+    }
+  },
+};
+
 /* ===== src/player.js ===== */
 'use strict';
+// death-roll timing: the window sits three quarters through each beat
+const QTE_AT = 0.74, QTE_PERFECT = 0.075, QTE_GOOD = 0.17;
 class Player {
   constructor() { this.reset(); }
   reset() {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
-    this.hide = 'wild'; this.primeGene = null;
+    this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
     this.st = {
       speed: 1, accel: 1, bite: 1, biteRadius: 1, hpMul: 1, armor: 0, bulletArmor: 0, hungerRate: 1, regen: 0, lifesteal: 0,
@@ -6191,6 +6580,7 @@ class Player {
     this.latched = null; this.latchT = 0; this.rollT = 0; this.roll = 0; this.rollCount = 0;
     this.grabbed = null; this.tether = null; this.breakFree = 0;
     this.dashCd = 0; this.dashCharges = 1; this.dashT = 0; this.ramHit = new Set();
+    this.braceT = 0; this.braceCd = 0; this.braceFlash = 0; this.parries = 0; this.strainBonus = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
@@ -6199,11 +6589,12 @@ class Player {
   // visual/geometric scale: the same compression every other creature uses, so a 27 ft croc is drawn 27 ft long
   get vis() { return Math.pow(this.size, 0.58); }
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
-  get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * (this.frenzyT > 0 ? 1.3 : 1); }
+  get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1); }
   get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
-  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * (this.frenzyT > 0 ? 1.4 : 1); }
+  get strainMul() { return 1 / (1 + (this.strain || 0) * 0.6); }
+  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * (this.frenzyT > 0 ? 1.4 : 1); }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -6225,6 +6616,18 @@ class Player {
       if (chance(dt * 0.8)) G.fx.text(this.x, this.y - 22 * this.vis, 'STARVING', { color: '#ff8040' });
       if (this.hp <= 0) return this.die('STARVED');
     } else this.starving = false;
+    // genetic rejection: past the body's tolerance the splices start fighting.
+    // Growing a tier raises the limit, so an overloaded build is survivable if
+    // you can feed through it.
+    this.strain = Genome.strain(this);
+    if (this.strain > 0) {
+      this.hp -= this.maxHp * 0.012 * this.strain * dt;
+      if (chance(dt * 2.4 * Math.min(1, this.strain))) {
+        G.fx.blood(this.x, this.y + rand(-6, 6) * this.vis, 1, 0, 0, 24, ['#7a1030', '#a02040']);
+        if (chance(0.25)) G.fx.text(this.x, this.y - 20 * this.vis, 'REJECTION', { color: '#ff5090', life: 1 });
+      }
+      if (this.hp <= 0) return this.die('REJECTED');
+    }
     if (this.st.regen > 0 && this.hunger > 25) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.regen * dt);
     if (this.st.landRegen > 0 && this.onLand) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.landRegen * dt);
     if (this.poisonT > 0) { this.poisonT -= dt; this.hp -= this.venomDps * dt; if (chance(dt * 6)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030']); if (this.hp <= 0) return this.die('POISONED'); }
@@ -6234,6 +6637,10 @@ class Player {
     if (this.moving) { if (this.stillT > 0.5) { this.ambushReady = true; this.ambushT = 0.5; } this.stillT = 0; } else this.stillT += dt;
     if (this.ambushT > 0) { this.ambushT -= dt; if (this.ambushT <= 0) this.ambushReady = false; }
     if (this.stillT > 0.5) this.ambushReady = true;
+    if (this.braceCd > 0) this.braceCd -= dt;
+    if (this.braceT > 0) this.braceT -= dt;
+    if (this.braceFlash > 0) this.braceFlash -= dt;
+    if (inp.brace) this.brace();
     if (inp.bite) this.bite();
     if (inp.dash) this.dash(ix, iy);
     const surf = World.surface(this.x), fy = World.floorY(this.x), under = this.y > surf, landHere = fy < 0;
@@ -6356,13 +6763,16 @@ class Player {
         if (chance(dt * 6)) G.fx.blood(e.x, e.y, 2, 0, 0, 30, e.bloodColors);
       }
     }
-    // death roll
+    // death roll: a timing test, not a cutscene
     if (this.rollT > 0) {
-      this.rollT -= dt * 2.4 * this.st.rollSpeed;
+      this.rollT -= dt * 0.9 * this.st.rollSpeed;
       this.roll = (1 - Math.max(0, this.rollT)) * TAU;
       G.shake(1.2);
+      // the marker sweeps once per beat; the window sits at the far side
+      this.qteT = (this.qteT || 0) + dt * 2.6 * this.st.rollSpeed;
+      if (this.qteT >= 1) { this.qteT -= 1; this.qteMissed = true; this.qteBeats = (this.qteBeats || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); SFX.hurt && SFX.hurt(); }
       if (under) { G.fx.bubbles(this.x, this.y, 2, 12 * this.vis, -20); if (chance(0.5)) G.fx.add({ type: 'foam', x: this.x + rand(-14, 14) * this.vis, y: World.surface(this.x), vx: rand(-30, 30), vy: 0, s: 1, life: 0.5 }); }
-      if (this.rollT <= 0) { this.roll = 0; this.rollT = 0; this.rollHit(); }
+      if (this.rollT <= 0) { this.roll = 0; this.rollT = 0; this.qteT = 0; this.rollHit(); }
     }
     if (this.gulpT > 0) this.gulpT -= dt;
     if (this.st.lure && chance(dt * 3)) G.fx.glow(this.x, this.y, 8 * this.vis, '#40f0c8', 0.6);
@@ -6421,7 +6831,22 @@ class Player {
       if (this.breakFree >= 3) { const T = this.tether; this.tether = null; if (T.boat) T.boat.cutTether(); this.breakFree = 0; G.fx.text(this.x, this.y - 20 * this.vis, 'LINE SNAPPED!', { color: '#ffd060' }); }
       return;
     }
-    if (this.latched && this.rollT <= 0) { this.rollT = 1; this.biteCd = 0.45 / this.st.rollSpeed; G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return; }
+    if (this.rollT > 0) {
+      // scoring the beat: dead centre of the window is a tear, the edges graze
+      const ph = this.qteT || 0, off = Math.abs(ph - QTE_AT);
+      if (off < QTE_PERFECT) { this.qteHits = (this.qteHits || 0) + 2; G.fx.text(this.x, this.y - 24 * this.vis, 'TEAR!', { color: '#fff060', scale: 2 }); G.hitstop(0.07); G.shake(7); SFX.crunch(1.4, this.pan); }
+      else if (off < QTE_GOOD) { this.qteHits = (this.qteHits || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'GOOD', { color: '#9ef0c8' }); SFX.chomp(this.size, this.pan); }
+      else { this.qteMissed = true; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); }
+      this.qteBeats = (this.qteBeats || 0) + 1;
+      this.qteT = 0;
+      this.biteCd = 0.1;
+      return;
+    }
+    if (this.latched && this.rollT <= 0) {
+      this.rollT = 1; this.biteCd = 0.45 / this.st.rollSpeed;
+      this.qteT = 0; this.qteHits = 0; this.qteBeats = 0; this.qteMissed = false;
+      G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return;
+    }
     this.biteT = 0.18; this.biteHit = false; this.biteCd = 0.3;
     if (this.st.lunge) { this.vx += Math.cos(this.angle) * this.st.lunge; this.vy += Math.sin(this.angle) * this.st.lunge; }
   }
@@ -6468,14 +6893,27 @@ class Player {
   }
   rollHit() {
     const e = this.latched; if (!e || e.dead) return; this.rollCount++;
-    const dmg = this.biteDmg * 1.6 * this.st.rollDmg, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
+    // the roll is worth what you timed out of it: whiff every beat and it barely bruises
+    const beats = Math.max(1, this.qteBeats || 1), hits = this.qteHits || 0;
+    const acc = clamp(hits / (beats * 2), 0, 1);
+    const qmul = 0.35 + acc * 1.65;
+    if (this.qteMissed && acc < 0.34 && chance(0.5) && this.latched) {
+      // a fumbled roll loses the grip instead of paying out
+      const lost = this.latched; this.latched = null; this.latchT = 0;
+      lost.vx = -this.facing * 200; lost.vy = -50;
+      G.fx.text(lost.x, lost.y - 16 * lost.size, 'LOST GRIP', { color: '#ffb0b0', scale: 2 });
+      SFX.hurt && SFX.hurt();
+      return;
+    }
+    const dmg = this.biteDmg * 1.6 * this.st.rollDmg * qmul, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
     const lethal = e.hp <= dmg; this.lastKillHow = 'roll';
     e.takeDamage(dmg, this, { dx: -dx, dy: -dy, pierce: true });
     if (lethal && e.bleeds && G.settings.gore) { this.latched = null; Gore.bisect(e, dx, dy); }
     else if (e.bleeds && G.settings.gore && chance(0.6)) { const l = Gore.limbsOf(e).filter(q => !(e.missing && e.missing.has(q.id))); if (l.length) Gore.tear(e, choice(l).id, -dx, -dy); }
     G.fx.gore(e.x, e.y, 130, 0, 0, true); G.hitstop(0.08); G.shake(9); SFX.crunch(this.size * 1.5, e.pan); SFX.gib(e.pan);
     G.fx.text(e.x, e.y - 16 * e.size, choice(['TEAR!', 'SHRED!', 'RIP!']), { color: '#ff4040', scale: 2 });
-    G.addScore(25);
+    G.addScore(Math.round(25 * qmul));
+    if (acc >= 0.9) { G.fx.text(this.x, this.y - 30 * this.vis, 'PERFECT ROLL', { color: '#fff060', scale: 2, life: 1.2 }); G.addScore(120); }
     if (!e.dead) this.latchT = 0;
   }
   ramCheck() {
@@ -6506,6 +6944,38 @@ class Player {
       else e.takeDamage(this.biteDmg * 1.2, this, { dx: dx / dd, dy: dy / dd, pierce: true });
       e.knock(dx / dd, dy / dd, 200); e.stun = 0.8;
     }
+  }
+  // BRACE: a short guard. Anything that lands in the first sliver of it is
+  // turned back on whoever threw it; the rest of the window is only armour, so
+  // pressing it early still costs you the cooldown.
+  brace() {
+    if (this.braceCd > 0) return;
+    this.braceCd = 1.5; this.braceT = 0.30;
+    SFX.clank(this.pan); G.fx.shock(this.x, this.y, 16 * this.vis, '#9ad8ff', 0.22);
+    if (this.grabbed) {
+      // clamped in something's jaws, bracing is how you get an arm free
+      this.breakFree += 1;
+      G.fx.text(this.x, this.y - 20 * this.vis, this.breakFree >= 3 ? 'BROKE FREE!' : 'BRACED! ' + (3 - this.breakFree), { color: '#9ad8ff' });
+      G.shake(4); G.fx.bubbles(this.x, this.y, 6, 10 * this.size);
+      if (this.breakFree >= 3) { const g = this.grabbed; this.grabbed = null; this.breakFree = 0; if (g.release) g.release(); if (g.takeDamage) g.takeDamage(this.biteDmg * 1.5, this, { pierce: true }); this.invuln = 0.8; }
+    }
+  }
+  // returns true when the hit was turned
+  tryParry(dmg, src, kind) {
+    if (this.braceT <= 0.12) return false;          // late in the window it is only armour
+    this.braceT = 0; this.braceCd = 0.4; this.braceFlash = 0.25; this.invuln = 0.45; this.parries++;
+    G.hitstop(0.1); G.whiteFlash(0.35); G.shake(7); G.slowmo(0.35, 0.22);
+    SFX.clank(this.pan); SFX.crunch(this.size, this.pan);
+    G.fx.sparks(this.x, this.y, 14); G.fx.shock(this.x, this.y, 34 * this.vis, '#bfe8ff', 0.45);
+    G.fx.text(this.x, this.y - 26 * this.vis, 'PARRY!', { color: '#bfe8ff', scale: 2, life: 1 });
+    G.addScore(150);
+    if (src && src.takeDamage && kind !== 'bullet') {
+      const dx = sign(src.x - this.x) || 1;
+      src.takeDamage(this.biteDmg * 1.6, this, { dx, dy: 0, pierce: true, crit: true });
+      src.knock(dx, -0.3, 260); src.stun = Math.max(src.stun || 0, 1.3);
+      if (src.staggered !== undefined && src.isBoss) src.staggerT = (src.staggerT || 0) + 0.8;
+    }
+    return true;
   }
   dash(ix, iy) {
     if (this.dashCharges <= 0 || this.grabbed) return;
@@ -6544,7 +7014,11 @@ class Player {
     if (this.dead || dmg <= 0) return 0;
     const dot = kind === 'crush' || kind === 'venom';
     if (this.invuln > 0 && !dot) return 0;
+    if (this.braceT > 0 && kind !== 'venom' && this.tryParry(dmg, src, kind)) return 0;
     let mult = 1 - clamp(this.st.armor, 0, 0.75);
+    if (this.braceT > 0) mult *= 0.4;               // late brace still soaks most of it
+    // the swamp keeps pace with you: everything hits harder the longer you last
+    mult *= 1 + Math.min(0.5, G.difficulty() * 0.05);
     if (kind === 'bullet') mult *= (1 - clamp(this.st.bulletArmor, 0, 0.85)) / Math.pow(this.size, 0.55);
     dmg *= mult; if (dmg < 0.05) return 0;
     this.hp -= dmg; this.hurtT = G.t; Affinity.onHurtTaken(this, dmg);
@@ -6865,14 +7339,70 @@ const UI = {
       ctx.fillStyle = full ? '#60c0ff' : '#203040'; ctx.fillRect(11 + i * 10, H - 14, 6, 6);
       if (!full && i === P.dashCharges) { const f = 1 - clamp(P.dashCd / (1.6 * P.st.dashCd), 0, 1); ctx.fillStyle = '#60c0ff'; ctx.fillRect(11 + i * 10, H - 14 + 6 - Math.round(6 * f), 6, Math.round(6 * f)); }
     }
+    // brace: one bar that empties when you use it, so timing it is visible
+    {
+      const bw = 26, bx = 10 + P.st.dashCharges * 10 + 4, by = H - 13, f = 1 - clamp(P.braceCd / 1.5, 0, 1);
+      ctx.fillStyle = '#0d1210'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
+      ctx.fillStyle = P.braceT > 0 ? '#bfe8ff' : f >= 1 ? '#5f9fbf' : '#233440';
+      ctx.fillRect(bx, by, Math.round(bw * (P.braceT > 0 ? 1 : f)), 4);
+      if (P.braceFlash > 0) { ctx.globalAlpha = clamp(P.braceFlash * 4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6); ctx.globalAlpha = 1; }
+    }
+    // standing order: one line, a hairline of progress under it
+    const mh = Missions.hud();
+    if (mh) {
+      const my = 52, mw = 150;
+      ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, my - 2, mw, 13);
+      ctx.fillStyle = mh.col; ctx.fillRect(8, my - 2, 2, 13);
+      const flash = G.mission && G.mission.flashT > 0 && Math.floor(t * 12) % 2;
+      Font.draw(ctx, mh.text, 14, my, { color: flash ? '#ffffff' : mh.col });
+      ctx.fillStyle = '#16241f'; ctx.fillRect(10, my + 9, mw - 4, 1);
+      ctx.fillStyle = mh.col; ctx.fillRect(10, my + 9, Math.round((mw - 4) * clamp(mh.frac, 0, 1)), 1);
+    }
+    // a claimed-but-unreached relic gets an arrow, it is the point of the run
+    if (G.mission && G.mission.relic && !G.mission.relic.remove) {
+      const r = G.mission.relic, [rsx, rsy] = G.cam.toScreen(r.x, r.y);
+      if (rsx < 8 || rsx > W - 8 || rsy < 8 || rsy > H - 8) {
+        const ax = clamp(rsx, 14, W - 14), ay = clamp(rsy, 14, H - 14);
+        ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 6);
+        drawRelicGlyph(ctx, r.art, ax, ay, t);
+        ctx.globalAlpha = 1;
+      }
+    }
     // biome name, bottom right
     const B = Biome.at(P.x);
     Font.draw(ctx, B.name, W - 10, H - 12, { color: '#7f9a90', align: 'right' });
+    // death-roll timing ring: a marker sweeps and the window is the lit arc
+    if (P.rollT > 0) {
+      const [sx, sy] = G.cam.toScreen(P.x, P.y);
+      const R = 34, ph = P.qteT || 0;
+      ctx.save();
+      ctx.translate(sx, sy - 4);
+      ctx.strokeStyle = 'rgba(10,16,18,0.85)'; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
+      // the good window, then the perfect core inside it
+      const a0 = (QTE_AT - QTE_GOOD) * TAU - Math.PI / 2, a1 = (QTE_AT + QTE_GOOD) * TAU - Math.PI / 2;
+      ctx.strokeStyle = '#3f8f7a'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(0, 0, R, a0, a1); ctx.stroke();
+      const p0 = (QTE_AT - QTE_PERFECT) * TAU - Math.PI / 2, p1 = (QTE_AT + QTE_PERFECT) * TAU - Math.PI / 2;
+      ctx.strokeStyle = '#ffe060'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(0, 0, R, p0, p1); ctx.stroke();
+      // sweeping marker
+      const ma = ph * TAU - Math.PI / 2;
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(Math.cos(ma) * (R - 6), Math.sin(ma) * (R - 6)); ctx.lineTo(Math.cos(ma) * (R + 6), Math.sin(ma) * (R + 6)); ctx.stroke();
+      // beats landed so far
+      const beats = P.qteBeats || 0, hits = P.qteHits || 0;
+      ctx.fillStyle = '#ffe060';
+      for (let i = 0; i < Math.min(6, hits); i++) ctx.fillRect(-14 + i * 5, R + 8, 3, 3);
+      if (beats > 0 && hits === 0) { ctx.fillStyle = '#ff8070'; ctx.fillRect(-3, R + 8, 6, 3); }
+      ctx.restore();
+    }
     // hints, stacked upward so two warnings never print on the same line
     const hints = [];
     if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
     if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
-    if (P.latched) hints.push(['LATCHED! BITE TO DEATH ROLL', '#ff9080', 1]);
+    if (P.latched && P.rollT <= 0) hints.push(['BITE TO ROLL', '#ff9080', 1]);
+    if (P.rollT > 0) hints.push(['BITE ON THE GOLD', '#ffe060', 1]);
     if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
     let hy = H - 20;
     for (const [txt, col, sc] of hints) {
@@ -6880,10 +7410,26 @@ const UI = {
       hy -= Font.H * sc + 3;
     }
     // boss bar
-    if (G.boss && !G.boss.dead) {
+    if (G.boss && !G.boss.dead && !G.finisher) {
       const b = G.boss, frac = b.hp / b.maxHp;
-      Font.draw(ctx, b.name, W / 2, 32, { color: '#ff6060', align: 'center', shadow: true });
-      this.meter(ctx, W / 2 - 100, 41, 200, 6, frac, frac < 0.3 ? '#ffb020' : '#e02020', '#200808');
+      Font.draw(ctx, b.name, W / 2, 32, { color: b.staggered ? '#ffd060' : '#ff6060', align: 'center', shadow: true });
+      this.meter(ctx, W / 2 - 100, 41, 200, 6, frac, b.staggered ? '#ffd060' : frac < 0.3 ? '#ffb020' : '#e02020', '#200808');
+      // phase breaks marked on the bar, and the phase you are in as pips
+      if (b.bossMax) {
+        ctx.fillStyle = '#0a0404';
+        for (let i = 1; i < b.bossMax; i++) { const fx2 = W / 2 - 100 + Math.round(200 * (1 - i / b.bossMax)); ctx.fillRect(fx2, 41, 1, 6); }
+        for (let i = 0; i < b.bossMax; i++) { ctx.fillStyle = i < b.bossPhase ? '#ff8040' : '#3a1414'; ctx.fillRect(W / 2 - 100 + i * 5, 49, 3, 2); }
+        if (b.invulnB) { ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 20); Font.draw(ctx, 'BREAKING', W / 2 + 100, 49, { color: '#ff5030', align: 'right', shadow: true }); ctx.globalAlpha = 1; }
+        else if (b.staggered) { ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 12); Font.draw(ctx, 'STAGGERED', W / 2 + 100, 49, { color: '#ffd060', align: 'right', shadow: true }); ctx.globalAlpha = 1; }
+      }
+      if (b.staggered && !G.finisher) {
+        const near = Boss.canFinish(b);
+        const blink = Math.floor(t * 8) % 2;
+        Font.draw(ctx, near ? 'BITE TO FINISH' : 'CLOSE IN', W / 2, H * 0.72, { color: blink ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#3a2000' });
+        const sT = clamp(b.staggerT / 6, 0, 1);
+        ctx.fillStyle = '#2a2008'; ctx.fillRect(W / 2 - 50, H * 0.72 + 14, 100, 2);
+        ctx.fillStyle = '#ffd060'; ctx.fillRect(W / 2 - 50, H * 0.72 + 14, Math.round(100 * sT), 2);
+      }
       const [sx] = G.cam.toScreen(b.x, b.y);
       if (sx < 0 || sx > W) { const dir = sx < 0 ? -1 : 1; Font.draw(ctx, dir < 0 ? '<<' : '>>', dir < 0 ? 12 : W - 12, H / 2, { color: '#ff6060', align: 'center', shadow: true, scale: 2 }); }
     }
@@ -6895,7 +7441,7 @@ const UI = {
       if (b.sub) Font.draw(ctx, b.sub, W / 2, H * 0.3 + 20, { color: '#ffffff', align: 'center', outline: '#000' });
       ctx.globalAlpha = 1;
     }
-    if (G.t < 16 && G.state === 'play' && G.runs <= 1) {
+    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher) {
       const touch = G.touchUI || Input.touch.active;
       const msgs = touch
         ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   DASH PAD LUNGES', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
@@ -6967,6 +7513,19 @@ const UI = {
     this.hex(ctx, 26, 18, 13, '#16241f', '#40f0c8', 2);
     Font.draw(ctx, String(P.genePoints), 26, 12, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#06110e' });
     Font.draw(ctx, 'POINTS', 26, 32, { color: '#7f9a90', align: 'center' });
+    {
+      // strain: how much instability the body is carrying against what it can hold
+      const ld = Genome.load(P), lim = Genome.limit(P), over = ld > lim;
+      const frac = clamp(ld / Math.max(1, lim), 0, 1.6);
+      Font.draw(ctx, 'STRAIN', 62, 8, { color: over ? '#ff8a7a' : '#7f9a90' });
+      this.meter(ctx, 62, 18, 56, 5, Math.min(1, frac), over ? '#ff5a4a' : frac > 0.8 ? '#ffb060' : '#40f0c8', '#1a1210');
+      if (frac > 1) { ctx.fillStyle = '#ff5a4a'; ctx.fillRect(118, 17, Math.min(18, (frac - 1) * 40), 7); }
+      Font.draw(ctx, ld + '/' + Math.round(lim), 62, 26, { color: over ? '#ff8a7a' : '#7f9a90' });
+      if (over) Font.draw(ctx, 'REJECTING', 62, 36, { color: Math.floor(G.t * 4) % 2 ? '#ff5a4a' : '#8a3a34' });
+      // splice tax: every extra lineage in you marks up the next gene
+      const sp = Genome.spread(P);
+      if (sp > 1) Font.draw(ctx, 'SPREAD ' + sp + '  +' + Math.round((sp - 1) * 20) + '%', 128, 26, { color: sp > 2 ? '#ffb060' : '#7f9a90' });
+    }
     // affinity meters: what your playstyle is discounting
     let ay = 46;
     for (const k of LIN_KEYS) {
@@ -6979,14 +7538,16 @@ const UI = {
     // detail panel for the selected gene
     const g = GENE_BY_ID[G.geneSel] || GENES[0], own = Genome.has(P, g.id), open = Genome.unlocked(P, g);
     const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
-    const pw = 214, px3 = W - pw - 8, py3 = 8;
-    this.panel(ctx, px3, py3, pw, 84, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
+    const pw = 214, px3 = W - pw - 8, py3 = 8, phh = 96;
+    this.panel(ctx, px3, py3, pw, phh, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
     Font.draw(ctx, L ? L.name + (g.hybrid ? ' HYBRID' : g.apex ? ' APEX' : ' TIER ' + g.ring) : 'ORIGIN', px3 + 8, py3 + 18, { color: '#8aa89c' });
-    Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 32, pw - 16, { color: '#d8e4dc', lineHeight: 9 });
+    Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 30, pw - 16, { color: '#9ef0c8', lineHeight: 9 });
+    if (g.down) Font.drawWrapped(ctx, g.down, px3 + 8, py3 + 52, pw - 16, { color: '#ff8a7a', lineHeight: 9 });
+    if (g.load) Font.draw(ctx, '+' + g.load + ' STRAIN', px3 + pw - 8, py3 + 18, { color: '#ffb060', align: 'right' });
     const cost = Genome.cost(P, g);
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
-    else if (!open) Font.draw(ctx, 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
+    else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
     if (G.touchUI || Input.touch.active) {
       Font.draw(ctx, 'TAP A GENE TO SPLICE IT', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
@@ -7046,8 +7607,8 @@ const UI = {
 
     // controls: two tidy columns, keyboard or touch depending on the device
     const rows = touch
-      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
-      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['G', 'GENE TREE'], ['UP ON LAND', 'HOP'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
+      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['BRACE PAD', 'PARRY AND COUNTER'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
+      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['L / V', 'BRACE: PARRY'], ['G', 'GENE TREE'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
     const _stageHint = 'PICK A STAGE AND A PRIME MUTATION BEFORE EACH RUN';
     const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
     const boxH = per * 11 + 10, boxY = H - 74 - boxH;
@@ -7211,14 +7772,32 @@ const UI = {
     }
     ctx.fillStyle = 'rgba(120,220,200,0.2)'; ctx.fillRect(px0, sy2 + 14, sw2, 1);
 
-    // --- what the save knows, as four numbers
-    const sv = G.save, opened = STAGES.filter(x2 => Stages.unlocked(x2)).length;
-    const by = 146, cells = [[opened + '/' + STAGES.length, 'SITES'], [(sv.bestLen || 0).toFixed(0) + 'FT', 'BEST'], [fmt(sv.best || 0), 'SCORE'], [String(sv.runs || 0), 'RUNS']];
-    cells.forEach((c, i) => {
-      const bx = px0 + (i % 2) * (sw2 / 2), byy = by + Math.floor(i / 2) * 30;
-      Font.draw(ctx, c[0], bx, byy, { color: '#d8e8de', scale: 2, outline: '#04120e' });
-      Font.draw(ctx, c[1], bx, byy + 17, { color: '#4f7f74' });
+    // --- the standing order on this site, and what it is worth
+    const mdef = MISSIONS[cur.id], mart = ARTIFACTS.find(a2 => a2.stage === cur.id);
+    Font.draw(ctx, 'ORDER', px0 + shake, 146, { color: '#4f7f74' });
+    if (open && mdef) {
+      Font.draw(ctx, mdef.title, px0 + shake, 158, { color: '#d8e8de' });
+      Font.draw(ctx, mdef.line, px0 + shake, 170, { color: '#7f9a90' });
+    } else Font.draw(ctx, 'SEALED', px0 + shake, 158, { color: '#a08070' });
+
+    // --- the vault: nine relics, one per site, lit once carried out
+    const got = Missions.owned().length;
+    Font.draw(ctx, 'RELICS', px0 + shake, 190, { color: '#4f7f74' });
+    Font.draw(ctx, got + '/' + ARTIFACTS.length, W - 22, 190, { color: got ? '#ffd060' : '#4f7f74', align: 'right' });
+    const slotW = sw2 / ARTIFACTS.length;
+    ARTIFACTS.forEach((a2, i) => {
+      const bx = px0 + (i + 0.5) * slotW, byy = 212, have = Missions.has(a2.id), here = a2.stage === cur.id;
+      ctx.fillStyle = have ? 'rgba(255,208,96,0.10)' : 'rgba(120,220,200,0.05)';
+      ctx.fillRect(Math.round(bx - slotW / 2 + 1), byy - 11, Math.round(slotW - 2), 22);
+      if (here) this.bracket(ctx, Math.round(bx - slotW / 2 + 1), byy - 11, Math.round(slotW - 2), 22, accent, 4);
+      if (have) drawRelicGlyph(ctx, a2, Math.round(bx), byy, t * 0.6, 0.9);
+      else { ctx.fillStyle = '#22322e'; ctx.fillRect(Math.round(bx - 2), byy - 3, 5, 6); ctx.fillRect(Math.round(bx - 1), byy - 6, 3, 3); }
     });
+    if (mart) {
+      const have = Missions.has(mart.id);
+      Font.draw(ctx, have ? mart.name : 'UNCLAIMED RELIC', px0 + shake, 232, { color: have ? mart.col : '#5f7f78' });
+      Font.draw(ctx, have ? mart.boon : mart.line, px0 + shake, 244, { color: have ? '#7f9a90' : '#3f5f58' });
+    }
 
     // --- prompt
     const okCol = open ? '#ffe060' : '#ff8060';
@@ -7461,6 +8040,7 @@ const UI = {
     const rows = [
       ['FINAL FORM', TIERS[P.tier].name + '  (' + P.lengthFt.toFixed(1) + ' FT)'], ['SCORE', fmt(G.score) + (G.score >= G.save.best && G.score > 0 ? '  NEW BEST!' : '')], ['SURVIVED', mins + 'M ' + secs + 'S'],
       ['THINGS EATEN', String(s.eaten)], ['KILLS', String(s.kills)], ['BOSSES SLAIN', String(s.bosses)], ['BOATS AND CAMPS WRECKED', String(s.boats + (s.structures || 0))], ['BIGGEST MEAL', s.biggest || '-'],
+      ['ORDER', G.mission ? (G.mission.claimed ? 'RELIC TAKEN' : G.mission.done ? 'RELIC LEFT BEHIND' : G.mission.def.title + '  ' + Math.floor(G.mission.n) + '/' + G.mission.target) : '-'],
       ['EVOLUTION', P.picked.filter(p => !p.startsWith('mut')).map(p => PATHS[p.split(':')[0]].name[0] + (+p.split(':')[1] + 1)).join(' ') || 'NONE'],
       ['TRAITS', P.traits.length ? P.traits.map(id => (TRAIT_BY_ID[id] || {}).name || id).join(', ') : 'NONE'],
     ];
@@ -7483,10 +8063,10 @@ const UI = {
   drawHelpBody(ctx, y) {
     const W = G.W;
     const lines = [
-      'SWIM WITH WASD. BITE WITH SPACE. DASH WITH SHIFT.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY COMES APART.',
-      'BITE MEDIUM PREY TO LATCH ON, THEN BITE AGAIN TO DEATH ROLL IT IN HALF.', 'LEAP OUT OF THE WATER TO SNATCH BIRDS. CRAWL ONTO BANKS FOR DEER.',
-      'EVERY MEAL PAYS GENE POINTS. PRESS G AND SPEND THEM ON THE HEX TREE.', 'HOW YOU HUNT BUILDS AFFINITY, WHICH MAKES THAT LINEAGE CHEAPER.',
-      'POACHERS SHOOT FROM THE BANK AND FROM AIRBOATS. TAKE THEM UNDER.', 'HUNGER DRAINS. ALWAYS BE EATING.',
+      'SWIM WITH WASD. BITE WITH SPACE. DASH WITH SHIFT. BRACE WITH L.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY COMES APART.',
+      'BITE MEDIUM PREY TO LATCH ON, THEN BITE ON THE GOLD TO TEAR IT APART.', 'BRACE JUST BEFORE A HIT LANDS TO PARRY IT AND COUNTER.',
+      'EVERY GENE CARRIES A COST. TOO MANY AND YOUR BODY REJECTS THEM.', 'BOSSES BREAK INTO PHASES. STAGGER ONE AND BITE TO EXECUTE IT.',
+      'EACH SITE HAS ONE ORDER. FINISH IT AND A RELIC SURFACES. RELICS ARE FOREVER.', 'HUNGER DRAINS. ALWAYS BE EATING.',
     ];
     lines.forEach((l, i) => Font.draw(ctx, l, W / 2, y + i * 11, { color: i % 2 ? '#c8d8c0' : '#e8f0e0', align: 'center' }));
   },
@@ -7532,6 +8112,40 @@ const UI = {
         if (!far) { const f = 1 - clamp(grate.hp / grate.maxHp, 0, 1); this.meter(ctx, W / 2 - 50, H - 34, 100, 5, f, '#e0a020', '#2a1c0a'); }
       }
     }
+  },
+  // the execution: one prompt at a time, its ring closing, the sequence
+  // laid out underneath so you can see what is coming
+  drawFinisher(ctx) {
+    const F = G.finisher; if (!F) return;
+    const W = G.W, H = G.H, t = G.t;
+    ctx.fillStyle = 'rgba(6,2,2,0.4)'; ctx.fillRect(0, 0, W, H);
+    const done = F.over > 0;
+    Font.draw(ctx, done ? (F.won ? 'EXECUTED' : 'THROWN OFF') : 'EXECUTION', W / 2, H * 0.17, { color: done && !F.won ? '#ff5030' : '#ffd060', align: 'center', scale: 3, outline: '#2a1000' });
+    Font.draw(ctx, F.e && F.e.name ? F.e.name : '', W / 2, H * 0.17 + 24, { color: '#c8a870', align: 'center', outline: '#1a0c00' });
+    const cx = W / 2, cy = H / 2 + 4;
+    if (!done) {
+      const want = F.seq[F.i], f = clamp(F.t / F.dur, 0, 1);
+      const R = 28;
+      // the closing ring is the window: press before it reaches the rim
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = f > 0.82 ? '#ff5030' : '#ffd060'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, R + 30 - 30 * f, 0, TAU); ctx.stroke();
+      const bl = F.flash > 0 ? '#ffffff' : '#ffe090';
+      this.panel(ctx, cx - 32, cy - 10, 64, 20, 'rgba(10,6,4,0.92)', '#6a4a20');
+      Font.draw(ctx, FIN_LABEL[want], cx, cy - 4, { color: bl, align: 'center', scale: 2, outline: '#2a1000' });
+    }
+    // the sequence, and how it has gone, in its own band along the bottom
+    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, H - 34, W, 34);
+    const n = F.seq.length, sw = 30, x0 = cx - (n * sw) / 2;
+    for (let i = 0; i < n; i++) {
+      const past = i < F.i, now = i === F.i && !done;
+      const col = past ? (F.res[i] ? '#6ad040' : '#8a4038') : now ? '#ffd060' : '#4a5a54';
+      Font.draw(ctx, FIN_SHORT[F.seq[i]], Math.round(x0 + i * sw + (sw - 4) / 2), H - 30, { color: now && Math.floor(t * 10) % 2 ? '#ffffff' : col, align: 'center' });
+      ctx.fillStyle = col;
+      ctx.fillRect(Math.round(x0 + i * sw + 2), H - 20, sw - 8, 3);
+    }
+    Font.draw(ctx, 'TWO MISSES AND IT GETS UP', W / 2, H - 12, { color: '#c08070', align: 'center' });
   },
   drawEgg(ctx) {
     const W = G.W, H = G.H, e = G.egg; if (!e) return;
@@ -7585,6 +8199,18 @@ const UI = {
     disc(P.dash.x, P.dash.y, P.dash.r, ready ? 0.3 : 0.12, '#40a0ff');
     ring(P.dash.x, P.dash.y, P.dash.r, ready ? 0.7 : 0.3, '#ffffff');
     Font.draw(ctx, 'DASH', P.dash.x, P.dash.y - 3, { color: ready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
+    // brace pad, with the cooldown drawn as a wedge so the timing is readable
+    {
+      const bready = pl && pl.braceCd <= 0, guard = pl && pl.braceT > 0;
+      disc(P.brace.x, P.brace.y, P.brace.r, guard ? 0.65 : bready ? 0.3 : 0.12, guard ? '#ffffff' : '#7fd0ff');
+      ring(P.brace.x, P.brace.y, P.brace.r, bready ? 0.7 : 0.3, '#ffffff');
+      if (pl && pl.braceCd > 0) {
+        const f = 1 - clamp(pl.braceCd / 1.5, 0, 1);
+        ctx.globalAlpha = 0.5; ctx.strokeStyle = '#7fd0ff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(P.brace.x, P.brace.y, P.brace.r - 3, -Math.PI / 2, -Math.PI / 2 + f * TAU); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      Font.draw(ctx, 'BRACE', P.brace.x, P.brace.y - 3, { color: bready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
+    }
     // pause
     disc(P.pause.x, P.pause.y, P.pause.r, 0.25, '#ffffff');
     Font.draw(ctx, 'II', P.pause.x, P.pause.y - 3, { color: '#ffffff', align: 'center', outline: '#000' });
@@ -7634,7 +8260,7 @@ const UI = {
 'use strict';
 const Input = {
   keys: {}, pressed: {}, mouse: { x: 0, y: 0, down: false, rdown: false, clicked: false, rclicked: false, moved: false },
-  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, biteHeld: false, biteId: null, dashId: null, holdT: 0, autoBite: false },
+  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, brace: false, biteHeld: false, biteId: null, dashId: null, braceId: null, holdT: 0, autoBite: false },
   init(canvas) {
     window.addEventListener('keydown', e => {
       if (!this.keys[e.code]) this.pressed[e.code] = true; this.keys[e.code] = true;
@@ -7655,6 +8281,7 @@ const Input = {
     return {
       bite: { x: W - 54, y: H - 54, r: 30, label: 'BITE' },
       dash: { x: W - 112, y: H - 34, r: 21, label: 'DASH' },
+      brace: { x: W - 100, y: H - 88, r: 21, label: 'BRACE' },
       pause: { x: W - 15, y: 15, r: 13, label: 'II' },
       genes: { x: W - 42, y: 19, r: 16, label: 'G' },
       joyMax: W * 0.52,
@@ -7677,6 +8304,7 @@ const Input = {
         if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; continue; }
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
         else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashId = t.identifier; }
+        else if (this.inPad(P.brace, x, y)) { T.brace = true; T.braceId = t.identifier; }
         else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
         else if (G.state === 'play' && this.inPad(P.genes, x, y)) this.pressed.KeyG = true;
         else if (x < P.joyMax && !T.joy) { T.joy = true; T.jid = t.identifier; T.sx = x; T.sy = y; T.cx = x; T.cy = y; T.jx = 0; T.jy = 0; }
@@ -7699,6 +8327,7 @@ const Input = {
         if (t.identifier === T.jid) { T.joy = false; T.jid = null; T.jx = 0; T.jy = 0; }
         if (t.identifier === T.biteId) { T.biteHeld = false; T.biteId = null; }
         if (t.identifier === T.dashId) T.dashId = null;
+        if (t.identifier === T.braceId) T.braceId = null;
       }
     };
     canvas.addEventListener('touchend', end); canvas.addEventListener('touchcancel', end);
@@ -7711,7 +8340,7 @@ const Input = {
   setMouse(e) { const p = G.toCanvas(e.clientX, e.clientY); this.mouse.x = p[0]; this.mouse.y = p[1]; },
   down(...codes) { return codes.some(c => this.keys[c]); },
   hit(...codes) { return codes.some(c => this.pressed[c]); },
-  endFrame() { this.pressed = {}; this.mouse.clicked = false; this.mouse.rclicked = false; this.touch.bite = false; this.touch.dash = false; },
+  endFrame() { this.pressed = {}; this.mouse.clicked = false; this.mouse.rclicked = false; this.touch.bite = false; this.touch.dash = false; this.touch.brace = false; },
   axis() {
     let x = 0, y = 0;
     if (this.down('ArrowLeft', 'KeyA')) x -= 1; if (this.down('ArrowRight', 'KeyD')) x += 1; if (this.down('ArrowUp', 'KeyW')) y -= 1; if (this.down('ArrowDown', 'KeyS')) y += 1;
@@ -7721,9 +8350,20 @@ const Input = {
   },
   bitePressed() { return this.hit('Space', 'KeyJ', 'KeyZ') || this.mouse.rclicked || this.touch.bite || this.touch.autoBite; },
   dashPressed() { return this.hit('ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX') || this.touch.dash; },
+  // third action: a short brace that turns an incoming hit into a counter
+  bracePressed() { return this.hit('KeyL', 'KeyV', 'ControlLeft') || this.touch.brace; },
 };
 
 const BOSSES = { 2: 'oldscar', 4: 'warboat', 6: 'python', 8: 'skunkape', 10: 'shark' };
+// how many phase breaks a boss walks through, what it calls in, and the line
+// it gets on each break
+const BOSS_SPEC = {
+  oldscar:  { phases: 3, hp: 1.6, adds: ['gator', 'gator', 'moccasin'], cue: ['IT REMEMBERS YOU', 'NOTHING LEFT TO LOSE'] },
+  warboat:  { phases: 3, hp: 1.5, adds: ['poacher'], cue: ['THEY CALLED IT IN', 'ALL GUNS'] },
+  python:   { phases: 3, hp: 1.5, adds: ['moccasin', 'moccasin'], cue: ['THE NEST WOKE UP', 'IT COILS TIGHTER'] },
+  skunkape: { phases: 4, hp: 1.4, adds: ['boar', 'boar'], cue: ['IT STOPPED THROWING', 'THE TREES COME WITH IT', 'NOTHING HUMAN LEFT'] },
+  shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
+};
 function weightedPick(table) { const t = table.filter(e => e[1] > 0); let tot = t.reduce((s, e) => s + e[1], 0), r = Math.random() * tot; for (const e of t) { r -= e[1]; if (r <= 0) return e[0]; } return t.length ? t[t.length - 1][0] : null; }
 
 const G = {
@@ -7735,7 +8375,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -7773,11 +8413,11 @@ const G = {
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, s = this.scale || 1;
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
-  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
+  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
-    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null;
+    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
@@ -7808,17 +8448,20 @@ const G = {
         else P.genePoints += 1;                       // unspliced trades the gene for a point
         P.rebuildLook();
       }
+      Missions.applyAll(P);                           // relics you have already carried out
+      P.recomputeStats();
       this.stage = stage || STAGES[0];
       this.storeSave();
       if (this.stage.intro) this.beginIntro();
       else this.beginAtStage(this.stage);
+      Missions.start(this.stage);
     }
   },
   // drop straight into a stretch of the swamp, already grown, already hunted
   beginAtStage(st) {
     const P = this.player, x = st.x;
     P.size = st.size; P.sizeTarget = st.size; P.mass = sizeToMass(st.size); P.tier = tierFor(st.size);
-    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90;
+    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90; P.sheds = P.tier;
     P.x = x; P.y = Math.max(24, World.floorY(x) * 0.4); P.chain.reset(P.x, P.y, 0);
     this.cam.x = x; this.cam.y = P.y;
     World.ensure(x, 2200); Water.init(x); Mud.init(x);
@@ -7963,6 +8606,7 @@ const G = {
       if (!gulped) e.explode(1);
       if (e.type !== 'gib') { this.stats.kills++; this.save.kills++; }
       if (e.isBoss) this.onBossKilled(e);
+      Missions.onKill(e, true);
     } else if (e.type !== 'gib' && e.bleeds) e.explode(0.6);
     if (this.boss === e) this.boss = null;
   },
@@ -8023,7 +8667,7 @@ const G = {
   runDirector(dt) {
     const d = this.director, P = this.player, D = this.difficulty();
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
-    d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(30 - D * 2.2, 10, 30) * rand(0.8, 1.25); this.spawnPredator(D); }
+    d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(26 - D * 2.6, 7, 26) * rand(0.8, 1.25); this.spawnPredator(D); }
     d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     if (d.bossQueue && !this.boss) { d.bossT -= dt; if (d.bossT <= 0) this.spawnBoss(d.bossQueue); }
     // hard cap
@@ -8116,6 +8760,7 @@ const G = {
     else if (kind === 'skunkape') { const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
     else if (kind === 'shark') { const wx = World.findX(x, xx => World.floorY(xx) > 200, 1500, 40); if (wx !== null) { boss = this.add(new Fish(wx, clamp(150, 60, World.floorY(wx) - 40), 'shark')); boss.size = 2.2; boss.sizeClass = Math.max(10, P.size * 1.3); boss.hp = boss.maxHp = 1400; boss.mass = 1500; boss.name = 'BIG BULL'; boss.isBoss = true; boss.persistent = true; boss.speed = 200; boss.gibs = 6; } }
     if (!boss) { this.director.bossT = 8; return; }
+    Boss.init(boss, BOSS_SPEC[kind] || { phases: 3, hp: 1.3 });
     this.boss = boss; this.director.bossQueue = null;
     this.banner = { text: 'WARNING', sub: boss.name + ' APPROACHES', t: 4, max: 4, color: '#ff3030' }; SFX.warning(); this.shake(6);
   },
@@ -8223,9 +8868,13 @@ const G = {
       }
       case 'play':
         if (Input.hit('Escape', 'KeyP')) { this.state = 'pause'; SFX.ui(); break; }
-        if (Input.hit('KeyG', 'KeyE', 'Tab')) { this.openGenes(); break; }
-        if (Input.hit('KeyH')) { this.prevState = 'play'; this.state = 'help'; break; }
-        this.updateWorld(dt, false); this.runDirector(dt);
+        if (this.finisher) Finisher.update(raw);
+        else {
+          if (Input.hit('KeyG', 'KeyE', 'Tab')) { this.openGenes(); break; }
+          if (Input.hit('KeyH')) { this.prevState = 'play'; this.state = 'help'; break; }
+          if (this.boss && Boss.canFinish(this.boss) && Input.bitePressed()) Finisher.begin(this.boss);
+        }
+        this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
         break;
       case 'shedding':
         this.updateWorld(dt, false); this.shedT += raw;
@@ -8322,7 +8971,7 @@ const G = {
     if (P.x > 500) x = -1; if (P.x < -500) x = 1;
     let bite = false;
     for (const e of this.ents) if (e.type === 'fish' && !e.dead && dist(e.x, e.y, P.x, P.y) < 60) { const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; x = dx / d; y = dy / d; if (d < 26 && P.biteCd <= 0) bite = true; break; }
-    return { x, y, bite, dash: false };
+    return { x, y, bite, dash: false, brace: false };
   },
   updateWorld(dt, demo) {
     this.t += dt; World.t += dt;
@@ -8348,7 +8997,9 @@ const G = {
     const [ax, ay] = Input.axis();
     if (demo === 'egg') demo = false;
     const act = this.state === 'play' || (this.state === 'intro' && this.intro && this.intro.phase !== 'tank');
-    const inp = demo ? this.demoInput() : { x: ax, y: ay, bite: act && Input.bitePressed(), dash: act && Input.dashPressed() };
+    const fin = !!this.finisher;
+    const inp = demo ? this.demoInput()
+      : { x: fin ? 0 : ax, y: fin ? 0 : ay, bite: act && !fin && Input.bitePressed(), dash: act && !fin && Input.dashPressed(), brace: act && !fin && Input.bracePressed() };
     this.engineNear = 0;
     P.update(dt, inp);
     World.ensure(P.x, this.W / this.cam.zoom + 900);
@@ -8454,6 +9105,7 @@ const G = {
       case 'help': UI.drawHelp(ctx); break;
       case 'codex': UI.drawCodex(ctx); break;
     }
+    if (this.finisher) UI.drawFinisher(ctx);
     if ((this.state === 'play' || this.state === 'intro') && (this.touchUI || Input.touch.active) && this.settings.touch !== false) UI.drawTouch(ctx);
     if (this.settings.fps) Font.draw(ctx, this.fps + ' FPS', 4, this.H - 24, { color: '#80ff80' });
   },
