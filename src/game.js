@@ -514,8 +514,8 @@ const G = {
         if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
         const rows = UI.stageRows();
         if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }
-        if (Input.hit('ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
-        if (Input.hit('ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
+        if (Input.hit('ArrowLeft', 'KeyA', 'ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD', 'ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
         const rowHit = Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
           const st = list[this.stageSel];

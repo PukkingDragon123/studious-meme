@@ -292,7 +292,11 @@ const World = {
     // Depth ramp built from many closely spaced fills: enough steps that the
     // ground reads as one continuous body instead of a handful of stripes.
     const humus = mixColor(g0, '#2a1d10', 0.55);
-    const stops = [[0, humus], [5, g0], [26, g1], [110, g2], [260, mixColor(g2, '#2e3540', 0.34)], [430, mixColor(g2, '#252c36', 0.55)]];
+    // Widen the value range: the old ramp ran through three near-identical
+    // browns, so at close range the ground was one featureless slab.
+    const topsoil = mixColor(g0, '#1c1208', 0.5), subsoil = mixColor(g0, '#c8b48a', 0.3);
+    const stops = [[0, humus], [4, topsoil], [12, subsoil], [30, g1], [72, mixColor(g1, '#8a7a5c', 0.22)],
+      [130, g2], [260, mixColor(g2, '#2e3540', 0.34)], [430, mixColor(g2, '#252c36', 0.55)]];
     const strata = [];
     for (let i = 0; i < stops.length - 1; i++) {
       const [d0, c0] = stops[i], [d1, c1] = stops[i + 1], n = i === 0 ? 2 : 5;
@@ -361,6 +365,77 @@ const World = {
       }
       // charcoal flecks and buried grit
       if (r4 < 0.55) { const y = sy + (6 + r2 * 280) * z; if (y < H) px(sx + r1 * GRID * z * 0.5, y, z * 0.8, z * 0.8, shade(g2, 0.42)); }
+      // dried cracks lacing the topsoil where the bank is out of the water
+      if (fy < -4 && r1 > 0.55 && r1 < 0.78) {
+        const cx3 = sx, cy3 = sy + (3 + r2 * 9) * z, len2 = (5 + r3 * 16) * z, lean2 = (r4 - 0.5) * 1.6;
+        ctx.fillStyle = shade(g2, 0.6);
+        for (let k = 0; k < len2; k++) ctx.fillRect(Math.round(cx3 + Math.sin(lean2 + k * 0.35) * 1.6 * z), Math.round(cy3 + k), Math.max(1, Math.round(z * 0.5)), 1);
+      }
+    }
+    // --- coarse pass: boulders, buried logs and root bundles large enough to
+    // break up the soil mass. The fine grid above only places specks.
+    const BIG = 74, bx0 = Math.floor(left / BIG) * BIG;
+    for (let wx = bx0; wx < right; wx += BIG) {
+      const cell = Math.floor(wx / BIG), fy = this.floorY(wx), [sx, sy] = cam.toScreen(wx, fy);
+      if (sy > H + 60) continue;
+      const q1 = ihash(cell, 511), q2 = ihash(cell, 512), q3 = ihash(cell, 513), q4 = ihash(cell, 514);
+      const ox = (q4 - 0.5) * BIG * 0.7 * z;
+      if (q1 < 0.4) {
+        // boulder: a lit cap, a body, a shadowed underside and a seated shadow
+        const rw = (6 + q2 * 8) * z, rh = rw * (0.62 + q3 * 0.26), y = sy + (22 + q3 * 150) * z;
+        if (y < H + 30) {
+          // a lumpy silhouette with grain, not a smooth grey disc
+          const lit2 = mixColor(rockLit, '#ffffff', 0.15);
+          for (let j = -rh; j <= rh; j++) {
+            const u = j / rh;
+            const bulge = 1 + Math.sin(u * 3.1 + q2 * 6) * 0.09;
+            const hw = rw * Math.sqrt(Math.max(0, 1 - u * u)) * bulge;
+            if (hw < 0.5) continue;
+            for (let i = -hw; i <= hw; i++) {
+              const v = i / Math.max(1, hw);
+              const lam = -(u * 0.9 + v * 0.35);
+              const gr = ihash(Math.round(i) * 31 + Math.round(j) * 17, cell) ;
+              let c = lam > 0.5 ? lit2 : lam > 0.02 ? rockMid : rockDark;
+              if (gr > 0.86) c = shade(c, 0.85); else if (gr < 0.1) c = mixColor(c, lit2, 0.4);
+              ctx.fillStyle = c; ctx.fillRect(Math.round(sx + ox + i), Math.round(y + j), 1, 1);
+            }
+          }
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(Math.round(sx + ox - rw * 0.8), Math.round(y + rh - z * 0.5), Math.round(rw * 1.6), Math.max(1, Math.round(1.6 * z)));
+        }
+      } else if (q1 < 0.62) {
+        // a log buried on its side, bark up
+        const lw = (11 + q2 * 14) * z, lh = (3 + q3 * 3) * z, y = sy + (16 + q3 * 90) * z;
+        if (y < H + 20) {
+          // rounded ends and a lit upper curve; a flat box with stripes read as a barcode
+          const barkD = mixColor(g2, '#33240f', 0.55), barkM = mixColor(g1, '#5f4526', 0.6), barkL = mixColor(g0, '#8a6a42', 0.55);
+          for (let i = -lw; i <= lw; i++) {
+            const u = i / lw, cap = Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, Math.abs(u) - 0.72) / 0.28, 2)));
+            const hh = lh * (Math.abs(u) > 0.72 ? cap : 1);
+            if (hh < 0.5) continue;
+            for (let j = -hh; j <= hh; j++) {
+              const v = j / hh;
+              let c = v < -0.36 ? barkL : v < 0.4 ? barkM : barkD;
+              if (ihash(Math.round(i) * 7 + Math.round(j) * 53, cell + 3) > 0.84) c = shade(c, 0.86);
+              ctx.fillStyle = c; ctx.fillRect(Math.round(sx + ox + i), Math.round(y + j), 1, 1);
+            }
+          }
+        }
+      } else if (q1 < 0.85 && fy < 8) {
+        // a bundle of thick roots reaching well down from the bank
+        const n2 = 2 + ((q2 * 3) | 0);
+        for (let b = 0; b < n2; b++) {
+          const len2 = (34 + ihash(cell * 7 + b, 515) * 96) * z, lean2 = (ihash(cell * 11 + b, 516) - 0.5) * 2.6;
+          let cx3 = sx + ox + (b - n2 / 2) * 5 * z, cy3 = sy + 2 * z;
+          for (let k = 0; k < len2; k++) {
+            if (cy3 > H + 6) break;
+            const u = k / len2, tw = Math.max(1, Math.round(z * (2.4 - u * 1.9)));
+            ctx.fillStyle = u < 0.2 ? rootLit : rootCol;
+            ctx.fillRect(Math.round(cx3), Math.round(cy3), tw, 1);
+            cx3 += Math.sin(lean2 + u * 4) * 0.5 * z; cy3 += 1;
+          }
+        }
+      }
     }
     // --- the surface itself: grass lip, wet shore or river bed
     const grassLit = mixColor(BP.grass, '#f0ffd0', 0.35), grassDark = shade(BP.grass, 0.6), grassDeep = shade(BP.grass, 0.42);
@@ -522,9 +597,20 @@ const World = {
     };
     // ambient current: everything under water leans the same way and breathes
     const flowAt = (wx) => Math.sin(t * 0.55 + wx * 0.008) * 3.4 + Water.velocity(wx) * 0.035 + Water.wind * 4;
+    const AO_W = { bush: 15, oak: 30, palm: 9, cypress: 12, mangrove: 20, fern: 9, sawgrass: 8, palmetto: 12,
+      crate: 10, cooler: 9, firewood: 10, post: 4, stump: 9, log: 20, rock: 10, mushroom: 4, flower: 3, fallen: 20 };
     for (const d of this.decor) {
       if (d.x < left) continue; if (d.x > right) break;
       const [sx, sy] = cam.toScreen(d.x, d.y);
+      // contact shadow first, under everything that stands on dry ground
+      const aw = AO_W[d.type];
+      if (aw && layer === (d.type === 'bush' || d.type === 'fern' || d.type === 'sawgrass' || d.type === 'flower' || d.type === 'mushroom' ? 1 : 0) && d.y < 6) {
+        const w2 = aw * (d.s || 1) * z;
+        ctx.globalAlpha = 0.3; ctx.fillStyle = '#0a1008';
+        ctx.fillRect(Math.round(sx - w2 * 0.5), Math.round(sy - z), Math.round(w2), Math.max(1, Math.round(1.8 * z)));
+        ctx.fillRect(Math.round(sx - w2 * 0.34), Math.round(sy - 2 * z), Math.round(w2 * 0.68), Math.max(1, Math.round(2.4 * z)));
+        ctx.globalAlpha = 1;
+      }
       switch (d.type) {
         case 'seagrass': if (layer !== 0) break; {
           const fl = flowAt(d.x), dk = d.v ? '#1f4a38' : '#26543f', md = d.v ? '#3f8a6a' : '#4f9a72', lt = d.v ? '#6fc79a' : '#7fd6a6';
@@ -726,8 +812,13 @@ const World = {
           ctx.restore(); break; }
         case 'palm': if (layer !== 0) break; {
           const h = d.h * z, tw = Math.max(1, 3 * z), sway = Math.sin(t * 0.8 + d.ph) * 3 * z;
-          ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = tw; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.5, sy - h * 0.6, sx + sway, sy - h); ctx.stroke();
-          ctx.fillStyle = '#5a4a2a'; for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(sx + sway * (i / 6) - tw / 2), Math.round(sy - h * (i / 6)), Math.round(tw), Math.max(1, Math.round(z)));
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = '#4a3d24'; ctx.lineWidth = tw; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.5, sy - h * 0.6, sx + sway, sy - h); ctx.stroke();
+          ctx.strokeStyle = '#7a6842'; ctx.lineWidth = Math.max(1, tw * 0.55); ctx.beginPath(); ctx.moveTo(sx - tw * 0.2, sy); ctx.quadraticCurveTo(sx + sway * 0.5 - tw * 0.2, sy - h * 0.6, sx + sway - tw * 0.2, sy - h); ctx.stroke();
+          ctx.lineCap = 'butt';
+          // leaf scars ringing the trunk
+          ctx.fillStyle = '#3a2f1c';
+          for (let i = 0; i < 10; i++) { const u = i / 10; ctx.fillRect(Math.round(sx + sway * u * u - tw / 2), Math.round(sy - h * u), Math.round(tw), Math.max(1, Math.round(z * 0.7))); }
           for (let b = 0; b < 7; b++) {
             const a = -Math.PI * 0.95 + b * 0.32, len = (16 + (b % 2) * 7) * z;
             ctx.strokeStyle = b % 2 ? '#3f7a3a' : '#356a30'; ctx.lineWidth = Math.max(1, 2.4 * z);

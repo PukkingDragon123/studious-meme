@@ -3034,7 +3034,11 @@ const World = {
     // Depth ramp built from many closely spaced fills: enough steps that the
     // ground reads as one continuous body instead of a handful of stripes.
     const humus = mixColor(g0, '#2a1d10', 0.55);
-    const stops = [[0, humus], [5, g0], [26, g1], [110, g2], [260, mixColor(g2, '#2e3540', 0.34)], [430, mixColor(g2, '#252c36', 0.55)]];
+    // Widen the value range: the old ramp ran through three near-identical
+    // browns, so at close range the ground was one featureless slab.
+    const topsoil = mixColor(g0, '#1c1208', 0.5), subsoil = mixColor(g0, '#c8b48a', 0.3);
+    const stops = [[0, humus], [4, topsoil], [12, subsoil], [30, g1], [72, mixColor(g1, '#8a7a5c', 0.22)],
+      [130, g2], [260, mixColor(g2, '#2e3540', 0.34)], [430, mixColor(g2, '#252c36', 0.55)]];
     const strata = [];
     for (let i = 0; i < stops.length - 1; i++) {
       const [d0, c0] = stops[i], [d1, c1] = stops[i + 1], n = i === 0 ? 2 : 5;
@@ -3103,6 +3107,77 @@ const World = {
       }
       // charcoal flecks and buried grit
       if (r4 < 0.55) { const y = sy + (6 + r2 * 280) * z; if (y < H) px(sx + r1 * GRID * z * 0.5, y, z * 0.8, z * 0.8, shade(g2, 0.42)); }
+      // dried cracks lacing the topsoil where the bank is out of the water
+      if (fy < -4 && r1 > 0.55 && r1 < 0.78) {
+        const cx3 = sx, cy3 = sy + (3 + r2 * 9) * z, len2 = (5 + r3 * 16) * z, lean2 = (r4 - 0.5) * 1.6;
+        ctx.fillStyle = shade(g2, 0.6);
+        for (let k = 0; k < len2; k++) ctx.fillRect(Math.round(cx3 + Math.sin(lean2 + k * 0.35) * 1.6 * z), Math.round(cy3 + k), Math.max(1, Math.round(z * 0.5)), 1);
+      }
+    }
+    // --- coarse pass: boulders, buried logs and root bundles large enough to
+    // break up the soil mass. The fine grid above only places specks.
+    const BIG = 74, bx0 = Math.floor(left / BIG) * BIG;
+    for (let wx = bx0; wx < right; wx += BIG) {
+      const cell = Math.floor(wx / BIG), fy = this.floorY(wx), [sx, sy] = cam.toScreen(wx, fy);
+      if (sy > H + 60) continue;
+      const q1 = ihash(cell, 511), q2 = ihash(cell, 512), q3 = ihash(cell, 513), q4 = ihash(cell, 514);
+      const ox = (q4 - 0.5) * BIG * 0.7 * z;
+      if (q1 < 0.4) {
+        // boulder: a lit cap, a body, a shadowed underside and a seated shadow
+        const rw = (6 + q2 * 8) * z, rh = rw * (0.62 + q3 * 0.26), y = sy + (22 + q3 * 150) * z;
+        if (y < H + 30) {
+          // a lumpy silhouette with grain, not a smooth grey disc
+          const lit2 = mixColor(rockLit, '#ffffff', 0.15);
+          for (let j = -rh; j <= rh; j++) {
+            const u = j / rh;
+            const bulge = 1 + Math.sin(u * 3.1 + q2 * 6) * 0.09;
+            const hw = rw * Math.sqrt(Math.max(0, 1 - u * u)) * bulge;
+            if (hw < 0.5) continue;
+            for (let i = -hw; i <= hw; i++) {
+              const v = i / Math.max(1, hw);
+              const lam = -(u * 0.9 + v * 0.35);
+              const gr = ihash(Math.round(i) * 31 + Math.round(j) * 17, cell) ;
+              let c = lam > 0.5 ? lit2 : lam > 0.02 ? rockMid : rockDark;
+              if (gr > 0.86) c = shade(c, 0.85); else if (gr < 0.1) c = mixColor(c, lit2, 0.4);
+              ctx.fillStyle = c; ctx.fillRect(Math.round(sx + ox + i), Math.round(y + j), 1, 1);
+            }
+          }
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(Math.round(sx + ox - rw * 0.8), Math.round(y + rh - z * 0.5), Math.round(rw * 1.6), Math.max(1, Math.round(1.6 * z)));
+        }
+      } else if (q1 < 0.62) {
+        // a log buried on its side, bark up
+        const lw = (11 + q2 * 14) * z, lh = (3 + q3 * 3) * z, y = sy + (16 + q3 * 90) * z;
+        if (y < H + 20) {
+          // rounded ends and a lit upper curve; a flat box with stripes read as a barcode
+          const barkD = mixColor(g2, '#33240f', 0.55), barkM = mixColor(g1, '#5f4526', 0.6), barkL = mixColor(g0, '#8a6a42', 0.55);
+          for (let i = -lw; i <= lw; i++) {
+            const u = i / lw, cap = Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, Math.abs(u) - 0.72) / 0.28, 2)));
+            const hh = lh * (Math.abs(u) > 0.72 ? cap : 1);
+            if (hh < 0.5) continue;
+            for (let j = -hh; j <= hh; j++) {
+              const v = j / hh;
+              let c = v < -0.36 ? barkL : v < 0.4 ? barkM : barkD;
+              if (ihash(Math.round(i) * 7 + Math.round(j) * 53, cell + 3) > 0.84) c = shade(c, 0.86);
+              ctx.fillStyle = c; ctx.fillRect(Math.round(sx + ox + i), Math.round(y + j), 1, 1);
+            }
+          }
+        }
+      } else if (q1 < 0.85 && fy < 8) {
+        // a bundle of thick roots reaching well down from the bank
+        const n2 = 2 + ((q2 * 3) | 0);
+        for (let b = 0; b < n2; b++) {
+          const len2 = (34 + ihash(cell * 7 + b, 515) * 96) * z, lean2 = (ihash(cell * 11 + b, 516) - 0.5) * 2.6;
+          let cx3 = sx + ox + (b - n2 / 2) * 5 * z, cy3 = sy + 2 * z;
+          for (let k = 0; k < len2; k++) {
+            if (cy3 > H + 6) break;
+            const u = k / len2, tw = Math.max(1, Math.round(z * (2.4 - u * 1.9)));
+            ctx.fillStyle = u < 0.2 ? rootLit : rootCol;
+            ctx.fillRect(Math.round(cx3), Math.round(cy3), tw, 1);
+            cx3 += Math.sin(lean2 + u * 4) * 0.5 * z; cy3 += 1;
+          }
+        }
+      }
     }
     // --- the surface itself: grass lip, wet shore or river bed
     const grassLit = mixColor(BP.grass, '#f0ffd0', 0.35), grassDark = shade(BP.grass, 0.6), grassDeep = shade(BP.grass, 0.42);
@@ -3264,9 +3339,20 @@ const World = {
     };
     // ambient current: everything under water leans the same way and breathes
     const flowAt = (wx) => Math.sin(t * 0.55 + wx * 0.008) * 3.4 + Water.velocity(wx) * 0.035 + Water.wind * 4;
+    const AO_W = { bush: 15, oak: 30, palm: 9, cypress: 12, mangrove: 20, fern: 9, sawgrass: 8, palmetto: 12,
+      crate: 10, cooler: 9, firewood: 10, post: 4, stump: 9, log: 20, rock: 10, mushroom: 4, flower: 3, fallen: 20 };
     for (const d of this.decor) {
       if (d.x < left) continue; if (d.x > right) break;
       const [sx, sy] = cam.toScreen(d.x, d.y);
+      // contact shadow first, under everything that stands on dry ground
+      const aw = AO_W[d.type];
+      if (aw && layer === (d.type === 'bush' || d.type === 'fern' || d.type === 'sawgrass' || d.type === 'flower' || d.type === 'mushroom' ? 1 : 0) && d.y < 6) {
+        const w2 = aw * (d.s || 1) * z;
+        ctx.globalAlpha = 0.3; ctx.fillStyle = '#0a1008';
+        ctx.fillRect(Math.round(sx - w2 * 0.5), Math.round(sy - z), Math.round(w2), Math.max(1, Math.round(1.8 * z)));
+        ctx.fillRect(Math.round(sx - w2 * 0.34), Math.round(sy - 2 * z), Math.round(w2 * 0.68), Math.max(1, Math.round(2.4 * z)));
+        ctx.globalAlpha = 1;
+      }
       switch (d.type) {
         case 'seagrass': if (layer !== 0) break; {
           const fl = flowAt(d.x), dk = d.v ? '#1f4a38' : '#26543f', md = d.v ? '#3f8a6a' : '#4f9a72', lt = d.v ? '#6fc79a' : '#7fd6a6';
@@ -3468,8 +3554,13 @@ const World = {
           ctx.restore(); break; }
         case 'palm': if (layer !== 0) break; {
           const h = d.h * z, tw = Math.max(1, 3 * z), sway = Math.sin(t * 0.8 + d.ph) * 3 * z;
-          ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = tw; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.5, sy - h * 0.6, sx + sway, sy - h); ctx.stroke();
-          ctx.fillStyle = '#5a4a2a'; for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(sx + sway * (i / 6) - tw / 2), Math.round(sy - h * (i / 6)), Math.round(tw), Math.max(1, Math.round(z)));
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = '#4a3d24'; ctx.lineWidth = tw; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.5, sy - h * 0.6, sx + sway, sy - h); ctx.stroke();
+          ctx.strokeStyle = '#7a6842'; ctx.lineWidth = Math.max(1, tw * 0.55); ctx.beginPath(); ctx.moveTo(sx - tw * 0.2, sy); ctx.quadraticCurveTo(sx + sway * 0.5 - tw * 0.2, sy - h * 0.6, sx + sway - tw * 0.2, sy - h); ctx.stroke();
+          ctx.lineCap = 'butt';
+          // leaf scars ringing the trunk
+          ctx.fillStyle = '#3a2f1c';
+          for (let i = 0; i < 10; i++) { const u = i / 10; ctx.fillRect(Math.round(sx + sway * u * u - tw / 2), Math.round(sy - h * u), Math.round(tw), Math.max(1, Math.round(z * 0.7))); }
           for (let b = 0; b < 7; b++) {
             const a = -Math.PI * 0.95 + b * 0.32, len = (16 + (b % 2) * 7) * z;
             ctx.strokeStyle = b % 2 ? '#3f7a3a' : '#356a30'; ctx.lineWidth = Math.max(1, 2.4 * z);
@@ -6822,55 +6913,280 @@ const UI = {
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
     if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
   },
-  // ---------- stage select ----------
+  // ---------- stage select: an illustrated world map ----------
+  mapRect() { return { x: 16, y: 52, w: G.W - 32, h: 128 }; },
   stageRows() {
-    const W = G.W, rowH = 26, top = 60, x = 34, w = W - 68;
-    return STAGES.map((st, i) => ({ x, y: top + i * rowH, w, h: rowH - 4, st, i }));
+    // hit targets are the landmark pins on the map, not a list of rows
+    const R = this.mapRect(), x0 = -3200, x1 = 19000;
+    return STAGES.map((st, i) => {
+      const u = (st.x - x0) / (x1 - x0);
+      const px2 = R.x + u * R.w;
+      return { x: px2 - 13, y: R.y - 4, w: 26, h: R.h + 8, st, i, px: px2 };
+    });
+  },
+  // one small landmark drawn above the shoreline for each stage
+  drawLandmark(ctx, kind, x, y, on) {
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
+    const dim = c => (on ? c : mixColor(c, '#20302c', 0.62));
+    switch (kind) {
+      case 'outfall':                              // concrete pipe mouth
+        px(-7, -9, 14, 9, dim('#6a6d72')); px(-7, -9, 14, 2, dim('#8b8e94'));
+        px(-4, -7, 8, 6, dim('#161c1e')); px(-4, -7, 8, 1, dim('#2a3436'));
+        px(-9, 0, 18, 2, dim('#4a4d52'));
+        break;
+      case 'mangrove':                             // clump on stilt roots
+        px(-8, -13, 16, 7, dim('#2f6a34')); px(-6, -16, 12, 4, dim('#3f8a42'));
+        px(-5, -15, 4, 2, dim('#58a852'));
+        for (let i = -6; i <= 6; i += 3) px(i, -6, 1, 7, dim('#4a3a24'));
+        break;
+      case 'camp':                                 // shack over the water
+        px(-9, -3, 18, 4, dim('#6b5033')); px(-9, -10, 18, 7, dim('#8a6a44'));
+        px(-11, -13, 22, 3, dim('#a03a2a')); px(-3, -8, 4, 5, dim('#2a2018'));
+        for (let i = -7; i <= 7; i += 5) px(i, 1, 1, 5, dim('#4a3524'));
+        break;
+      case 'cypress':                              // tiered conifers with knees
+        for (const ox of [-6, 2]) { px(ox, -6, 2, 7, dim('#3a2a1a')); for (let k = 0; k < 3; k++) px(ox - 4 + k, -14 + k * 4, 10 - k * 2, 3, dim(k ? '#2f5a2a' : '#3f7a34')); }
+        px(-9, 0, 1, 3, dim('#4a3a26')); px(8, 0, 1, 3, dim('#4a3a26'));
+        break;
+      case 'prairie':                              // sawgrass on a flat
+        for (let i = -9; i <= 9; i += 3) { const h = 6 + ((i + 9) % 5); px(i, -h, 1, h, dim('#7a9a4a')); px(i + 1, -h + 1, 1, h - 1, dim('#5f7f34')); }
+        px(-10, 0, 20, 2, dim('#6a7a44'));
+        break;
+      case 'river':                                // channel markers over deep water
+        px(-8, -12, 2, 13, dim('#c8c8b8')); px(-9, -14, 4, 3, dim('#20a040'));
+        px(6, -10, 2, 11, dim('#c8c8b8')); px(5, -12, 4, 3, dim('#e04040'));
+        px(-11, 0, 22, 2, dim('#2a5a68'));
+        break;
+      case 'campground':                           // two tents and a fire
+        px(-10, -8, 9, 8, dim('#3a6ab0')); px(-6, -11, 1, 4, dim('#c8c8b8'));
+        px(1, -7, 8, 7, dim('#e0a020')); px(4, -10, 1, 4, dim('#c8c8b8'));
+        px(-2, -3, 3, 3, dim('#e06030')); px(-1, -5, 1, 2, dim('#ffd060'));
+        break;
+      case 'bay':                                  // buoy on the horizon
+        px(-1, -13, 3, 10, dim('#20a040')); px(-3, -3, 7, 4, dim('#e0e0d0'));
+        px(-3, -3, 7, 1, dim('#20a040')); px(-2, -15, 1, 2, dim('#40ff60'));
+        px(-11, 1, 22, 1, dim('#2a7a8a'));
+        break;
+      case 'seawall':                              // skyline behind a wall
+        px(-11, -6, 22, 7, dim('#5e6068')); px(-11, -6, 22, 1, dim('#8a8c92'));
+        for (const [ox, h, w] of [[-9, 14, 5], [-3, 20, 6], [4, 11, 4], [8, 17, 4]]) {
+          px(ox, -6 - h, w, h, dim('#2c3140'));
+          for (let ry = 0; ry < h - 2; ry += 3) for (let cx2 = 0; cx2 < w - 1; cx2 += 2) if (((ox + ry + cx2) % 5) < 2) px(ox + cx2 + 1, -5 - h + ry, 1, 2, dim('#e8d070'));
+        }
+        break;
+    }
   },
   drawStages(ctx) {
-    const W = G.W, H = G.H, t = G.menuT;
-    ctx.fillStyle = 'rgba(3,9,11,0.9)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'CHOOSE YOUR WATER', W / 2, 20, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
-    Font.draw(ctx, 'FARTHER IN MEANS BIGGER, MEANER AND WORTH MORE', W / 2, 42, { color: '#7fd8b8', align: 'center' });
-    const rows = this.stageRows(), shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
-    for (const r of rows) {
-      const st = r.st, open = Stages.unlocked(st), sel = r.i === G.stageSel;
-      const ox = sel ? shake : 0;
-      const col = st.kaiju ? '#ff7a40' : open ? '#8fe8c8' : '#5a6a66';
-      this.panel(ctx, r.x + ox, r.y, r.w, r.h, sel ? (open ? 'rgba(20,48,42,0.95)' : 'rgba(44,22,18,0.9)') : 'rgba(8,16,18,0.7)', sel ? col : 'rgba(90,130,120,0.35)');
-      if (sel) { ctx.fillStyle = col; ctx.fillRect(r.x + ox, r.y, 2, r.h); }
-      Font.draw(ctx, open ? st.name : '????????', r.x + ox + 10, r.y + 5, { color: open ? col : '#63736e' });
-      if (open) {
-        Font.draw(ctx, st.sub, r.x + ox + 10, r.y + 14, { color: '#8aa89c' });
-        const ft = (st.size * 3.2).toFixed(1);
-        Font.draw(ctx, 'START ' + ft + ' FT', r.x + ox + r.w - 84, r.y + 5, { color: '#d4e0d0' });
-        const skulls = Math.min(5, Math.round(st.diff + 1));
-        for (let k = 0; k < 5; k++) { ctx.fillStyle = k < skulls ? (st.kaiju ? '#ff7a40' : '#e0a040') : '#2c3a36'; ctx.fillRect(r.x + ox + r.w - 84 + k * 7, r.y + 14, 5, 5); }
-      } else {
-        Font.draw(ctx, 'LOCKED  -  ' + Stages.hint(st.need), r.x + ox + 10, r.y + 14, { color: '#8a6a5a' });
+    const W = G.W, H = G.H, t = G.menuT, R = this.mapRect();
+    ctx.fillStyle = 'rgba(3,9,11,0.93)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'CHOOSE YOUR WATER', W / 2, 14, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
+    Font.draw(ctx, 'THE PIPE RUNS ALL THE WAY TO THE SEA', W / 2, 34, { color: '#7fd8b8', align: 'center' });
+
+    // --- the whole map drawn as a cross-section: sky, water, ground
+    const x0 = -3200, x1 = 19000, wl = R.y + 38, dScale = (R.h - 38) / 960;
+    const sky = ctx.createLinearGradient(0, R.y, 0, wl);
+    sky.addColorStop(0, '#1b3a52'); sky.addColorStop(1, '#4c7d92');
+    ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
+    ctx.fillStyle = sky; ctx.fillRect(R.x, R.y, R.w, wl - R.y);
+    const wg = ctx.createLinearGradient(0, wl, 0, R.y + R.h);
+    wg.addColorStop(0, '#2f7f86'); wg.addColorStop(1, '#08222e');
+    ctx.fillStyle = wg; ctx.fillRect(R.x, wl, R.w, R.h - (wl - R.y));
+    // ground silhouette across the whole world
+    ctx.beginPath(); ctx.moveTo(R.x, R.y + R.h + 4);
+    for (let sx = 0; sx <= R.w; sx += 2) {
+      const wx = x0 + (sx / R.w) * (x1 - x0);
+      ctx.lineTo(R.x + sx, wl + MapData.floorY(wx) * dScale);
+    }
+    ctx.lineTo(R.x + R.w, R.y + R.h + 4); ctx.closePath();
+    ctx.fillStyle = '#4a4230'; ctx.fill();
+    // a turf lip and a paler shelf under it
+    for (let sx = 0; sx <= R.w; sx += 2) {
+      const wx = x0 + (sx / R.w) * (x1 - x0), fy = MapData.floorY(wx), gy = wl + fy * dScale;
+      ctx.fillStyle = fy < 0 ? '#5f8a3f' : mixColor('#6a6250', '#2a3a3e', clamp(fy / 700, 0, 1));
+      ctx.fillRect(R.x + sx, Math.round(gy), 2, 2);
+    }
+    ctx.fillStyle = 'rgba(230,250,255,0.35)'; ctx.fillRect(R.x, Math.round(wl), R.w, 1);
+    ctx.restore();
+    this.panel(ctx, R.x, R.y, R.w, R.h, 'rgba(0,0,0,0)', 'rgba(120,180,170,0.4)');
+
+    // --- the route: a dashed line along the surface from the pipe to the sea
+    const rows = this.stageRows();
+    ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
+    for (let i = 0; i < rows.length - 1; i++) {
+      const a = rows[i], b = rows[i + 1];
+      const openBoth = Stages.unlocked(a.st) && Stages.unlocked(b.st);
+      ctx.fillStyle = openBoth ? 'rgba(143,232,200,0.5)' : 'rgba(110,130,126,0.25)';
+      for (let px2 = a.px; px2 < b.px; px2 += 5) {
+        const wx2 = x0 + ((px2 - R.x) / R.w) * (x1 - x0);
+        const yy = Math.max(wl, wl + MapData.floorY(wx2) * dScale) + 4;
+        ctx.fillRect(Math.round(px2), Math.round(Math.min(R.y + R.h - 6, yy)), 3, 1);
       }
     }
-    const cur = STAGES[G.stageSel];
-    if (cur && !Stages.unlocked(cur) && G.menuShake > 0) Font.draw(ctx, 'NOT YET', W / 2, H - 32, { color: '#ff8060', align: 'center', scale: 2, outline: '#2a0c04' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A STAGE TO PICK IT' : 'UP / DOWN THEN ENTER      ESC: BACK', W / 2, H - 13, { color: '#7f9a90', align: 'center' });
+    ctx.restore();
+    // --- landmarks and pins
+    for (const r of rows) {
+      const st = r.st, open = Stages.unlocked(st), sel = r.i === G.stageSel;
+      const wx = st.x, gy = wl + MapData.floorY(wx) * dScale;
+      const base = Math.min(gy, wl) - 1;
+      this.drawLandmark(ctx, st.id, r.px, base, open);
+      // the marker sits on the shoreline right under its landmark
+      const col = st.kaiju ? '#ff7a40' : open ? '#8fe8c8' : '#5f6f6a';
+      // markers sit in a tidy row just under the surface; dangling them down to
+      // the seabed made the deep stages look like dropped plumb lines
+      const pinY = wl + 6;
+      ctx.fillStyle = col;
+      ctx.fillRect(Math.round(r.px), Math.round(base), 1, Math.max(1, pinY - base - 3));
+      const rr = sel ? 4 + Math.sin(t * 5) * 0.8 : 2.6;
+      ctx.beginPath(); ctx.arc(r.px, pinY, rr, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#06120f'; ctx.beginPath(); ctx.arc(r.px, pinY, rr - 1.5, 0, TAU); ctx.fill();
+      if (!open) { ctx.fillStyle = col; ctx.fillRect(Math.round(r.px - 2), Math.round(pinY - 1), 4, 3); ctx.fillRect(Math.round(r.px - 1), Math.round(pinY - 3), 2, 2); }
+      else if (sel) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(r.px, pinY, 1.4, 0, TAU); ctx.fill(); }
+      if (sel) Font.draw(ctx, st.name, clamp(r.px, 46, W - 46), Math.max(R.y + 3, base - 20), { color: col, align: 'center', outline: '#04120e' });
+    }
+
+    // --- detail card for the pin under the cursor
+    const cur = STAGES[G.stageSel] || STAGES[0], open = Stages.unlocked(cur);
+    const cy2 = R.y + R.h + 12, shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
+    const accent = cur.kaiju ? '#ff7a40' : open ? '#8fe8c8' : '#a08070';
+    this.panel(ctx, 16 + shake, cy2, W - 32, 52, 'rgba(8,18,20,0.92)', accent);
+    Font.draw(ctx, open ? cur.name : 'UNCHARTED', 26 + shake, cy2 + 8, { color: accent, scale: 2, outline: '#04120e' });
+    Font.draw(ctx, open ? cur.sub : Stages.hint(cur.need), 26 + shake, cy2 + 26, { color: open ? '#c8d8d0' : '#a08070' });
+    if (open) {
+      Font.draw(ctx, 'START ' + (cur.size * 3.2).toFixed(1) + ' FT', W - 26 + shake, cy2 + 8, { color: '#d4e0d0', align: 'right' });
+      Font.draw(ctx, 'THREAT', W - 26 + shake, cy2 + 22, { color: '#8aa89c', align: 'right' });
+      const sk = Math.min(5, Math.round(cur.diff + 1));
+      for (let k = 0; k < 5; k++) { ctx.fillStyle = k < sk ? (cur.kaiju ? '#ff7a40' : '#e0a040') : '#2c3a36'; ctx.fillRect(Math.round(W - 26 - 40 + k * 8 + shake), cy2 + 32, 6, 6); }
+    } else Font.draw(ctx, 'LOCKED', W - 26 + shake, cy2 + 8, { color: '#a08070', align: 'right' });
+    Font.draw(ctx, open ? 'ENTER TO DEPLOY' : 'NOT YET', 26 + shake, cy2 + 38, { color: open ? '#ffe060' : '#ff8060' });
+
+    // what the save knows, so the empty half of the screen earns its place
+    const sv = G.save, opened = STAGES.filter(x2 => Stages.unlocked(x2)).length;
+    const by = cy2 + 62;
+    this.panel(ctx, 16, by, W - 32, 46, 'rgba(6,14,16,0.85)', 'rgba(100,150,140,0.28)');
+    const stat = (lab, val, cx3) => { Font.draw(ctx, lab, cx3, by + 9, { color: '#7f9a90', align: 'center' }); Font.draw(ctx, val, cx3, by + 22, { color: '#d8e8de', align: 'center', scale: 2, outline: '#04120e' }); };
+    const q = (W - 32) / 4;
+    stat('WATERS OPEN', opened + '/' + STAGES.length, 16 + q * 0.5);
+    stat('LONGEST', (sv.bestLen || 0).toFixed(1) + ' FT', 16 + q * 1.5);
+    stat('BEST SCORE', fmt(sv.best || 0), 16 + q * 2.5);
+    stat('RUNS', String(sv.runs || 0), 16 + q * 3.5);
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A PIN, TAP AGAIN TO DEPLOY' : 'LEFT / RIGHT ALONG THE MAP      ENTER: DEPLOY      ESC: BACK', W / 2, H - 12, { color: '#7f9a90', align: 'center' });
   },
-  // ---------- loadout ----------
+  // ---------- loadout: the splice bay, with you in the tank ----------
   loadoutCells() {
     const W = G.W, out = [];
-    const pw = Math.floor((W - 40) / PRIMES.length), py = 62;
-    PRIMES.forEach((p2, i) => out.push({ row: 0, i, x: 20 + i * pw, y: py, w: pw - 3, h: 34, item: p2 }));
-    const hw = Math.floor((W - 40) / HIDES.length), hy = 152;
-    HIDES.forEach((h, i) => out.push({ row: 1, i, x: 20 + i * hw, y: hy, w: hw - 3, h: 34, item: h }));
+    const px0 = 176, pw = Math.floor((W - px0 - 18) / 4), py = 68;
+    PRIMES.forEach((p2, i) => out.push({ row: 0, i, x: px0 + (i % 4) * pw, y: py + Math.floor(i / 4) * 22, w: pw - 3, h: 20, item: p2 }));
+    const hy = 132, hw = Math.floor((W - px0 - 18) / 3);
+    HIDES.forEach((h, i) => out.push({ row: 1, i, x: px0 + (i % 3) * hw, y: hy + Math.floor(i / 3) * 22, w: hw - 3, h: 20, item: h }));
     return out;
   },
-  loadoutGoRect() { return { x: G.W / 2 - 60, y: G.H - 44, w: 120, h: 22 }; },
+  loadoutGoRect() { return { x: G.W - 150, y: G.H - 40, w: 132, h: 24 }; },
+  // the croc turning slowly in the acid, wearing whatever you picked
+  drawTankPreview(ctx, x, y, w, h, t) {
+    const P = G.player;
+    // tank glass and the fluid inside
+    ctx.fillStyle = '#0a1416'; ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+    const fl = ctx.createLinearGradient(0, y, 0, y + h);
+    fl.addColorStop(0, '#2f7a56'); fl.addColorStop(1, '#0d3a2c');
+    ctx.fillStyle = fl; ctx.fillRect(x, y, w, h);
+    // suspended muck and rising bubbles
+    for (let i = 0; i < 26; i++) {
+      const bx = x + ((ihash(i, 7) * w + Math.sin(t * 0.6 + i) * 3) % w);
+      const by = y + h - ((t * (9 + ihash(i, 8) * 22) + ihash(i, 9) * h) % h);
+      ctx.fillStyle = 'rgba(190,255,220,0.35)';
+      ctx.fillRect(Math.round(bx), Math.round(by), 1, ihash(i, 10) > 0.6 ? 2 : 1);
+    }
+    // the specimen: built from the real look so the morph and prime show
+    const look = computeLook({
+      skills: P ? P.skills : { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0, savage: 0 },
+      evo: {}, traits: [], hide: G.loadout.hide,
+    });
+    const prime = G.loadout.prime;
+    if (prime && prime !== 'none' && LINEAGES[prime]) look.glow = LINEAGES[prime].color;
+    const parts = buildCrocParts(look);
+    const cx = x + w / 2, cy = y + h * 0.5, sway = Math.sin(t * 0.7) * 0.16;
+    ctx.save();
+    // clip to the glass: a specimen that overflows its tank is not a specimen
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.translate(cx, cy);
+    // drawCroc takes a world size, not a pixel scale: the sprite is already
+    // authored at world resolution, so anything much over 2 fills the screen
+    const ws = 2.1, R0 = 30;
+    const nodes = [];
+    for (let i = 0; i < CROC_LEN; i++) {
+      const u = i / (CROC_LEN - 1), a = -1.4 + sway + u * 4.2, rr2 = R0 * (1 - u * 0.16);
+      nodes.push({ x: Math.cos(a) * rr2, y: Math.sin(a) * rr2, a: a + Math.PI / 2 });
+    }
+    drawCroc(ctx, { nodes }, parts, ws, { jaw: 0.08 + Math.max(0, Math.sin(t * 1.1)) * 0.14, legPhase: t, flipY: 1 });
+    ctx.restore();
+    // glass: frame, highlight columns and a lid
+    ctx.fillStyle = 'rgba(220,255,250,0.1)'; ctx.fillRect(x + 4, y, 3, h);
+    ctx.fillStyle = 'rgba(220,255,250,0.06)'; ctx.fillRect(x + w - 10, y, 5, h);
+    ctx.strokeStyle = '#7fd8c8'; ctx.lineWidth = 1; ctx.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
+    ctx.fillStyle = '#39454a'; ctx.fillRect(x - 5, y - 8, w + 10, 6); ctx.fillRect(x - 5, y + h + 1, w + 10, 6);
+    ctx.fillStyle = '#5a686e'; ctx.fillRect(x - 5, y - 8, w + 10, 1);
+    // plate under the tank
+    ctx.fillStyle = '#c8c2a8'; ctx.fillRect(x + w / 2 - 30, y + h + 10, 60, 11);
+    ctx.fillStyle = '#9a947c'; ctx.fillRect(x + w / 2 - 30, y + h + 20, 60, 1);
+    Font.draw(ctx, 'SUBJECT 7', x + w / 2, y + h + 13, { color: '#2a2018', align: 'center' });
+  },
   drawLoadout(ctx) {
-    const W = G.W, H = G.H, st = G.pendingStage || STAGES[0];
-    ctx.fillStyle = 'rgba(3,9,11,0.92)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'SPLICE BEFORE YOU SWIM', W / 2, 14, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
-    Font.draw(ctx, 'DEPLOYING TO ' + st.name, W / 2, 34, { color: st.kaiju ? '#ff7a40' : '#7fd8b8', align: 'center' });
-    Font.draw(ctx, 'PRIME MUTATION', 20, 52, { color: '#8fe8c8' });
-    Font.draw(ctx, 'HIDE', 20, 142, { color: '#8fe8c8' });
+    const W = G.W, H = G.H, st = G.pendingStage || STAGES[0], t = G.menuT;
+    // --- lab room behind everything
+    ctx.fillStyle = '#0d1417'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#141d21';
+    for (let sx = 0; sx < W; sx += 16) { if (((sx / 16) | 0) % 3 === 0) ctx.fillRect(sx, 0, 16, H); }
+    ctx.globalAlpha = 0.5; ctx.fillStyle = '#0a1013';
+    for (let sy = 0; sy < H; sy += 11) ctx.fillRect(0, sy, W, 1);
+    ctx.globalAlpha = 1;
+    // ceiling ducts and a couple of lamps
+    ctx.fillStyle = '#1c262a'; ctx.fillRect(0, 0, W, 12);
+    ctx.fillStyle = '#28343a'; ctx.fillRect(0, 11, W, 1);
+    for (let lx = 60; lx < W; lx += 150) {
+      ctx.fillStyle = '#2a3338'; ctx.fillRect(lx - 1, 12, 2, 5);
+      ctx.fillStyle = '#ffe6a0'; ctx.fillRect(lx - 7, 17, 14, 2);
+      ctx.globalCompositeOperation = 'lighter';
+      const g2 = ctx.createRadialGradient(lx, 18, 2, lx, 18, 70);
+      g2.addColorStop(0, 'rgba(255,230,160,0.13)'); g2.addColorStop(1, 'rgba(255,230,160,0)');
+      ctx.fillStyle = g2; ctx.fillRect(lx - 70, 12, 140, 140);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    Font.draw(ctx, 'SPLICE BAY', 18, 22, { color: '#ffffff', scale: 2, outline: '#0a2018' });
+    Font.draw(ctx, 'DEPLOYING TO ' + st.name, 18, 42, { color: st.kaiju ? '#ff7a40' : '#7fd8b8' });
+
+    // --- the tank, left side
+    this.drawTankPreview(ctx, 30, 62, 118, 150, t);
+
+    // --- specimen readout under the tank
+    {
+      const bx = 22, by = 240, bw = 134;
+      this.panel(ctx, bx, by, bw, 72, 'rgba(6,16,18,0.9)', 'rgba(120,180,160,0.35)');
+      Font.draw(ctx, 'SPECIMEN VITALS', bx + 6, by + 6, { color: '#8fe8c8' });
+      const primeName = (PRIMES.find(p2 => p2.id === G.loadout.prime) || PRIMES[0]).name;
+      const hideName = (HIDE_BY_ID[G.loadout.hide] || HIDES[0]).name;
+      const rowsV = [
+        ['MASS', (st.size * 3.2).toFixed(1) + ' FT'],
+        ['PRIME', primeName.replace(' PRIME', '')],
+        ['HIDE', hideName],
+        ['THREAT', 'LV ' + Math.min(5, Math.round(st.diff + 1))],
+      ];
+      rowsV.forEach((r2, i) => {
+        Font.draw(ctx, r2[0], bx + 6, by + 18 + i * 10, { color: '#7f9a90' });
+        Font.draw(ctx, r2[1], bx + bw - 6, by + 18 + i * 10, { color: '#d8e8de', align: 'right' });
+      });
+      // a heartbeat trace so the panel feels live
+      ctx.fillStyle = '#40f0c8';
+      for (let i = 0; i < bw - 12; i++) {
+        const u = (i / (bw - 12)) * 6 + t * 2.2, ph = u % 1;
+        const yy = by + 66 - (ph < 0.12 ? Math.sin(ph / 0.12 * Math.PI) * 9 : ph < 0.2 ? -3 : 0);
+        ctx.globalAlpha = 0.35 + 0.5 * Math.max(0, 1 - ((u % 6) / 6));
+        ctx.fillRect(bx + 6 + i, Math.round(yy), 1, 1);
+      }
+      ctx.globalAlpha = 1;
+    }
+    // --- console panels, right side
+    Font.draw(ctx, 'PRIME MUTATION', 176, 56, { color: '#8fe8c8' });
+    Font.draw(ctx, 'HIDE', 176, 120, { color: '#8fe8c8' });
     const cells = this.loadoutCells();
     for (const c of cells) {
       const it = c.item, isPrime = c.row === 0;
@@ -6879,35 +7195,33 @@ const UI = {
       const open = isPrime || Stages.met(it.need);
       const sel = (isPrime ? G.loadout.prime === it.id : G.loadout.hide === it.id);
       const cur = c.row === (G.loadRow || 0) && c.i === G.loadCol;
-      this.panel(ctx, c.x, c.y, c.w, c.h, sel ? 'rgba(18,44,40,0.95)' : 'rgba(8,16,18,0.7)', cur ? '#ffffff' : sel ? col : 'rgba(90,130,120,0.3)');
-      if (!open) { ctx.fillStyle = 'rgba(6,10,12,0.6)'; ctx.fillRect(c.x, c.y, c.w, c.h); }
-      const label = open ? it.name : 'LOCKED';
-      Font.draw(ctx, label, c.x + c.w / 2, c.y + 6, { color: open ? (sel ? col : '#c8d8d0') : '#6a5a52', align: 'center' });
-      if (isPrime && lin) { ctx.fillStyle = col; ctx.fillRect(c.x + c.w / 2 - 8, c.y + 18, 16, 4); }
-      else if (!isPrime && open && it.apply) {
-        // a swatch of the morph so the choice is visible, not just a name
+      this.panel(ctx, c.x, c.y, c.w, c.h, sel ? 'rgba(20,52,46,0.95)' : 'rgba(10,20,22,0.8)', cur ? '#ffffff' : sel ? col : 'rgba(90,130,120,0.3)');
+      const sw = 12;
+      if (open && !isPrime) {
         const L = { back: '#4a6a3a', mid: '#5a7a44', belly: '#8a9a6a', dark: '#2a3a20', eye: '#e0c040' };
-        it.apply(L);
-        ctx.fillStyle = L.back; ctx.fillRect(c.x + c.w / 2 - 12, c.y + 17, 8, 7);
-        ctx.fillStyle = L.mid; ctx.fillRect(c.x + c.w / 2 - 4, c.y + 17, 8, 7);
-        ctx.fillStyle = L.belly; ctx.fillRect(c.x + c.w / 2 + 4, c.y + 17, 8, 7);
-      } else if (!isPrime && open) { ctx.fillStyle = '#5a7a44'; ctx.fillRect(c.x + c.w / 2 - 12, c.y + 17, 24, 7); }
-      if (!open) Font.draw(ctx, Stages.hint(it.need), c.x + c.w / 2, c.y + 19, { color: '#8a6a5a', align: 'center' });
+        if (it.apply) it.apply(L);
+        ctx.fillStyle = L.dark; ctx.fillRect(c.x + 4, c.y + 5, sw, 10);
+        ctx.fillStyle = L.back; ctx.fillRect(c.x + 4, c.y + 5, sw, 5);
+        ctx.fillStyle = L.belly; ctx.fillRect(c.x + 4, c.y + 12, sw, 3);
+      } else if (open && isPrime) { ctx.fillStyle = col; ctx.fillRect(c.x + 4, c.y + 7, sw, 6); }
+      else { ctx.fillStyle = '#3a3028'; ctx.fillRect(c.x + 4, c.y + 5, sw, 10); }
+      Font.draw(ctx, open ? it.name : 'LOCKED', c.x + sw + 9, c.y + 7, { color: open ? (sel ? col : '#c8d8d0') : '#6a5a52' });
     }
-    // detail line for whatever the cursor is on
+    // readout for whatever the cursor is on
     const curCell = cells.find(c => c.row === (G.loadRow || 0) && c.i === G.loadCol);
     if (curCell) {
-      this.panel(ctx, 20, 200, W - 40, 30, 'rgba(6,14,16,0.9)', 'rgba(120,180,160,0.35)');
-      Font.draw(ctx, curCell.item.name, 28, 206, { color: '#ffffff' });
-      Font.drawWrapped(ctx, curCell.item.desc, 28, 216, W - 56, { color: '#c8d8d0', lineHeight: 9 });
+      this.panel(ctx, 176, 182, W - 194, 34, 'rgba(6,16,18,0.92)', 'rgba(120,180,160,0.4)');
+      Font.draw(ctx, curCell.item.name, 184, 188, { color: '#ffffff' });
+      const txt = Stages.met(curCell.item.need) ? curCell.item.desc : 'SEALED  -  ' + Stages.hint(curCell.item.need);
+      Font.drawWrapped(ctx, txt, 184, 199, W - 210, { color: '#c8d8d0', lineHeight: 9 });
     }
-    const go = this.loadoutGoRect();
-    const pulse = 0.6 + 0.4 * Math.sin(G.menuT * 4);
-    this.panel(ctx, go.x, go.y, go.w, go.h, 'rgba(20,52,44,0.95)', '#8fe8c8');
+    // --- release lever
+    const go = this.loadoutGoRect(), pulse = 0.65 + 0.35 * Math.sin(t * 4);
+    this.panel(ctx, go.x, go.y, go.w, go.h, 'rgba(24,58,48,0.95)', '#8fe8c8');
     ctx.globalAlpha = pulse;
-    Font.draw(ctx, 'DIVE IN', go.x + go.w / 2, go.y + 4, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04140f' });
+    Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 5, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04140f' });
     ctx.globalAlpha = 1;
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK, THEN DIVE IN' : 'ARROWS PICK      ENTER: DIVE IN      ESC: BACK', W / 2, H - 13, { color: '#7f9a90', align: 'center' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK, THEN RELEASE' : 'ARROWS PICK      ENTER: RELEASE      ESC: BACK', 18, H - 12, { color: '#7f9a90' });
   },
   cardRects(n) {
     const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;
@@ -7679,8 +7993,8 @@ const G = {
         if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
         const rows = UI.stageRows();
         if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }
-        if (Input.hit('ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
-        if (Input.hit('ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
+        if (Input.hit('ArrowLeft', 'KeyA', 'ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD', 'ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
         const rowHit = Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
           const st = list[this.stageSel];
