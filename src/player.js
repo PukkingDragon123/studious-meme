@@ -5,6 +5,7 @@ class Player {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
+    this.hide = 'wild'; this.primeGene = null;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
     this.st = {
       speed: 1, accel: 1, bite: 1, biteRadius: 1, hpMul: 1, armor: 0, bulletArmor: 0, hungerRate: 1, regen: 0, lifesteal: 0,
@@ -360,7 +361,7 @@ class Player {
     if (this.st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.lifesteal);
     if (this.st.scavenge && e.type === 'gib') this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.scavenge);
     if (this.st.manEater && e.human) G.addScore(Math.round(e.mass * 20));
-    const gp = Genome.pointsFor(e); this.genePoints += gp; this.newPoints += gp;
+    const gp = Genome.pointsFor(e, this); this.genePoints += gp; this.newPoints += gp;
     Affinity.onEat(this, e); Affinity.onKill(this, e, this.lastKillHow || 'bite'); this.lastKillHow = null;
     G.stats.eaten++; G.stats.genePoints = (G.stats.genePoints || 0) + gp;
     if (e.mass > G.stats.biggestMass) { G.stats.biggestMass = e.mass; G.stats.biggest = e.name; }

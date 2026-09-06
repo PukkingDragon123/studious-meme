@@ -117,13 +117,24 @@ const Genome = {
   },
   // how far down each lineage the player has gone
   depth(P, lin) { let d = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin === lin && !g.hybrid) d = Math.max(d, g.ring); } return d; },
-  // gene points from a meal: bigger and rarer prey is worth more
-  pointsFor(e) {
-    let p = Math.max(1, Math.round(Math.pow(Math.max(1, e.mass), 0.52) * 0.5));
-    if (e.threat) p *= 2;
-    if (e.isBoss) p *= 8;
-    if (e.human) p = Math.round(p * 1.5);
-    return Math.min(p, 90);
+  // Gene points from a meal. Deliberately scarce: a run should fund maybe two
+  // lineages, not the whole tree. Minnows feed you, they do not evolve you —
+  // only prey that is a real share of your own mass, a threat, a person or a
+  // boss counts, and eating a species for the first time pays a discovery bonus.
+  pointsFor(e, P) {
+    const mine = Math.max(1, P ? P.mass : 1), rel = e.mass / mine;
+    let p = 0;
+    if (e.isBoss) p = 10;
+    else if (e.threat) p = rel >= 0.16 ? 3 : 1;
+    else if (e.human) p = 2;
+    else if (rel >= 0.22) p = rel >= 0.6 ? 2 : 1;
+    // first of a kind this run pays a discovery bonus, but only for prey worth
+    // studying: a new species of minnow teaches you nothing
+    if (P && e.spec && e.spec.id && e.mass >= 10) {
+      P.seen = P.seen || new Set();
+      if (!P.seen.has(e.spec.id)) { P.seen.add(e.spec.id); p += 1; }
+    }
+    return p;
   },
 };
 // playstyle affinity: what you do decides which lineages come cheap

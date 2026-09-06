@@ -39,6 +39,11 @@ const MAP_PROFILE = [
   [11000, 140], [11180, 330], [11380, 520], [11600, 660], [11840, 720], [12080, 700], [12320, 640],
   [12560, 600], [12800, 640], [13040, 700], [13300, 740], [13560, 700], [13800, 660],
   [14060, 620], [14320, 600], [14600, 640], [14900, 700], [15200, 720],
+  // the shipping channel deepens toward the city, then the seawall: a dredged
+  // harbour with a hard concrete lip you can haul out onto
+  [15500, 780], [15800, 840], [16100, 880], [16400, 860], [16700, 800],
+  [17000, 700], [17250, 520], [17450, 300], [17600, 90], [17700, -70],
+  [17900, -96], [18200, -100], [18600, -98], [19000, -100],
 ];
 const MapData = {
   x0: MAP_PROFILE[0][0], x1: MAP_PROFILE[MAP_PROFILE.length - 1][0],
@@ -150,7 +155,7 @@ const BIOMES = [
     town: true, music: 0.5,
   },
   {
-    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 99999,
+    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 15300,
     sky: ['#2f86d8', '#d8ecf4'], water: ['#2aa0b0', '#0f6474', '#03202c'], scum: '#4a8a7a', fog: '#c8e4ee',
     parallax: ['mangrove', 'island', 'island'], ground: ['#7a7460', '#5a5648', '#3a3830'], grass: '#5a8a4a',
     plants: [['seagrass', 2.6], ['shellbed', 2], ['coral', 1.4], ['algae', 1.6], ['rock', 1.4], ['sunkbranch', 1]],
@@ -158,6 +163,17 @@ const BIOMES = [
     land: [['otter', 1]],
     structures: [['buoy', 2], ['crabtrap', 1.4], ['stilthouse', 1]],
     music: 1,
+  },
+  {
+    // Endgame. A dredged harbour under a city that has finally noticed you.
+    id: 'seawall', name: 'THE SEAWALL', x0: 15300, x1: 99999,
+    sky: ['#141c34', '#40506e'], water: ['#1d5c74', '#0c3346', '#02121c'], scum: '#3a5a5a', fog: '#5a6a86',
+    parallax: ['tower', 'block', 'tower'], ground: ['#5e6068', '#43454c', '#2a2c32'], grass: '#4a5a4a',
+    plants: [['rubble', 2.2], ['rock', 1.6], ['trash', 1.8], ['pipe', 1.4], ['algae', 1.2], ['shellbed', 1]],
+    fish: [['shark', 2.2], ['tarpon', 1.6], ['sawfish', 1.6], ['grouper', 1.4], ['dolphin', 1], ['bonnet', 1.4]],
+    land: [['ranger', 2], ['poacher', 2]],
+    structures: [['seawall', 3], ['sign', 0.6]],
+    town: true, kaiju: true, music: 1.2,
   },
 ];
 const Biome = {

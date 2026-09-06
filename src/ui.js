@@ -268,6 +268,7 @@ const UI = {
     const rows = touch
       ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
       : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['G', 'GENE TREE'], ['UP ON LAND', 'HOP'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
+    const _stageHint = 'PICK A STAGE AND A PRIME MUTATION BEFORE EACH RUN';
     const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
     const boxH = per * 11 + 10, boxY = H - 74 - boxH;
     this.panel(ctx, 20, boxY, pw2, boxH, 'rgba(6,14,14,0.68)', 'rgba(120,180,160,0.35)');
@@ -277,6 +278,7 @@ const UI = {
       Font.draw(ctx, r[1], rx + 96, ry, { color: '#d4e0d0' });
     });
 
+    Font.draw(ctx, _stageHint, W / 2, boxY - 10, { color: '#7fd8b8', align: 'center', outline: '#04140f' });
     Font.draw(ctx, 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.', W / 2, boxY + boxH + 8, { color: '#ffb060', align: 'center', outline: '#2a1200' });
 
     const s = G.save;
@@ -284,6 +286,93 @@ const UI = {
     Font.draw(ctx, 'BEST ' + fmt(s.best) + '     LONGEST ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 20, { color: '#90a898', align: 'center', shadow: true });
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
     if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
+  },
+  // ---------- stage select ----------
+  stageRows() {
+    const W = G.W, rowH = 26, top = 60, x = 34, w = W - 68;
+    return STAGES.map((st, i) => ({ x, y: top + i * rowH, w, h: rowH - 4, st, i }));
+  },
+  drawStages(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    ctx.fillStyle = 'rgba(3,9,11,0.9)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'CHOOSE YOUR WATER', W / 2, 20, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
+    Font.draw(ctx, 'FARTHER IN MEANS BIGGER, MEANER AND WORTH MORE', W / 2, 42, { color: '#7fd8b8', align: 'center' });
+    const rows = this.stageRows(), shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
+    for (const r of rows) {
+      const st = r.st, open = Stages.unlocked(st), sel = r.i === G.stageSel;
+      const ox = sel ? shake : 0;
+      const col = st.kaiju ? '#ff7a40' : open ? '#8fe8c8' : '#5a6a66';
+      this.panel(ctx, r.x + ox, r.y, r.w, r.h, sel ? (open ? 'rgba(20,48,42,0.95)' : 'rgba(44,22,18,0.9)') : 'rgba(8,16,18,0.7)', sel ? col : 'rgba(90,130,120,0.35)');
+      if (sel) { ctx.fillStyle = col; ctx.fillRect(r.x + ox, r.y, 2, r.h); }
+      Font.draw(ctx, open ? st.name : '????????', r.x + ox + 10, r.y + 5, { color: open ? col : '#63736e' });
+      if (open) {
+        Font.draw(ctx, st.sub, r.x + ox + 10, r.y + 14, { color: '#8aa89c' });
+        const ft = (st.size * 3.2).toFixed(1);
+        Font.draw(ctx, 'START ' + ft + ' FT', r.x + ox + r.w - 84, r.y + 5, { color: '#d4e0d0' });
+        const skulls = Math.min(5, Math.round(st.diff + 1));
+        for (let k = 0; k < 5; k++) { ctx.fillStyle = k < skulls ? (st.kaiju ? '#ff7a40' : '#e0a040') : '#2c3a36'; ctx.fillRect(r.x + ox + r.w - 84 + k * 7, r.y + 14, 5, 5); }
+      } else {
+        Font.draw(ctx, 'LOCKED  -  ' + Stages.hint(st.need), r.x + ox + 10, r.y + 14, { color: '#8a6a5a' });
+      }
+    }
+    const cur = STAGES[G.stageSel];
+    if (cur && !Stages.unlocked(cur) && G.menuShake > 0) Font.draw(ctx, 'NOT YET', W / 2, H - 32, { color: '#ff8060', align: 'center', scale: 2, outline: '#2a0c04' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A STAGE TO PICK IT' : 'UP / DOWN THEN ENTER      ESC: BACK', W / 2, H - 13, { color: '#7f9a90', align: 'center' });
+  },
+  // ---------- loadout ----------
+  loadoutCells() {
+    const W = G.W, out = [];
+    const pw = Math.floor((W - 40) / PRIMES.length), py = 62;
+    PRIMES.forEach((p2, i) => out.push({ row: 0, i, x: 20 + i * pw, y: py, w: pw - 3, h: 34, item: p2 }));
+    const hw = Math.floor((W - 40) / HIDES.length), hy = 152;
+    HIDES.forEach((h, i) => out.push({ row: 1, i, x: 20 + i * hw, y: hy, w: hw - 3, h: 34, item: h }));
+    return out;
+  },
+  loadoutGoRect() { return { x: G.W / 2 - 60, y: G.H - 44, w: 120, h: 22 }; },
+  drawLoadout(ctx) {
+    const W = G.W, H = G.H, st = G.pendingStage || STAGES[0];
+    ctx.fillStyle = 'rgba(3,9,11,0.92)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'SPLICE BEFORE YOU SWIM', W / 2, 14, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
+    Font.draw(ctx, 'DEPLOYING TO ' + st.name, W / 2, 34, { color: st.kaiju ? '#ff7a40' : '#7fd8b8', align: 'center' });
+    Font.draw(ctx, 'PRIME MUTATION', 20, 52, { color: '#8fe8c8' });
+    Font.draw(ctx, 'HIDE', 20, 142, { color: '#8fe8c8' });
+    const cells = this.loadoutCells();
+    for (const c of cells) {
+      const it = c.item, isPrime = c.row === 0;
+      const lin = isPrime && it.id !== 'none' ? LINEAGES[it.id] : null;
+      const col = lin ? lin.color : (it.color || '#9ad8c0');
+      const open = isPrime || Stages.met(it.need);
+      const sel = (isPrime ? G.loadout.prime === it.id : G.loadout.hide === it.id);
+      const cur = c.row === (G.loadRow || 0) && c.i === G.loadCol;
+      this.panel(ctx, c.x, c.y, c.w, c.h, sel ? 'rgba(18,44,40,0.95)' : 'rgba(8,16,18,0.7)', cur ? '#ffffff' : sel ? col : 'rgba(90,130,120,0.3)');
+      if (!open) { ctx.fillStyle = 'rgba(6,10,12,0.6)'; ctx.fillRect(c.x, c.y, c.w, c.h); }
+      const label = open ? it.name : 'LOCKED';
+      Font.draw(ctx, label, c.x + c.w / 2, c.y + 6, { color: open ? (sel ? col : '#c8d8d0') : '#6a5a52', align: 'center' });
+      if (isPrime && lin) { ctx.fillStyle = col; ctx.fillRect(c.x + c.w / 2 - 8, c.y + 18, 16, 4); }
+      else if (!isPrime && open && it.apply) {
+        // a swatch of the morph so the choice is visible, not just a name
+        const L = { back: '#4a6a3a', mid: '#5a7a44', belly: '#8a9a6a', dark: '#2a3a20', eye: '#e0c040' };
+        it.apply(L);
+        ctx.fillStyle = L.back; ctx.fillRect(c.x + c.w / 2 - 12, c.y + 17, 8, 7);
+        ctx.fillStyle = L.mid; ctx.fillRect(c.x + c.w / 2 - 4, c.y + 17, 8, 7);
+        ctx.fillStyle = L.belly; ctx.fillRect(c.x + c.w / 2 + 4, c.y + 17, 8, 7);
+      } else if (!isPrime && open) { ctx.fillStyle = '#5a7a44'; ctx.fillRect(c.x + c.w / 2 - 12, c.y + 17, 24, 7); }
+      if (!open) Font.draw(ctx, Stages.hint(it.need), c.x + c.w / 2, c.y + 19, { color: '#8a6a5a', align: 'center' });
+    }
+    // detail line for whatever the cursor is on
+    const curCell = cells.find(c => c.row === (G.loadRow || 0) && c.i === G.loadCol);
+    if (curCell) {
+      this.panel(ctx, 20, 200, W - 40, 30, 'rgba(6,14,16,0.9)', 'rgba(120,180,160,0.35)');
+      Font.draw(ctx, curCell.item.name, 28, 206, { color: '#ffffff' });
+      Font.drawWrapped(ctx, curCell.item.desc, 28, 216, W - 56, { color: '#c8d8d0', lineHeight: 9 });
+    }
+    const go = this.loadoutGoRect();
+    const pulse = 0.6 + 0.4 * Math.sin(G.menuT * 4);
+    this.panel(ctx, go.x, go.y, go.w, go.h, 'rgba(20,52,44,0.95)', '#8fe8c8');
+    ctx.globalAlpha = pulse;
+    Font.draw(ctx, 'DIVE IN', go.x + go.w / 2, go.y + 4, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04140f' });
+    ctx.globalAlpha = 1;
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK, THEN DIVE IN' : 'ARROWS PICK      ENTER: DIVE IN      ESC: BACK', W / 2, H - 13, { color: '#7f9a90', align: 'center' });
   },
   cardRects(n) {
     const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;

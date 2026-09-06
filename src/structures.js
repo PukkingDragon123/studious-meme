@@ -26,8 +26,46 @@ class Structure extends Entity {
       case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16 * this.ss; this.deckY = -58; break; }
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
       case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6 * this.ss; break; }
+      case 'seawall': {
+        const w2 = this.w, dmg = 1 - clamp(this.hp / 260, 0, 1);
+        const face = '#6b6d74', faceL = '#8a8c92', faceD = '#43454c', cap = '#7d8088';
+        px(-w2 / 2, -30, w2, 32, face);
+        px(-w2 / 2, -30, w2, 2, faceL);
+        px(-w2 / 2, -2, w2, 3, faceD);
+        // panel joints and staining down the face
+        for (let i = -w2 / 2 + 10; i < w2 / 2; i += 20) { px(i, -30, 1, 32, faceD); px(i + 1, -30, 1, 12, faceL); }
+        for (let i = 0; i < 8; i++) { const sxx = -w2 / 2 + ihash(i, 51) * w2; px(sxx, -26, 1, 6 + ihash(i, 52) * 16, mixColor(face, '#2a3a30', 0.4)); }
+        // cracks appear as you work on it
+        if (dmg > 0.15) for (let i = 0; i < Math.round(dmg * 12); i++) { const cx2 = -w2 / 2 + ihash(i, 61) * w2, cy2 = -28 + ihash(i, 62) * 22; px(cx2, cy2, 1, 3 + ihash(i, 63) * 7, '#2a2c30'); px(cx2 + 1, cy2 + 2, 2, 1, '#2a2c30'); }
+        if (dmg > 0.5) { px(-w2 / 2 + w2 * 0.3, -30, w2 * 0.18, 6, 'rgba(0,0,0,0.55)'); }
+        // capping stone and railing
+        px(-w2 / 2 - 2, -34, w2 + 4, 4, cap);
+        px(-w2 / 2 - 2, -34, w2 + 4, 1, faceL);
+        for (let i = -w2 / 2; i <= w2 / 2; i += 9) px(i, -44, 1, 10, '#3f444a');
+        px(-w2 / 2, -45, w2, 2, '#4a5058');
+        px(-w2 / 2, -40, w2, 1, '#4a5058');
+        // harbour lamps looking out over the water
+        for (const lp of this.lamps) {
+          px(lp.ox - 1, -66, 2, 22, '#3a4046');
+          px(lp.ox - 4, -70, 8, 4, '#2e3338');
+          if (lp.on) {
+            px(lp.ox - 3, -68, 6, 2, '#ffe6a0');
+            ctx.globalCompositeOperation = 'lighter';
+            const g2 = ctx.createRadialGradient(lp.ox, -64, 2, lp.ox, -64, 46);
+            g2.addColorStop(0, 'rgba(255,230,160,0.26)'); g2.addColorStop(1, 'rgba(255,230,160,0)');
+            ctx.fillStyle = g2; ctx.fillRect(lp.ox - 46, -66, 92, 92);
+            ctx.globalCompositeOperation = 'source-over';
+          }
+        }
+        break;
+      }
       case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8 * this.ss; break; }
       case 'console': { this.name = 'CONSOLE'; this.hp = 26; this.r = 9 * this.ss; break; }
+      case 'seawall': {
+        this.name = 'SEAWALL'; this.hp = 260; this.r = 40 * this.ss; this.w = 80 * this.ss;
+        this.lamps = [-26, 0, 26].map(o => ({ ox: o * this.ss, on: chance(0.8) }));
+        break;
+      }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
@@ -200,6 +238,39 @@ class Structure extends Entity {
         if (this.lightOn && Math.sin(this.t * 3) > 0) { ctx.fillStyle = '#40ff60'; ctx.fillRect(-2, -13, 4, 3); }
         break;
       }
+      case 'seawall': {
+        const w2 = this.w, dmg = 1 - clamp(this.hp / 260, 0, 1);
+        const face = '#6b6d74', faceL = '#8a8c92', faceD = '#43454c', cap = '#7d8088';
+        px(-w2 / 2, -30, w2, 32, face);
+        px(-w2 / 2, -30, w2, 2, faceL);
+        px(-w2 / 2, -2, w2, 3, faceD);
+        // panel joints and staining down the face
+        for (let i = -w2 / 2 + 10; i < w2 / 2; i += 20) { px(i, -30, 1, 32, faceD); px(i + 1, -30, 1, 12, faceL); }
+        for (let i = 0; i < 8; i++) { const sxx = -w2 / 2 + ihash(i, 51) * w2; px(sxx, -26, 1, 6 + ihash(i, 52) * 16, mixColor(face, '#2a3a30', 0.4)); }
+        // cracks appear as you work on it
+        if (dmg > 0.15) for (let i = 0; i < Math.round(dmg * 12); i++) { const cx2 = -w2 / 2 + ihash(i, 61) * w2, cy2 = -28 + ihash(i, 62) * 22; px(cx2, cy2, 1, 3 + ihash(i, 63) * 7, '#2a2c30'); px(cx2 + 1, cy2 + 2, 2, 1, '#2a2c30'); }
+        if (dmg > 0.5) { px(-w2 / 2 + w2 * 0.3, -30, w2 * 0.18, 6, 'rgba(0,0,0,0.55)'); }
+        // capping stone and railing
+        px(-w2 / 2 - 2, -34, w2 + 4, 4, cap);
+        px(-w2 / 2 - 2, -34, w2 + 4, 1, faceL);
+        for (let i = -w2 / 2; i <= w2 / 2; i += 9) px(i, -44, 1, 10, '#3f444a');
+        px(-w2 / 2, -45, w2, 2, '#4a5058');
+        px(-w2 / 2, -40, w2, 1, '#4a5058');
+        // harbour lamps looking out over the water
+        for (const lp of this.lamps) {
+          px(lp.ox - 1, -66, 2, 22, '#3a4046');
+          px(lp.ox - 4, -70, 8, 4, '#2e3338');
+          if (lp.on) {
+            px(lp.ox - 3, -68, 6, 2, '#ffe6a0');
+            ctx.globalCompositeOperation = 'lighter';
+            const g2 = ctx.createRadialGradient(lp.ox, -64, 2, lp.ox, -64, 46);
+            g2.addColorStop(0, 'rgba(255,230,160,0.26)'); g2.addColorStop(1, 'rgba(255,230,160,0)');
+            ctx.fillStyle = g2; ctx.fillRect(lp.ox - 46, -66, 92, 92);
+            ctx.globalCompositeOperation = 'source-over';
+          }
+        }
+        break;
+      }
       case 'sign': {
         // post, board, red header, then two 7px text rows that do not collide
         ctx.fillStyle = '#6b5033'; ctx.fillRect(-1, -12, 2, 12);
@@ -345,6 +416,7 @@ function trySpawnStructure(x, rng, difficulty) {
   const deepAt = dx => World.floorY(x + dx) > 60;
   const land = fy < -6, open = fy > 70;
   const table = B.structures.filter(([k]) => {
+    if (k === 'seawall') return land && (deepAt(110) || deepAt(-110));
     if (k === 'dock') return land && (deepAt(90) || deepAt(-90));
     if (k === 'shop') return land && (deepAt(120) || deepAt(-120));
     if (k === 'stilthouse') return open && fy < 320;
@@ -386,6 +458,7 @@ function trySpawnStructure(x, rng, difficulty) {
     case 'boatramp': G.add(new Structure(x, 'boatramp')); return true;
     case 'crabtrap': G.add(new Structure(x, 'crabtrap')); return true;
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;
+    case 'seawall': { const st = new Structure(x, 'seawall'); G.add(st); return true; }
     case 'sign': case 'pipe': G.add(new Structure(x, 'sign')); return true;
   }
   return false;

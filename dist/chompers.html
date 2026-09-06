@@ -2371,6 +2371,11 @@ const MAP_PROFILE = [
   [11000, 140], [11180, 330], [11380, 520], [11600, 660], [11840, 720], [12080, 700], [12320, 640],
   [12560, 600], [12800, 640], [13040, 700], [13300, 740], [13560, 700], [13800, 660],
   [14060, 620], [14320, 600], [14600, 640], [14900, 700], [15200, 720],
+  // the shipping channel deepens toward the city, then the seawall: a dredged
+  // harbour with a hard concrete lip you can haul out onto
+  [15500, 780], [15800, 840], [16100, 880], [16400, 860], [16700, 800],
+  [17000, 700], [17250, 520], [17450, 300], [17600, 90], [17700, -70],
+  [17900, -96], [18200, -100], [18600, -98], [19000, -100],
 ];
 const MapData = {
   x0: MAP_PROFILE[0][0], x1: MAP_PROFILE[MAP_PROFILE.length - 1][0],
@@ -2482,7 +2487,7 @@ const BIOMES = [
     town: true, music: 0.5,
   },
   {
-    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 99999,
+    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 15300,
     sky: ['#2f86d8', '#d8ecf4'], water: ['#2aa0b0', '#0f6474', '#03202c'], scum: '#4a8a7a', fog: '#c8e4ee',
     parallax: ['mangrove', 'island', 'island'], ground: ['#7a7460', '#5a5648', '#3a3830'], grass: '#5a8a4a',
     plants: [['seagrass', 2.6], ['shellbed', 2], ['coral', 1.4], ['algae', 1.6], ['rock', 1.4], ['sunkbranch', 1]],
@@ -2490,6 +2495,17 @@ const BIOMES = [
     land: [['otter', 1]],
     structures: [['buoy', 2], ['crabtrap', 1.4], ['stilthouse', 1]],
     music: 1,
+  },
+  {
+    // Endgame. A dredged harbour under a city that has finally noticed you.
+    id: 'seawall', name: 'THE SEAWALL', x0: 15300, x1: 99999,
+    sky: ['#141c34', '#40506e'], water: ['#1d5c74', '#0c3346', '#02121c'], scum: '#3a5a5a', fog: '#5a6a86',
+    parallax: ['tower', 'block', 'tower'], ground: ['#5e6068', '#43454c', '#2a2c32'], grass: '#4a5a4a',
+    plants: [['rubble', 2.2], ['rock', 1.6], ['trash', 1.8], ['pipe', 1.4], ['algae', 1.2], ['shellbed', 1]],
+    fish: [['shark', 2.2], ['tarpon', 1.6], ['sawfish', 1.6], ['grouper', 1.4], ['dolphin', 1], ['bonnet', 1.4]],
+    land: [['ranger', 2], ['poacher', 2]],
+    structures: [['seawall', 3], ['sign', 0.6]],
+    town: true, kaiju: true, music: 1.2,
   },
 ];
 const Biome = {
@@ -2827,7 +2843,7 @@ const World = {
     ctx.globalAlpha = 1;
   },
   drawParallax(ctx, cam, day) {
-    const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day);
+    const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
     // furthest ridge: bare hills, no trees, barely separated from the sky
@@ -2875,6 +2891,24 @@ const World = {
           if (kindName === 'tent') { ctx.beginPath(); ctx.moveTo(sx - bw / 2, hy); ctx.lineTo(sx, hy - bh); ctx.lineTo(sx + bw / 2, hy); ctx.closePath(); ctx.fill(); }
           else if (kindName === 'island' || kindName === 'hammock') { ctx.beginPath(); ctx.moveTo(sx - bw / 2, hy + 2); for (let q = 0; q <= 8; q++) { const u = q / 8; ctx.lineTo(sx - bw / 2 + u * bw, hy - bh * Math.sin(u * Math.PI) * (0.7 + ihash(k * 5 + q, L.seed) * 0.5)); } ctx.lineTo(sx + bw / 2, hy + 2); ctx.closePath(); ctx.fill(); }
           else { ctx.fillRect(Math.round(sx - bw / 2), Math.round(hy - bh), Math.round(bw), Math.round(bh + 2)); if (kindName === 'shack') { ctx.fillRect(Math.round(sx - bw * 0.6), Math.round(hy - bh - 4), Math.round(bw * 1.2), 5); } }
+          continue;
+        }
+        if (kindName === 'tower') {
+          const bw = 16 + ihash(k, L.seed + 2) * 22, bh = th * (0.9 + ihash(k, L.seed + 4) * 1.5);
+          ctx.fillRect(Math.round(sx - bw / 2), Math.round(hy - bh), Math.round(bw), Math.round(bh + 2));
+          // a lit crown strip and a mast
+          ctx.fillStyle = mixColor(L.col, '#ffffff', 0.16);
+          ctx.fillRect(Math.round(sx - bw / 2), Math.round(hy - bh), Math.round(bw), 1);
+          if (ihash(k, L.seed + 6) < 0.4) { ctx.fillRect(Math.round(sx - 1), Math.round(hy - bh - 9), 2, 9); ctx.fillStyle = Math.sin(t * 3 + k) > 0 ? '#ff5040' : '#5a2018'; ctx.fillRect(Math.round(sx - 1), Math.round(hy - bh - 10), 2, 2); }
+          // windows: brighter and denser after dark
+          const lit = mixColor(L.col, '#ffe6a0', 0.35 + night * 0.5);
+          const cols2 = Math.max(1, Math.floor(bw / 5)), rows2 = Math.max(1, Math.floor(bh / 6));
+          for (let cxi = 0; cxi < cols2; cxi++) for (let ryi = 0; ryi < rows2; ryi++) {
+            if (ihash(k * 131 + cxi * 17 + ryi, L.seed + 8) > 0.34 + night * 0.22) continue;
+            ctx.fillStyle = lit;
+            ctx.fillRect(Math.round(sx - bw / 2 + 2 + cxi * 5), Math.round(hy - bh + 4 + ryi * 6), 2, 3);
+          }
+          ctx.fillStyle = L.col;
           continue;
         }
         if (kindName === 'pipe') { ctx.fillRect(Math.round(sx - 14), Math.round(hy - 26), 28, 12); ctx.fillRect(Math.round(sx - 3), Math.round(hy - 16), 6, 18); continue; }
@@ -3869,6 +3903,9 @@ function computeLook(player) {
   if (player.evo.phantom) { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }
   if (player.evo.abyssal) { L.glow = '#40f0c8'; L.spots = '#80fff0'; }
   for (const id of player.traits) { const t = TRAIT_BY_ID[id]; if (t && t.look) t.look(L); }
+  // the morph picked in the loadout is cosmetic and applied last
+  const hide = typeof HIDE_BY_ID !== 'undefined' && HIDE_BY_ID[player.hide];
+  if (hide && hide.apply) hide.apply(L);
   return L;
 }
 // size tiers (croc size units). Reaching a new tier triggers a shed.
@@ -4001,13 +4038,24 @@ const Genome = {
   },
   // how far down each lineage the player has gone
   depth(P, lin) { let d = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin === lin && !g.hybrid) d = Math.max(d, g.ring); } return d; },
-  // gene points from a meal: bigger and rarer prey is worth more
-  pointsFor(e) {
-    let p = Math.max(1, Math.round(Math.pow(Math.max(1, e.mass), 0.52) * 0.5));
-    if (e.threat) p *= 2;
-    if (e.isBoss) p *= 8;
-    if (e.human) p = Math.round(p * 1.5);
-    return Math.min(p, 90);
+  // Gene points from a meal. Deliberately scarce: a run should fund maybe two
+  // lineages, not the whole tree. Minnows feed you, they do not evolve you —
+  // only prey that is a real share of your own mass, a threat, a person or a
+  // boss counts, and eating a species for the first time pays a discovery bonus.
+  pointsFor(e, P) {
+    const mine = Math.max(1, P ? P.mass : 1), rel = e.mass / mine;
+    let p = 0;
+    if (e.isBoss) p = 10;
+    else if (e.threat) p = rel >= 0.16 ? 3 : 1;
+    else if (e.human) p = 2;
+    else if (rel >= 0.22) p = rel >= 0.6 ? 2 : 1;
+    // first of a kind this run pays a discovery bonus, but only for prey worth
+    // studying: a new species of minnow teaches you nothing
+    if (P && e.spec && e.spec.id && e.mass >= 10) {
+      P.seen = P.seen || new Set();
+      if (!P.seen.has(e.spec.id)) { P.seen.add(e.spec.id); p += 1; }
+    }
+    return p;
   },
 };
 // playstyle affinity: what you do decides which lineages come cheap
@@ -4025,6 +4073,86 @@ const Affinity = {
   },
   onHurtTaken(P, dmg) { this.add(P, 'tank', clamp(dmg * 0.05, 0, 1.5)); },
   onEat(P, e) { this.add(P, 'glut', clamp(e.mass * 0.02, 0.1, 2)); },
+};
+
+/* ===== src/stages.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// Stage select and run loadout. A run no longer always begins in the pipe:
+// once you have reached a stretch of the swamp you can drop straight into it,
+// bigger and against a harder table. The last stage is the city.
+// ---------------------------------------------------------------------------
+const STAGES = [
+  { id: 'outfall', name: 'THE OUTFALL', sub: 'WHERE THE PIPE SPITS YOU OUT', x: 320, size: 1.0, diff: 0, intro: true },
+  { id: 'mangrove', name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
+  { id: 'camp', name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
+  { id: 'cypress', name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
+  { id: 'prairie', name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
+  { id: 'river', name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
+  { id: 'campground', name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
+  { id: 'bay', name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
+  { id: 'seawall', name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+];
+const STAGE_BY_ID = {};
+for (const st of STAGES) STAGE_BY_ID[st.id] = st;
+
+// Prime mutation: one lineage gene, free, chosen before the run starts.
+const PRIMES = [
+  { id: 'none', name: 'UNSPLICED', desc: 'NO PRIME. ONE EXTRA GENE POINT TO SPEND HOW YOU LIKE.', color: '#9ad8c0' },
+  { id: 'ripper', name: 'RIPPER PRIME', desc: 'START WITH THE FIRST RIPPER GENE. TEETH FIRST, QUESTIONS NEVER.', color: null },
+  { id: 'bulwark', name: 'BULWARK PRIME', desc: 'START WITH THE FIRST BULWARK GENE. HARDER TO KILL THAN TO FEED.', color: null },
+  { id: 'phantom', name: 'PHANTOM PRIME', desc: 'START WITH THE FIRST PHANTOM GENE. NOTHING SEES YOU COMING.', color: null },
+  { id: 'abyssal', name: 'ABYSSAL PRIME', desc: 'START WITH THE FIRST ABYSSAL GENE. THE DEEP IS YOURS.', color: null },
+  { id: 'colossus', name: 'COLOSSUS PRIME', desc: 'START WITH THE FIRST COLOSSUS GENE. MASS IS A WEAPON.', color: null },
+  { id: 'savage', name: 'SAVAGE PRIME', desc: 'START WITH THE FIRST SAVAGE GENE. SPEED AND APPETITE.', color: null },
+];
+
+// Cosmetic morphs. Purely a skin: they change the hide, never the numbers.
+const HIDES = [
+  { id: 'wild', name: 'WILD TYPE', desc: 'THE HIDE THEY GREW YOU WITH.', need: null },
+  { id: 'leucistic', name: 'LEUCISTIC', desc: 'PALE, PINK-EYED, IMPOSSIBLE TO HIDE.', need: { runs: 3 }, apply: L => { L.back = '#e8e4d4'; L.mid = '#d8d2c0'; L.belly = '#f4f0e4'; L.dark = '#b8b0a0'; L.eye = '#e06a6a'; } },
+  { id: 'melanistic', name: 'MELANISTIC', desc: 'BLACK ON BLACK. A SHADOW WITH TEETH.', need: { runs: 6 }, apply: L => { L.back = '#22262a'; L.mid = '#2e343a'; L.belly = '#4a5058'; L.dark = '#12161a'; L.eye = '#e0a020'; } },
+  { id: 'sulphur', name: 'SULPHUR', desc: 'THE LAB DYE NEVER WASHED OUT.', need: { tier: 4 }, apply: L => { L.back = '#7a7a20'; L.mid = '#a8a830'; L.belly = '#e0e070'; L.dark = '#4a4a12'; L.eye = '#40f0c8'; } },
+  { id: 'bloodline', name: 'BLOODLINE', desc: 'THE RED ONES WERE NEVER RELEASED.', need: { kills: 250 }, apply: L => { L.back = '#6a1c1c'; L.mid = '#8a2a28'; L.belly = '#c07a68'; L.dark = '#3a0e0e'; L.eye = '#ffd040'; } },
+  { id: 'abyss', name: 'ABYSSAL', desc: 'GREW UP WHERE THE LIGHT DOES NOT REACH.', need: { tier: 7 }, apply: L => { L.back = '#16303c'; L.mid = '#1e4454'; L.belly = '#3a7a86'; L.dark = '#0a1a22'; L.eye = '#80fff0'; L.glow = '#40f0c8'; } },
+];
+const HIDE_BY_ID = {};
+for (const h of HIDES) HIDE_BY_ID[h.id] = h;
+
+const Stages = {
+  // what the save has to show before a stage or morph opens up
+  met(need) {
+    if (!need) return true;
+    const s = G.save || {};
+    if (need.reach !== undefined && (s.reach || 0) < need.reach) return false;
+    if (need.tier !== undefined && (s.bestTier || 0) < need.tier) return false;
+    if (need.runs !== undefined && (s.runs || 0) < need.runs) return false;
+    if (need.kills !== undefined && (s.kills || 0) < need.kills) return false;
+    return true;
+  },
+  unlocked(st) { return this.met(st.need); },
+  // one line telling the player what is still missing
+  hint(need) {
+    if (!need) return '';
+    if (need.reach !== undefined) {
+      const b = Biome.at(need.reach);
+      return 'REACH ' + (b ? b.name : Math.round(need.reach) + 'M');
+    }
+    if (need.tier !== undefined) return 'GROW TO ' + (TIERS[need.tier] ? TIERS[need.tier].name : 'TIER ' + need.tier);
+    if (need.runs !== undefined) return 'FINISH ' + need.runs + ' RUNS';
+    if (need.kills !== undefined) return 'TAKE ' + need.kills + ' KILLS';
+    return '';
+  },
+  // remember how far this run got, so later stages open for the next one
+  noteProgress(P) {
+    const s = G.save;
+    s.reach = Math.max(s.reach || 0, Math.round(P.x));
+    s.bestTier = Math.max(s.bestTier || 0, P.tier);
+  },
+  primeGene(id) {
+    if (id === 'none' || !id) return null;
+    return GENES.find(g => g.lin === id && g.ring === 1 && !g.hybrid) || null;
+  },
 };
 
 /* ===== src/entities.js ===== */
@@ -5326,8 +5454,46 @@ class Structure extends Entity {
       case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16 * this.ss; this.deckY = -58; break; }
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
       case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6 * this.ss; break; }
+      case 'seawall': {
+        const w2 = this.w, dmg = 1 - clamp(this.hp / 260, 0, 1);
+        const face = '#6b6d74', faceL = '#8a8c92', faceD = '#43454c', cap = '#7d8088';
+        px(-w2 / 2, -30, w2, 32, face);
+        px(-w2 / 2, -30, w2, 2, faceL);
+        px(-w2 / 2, -2, w2, 3, faceD);
+        // panel joints and staining down the face
+        for (let i = -w2 / 2 + 10; i < w2 / 2; i += 20) { px(i, -30, 1, 32, faceD); px(i + 1, -30, 1, 12, faceL); }
+        for (let i = 0; i < 8; i++) { const sxx = -w2 / 2 + ihash(i, 51) * w2; px(sxx, -26, 1, 6 + ihash(i, 52) * 16, mixColor(face, '#2a3a30', 0.4)); }
+        // cracks appear as you work on it
+        if (dmg > 0.15) for (let i = 0; i < Math.round(dmg * 12); i++) { const cx2 = -w2 / 2 + ihash(i, 61) * w2, cy2 = -28 + ihash(i, 62) * 22; px(cx2, cy2, 1, 3 + ihash(i, 63) * 7, '#2a2c30'); px(cx2 + 1, cy2 + 2, 2, 1, '#2a2c30'); }
+        if (dmg > 0.5) { px(-w2 / 2 + w2 * 0.3, -30, w2 * 0.18, 6, 'rgba(0,0,0,0.55)'); }
+        // capping stone and railing
+        px(-w2 / 2 - 2, -34, w2 + 4, 4, cap);
+        px(-w2 / 2 - 2, -34, w2 + 4, 1, faceL);
+        for (let i = -w2 / 2; i <= w2 / 2; i += 9) px(i, -44, 1, 10, '#3f444a');
+        px(-w2 / 2, -45, w2, 2, '#4a5058');
+        px(-w2 / 2, -40, w2, 1, '#4a5058');
+        // harbour lamps looking out over the water
+        for (const lp of this.lamps) {
+          px(lp.ox - 1, -66, 2, 22, '#3a4046');
+          px(lp.ox - 4, -70, 8, 4, '#2e3338');
+          if (lp.on) {
+            px(lp.ox - 3, -68, 6, 2, '#ffe6a0');
+            ctx.globalCompositeOperation = 'lighter';
+            const g2 = ctx.createRadialGradient(lp.ox, -64, 2, lp.ox, -64, 46);
+            g2.addColorStop(0, 'rgba(255,230,160,0.26)'); g2.addColorStop(1, 'rgba(255,230,160,0)');
+            ctx.fillStyle = g2; ctx.fillRect(lp.ox - 46, -66, 92, 92);
+            ctx.globalCompositeOperation = 'source-over';
+          }
+        }
+        break;
+      }
       case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8 * this.ss; break; }
       case 'console': { this.name = 'CONSOLE'; this.hp = 26; this.r = 9 * this.ss; break; }
+      case 'seawall': {
+        this.name = 'SEAWALL'; this.hp = 260; this.r = 40 * this.ss; this.w = 80 * this.ss;
+        this.lamps = [-26, 0, 26].map(o => ({ ox: o * this.ss, on: chance(0.8) }));
+        break;
+      }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
@@ -5500,6 +5666,39 @@ class Structure extends Entity {
         if (this.lightOn && Math.sin(this.t * 3) > 0) { ctx.fillStyle = '#40ff60'; ctx.fillRect(-2, -13, 4, 3); }
         break;
       }
+      case 'seawall': {
+        const w2 = this.w, dmg = 1 - clamp(this.hp / 260, 0, 1);
+        const face = '#6b6d74', faceL = '#8a8c92', faceD = '#43454c', cap = '#7d8088';
+        px(-w2 / 2, -30, w2, 32, face);
+        px(-w2 / 2, -30, w2, 2, faceL);
+        px(-w2 / 2, -2, w2, 3, faceD);
+        // panel joints and staining down the face
+        for (let i = -w2 / 2 + 10; i < w2 / 2; i += 20) { px(i, -30, 1, 32, faceD); px(i + 1, -30, 1, 12, faceL); }
+        for (let i = 0; i < 8; i++) { const sxx = -w2 / 2 + ihash(i, 51) * w2; px(sxx, -26, 1, 6 + ihash(i, 52) * 16, mixColor(face, '#2a3a30', 0.4)); }
+        // cracks appear as you work on it
+        if (dmg > 0.15) for (let i = 0; i < Math.round(dmg * 12); i++) { const cx2 = -w2 / 2 + ihash(i, 61) * w2, cy2 = -28 + ihash(i, 62) * 22; px(cx2, cy2, 1, 3 + ihash(i, 63) * 7, '#2a2c30'); px(cx2 + 1, cy2 + 2, 2, 1, '#2a2c30'); }
+        if (dmg > 0.5) { px(-w2 / 2 + w2 * 0.3, -30, w2 * 0.18, 6, 'rgba(0,0,0,0.55)'); }
+        // capping stone and railing
+        px(-w2 / 2 - 2, -34, w2 + 4, 4, cap);
+        px(-w2 / 2 - 2, -34, w2 + 4, 1, faceL);
+        for (let i = -w2 / 2; i <= w2 / 2; i += 9) px(i, -44, 1, 10, '#3f444a');
+        px(-w2 / 2, -45, w2, 2, '#4a5058');
+        px(-w2 / 2, -40, w2, 1, '#4a5058');
+        // harbour lamps looking out over the water
+        for (const lp of this.lamps) {
+          px(lp.ox - 1, -66, 2, 22, '#3a4046');
+          px(lp.ox - 4, -70, 8, 4, '#2e3338');
+          if (lp.on) {
+            px(lp.ox - 3, -68, 6, 2, '#ffe6a0');
+            ctx.globalCompositeOperation = 'lighter';
+            const g2 = ctx.createRadialGradient(lp.ox, -64, 2, lp.ox, -64, 46);
+            g2.addColorStop(0, 'rgba(255,230,160,0.26)'); g2.addColorStop(1, 'rgba(255,230,160,0)');
+            ctx.fillStyle = g2; ctx.fillRect(lp.ox - 46, -66, 92, 92);
+            ctx.globalCompositeOperation = 'source-over';
+          }
+        }
+        break;
+      }
       case 'sign': {
         // post, board, red header, then two 7px text rows that do not collide
         ctx.fillStyle = '#6b5033'; ctx.fillRect(-1, -12, 2, 12);
@@ -5645,6 +5844,7 @@ function trySpawnStructure(x, rng, difficulty) {
   const deepAt = dx => World.floorY(x + dx) > 60;
   const land = fy < -6, open = fy > 70;
   const table = B.structures.filter(([k]) => {
+    if (k === 'seawall') return land && (deepAt(110) || deepAt(-110));
     if (k === 'dock') return land && (deepAt(90) || deepAt(-90));
     if (k === 'shop') return land && (deepAt(120) || deepAt(-120));
     if (k === 'stilthouse') return open && fy < 320;
@@ -5686,6 +5886,7 @@ function trySpawnStructure(x, rng, difficulty) {
     case 'boatramp': G.add(new Structure(x, 'boatramp')); return true;
     case 'crabtrap': G.add(new Structure(x, 'crabtrap')); return true;
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;
+    case 'seawall': { const st = new Structure(x, 'seawall'); G.add(st); return true; }
     case 'sign': case 'pipe': G.add(new Structure(x, 'sign')); return true;
   }
   return false;
@@ -5699,6 +5900,7 @@ class Player {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
+    this.hide = 'wild'; this.primeGene = null;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
     this.st = {
       speed: 1, accel: 1, bite: 1, biteRadius: 1, hpMul: 1, armor: 0, bulletArmor: 0, hungerRate: 1, regen: 0, lifesteal: 0,
@@ -6054,7 +6256,7 @@ class Player {
     if (this.st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.lifesteal);
     if (this.st.scavenge && e.type === 'gib') this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.scavenge);
     if (this.st.manEater && e.human) G.addScore(Math.round(e.mass * 20));
-    const gp = Genome.pointsFor(e); this.genePoints += gp; this.newPoints += gp;
+    const gp = Genome.pointsFor(e, this); this.genePoints += gp; this.newPoints += gp;
     Affinity.onEat(this, e); Affinity.onKill(this, e, this.lastKillHow || 'bite'); this.lastKillHow = null;
     G.stats.eaten++; G.stats.genePoints = (G.stats.genePoints || 0) + gp;
     if (e.mass > G.stats.biggestMass) { G.stats.biggestMass = e.mass; G.stats.biggest = e.name; }
@@ -6560,6 +6762,7 @@ const UI = {
     const rows = touch
       ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
       : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['G', 'GENE TREE'], ['UP ON LAND', 'HOP'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
+    const _stageHint = 'PICK A STAGE AND A PRIME MUTATION BEFORE EACH RUN';
     const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
     const boxH = per * 11 + 10, boxY = H - 74 - boxH;
     this.panel(ctx, 20, boxY, pw2, boxH, 'rgba(6,14,14,0.68)', 'rgba(120,180,160,0.35)');
@@ -6569,6 +6772,7 @@ const UI = {
       Font.draw(ctx, r[1], rx + 96, ry, { color: '#d4e0d0' });
     });
 
+    Font.draw(ctx, _stageHint, W / 2, boxY - 10, { color: '#7fd8b8', align: 'center', outline: '#04140f' });
     Font.draw(ctx, 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.', W / 2, boxY + boxH + 8, { color: '#ffb060', align: 'center', outline: '#2a1200' });
 
     const s = G.save;
@@ -6576,6 +6780,93 @@ const UI = {
     Font.draw(ctx, 'BEST ' + fmt(s.best) + '     LONGEST ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 20, { color: '#90a898', align: 'center', shadow: true });
     Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
     if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
+  },
+  // ---------- stage select ----------
+  stageRows() {
+    const W = G.W, rowH = 26, top = 60, x = 34, w = W - 68;
+    return STAGES.map((st, i) => ({ x, y: top + i * rowH, w, h: rowH - 4, st, i }));
+  },
+  drawStages(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    ctx.fillStyle = 'rgba(3,9,11,0.9)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'CHOOSE YOUR WATER', W / 2, 20, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
+    Font.draw(ctx, 'FARTHER IN MEANS BIGGER, MEANER AND WORTH MORE', W / 2, 42, { color: '#7fd8b8', align: 'center' });
+    const rows = this.stageRows(), shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
+    for (const r of rows) {
+      const st = r.st, open = Stages.unlocked(st), sel = r.i === G.stageSel;
+      const ox = sel ? shake : 0;
+      const col = st.kaiju ? '#ff7a40' : open ? '#8fe8c8' : '#5a6a66';
+      this.panel(ctx, r.x + ox, r.y, r.w, r.h, sel ? (open ? 'rgba(20,48,42,0.95)' : 'rgba(44,22,18,0.9)') : 'rgba(8,16,18,0.7)', sel ? col : 'rgba(90,130,120,0.35)');
+      if (sel) { ctx.fillStyle = col; ctx.fillRect(r.x + ox, r.y, 2, r.h); }
+      Font.draw(ctx, open ? st.name : '????????', r.x + ox + 10, r.y + 5, { color: open ? col : '#63736e' });
+      if (open) {
+        Font.draw(ctx, st.sub, r.x + ox + 10, r.y + 14, { color: '#8aa89c' });
+        const ft = (st.size * 3.2).toFixed(1);
+        Font.draw(ctx, 'START ' + ft + ' FT', r.x + ox + r.w - 84, r.y + 5, { color: '#d4e0d0' });
+        const skulls = Math.min(5, Math.round(st.diff + 1));
+        for (let k = 0; k < 5; k++) { ctx.fillStyle = k < skulls ? (st.kaiju ? '#ff7a40' : '#e0a040') : '#2c3a36'; ctx.fillRect(r.x + ox + r.w - 84 + k * 7, r.y + 14, 5, 5); }
+      } else {
+        Font.draw(ctx, 'LOCKED  -  ' + Stages.hint(st.need), r.x + ox + 10, r.y + 14, { color: '#8a6a5a' });
+      }
+    }
+    const cur = STAGES[G.stageSel];
+    if (cur && !Stages.unlocked(cur) && G.menuShake > 0) Font.draw(ctx, 'NOT YET', W / 2, H - 32, { color: '#ff8060', align: 'center', scale: 2, outline: '#2a0c04' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A STAGE TO PICK IT' : 'UP / DOWN THEN ENTER      ESC: BACK', W / 2, H - 13, { color: '#7f9a90', align: 'center' });
+  },
+  // ---------- loadout ----------
+  loadoutCells() {
+    const W = G.W, out = [];
+    const pw = Math.floor((W - 40) / PRIMES.length), py = 62;
+    PRIMES.forEach((p2, i) => out.push({ row: 0, i, x: 20 + i * pw, y: py, w: pw - 3, h: 34, item: p2 }));
+    const hw = Math.floor((W - 40) / HIDES.length), hy = 152;
+    HIDES.forEach((h, i) => out.push({ row: 1, i, x: 20 + i * hw, y: hy, w: hw - 3, h: 34, item: h }));
+    return out;
+  },
+  loadoutGoRect() { return { x: G.W / 2 - 60, y: G.H - 44, w: 120, h: 22 }; },
+  drawLoadout(ctx) {
+    const W = G.W, H = G.H, st = G.pendingStage || STAGES[0];
+    ctx.fillStyle = 'rgba(3,9,11,0.92)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'SPLICE BEFORE YOU SWIM', W / 2, 14, { color: '#ffffff', align: 'center', scale: 2, outline: '#0a2018' });
+    Font.draw(ctx, 'DEPLOYING TO ' + st.name, W / 2, 34, { color: st.kaiju ? '#ff7a40' : '#7fd8b8', align: 'center' });
+    Font.draw(ctx, 'PRIME MUTATION', 20, 52, { color: '#8fe8c8' });
+    Font.draw(ctx, 'HIDE', 20, 142, { color: '#8fe8c8' });
+    const cells = this.loadoutCells();
+    for (const c of cells) {
+      const it = c.item, isPrime = c.row === 0;
+      const lin = isPrime && it.id !== 'none' ? LINEAGES[it.id] : null;
+      const col = lin ? lin.color : (it.color || '#9ad8c0');
+      const open = isPrime || Stages.met(it.need);
+      const sel = (isPrime ? G.loadout.prime === it.id : G.loadout.hide === it.id);
+      const cur = c.row === (G.loadRow || 0) && c.i === G.loadCol;
+      this.panel(ctx, c.x, c.y, c.w, c.h, sel ? 'rgba(18,44,40,0.95)' : 'rgba(8,16,18,0.7)', cur ? '#ffffff' : sel ? col : 'rgba(90,130,120,0.3)');
+      if (!open) { ctx.fillStyle = 'rgba(6,10,12,0.6)'; ctx.fillRect(c.x, c.y, c.w, c.h); }
+      const label = open ? it.name : 'LOCKED';
+      Font.draw(ctx, label, c.x + c.w / 2, c.y + 6, { color: open ? (sel ? col : '#c8d8d0') : '#6a5a52', align: 'center' });
+      if (isPrime && lin) { ctx.fillStyle = col; ctx.fillRect(c.x + c.w / 2 - 8, c.y + 18, 16, 4); }
+      else if (!isPrime && open && it.apply) {
+        // a swatch of the morph so the choice is visible, not just a name
+        const L = { back: '#4a6a3a', mid: '#5a7a44', belly: '#8a9a6a', dark: '#2a3a20', eye: '#e0c040' };
+        it.apply(L);
+        ctx.fillStyle = L.back; ctx.fillRect(c.x + c.w / 2 - 12, c.y + 17, 8, 7);
+        ctx.fillStyle = L.mid; ctx.fillRect(c.x + c.w / 2 - 4, c.y + 17, 8, 7);
+        ctx.fillStyle = L.belly; ctx.fillRect(c.x + c.w / 2 + 4, c.y + 17, 8, 7);
+      } else if (!isPrime && open) { ctx.fillStyle = '#5a7a44'; ctx.fillRect(c.x + c.w / 2 - 12, c.y + 17, 24, 7); }
+      if (!open) Font.draw(ctx, Stages.hint(it.need), c.x + c.w / 2, c.y + 19, { color: '#8a6a5a', align: 'center' });
+    }
+    // detail line for whatever the cursor is on
+    const curCell = cells.find(c => c.row === (G.loadRow || 0) && c.i === G.loadCol);
+    if (curCell) {
+      this.panel(ctx, 20, 200, W - 40, 30, 'rgba(6,14,16,0.9)', 'rgba(120,180,160,0.35)');
+      Font.draw(ctx, curCell.item.name, 28, 206, { color: '#ffffff' });
+      Font.drawWrapped(ctx, curCell.item.desc, 28, 216, W - 56, { color: '#c8d8d0', lineHeight: 9 });
+    }
+    const go = this.loadoutGoRect();
+    const pulse = 0.6 + 0.4 * Math.sin(G.menuT * 4);
+    this.panel(ctx, go.x, go.y, go.w, go.h, 'rgba(20,52,44,0.95)', '#8fe8c8');
+    ctx.globalAlpha = pulse;
+    Font.draw(ctx, 'DIVE IN', go.x + go.w / 2, go.y + 4, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04140f' });
+    ctx.globalAlpha = 1;
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK, THEN DIVE IN' : 'ARROWS PICK      ENTER: DIVE IN      ESC: BACK', W / 2, H - 13, { color: '#7f9a90', align: 'center' });
   },
   cardRects(n) {
     const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;
@@ -6936,7 +7227,7 @@ const G = {
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
   player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
-  engineNear: 0, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
+  engineNear: 0, menuT: 0, menuShake: 0, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
@@ -6974,14 +7265,15 @@ const G = {
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
   loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
-  storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
-  startRun(demo = false) {
+  storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
+  startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
     this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
+    this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
     Water.init(0); Mud.init(0); Weather.rain = 0; Weather.target = 0; Weather.timer = rand(40, 120);
@@ -6996,7 +7288,38 @@ const G = {
       World.ensure(DX, 1600); this.seedNursery(DX, 1); this.seedNursery(DX, -1);
       for (let i = 0; i < 20; i++) { this.director.spawnT = 0; this.populate(1.2); }
     }
-    if (!demo) { this.runs++; this.save.runs++; this.storeSave(); this.beginIntro(); }
+    if (!demo) {
+      this.runs++; this.save.runs++;
+      const P = this.player;
+      // the loadout is cosmetic plus one free gene; the stage sets where and how big
+      if (load) {
+        P.hide = load.hide || 'wild';
+        const pg = Stages.primeGene(load.prime);
+        if (pg) { P.genes.push(pg.id); P.primeGene = pg.id; }
+        else P.genePoints += 1;                       // unspliced trades the gene for a point
+        P.rebuildLook();
+      }
+      this.stage = stage || STAGES[0];
+      this.storeSave();
+      if (this.stage.intro) this.beginIntro();
+      else this.beginAtStage(this.stage);
+    }
+  },
+  // drop straight into a stretch of the swamp, already grown, already hunted
+  beginAtStage(st) {
+    const P = this.player, x = st.x;
+    P.size = st.size; P.sizeTarget = st.size; P.mass = sizeToMass(st.size); P.tier = tierFor(st.size);
+    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90;
+    P.x = x; P.y = Math.max(24, World.floorY(x) * 0.4); P.chain.reset(P.x, P.y, 0);
+    this.cam.x = x; this.cam.y = P.y;
+    World.ensure(x, 2200); Water.init(x); Mud.init(x);
+    this.startDiff = (st.diff || 0) * 0.35;   // position already carries most of it out there
+    this.state = 'play'; this.intro = null;
+    this.seedNursery(x, 1); this.seedNursery(x, -1);
+    for (let i = 0; i < 16; i++) { this.director.spawnT = 0; this.populate(1 + (st.diff || 0)); }
+    this.banner = st.kaiju
+      ? { text: 'KAIJU PROTOCOL', sub: 'THE CITY IS AWAKE AND IT IS AFRAID OF YOU', t: 5, max: 5, color: '#ff6a40' }
+      : { text: st.name, sub: st.sub, t: 4, max: 4, color: '#8ce8a0' };
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -7084,6 +7407,20 @@ const G = {
       else if (SPECIES[kind]) { const d = SPECIES[kind], band = d.band || [10, 200]; Spawn.school(x, d.nearFloor ? fy - 30 : clamp(rand(band[0], band[1]), 10, fy - 15), kind); }
     }
   },
+  openStages() {
+    this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
+    if (this.stageSel === undefined) {
+      // land on the furthest stage the save has opened, that is where you left off
+      let best = 0; STAGES.forEach((st, i) => { if (Stages.unlocked(st)) best = i; });
+      this.stageSel = best;
+    }
+    SFX.ui();
+  },
+  openLoadout(st) {
+    this.pendingStage = st; this.state = 'loadout'; this.menuT = 0;
+    this.loadRow = 0; this.loadCol = Math.max(0, PRIMES.findIndex(p => p.id === this.loadout.prime));
+    SFX.ui();
+  },
   openGenes() { this.state = 'genes'; this.geneUiT = 0; if (!this.geneSel) this.geneSel = 'core'; this.player.newPoints = 0; SFX.ui(); },
   add(e) { this.ents.push(e); return e; },
   panOf(x) { return clamp((x - this.cam.x) / 450, -1, 1); },
@@ -7094,7 +7431,7 @@ const G = {
   redFlash(a) { this.red = Math.max(this.red, a); },
   whiteFlash(a) { this.white = Math.max(this.white, a); },
   addScore(n) { this.score += Math.round(n); },
-  difficulty() { const P = this.player; return P.sheds + Math.abs(P.x) / 3500 + this.t / 300; },
+  difficulty() { const P = this.player; return (this.startDiff || 0) + P.sheds + Math.abs(P.x) / 3500 + this.t / 300; },
   dangerLevel() {
     const P = this.player; let d = 0;
     for (const e of this.ents) if (e.threat && !e.dead && Math.abs(e.x - P.x) < 500) d = Math.max(d, e.isBoss ? 1 : 0.6);
@@ -7293,8 +7630,51 @@ const G = {
         this.titleT += raw; this.updateWorld(dt, true);
         if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; }
         else if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
-        else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.startRun(false); }
+        else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.openStages(); }
         break;
+      case 'stages': {
+        this.menuT += raw; this.updateWorld(dt, true);
+        const list = STAGES;
+        if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
+        const rows = UI.stageRows();
+        if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }
+        if (Input.hit('ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
+        if (Input.hit('ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
+        const rowHit = Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
+          const st = list[this.stageSel];
+          if (Stages.unlocked(st)) { this.openLoadout(st); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+        }
+        if (this.menuShake > 0) this.menuShake -= raw;
+        break;
+      }
+      case 'loadout': {
+        this.menuT += raw; this.updateWorld(dt, true);
+        if (Input.hit('Escape')) { this.state = 'stages'; SFX.ui(); break; }
+        const cells = UI.loadoutCells();
+        if (Input.mouse.moved || Input.mouse.clicked) {
+          for (const c of cells) if (Input.mouse.x > c.x && Input.mouse.x < c.x + c.w && Input.mouse.y > c.y && Input.mouse.y < c.y + c.h) { this.loadRow = c.row; this.loadCol = c.i; }
+        }
+        const n0 = (this.loadRow || 0) === 0 ? PRIMES.length : HIDES.length;
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.loadCol = (this.loadCol + n0 - 1) % n0; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.loadCol = (this.loadCol + 1) % n0; SFX.ui(); }
+        if (Input.hit('ArrowUp', 'KeyW') || Input.hit('ArrowDown', 'KeyS')) {
+          // jump to the row's current pick rather than resetting it to the first cell
+          this.loadRow = (this.loadRow || 0) === 0 ? 1 : 0;
+          this.loadCol = this.loadRow === 0
+            ? Math.max(0, PRIMES.findIndex(x2 => x2.id === this.loadout.prime))
+            : Math.max(0, HIDES.findIndex(x2 => x2.id === this.loadout.hide));
+          SFX.ui();
+        }
+        // read the row after the arrows, and never select a locked morph
+        const row = this.loadRow || 0;
+        if (row === 0) this.loadout.prime = PRIMES[clamp(this.loadCol, 0, PRIMES.length - 1)].id;
+        else { const h = HIDES[clamp(this.loadCol, 0, HIDES.length - 1)]; if (Stages.met(h.need)) this.loadout.hide = h.id; }
+        const go = UI.loadoutGoRect();
+        const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) { SFX.ui(); this.startRun(false, this.pendingStage, this.loadout); }
+        break;
+      }
       case 'intro': {
         const e = this.intro;
         e.t += raw; e.prompt += raw; e.shake = Math.max(0, e.shake - raw * 3.5);
@@ -7544,6 +7924,8 @@ const G = {
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;
+      case 'stages': UI.drawStages(ctx); break;
+      case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;

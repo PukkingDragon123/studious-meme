@@ -113,6 +113,9 @@ function computeLook(player) {
   if (player.evo.phantom) { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }
   if (player.evo.abyssal) { L.glow = '#40f0c8'; L.spots = '#80fff0'; }
   for (const id of player.traits) { const t = TRAIT_BY_ID[id]; if (t && t.look) t.look(L); }
+  // the morph picked in the loadout is cosmetic and applied last
+  const hide = typeof HIDE_BY_ID !== 'undefined' && HIDE_BY_ID[player.hide];
+  if (hide && hide.apply) hide.apply(L);
   return L;
 }
 // size tiers (croc size units). Reaching a new tier triggers a shed.

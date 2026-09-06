@@ -101,7 +101,7 @@ const World = {
     ctx.globalAlpha = 1;
   },
   drawParallax(ctx, cam, day) {
-    const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day);
+    const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
     // furthest ridge: bare hills, no trees, barely separated from the sky
@@ -149,6 +149,24 @@ const World = {
           if (kindName === 'tent') { ctx.beginPath(); ctx.moveTo(sx - bw / 2, hy); ctx.lineTo(sx, hy - bh); ctx.lineTo(sx + bw / 2, hy); ctx.closePath(); ctx.fill(); }
           else if (kindName === 'island' || kindName === 'hammock') { ctx.beginPath(); ctx.moveTo(sx - bw / 2, hy + 2); for (let q = 0; q <= 8; q++) { const u = q / 8; ctx.lineTo(sx - bw / 2 + u * bw, hy - bh * Math.sin(u * Math.PI) * (0.7 + ihash(k * 5 + q, L.seed) * 0.5)); } ctx.lineTo(sx + bw / 2, hy + 2); ctx.closePath(); ctx.fill(); }
           else { ctx.fillRect(Math.round(sx - bw / 2), Math.round(hy - bh), Math.round(bw), Math.round(bh + 2)); if (kindName === 'shack') { ctx.fillRect(Math.round(sx - bw * 0.6), Math.round(hy - bh - 4), Math.round(bw * 1.2), 5); } }
+          continue;
+        }
+        if (kindName === 'tower') {
+          const bw = 16 + ihash(k, L.seed + 2) * 22, bh = th * (0.9 + ihash(k, L.seed + 4) * 1.5);
+          ctx.fillRect(Math.round(sx - bw / 2), Math.round(hy - bh), Math.round(bw), Math.round(bh + 2));
+          // a lit crown strip and a mast
+          ctx.fillStyle = mixColor(L.col, '#ffffff', 0.16);
+          ctx.fillRect(Math.round(sx - bw / 2), Math.round(hy - bh), Math.round(bw), 1);
+          if (ihash(k, L.seed + 6) < 0.4) { ctx.fillRect(Math.round(sx - 1), Math.round(hy - bh - 9), 2, 9); ctx.fillStyle = Math.sin(t * 3 + k) > 0 ? '#ff5040' : '#5a2018'; ctx.fillRect(Math.round(sx - 1), Math.round(hy - bh - 10), 2, 2); }
+          // windows: brighter and denser after dark
+          const lit = mixColor(L.col, '#ffe6a0', 0.35 + night * 0.5);
+          const cols2 = Math.max(1, Math.floor(bw / 5)), rows2 = Math.max(1, Math.floor(bh / 6));
+          for (let cxi = 0; cxi < cols2; cxi++) for (let ryi = 0; ryi < rows2; ryi++) {
+            if (ihash(k * 131 + cxi * 17 + ryi, L.seed + 8) > 0.34 + night * 0.22) continue;
+            ctx.fillStyle = lit;
+            ctx.fillRect(Math.round(sx - bw / 2 + 2 + cxi * 5), Math.round(hy - bh + 4 + ryi * 6), 2, 3);
+          }
+          ctx.fillStyle = L.col;
           continue;
         }
         if (kindName === 'pipe') { ctx.fillRect(Math.round(sx - 14), Math.round(hy - 26), 28, 12); ctx.fillRect(Math.round(sx - 3), Math.round(hy - 16), 6, 18); continue; }

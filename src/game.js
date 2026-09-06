@@ -103,7 +103,7 @@ const G = {
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
   player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
-  engineNear: 0, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
+  engineNear: 0, menuT: 0, menuShake: 0, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
@@ -141,14 +141,15 @@ const G = {
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
   loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0 }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
-  storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
-  startRun(demo = false) {
+  storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
+  startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
     this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
+    this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
     Water.init(0); Mud.init(0); Weather.rain = 0; Weather.target = 0; Weather.timer = rand(40, 120);
@@ -163,7 +164,38 @@ const G = {
       World.ensure(DX, 1600); this.seedNursery(DX, 1); this.seedNursery(DX, -1);
       for (let i = 0; i < 20; i++) { this.director.spawnT = 0; this.populate(1.2); }
     }
-    if (!demo) { this.runs++; this.save.runs++; this.storeSave(); this.beginIntro(); }
+    if (!demo) {
+      this.runs++; this.save.runs++;
+      const P = this.player;
+      // the loadout is cosmetic plus one free gene; the stage sets where and how big
+      if (load) {
+        P.hide = load.hide || 'wild';
+        const pg = Stages.primeGene(load.prime);
+        if (pg) { P.genes.push(pg.id); P.primeGene = pg.id; }
+        else P.genePoints += 1;                       // unspliced trades the gene for a point
+        P.rebuildLook();
+      }
+      this.stage = stage || STAGES[0];
+      this.storeSave();
+      if (this.stage.intro) this.beginIntro();
+      else this.beginAtStage(this.stage);
+    }
+  },
+  // drop straight into a stretch of the swamp, already grown, already hunted
+  beginAtStage(st) {
+    const P = this.player, x = st.x;
+    P.size = st.size; P.sizeTarget = st.size; P.mass = sizeToMass(st.size); P.tier = tierFor(st.size);
+    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90;
+    P.x = x; P.y = Math.max(24, World.floorY(x) * 0.4); P.chain.reset(P.x, P.y, 0);
+    this.cam.x = x; this.cam.y = P.y;
+    World.ensure(x, 2200); Water.init(x); Mud.init(x);
+    this.startDiff = (st.diff || 0) * 0.35;   // position already carries most of it out there
+    this.state = 'play'; this.intro = null;
+    this.seedNursery(x, 1); this.seedNursery(x, -1);
+    for (let i = 0; i < 16; i++) { this.director.spawnT = 0; this.populate(1 + (st.diff || 0)); }
+    this.banner = st.kaiju
+      ? { text: 'KAIJU PROTOCOL', sub: 'THE CITY IS AWAKE AND IT IS AFRAID OF YOU', t: 5, max: 5, color: '#ff6a40' }
+      : { text: st.name, sub: st.sub, t: 4, max: 4, color: '#8ce8a0' };
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -251,6 +283,20 @@ const G = {
       else if (SPECIES[kind]) { const d = SPECIES[kind], band = d.band || [10, 200]; Spawn.school(x, d.nearFloor ? fy - 30 : clamp(rand(band[0], band[1]), 10, fy - 15), kind); }
     }
   },
+  openStages() {
+    this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
+    if (this.stageSel === undefined) {
+      // land on the furthest stage the save has opened, that is where you left off
+      let best = 0; STAGES.forEach((st, i) => { if (Stages.unlocked(st)) best = i; });
+      this.stageSel = best;
+    }
+    SFX.ui();
+  },
+  openLoadout(st) {
+    this.pendingStage = st; this.state = 'loadout'; this.menuT = 0;
+    this.loadRow = 0; this.loadCol = Math.max(0, PRIMES.findIndex(p => p.id === this.loadout.prime));
+    SFX.ui();
+  },
   openGenes() { this.state = 'genes'; this.geneUiT = 0; if (!this.geneSel) this.geneSel = 'core'; this.player.newPoints = 0; SFX.ui(); },
   add(e) { this.ents.push(e); return e; },
   panOf(x) { return clamp((x - this.cam.x) / 450, -1, 1); },
@@ -261,7 +307,7 @@ const G = {
   redFlash(a) { this.red = Math.max(this.red, a); },
   whiteFlash(a) { this.white = Math.max(this.white, a); },
   addScore(n) { this.score += Math.round(n); },
-  difficulty() { const P = this.player; return P.sheds + Math.abs(P.x) / 3500 + this.t / 300; },
+  difficulty() { const P = this.player; return (this.startDiff || 0) + P.sheds + Math.abs(P.x) / 3500 + this.t / 300; },
   dangerLevel() {
     const P = this.player; let d = 0;
     for (const e of this.ents) if (e.threat && !e.dead && Math.abs(e.x - P.x) < 500) d = Math.max(d, e.isBoss ? 1 : 0.6);
@@ -460,8 +506,51 @@ const G = {
         this.titleT += raw; this.updateWorld(dt, true);
         if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; }
         else if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
-        else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.startRun(false); }
+        else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.openStages(); }
         break;
+      case 'stages': {
+        this.menuT += raw; this.updateWorld(dt, true);
+        const list = STAGES;
+        if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
+        const rows = UI.stageRows();
+        if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }
+        if (Input.hit('ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
+        if (Input.hit('ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
+        const rowHit = Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
+          const st = list[this.stageSel];
+          if (Stages.unlocked(st)) { this.openLoadout(st); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+        }
+        if (this.menuShake > 0) this.menuShake -= raw;
+        break;
+      }
+      case 'loadout': {
+        this.menuT += raw; this.updateWorld(dt, true);
+        if (Input.hit('Escape')) { this.state = 'stages'; SFX.ui(); break; }
+        const cells = UI.loadoutCells();
+        if (Input.mouse.moved || Input.mouse.clicked) {
+          for (const c of cells) if (Input.mouse.x > c.x && Input.mouse.x < c.x + c.w && Input.mouse.y > c.y && Input.mouse.y < c.y + c.h) { this.loadRow = c.row; this.loadCol = c.i; }
+        }
+        const n0 = (this.loadRow || 0) === 0 ? PRIMES.length : HIDES.length;
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.loadCol = (this.loadCol + n0 - 1) % n0; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.loadCol = (this.loadCol + 1) % n0; SFX.ui(); }
+        if (Input.hit('ArrowUp', 'KeyW') || Input.hit('ArrowDown', 'KeyS')) {
+          // jump to the row's current pick rather than resetting it to the first cell
+          this.loadRow = (this.loadRow || 0) === 0 ? 1 : 0;
+          this.loadCol = this.loadRow === 0
+            ? Math.max(0, PRIMES.findIndex(x2 => x2.id === this.loadout.prime))
+            : Math.max(0, HIDES.findIndex(x2 => x2.id === this.loadout.hide));
+          SFX.ui();
+        }
+        // read the row after the arrows, and never select a locked morph
+        const row = this.loadRow || 0;
+        if (row === 0) this.loadout.prime = PRIMES[clamp(this.loadCol, 0, PRIMES.length - 1)].id;
+        else { const h = HIDES[clamp(this.loadCol, 0, HIDES.length - 1)]; if (Stages.met(h.need)) this.loadout.hide = h.id; }
+        const go = UI.loadoutGoRect();
+        const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) { SFX.ui(); this.startRun(false, this.pendingStage, this.loadout); }
+        break;
+      }
       case 'intro': {
         const e = this.intro;
         e.t += raw; e.prompt += raw; e.shake = Math.max(0, e.shake - raw * 3.5);
@@ -711,6 +800,8 @@ const G = {
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;
+      case 'stages': UI.drawStages(ctx); break;
+      case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;
