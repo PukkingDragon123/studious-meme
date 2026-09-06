@@ -126,6 +126,9 @@ class Player {
       const fy0 = World.floorY(this.x);
       if (this.y > fy0 - 9 * this.vis && sp > 40 && chance(dt * 10)) G.fx.silt(this.x, fy0, 3, 25 + sp * 0.2);
       Foliage.disturb(this.x, this.y, this.vx, 9 * this.vis);
+      // the tail drags through the bed too
+      const tn = this.chain.nodes[7];
+      if (tn) Foliage.disturb(tn.x, tn.y, this.vx * 0.7, 7 * this.vis);
     }
     // dash
     if (this.dashT > 0) {

@@ -124,8 +124,12 @@ const Foliage = {
       const k = FOLIAGE_KIND[d.type]; if (!k) continue;
       const top = k.top(d), base = d.y;
       if (y < Math.min(top, base) - 6 || y > Math.max(top, base) + 6) continue;
-      const push = clamp(vx * 0.05, -6, 6) + (x < d.x ? 1.2 : -1.2);
-      d.bv = (d.bv || 0) + push * 3;
+      // fall off with distance so a passing body parts the bed rather than
+      // snapping every stem in the window by the same amount
+      const near = clamp(1 - Math.abs(d.x - x) / (r + 20), 0, 1);
+      const push = clamp(vx * 0.075, -9, 9) + (x < d.x ? 1.8 : -1.8);
+      d.bv = (d.bv || 0) + push * 5.5 * (0.35 + near * 0.65);
+      if (k.water && Math.abs(vx) > 90 && chance(0.12)) G.fx.bubbles(d.x, y, 1, 4);
       if (k.tree && Math.abs(vx) > 60) { d.shake = 1; if (chance(0.5)) G.fx.leaf(d.x + rand(-14, 14), top + rand(0, 20), k.leaf || '#4f7a2a'); }
       if (k.water && chance(0.3)) G.fx.bubbles(d.x, y, 1, 3);
     }
@@ -135,7 +139,8 @@ const Foliage = {
     for (const d of D) {
       if (d.bv === undefined && !d.shake) continue;
       d.bend = (d.bend || 0); d.bv = (d.bv || 0);
-      d.bv += (-d.bend * 22 - d.bv * 3.2) * dt; d.bend += d.bv * dt;
+      d.bv += (-d.bend * 15 - d.bv * 2.4) * dt; d.bend += d.bv * dt;
+      if (d.bend > 1.6) d.bend = 1.6; else if (d.bend < -1.6) d.bend = -1.6;
       if (d.shake) { d.shake = Math.max(0, d.shake - dt * 1.6); }
       if (Math.abs(d.bend) < 0.02 && Math.abs(d.bv) < 0.02 && !d.shake) { d.bend = 0; d.bv = 0; }
     }

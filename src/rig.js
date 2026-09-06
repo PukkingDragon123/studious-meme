@@ -277,17 +277,44 @@ R.inside = (o, x, y) => { x = Math.round(x); y = Math.round(y); if (x < 0 || y <
 function buildBird(s) {
   const L = s.len, H = Math.max(6, Math.round(L * 0.66)), OL = R.ol(s.body), parts = {};
   const hs = Math.max(3, Math.round(L * 0.23)), neckLen = Math.round(L * (0.06 + (s.neck || 0.3) * 0.5)), legLen = Math.max(3, Math.round(L * (0.1 + (s.legs || 0.3) * 0.5)));
-  { // body: plump oval with tail feathers
-    const o = R.mk(L + 12, H + 6), cx = 8 + L / 2, cy = 3 + H / 2;
-    for (let k = -1; k <= 1; k++) { R.px(o, 2, cy + k * Math.max(1, H * 0.16) - 1, s.wing || R.lo(s.body), L * 0.3, Math.max(1, H * 0.14)); }
-    R.blob(o, cx, cy, L / 2, H / 2, s.body, { tex: 'feather', seed: L * 7 + 2, pat: (i, j, u, v) => (v > 0.15 && u * u + v * v < 0.98 ? (v > 0.55 ? R.lo(s.belly || R.hi(s.body)) : (s.belly || R.hi(s.body))) : null) });
+  { // body: deep chest at the front tapering back to the tail, back raised over
+    // the shoulder. A plain ellipse read as a soup bowl.
+    const tl = Math.max(3, Math.round(L * 0.32));
+    const x0 = tl + 4, o = R.mk(L + tl + 10, H + 12), cx = x0 + L / 2, cy = 6 + H / 2;
+    const back = s.body, belly = s.belly || R.hi(s.body), wingC = s.wing || R.lo(s.body);
+    const lit = R.hi(back), bdk = R.lo(belly);
+    const prof = u => (u < 0.2 ? 0.34 + (u / 0.2) * 0.4
+      : u < 0.58 ? 0.74 + ((u - 0.2) / 0.38) * 0.26
+      : 0.08 + Math.sqrt(Math.max(0, 1 - Math.pow((u - 0.58) / 0.46, 2))) * 0.92);
+    const rise = u => -H * 0.08 * Math.sin(Math.min(1, u * 1.2) * Math.PI);
+    for (let i = 0; i < L; i++) {
+      const u = (i + 0.5) / L, hh = Math.max(1, H / 2 * prof(u)), mid = cy + rise(u);
+      const top = Math.round(mid - hh), bot = Math.round(mid + hh);
+      for (let j = top; j <= bot; j++) {
+        const f = (j - mid) / hh, bay = BAYER4[(j & 3) * 4 + (i & 3)] * 0.0625 - 0.5;
+        let col = f < -0.18 + bay * 0.24 ? back : f < 0.44 + bay * 0.26 ? mixColor(back, belly, 0.5) : belly;
+        if (f < -0.76) col = lit;
+        if (f > 0.82) col = bdk;
+        if (((j + (i >> 1)) % 3) === 0) col = shade(col, 0.94);
+        R.px(o, x0 + i, j, col);
+      }
+    }
+    // tail: a fan of feathers off the back end, not a stub of the same blob
+    for (let k = -2; k <= 2; k++) {
+      const len = tl * (1 - Math.abs(k) * 0.15), yy = cy + rise(0.03) + k * Math.max(1, H * 0.07);
+      for (let i = 0; i < len; i++) {
+        const th = Math.max(1, H * 0.1 * (1 - (i / len) * 0.45));
+        R.px(o, x0 - 1 - i, yy - th / 2, (k & 1) ? shade(wingC, 0.82) : wingC, 1, th);
+      }
+    }
     R.outline(o, OL);
     parts.body = R.part(o, cx, cy);
   }
   { // head: round with a big eye and a beak
     const bl = Math.round(hs * (s.beak === 'spear' || s.beak === 'spoon' ? 1.7 : s.beak === 'pouch' ? 1.5 : s.beak === 'curve' ? 1.4 : 0.8));
     const o = R.mk(hs * 2 + bl + 6, hs * 2 + 8), hx = 3 + hs, hy = 4 + hs, hc = s.head || s.body, bc = s.beakCol || '#e0b040';
-    R.blob(o, hx, hy, hs, hs, hc, { tex: s.coat || 'fur', seed: hs * 5 + 3 });
+    R.blob(o, hx, hy, hs * 1.05, hs * 0.94, hc, { tex: 'feather', seed: hs * 5 + 3, hx: 0.2 });
+    R.blob(o, hx + hs * 0.45, hy + hs * 0.28, hs * 0.5, hs * 0.44, mixColor(hc, s.belly || R.hi(hc), 0.5), { hl: false });
     if (s.crest) for (let k = 0; k < 3; k++) R.px(o, hx - hs * 0.4 - k * 2, hy - hs - 1 - k, s.crest, 2, 2 + k);
     const bx = hx + hs - 1, by = hy + hs * 0.1;
     if (s.beak === 'spear') for (let i = 0; i < bl; i++) R.px(o, bx + i, by - 1 + Math.round(i * 0.06), bc, 1, Math.max(1, 3 - i * 2.2 / bl));
@@ -296,7 +323,7 @@ function buildBird(s) {
     else if (s.beak === 'hook') { R.px(o, bx, by - 1, bc, bl, 3); R.px(o, bx + bl - 2, by + 2, R.lo(bc), 2, 2); }
     else if (s.beak === 'curve') for (let i = 0; i < bl; i++) R.px(o, bx + i, by + Math.round(i * i * 0.08), bc, 1, 2);
     else { R.px(o, bx, by, bc, bl, 2); R.px(o, bx, by + 1, R.lo(bc), bl, 1); }
-    R.eye(o, hx + hs * 0.3, hy - hs * 0.15, Math.max(1.5, hs * 0.36), { ring: OL, look: [0.4, 0.1] });
+    R.eye(o, hx + hs * 0.34, hy - hs * 0.16, Math.max(1.5, hs * 0.27), { ring: OL, iris: s.eye || '#c8a030', look: [0.4, 0.1] });
     R.outline(o, OL);
     parts.head = R.part(o, hx, hy + hs * 0.6);   // pivot at the top of the neck
   }
@@ -307,7 +334,43 @@ function buildBird(s) {
     parts.wing = flipPart(lobePart(wl, wh, s.wing || R.lo(s.body), R.lo2(s.wing || s.body), { round: true }));
     const far = R.mk(parts.wing.w, parts.wing.h); far.x.drawImage(parts.wing.c, 0, 0); far.x.globalCompositeOperation = 'source-atop'; far.x.fillStyle = 'rgba(0,0,0,0.28)'; far.x.fillRect(0, 0, far.w, far.h); parts.wingFar = R.part(far, parts.wing.ox, parts.wing.oy);
   }
-  { const lc = s.legCol || '#4a4a3a', o = R.mk(7, legLen + 3); R.px(o, 3, 0, lc, 1, legLen); R.px(o, 1, legLen, lc, 5, 1); R.px(o, 3, legLen - 1, lc, 1, 2); R.outline(o, R.ol(lc)); parts.leg = R.part(o, 3, 0); }
+  { // folded wing: coverts, secondaries and primaries lying along the flank.
+    // Reusing the flight lobe squashed made it read as a leaf stuck to the side.
+    const wl = Math.max(5, Math.round(L * 0.56)), wh = Math.max(3, Math.round(H * 0.42));
+    const o = R.mk(wl + 4, wh + 5), y0 = 2;
+    const wc = s.wing || R.lo(s.body), wlit = R.hi(wc), wdk = R.lo2(wc);
+    for (let i = 0; i < wl; i++) {
+      const u = i / wl;
+      // thickest a third of the way back, drawn out to a point at the primaries
+      const hh = Math.max(1, wh * (0.45 + 0.55 * Math.sin(Math.min(1, u * 1.5) * Math.PI * 0.7)) * (1 - u * 0.55));
+      const top = y0 + wh * 0.5 - hh * 0.55;
+      R.px(o, 2 + i, top, wlit, 1, Math.max(1, hh * 0.38));
+      R.px(o, 2 + i, top + hh * 0.38, wc, 1, Math.max(1, hh * 0.44));
+      R.px(o, 2 + i, top + hh * 0.78, wdk, 1, Math.max(1, hh * 0.3));
+      // feather shafts every few columns give the tract some read
+      if (i % 5 === 3) R.px(o, 2 + i, top + hh * 0.22, mixColor(wc, '#ffffff', 0.22), 1, Math.max(1, hh * 0.6));
+    }
+    // primary tips separating past the body
+    for (let k = 0; k < 3; k++) R.px(o, 2 + wl - 1 - k * 2, y0 + wh * 0.42 + k, wdk, 2, 1);
+    R.outline(o, mixColor(OL, wc, 0.35));
+    parts.wingFold = flipPart(R.part(o, 2, y0 + wh * 0.5));
+  }
+  { // leg: tarsus with a backward hock and a real foot with toes
+    const lc = s.legCol || '#4a4a3a', lit = R.hi(lc), o = R.mk(11, legLen + 6);
+    const knee = Math.round(legLen * 0.45);
+    for (let j = 0; j < legLen; j++) {
+      // thigh angles back, shank comes forward again
+      const bend = j < knee ? -j * 0.16 : -knee * 0.16 + (j - knee) * 0.1;
+      const w = j < knee ? 2 : 1;
+      R.px(o, 5 + bend, j, lc, w, 1);
+      if (j < knee) R.px(o, 5 + bend, j, lit, 1, 1);
+    }
+    const fx = 5 - knee * 0.16 + (legLen - knee) * 0.1, fy = legLen;
+    R.px(o, fx - 2, fy, lc, 6, 1);                     // foot
+    R.px(o, fx - 3, fy + 1, lc, 3, 1);                 // front toes splay
+    R.px(o, fx + 1, fy + 1, lc, 3, 1);
+    R.px(o, fx + 1, fy - 1, lc, 1, 1);                 // hind toe
+    R.outline(o, R.ol(lc)); parts.leg = R.part(o, 5, 0); }
   const rig = { kind: 'bird', parts, len: L + neckLen * 0.5, height: H + neckLen + legLen, foot: H * 0.5 + legLen, flyLen: L * 1.8 };
   rig.pose = anim => {
     const ph = anim.phase || 0, mode = anim.mode || 'stand', P = parts, out = [];
@@ -316,8 +379,9 @@ function buildBird(s) {
       const n = Math.max(2, Math.round(neckLen / Math.max(1, P.neckR * 0.55)));
       const pts = [];
       for (let i = 0; i <= n + 1; i++) { const t = i / (n + 1), mx = (sx + tx) / 2 + bend, my = (sy + ty) / 2; pts.push([(1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * tx, (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ty]); }
-      for (const q of pts) out.push({ p: P.neckEdge, x: q[0], y: q[1], a: 0, kind: 'neck' });
-      for (const q of pts) out.push({ p: P.neck, x: q[0], y: q[1], a: 0, kind: 'neck' });
+      const kAt = i => 1 - (i / (pts.length - 1)) * 0.42;   // thick at the shoulder, slim at the skull
+      pts.forEach((q, i) => out.push({ p: P.neckEdge, x: q[0], y: q[1], a: 0, sx: kAt(i), sy: kAt(i), kind: 'neck' }));
+      pts.forEach((q, i) => out.push({ p: P.neck, x: q[0], y: q[1], a: 0, sx: kAt(i), sy: kAt(i), kind: 'neck' }));
     };
     if (mode === 'fly' || mode === 'dive') {
       const flap = mode === 'dive' ? 0.7 : Math.sin(ph), wingA = -0.35 - flap * 0.95;
@@ -331,7 +395,7 @@ function buildBird(s) {
       out.push({ p: P.wing, x: shoulder[0], y: shoulder[1], a: wingA, sx: 1, sy: -1, id: 'wing0', kind: 'wing' });
     } else if (mode === 'swim') {
       out.push({ p: P.body, x: 0, y: H * 0.15, a: 0, id: 'body', kind: 'body' });
-      out.push({ p: P.wing, x: shoulder[0], y: shoulder[1] + H * 0.25, a: 0.25, sx: 1, sy: 0.8, id: 'wing0', kind: 'wing' });
+      out.push({ p: P.wingFold, x: shoulder[0] + L * 0.06, y: shoulder[1] + H * 0.5, a: 0.06, id: 'wing0', kind: 'wing' });
       const hx = L * 0.32, hy = -H * 0.34 - neckLen * 0.75; neckCurve(L * 0.26, -H * 0.18, hx, hy, L * 0.08);
       out.push({ p: P.head, x: hx, y: hy, a: 0.1 + Math.sin(ph * 0.5) * 0.05, id: 'head', kind: 'head' });
     } else {
@@ -339,7 +403,7 @@ function buildBird(s) {
       out.push({ p: P.leg, x: hip[0] - 2, y: hip[1], a: stride, id: 'leg0', kind: 'leg' });
       out.push({ p: P.leg, x: hip[0] + 3, y: hip[1], a: -stride, id: 'leg1', kind: 'leg' });
       out.push({ p: P.body, x: 0, y: 0, a: peck * 0.25, id: 'body', kind: 'body' });
-      out.push({ p: P.wing, x: shoulder[0], y: shoulder[1] + 1, a: 0.15, sx: 1, sy: 0.85, id: 'wing0', kind: 'wing' });
+      out.push({ p: P.wingFold, x: shoulder[0] + L * 0.06, y: shoulder[1] + H * 0.42, a: 0.04, id: 'wing0', kind: 'wing' });
       const up = -H * 0.42 - neckLen * (1 - peck * 1.25), fwd = L * 0.3 + neckLen * (0.2 + peck * 0.9);
       neckCurve(L * 0.24, -H * 0.24, fwd, up, -L * 0.1 * (1 - peck));
       out.push({ p: P.head, x: fwd, y: up, a: 0.1 + peck * 0.9 + Math.sin(ph * 0.5) * 0.04, id: 'head', kind: 'head' });
@@ -463,7 +527,12 @@ function humanVariant(sp, v) {
   return o;
 }
 function buildBiped(s) {
-  const Hh = s.len, hr = Math.max(4, Math.round(Hh * 0.19)), tw = Math.max(5, Math.round(Hh * 0.3)), th = Math.max(5, Math.round(Hh * 0.3)), legLen = Math.max(4, Math.round(Hh * 0.28)), armLen = Math.max(4, Math.round(Hh * 0.27));
+  // Roughly four and a half heads tall. The old figure was under three, which is
+  // why everyone read as a bobblehead.
+  const Hh = s.len;
+  const hr = Math.max(4, Math.round(Hh * 0.115)), tw = Math.max(5, Math.round(Hh * 0.24)),
+        th = Math.max(6, Math.round(Hh * 0.33)), legLen = Math.max(5, Math.round(Hh * 0.45)),
+        armLen = Math.max(5, Math.round(Hh * 0.4));
   const skin = s.skin || '#e0b090', hair = s.hair || '#3a2a1a', shirt = s.coat ? '#f4f4f0' : (s.shirt || '#d94a4a'), pants = s.pants || '#3050a0', OL = '#1c1410', parts = {};
   const mkHead = scared => {
     const o = R.mk(hr * 2 + 10, hr * 2 + 12), hx = 5 + hr, hy = 7 + hr;
@@ -593,15 +662,53 @@ function buildBiped(s) {
 // =========================================================== TURTLE
 function buildTurtle(s) {
   const L = s.len, H = Math.max(5, Math.round(L * 0.5)), OL = R.ol(s.shell), parts = {};
-  { const o = R.mk(L + 4, H + 6), cx = 2 + L / 2, cy = 3 + H * 0.55;
-    // dome shell with scutes, a plastron below
-    R.blob(o, cx, cy - H * 0.1, L / 2, H * 0.48, s.shell, { hx: 0.1, pat: (i, j, u, v) => { if (v > 0.55) return null; const gx = Math.floor((i - cx + L / 2) / Math.max(3, L * 0.22)), gy = Math.floor((j - cy + H) / Math.max(2, H * 0.3)); const edge = ((i - cx + L / 2) % Math.max(3, Math.round(L * 0.22)) === 0) || ((j - cy + H) % Math.max(2, Math.round(H * 0.3)) === 0); return edge ? R.lo(s.shell) : ((gx + gy) % 2 ? R.hi(s.shell) : null); } });
-    R.px(o, cx - L * 0.4, cy + H * 0.3, s.belly || '#c8b080', L * 0.8, Math.max(1, H * 0.18));
-    if (s.spiky) for (let k = 0; k < 4; k++) R.px(o, cx - L * 0.3 + k * L * 0.2, cy - H * 0.58 - 1, R.lo2(s.shell), 2, 3);
+  { const o = R.mk(L + 6, H + 8), cx = 3 + L / 2, cy = 4 + H * 0.55;
+    // Carapace: a dome with radial scutes and a marginal rim. The old grid of
+    // squares read as a chessboard glued to the back.
+    const sh = s.shell, shl = R.hi(sh), shd = R.lo(sh), shd2 = R.lo2(sh);
+    const rx = L / 2, ry = H * 0.5;
+    R.blob(o, cx, cy - H * 0.08, rx, ry, sh, { hx: 0.15, seed: L + 9, pat: (i, j, u, v) => {
+      if (v > 0.62) return null;
+      // vertebral row down the spine, costal scutes either side, seams between
+      const band = Math.abs(v) < 0.34 ? 0 : 1;
+      const seg = Math.floor((u + 1) * 3.0);
+      const seam = Math.abs((u + 1) * 3.0 - seg) < 0.11 || Math.abs(Math.abs(v) - 0.34) < 0.07;
+      if (seam) return shd2;
+      return band === 0 ? ((seg & 1) ? mixColor(sh, shl, 0.45) : null) : ((seg & 1) ? shd : mixColor(sh, shd, 0.4));
+    } });
+    // marginal rim running round the lower edge of the shell
+    for (let i = -Math.round(rx); i <= Math.round(rx); i++) {
+      const u = i / rx, vv = Math.sqrt(Math.max(0, 1 - u * u));
+      const yy = cy - H * 0.08 + vv * ry * 0.94;
+      R.px(o, cx + i, yy - 1, (Math.floor((u + 1) * 6) & 1) ? shd : mixColor(sh, shl, 0.3), 1, 2);
+    }
+    // plastron: a shallow curved belly plate, not a rectangular bar
+    const pc = s.belly || '#c8b080';
+    for (let i = -Math.round(L * 0.42); i <= Math.round(L * 0.42); i++) {
+      const u = i / (L * 0.42), th = Math.max(1, H * 0.17 * Math.sqrt(Math.max(0, 1 - u * u * 0.8)));
+      R.px(o, cx + i, cy + H * 0.3, pc, 1, th);
+      R.px(o, cx + i, cy + H * 0.3, R.hi(pc), 1, 1);
+      if (Math.floor((u + 1) * 3) !== Math.floor((u + 1 - 1 / (L * 0.42)) * 3)) R.px(o, cx + i, cy + H * 0.3, R.lo(pc), 1, th);
+    }
+    if (s.spiky) for (let k = 0; k < 4; k++) R.px(o, cx - L * 0.3 + k * L * 0.2, cy - H * 0.6 - 1, shd2, 2, 3);
     R.outline(o, OL);
     parts.shell = R.part(o, cx, cy); }
-  { const hs = Math.max(2, Math.round(H * 0.42)), o = R.mk(hs * 2.4 + 4, hs * 2 + 4), hx = 2 + hs * 1.2, hy = 2 + hs; R.blob(o, hx, hy, hs * 1.2, hs, s.skin); R.eye(o, hx + hs * 0.45, hy - hs * 0.2, Math.max(1.2, hs * 0.38), { ring: OL, look: [0.4, 0.1] }); R.px(o, hx + hs * 0.8, hy + hs * 0.45, R.lo2(s.skin), hs * 0.5, 1); if (s.hooked) R.px(o, hx + hs * 1.2, hy + hs * 0.2, R.lo2(s.skin), 1, 2); R.outline(o, OL); parts.head = R.part(o, 2, hy); }
-  { const ll = Math.max(2, Math.round(H * 0.5)), o = R.mk(6, ll + 3); R.px(o, 2, 1, s.skin, 2, ll); R.px(o, 1, ll, R.lo(s.skin), 4, 1); R.outline(o, OL); parts.leg = R.part(o, 3, 1); }
+  { // head on a neck stub, so it stops floating free of the shell
+    const hs = Math.max(2, Math.round(H * 0.4)), o = R.mk(hs * 3 + 5, hs * 2 + 5), hx = 2 + hs * 1.7, hy = 3 + hs;
+    R.blob(o, hx - hs * 1.2, hy + hs * 0.12, hs * 0.7, hs * 0.62, R.lo(s.skin), { hl: false });   // neck
+    R.blob(o, hx, hy, hs * 1.15, hs * 0.92, s.skin, { tex: 'hide', seed: hs * 3 });
+    R.blob(o, hx + hs * 0.6, hy + hs * 0.3, hs * 0.5, hs * 0.4, mixColor(s.skin, '#e8dcb0', 0.35), { hl: false });   // jaw
+    if (s.stripe) for (let k = 0; k < 3; k++) R.px(o, hx - hs * 0.5 + k * hs * 0.45, hy - hs * 0.55, s.stripe, 1, hs * 0.5);
+    R.eye(o, hx + hs * 0.4, hy - hs * 0.24, Math.max(1.2, hs * 0.3), { ring: OL, iris: s.eye || '#c07030', look: [0.4, 0.1] });
+    R.px(o, hx + hs * 0.85, hy + hs * 0.28, R.lo2(s.skin), hs * 0.5, 1);
+    if (s.hooked) R.px(o, hx + hs * 1.3, hy + hs * 0.15, R.lo2(s.skin), 1, 2);
+    R.outline(o, OL); parts.head = R.part(o, 2, hy); }
+  { // flipper-ish limb: broad at the shoulder, clawed at the tip
+    const ll = Math.max(3, Math.round(H * 0.55)), o = R.mk(8, ll + 4), sk = s.skin;
+    for (let j = 0; j < ll; j++) { const u = j / ll, w = Math.max(2, 3.2 * (1 - u * 0.25)); R.px(o, 4 - w / 2, 1 + j, sk, w, 1); R.px(o, 4 - w / 2, 1 + j, R.hi(sk), 1, 1); }
+    R.px(o, 1, ll, R.lo(sk), 6, 2);
+    for (let k = 0; k < 3; k++) R.px(o, 1 + k * 2, ll + 2, R.lo2(sk), 1, 1);
+    R.outline(o, OL); parts.leg = R.part(o, 4, 1); }
   const rig = { kind: 'turtle', parts, len: L * 1.4, height: H, foot: H * 0.3 + H * 0.5 };
   rig.pose = anim => {
     const ph = anim.phase || 0, sp = clamp(anim.speed || 0, 0, 1), P = parts, out = [], hide = anim.hide || 0;

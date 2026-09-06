@@ -23,6 +23,7 @@ const Input = {
       bite: { x: W - 54, y: H - 54, r: 30, label: 'BITE' },
       dash: { x: W - 112, y: H - 34, r: 21, label: 'DASH' },
       pause: { x: W - 15, y: 15, r: 13, label: 'II' },
+      genes: { x: W - 42, y: 19, r: 16, label: 'G' },
       joyMax: W * 0.52,
     };
   },
@@ -44,6 +45,7 @@ const Input = {
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
         else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashId = t.identifier; }
         else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
+        else if (G.state === 'play' && this.inPad(P.genes, x, y)) this.pressed.KeyG = true;
         else if (x < P.joyMax && !T.joy) { T.joy = true; T.jid = t.identifier; T.sx = x; T.sy = y; T.cx = x; T.cy = y; T.jx = 0; T.jy = 0; }
         else T.bite = true;
       }
@@ -539,6 +541,7 @@ const G = {
         const P = this.player;
         if (Input.hit('Escape', 'KeyG', 'KeyE', 'Tab', 'Enter')) { this.state = 'play'; SFX.ui(); break; }
         const cells = UI.geneCells();
+        if (Input.mouse.clicked && dist(Input.mouse.x, Input.mouse.y, this.W - 22, 16) < 15) { this.state = 'play'; SFX.ui(); break; }
         if (Input.mouse.moved || Input.mouse.clicked) {
           let best = null, bd = (cells[0] ? cells[0].R : 25) + 1;
           for (const c of cells) { const d = dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy); if (d < bd) { bd = d; best = c; } }

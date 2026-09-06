@@ -271,35 +271,36 @@ const World = {
     // --- strata, shallow first: each fill covers everything below its own line,
     // so drawing deeper layers later lets the deep colours win at depth
     const g0 = BP.ground[0], g1 = BP.ground[1], g2 = BP.ground[2];
-    const strata = [
-      [0, mixColor(g0, '#ffffff', 0.07)],
-      [4, g0],
-      [11, mixColor(g0, g1, 0.45)],
-      [21, mixColor(g0, g1, 0.8)],
-      [36, g1],
-      [60, mixColor(g1, g2, 0.45)],
-      [96, mixColor(g1, g2, 0.8)],
-      [150, g2],
-      [240, shade(g2, 0.68)],
-      [380, shade(g2, 0.46)],
-    ];
+    // Depth ramp built from many closely spaced fills: enough steps that the
+    // ground reads as one continuous body instead of a handful of stripes.
+    const humus = mixColor(g0, '#2a1d10', 0.55);
+    const stops = [[0, humus], [5, g0], [26, g1], [110, g2], [260, mixColor(g2, '#2e3540', 0.34)], [430, mixColor(g2, '#252c36', 0.55)]];
+    const strata = [];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const [d0, c0] = stops[i], [d1, c1] = stops[i + 1], n = i === 0 ? 2 : 5;
+      for (let k = 0; k < n; k++) { const u = k / n; strata.push([lerp(d0, d1, u), mixColor(c0, c1, u)]); }
+    }
+    strata.push([stops[stops.length - 1][0], stops[stops.length - 1][1]]);
     for (const [off, col] of strata) { const y = off * z; capTop(y); ctx.fillStyle = col; ctx.fill(); }
     // --- dithered seams so the strata read as sediment, not painted stripes
     for (let i = 1; i < strata.length; i++) {
-      const top = strata[i][0] * z, h2 = (strata[i][0] - strata[i - 1][0]) * z * 0.55;
-      if (h2 < 1.5) continue;
+      const top = strata[i][0] * z, h2 = (strata[i][0] - strata[i - 1][0]) * z * 0.5;
+      if (h2 < 2.5) continue;
       const col = strata[i][1];
       ctx.save(); band(top - h2, top); ctx.clip();
-      Tex.fill(ctx, Tex.dither(col, 0.45), cam.x, cam.y, z, 0.85);
+      Tex.fill(ctx, Tex.dither(col, 0.4), cam.x, cam.y, z, 0.7);
       ctx.restore();
-      ctx.save(); band(top - h2 * 1.9, top - h2); ctx.clip();
-      Tex.fill(ctx, Tex.dither(col, 0.16), cam.x, cam.y, z, 0.8);
+      ctx.save(); band(top - h2 * 2, top - h2); ctx.clip();
+      Tex.fill(ctx, Tex.dither(col, 0.14), cam.x, cam.y, z, 0.6);
       ctx.restore();
     }
     // --- grain over the whole body: grit, specks and small stones
     ctx.save(); capTop(0); ctx.clip();
-    Tex.fill(ctx, Tex.strata(shade(g2, 0.4), mixColor(g0, '#f0e4c4', 0.55)), cam.x, cam.y, z, 1);
-    Tex.fill(ctx, Tex.soil(shade(g2, 0.5), mixColor(g0, '#e8dcc0', 0.5), mixColor(g1, '#8a8068', 0.55)), cam.x, cam.y, z, 0.75);
+    Tex.fill(ctx, Tex.soil(shade(g2, 0.5), mixColor(g0, '#e8dcc0', 0.5), mixColor(g1, '#8a8068', 0.55)), cam.x, cam.y, z, 0.7);
+    ctx.restore();
+    // courses only bed down in the upper soil; deeper than that it is solid marl
+    ctx.save(); band(6 * z, 150 * z); ctx.clip();
+    Tex.fill(ctx, Tex.strata(shade(g2, 0.4), mixColor(g0, '#f0e4c4', 0.55)), cam.x, cam.y, z, 0.85);
     ctx.restore();
     // --- features on a fixed world grid, so density never changes with zoom
     const left = cam.toWorldX(-40), right = cam.toWorldX(W + 40);
@@ -357,6 +358,9 @@ const World = {
         ctx.fillStyle = grassLit; ctx.fillRect(p[0], Math.round(ty - gz), step, Math.max(1, Math.round(z)));
         ctx.fillStyle = grassDark; ctx.fillRect(p[0], Math.round(ty + gz * 0.6), step, gz);
         ctx.fillStyle = mixColor(g0, grassDeep, 0.45); ctx.fillRect(p[0], Math.round(ty + gz * 1.6), step, gz);
+        // sod does not end in a straight cut: hang a ragged root mat under it
+        const rg = ihash(Math.floor(wx / 5), 121);
+        if (rg < 0.5) ctx.fillRect(p[0], Math.round(ty + gz * 2.6), step, Math.max(1, Math.round((1 + rg * 5) * z)));
       } else if (fy < 34) {
         const wet = clamp(1 - fy / 34, 0, 1);
         ctx.fillStyle = mixColor(g0, '#ded0a8', 0.2 + wet * 0.4); ctx.fillRect(p[0], Math.round(ty), step, Math.round(gz * 1.6));
@@ -443,20 +447,39 @@ const World = {
     const g = ctx.createLinearGradient(0, yT, 0, cam.toScreen(0, 760)[1]);
     g.addColorStop(0, `rgba(${haze[0]},${haze[1]},${haze[2]},0)`);
     g.addColorStop(0.45, `rgba(${haze[0]},${haze[1]},${haze[2]},0.3)`);
-    g.addColorStop(1, `rgba(${haze[0]},${haze[1]},${haze[2]},0.62)`);
+    g.addColorStop(1, `rgba(${haze[0]},${haze[1]},${haze[2]},0.45)`);
     ctx.fillStyle = g; ctx.fillRect(0, yT, G.W, H - yT);
   },
   drawDecor(ctx, cam, layer, day) {
     // layer 0 = behind entities (weeds, rocks, logs, reeds, trees), 1 = in front (lilies, sawgrass, fireflies)
     const W = G.W, z = cam.zoom, t = this.t, light = this.light(day), night = 1 - light;
     const left = cam.toWorldX(-80), right = cam.toWorldX(W + 80);
+    // A blade is three tapering strokes: shadow, body, lit edge. One flat stroke
+    // per blade is what made the weed beds look like scribbled wire.
+    const blade = (bx, by, tx, ty, mx, my, w, cDark, cMid, cLit) => {
+      ctx.lineCap = 'round';
+      ctx.lineWidth = Math.max(1, w); ctx.strokeStyle = cDark;
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(mx, my, tx, ty); ctx.stroke();
+      ctx.lineWidth = Math.max(1, w * 0.6); ctx.strokeStyle = cMid;
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(mx, my, tx, ty); ctx.stroke();
+      ctx.lineWidth = Math.max(1, w * 0.26); ctx.strokeStyle = cLit;
+      ctx.beginPath(); ctx.moveTo(bx - w * 0.22, by); ctx.quadraticCurveTo(mx - w * 0.22, my, tx - w * 0.1, ty); ctx.stroke();
+      ctx.lineCap = 'butt';
+    };
+    // ambient current: everything under water leans the same way and breathes
+    const flowAt = (wx) => Math.sin(t * 0.55 + wx * 0.008) * 3.4 + Water.velocity(wx) * 0.035 + Water.wind * 4;
     for (const d of this.decor) {
       if (d.x < left) continue; if (d.x > right) break;
       const [sx, sy] = cam.toScreen(d.x, d.y);
       switch (d.type) {
         case 'seagrass': if (layer !== 0) break; {
-          ctx.strokeStyle = d.v ? '#3f8a6a' : '#4f9a72'; ctx.lineWidth = Math.max(1, 1.6 * z);
-          for (let b = -2; b <= 2; b++) { const sway = (Math.sin(t * 1.1 + d.ph + b * 0.5) * 5 + (d.bend || 0) * 3) * z; ctx.beginPath(); ctx.moveTo(sx + b * 2 * z, sy); ctx.quadraticCurveTo(sx + b * 3 * z + sway * 0.5, sy - d.h * z * 0.6, sx + b * 3 * z + sway, sy - d.h * z); ctx.stroke(); }
+          const fl = flowAt(d.x), dk = d.v ? '#1f4a38' : '#26543f', md = d.v ? '#3f8a6a' : '#4f9a72', lt = d.v ? '#6fc79a' : '#7fd6a6';
+          for (let b = -3; b <= 3; b++) {
+            const bl = d.h * (0.66 + ihash(Math.floor(d.x) * 7 + b, 71) * 0.42);
+            const sway = (Math.sin(t * 1.1 + d.ph + b * 0.5) * 4 + fl + (d.bend || 0) * 5) * z;
+            const bx = sx + b * 2.1 * z, ty = sy - bl * z;
+            blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.55, 1.7 * z, dk, md, lt);
+          }
           break; }
         case 'oyster': if (layer !== 0) break; {
           for (let i = 0; i < d.n; i++) { const ox = (ihash(i, Math.floor(d.x)) - 0.5) * 22 * z, oy = ihash(i, 61) * 4 * z;
@@ -522,10 +545,14 @@ const World = {
           break; }
 
         case 'weed': if (layer !== 0) break; {
-          ctx.strokeStyle = d.v ? '#2f6a3a' : '#3f7a44'; ctx.lineWidth = Math.max(1, z);
-          for (let b = -1; b <= 1; b++) {
-            const sway = (Math.sin(t * 1.3 + d.ph + b) * 4 + (d.bend || 0) * 3) * z;
-            ctx.beginPath(); ctx.moveTo(sx + b * 2 * z, sy); ctx.quadraticCurveTo(sx + b * 3 * z + sway * 0.5, sy - d.h * z * 0.6, sx + b * 4 * z + sway, sy - d.h * z); ctx.stroke();
+          const fl = flowAt(d.x), dk = d.v ? '#1b3f24' : '#25492a', md = d.v ? '#2f6a3a' : '#3f7a44', lt = d.v ? '#5f9c58' : '#6fae62';
+          for (let b = -2; b <= 2; b++) {
+            const bl = d.h * (0.6 + ihash(Math.floor(d.x) * 5 + b, 73) * 0.5);
+            const sway = (Math.sin(t * 1.3 + d.ph + b) * 3.4 + fl * 0.8 + (d.bend || 0) * 5) * z;
+            const bx = sx + b * 2 * z, ty = sy - bl * z;
+            blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.6, 1.4 * z, dk, md, lt);
+            // a few leaflets so it is not a bare stalk
+            if (b % 2 === 0) for (let q = 1; q <= 2; q++) { const u = q / 3, lx = bx + sway * u * u, ly = sy - bl * z * u; ctx.fillStyle = md; ctx.fillRect(Math.round(lx + (q % 2 ? 1 : -3) * z), Math.round(ly), Math.max(1, Math.round(2.4 * z)), Math.max(1, Math.round(z))); }
           }
           break; }
         case 'rock': if (layer !== 0) break; { const s = SPR.rock[d.v]; drawSpr(ctx, s, sx, sy - s.h * d.s * z * 0.5 + 1, 0, d.s * z, d.s * z); break; }
@@ -534,7 +561,7 @@ const World = {
         case 'lily': if (layer !== 1) break; { const s = SPR.lily[d.v]; const wy = cam.toScreen(d.x, this.surface(d.x))[1]; drawSpr(ctx, s, sx, wy - 1 * z, 0, z, z, s.w / 2, s.h - 1); break; }
         case 'reed': if (layer !== 0) break; {
           const top = cam.toScreen(d.x, d.top)[1]; const sway = (Math.sin(t * 1.1 + d.ph) * 3 + (d.bend || 0) * 4) * z;
-          ctx.strokeStyle = '#4f7a3a'; ctx.lineWidth = Math.max(1, z); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.3, (sy + top) / 2, sx + sway, top); ctx.stroke();
+          blade(sx, sy, sx + sway, top, sx + sway * 0.3, (sy + top) / 2, 1.8 * z, '#2a4a20', '#4f7a3a', '#7aa85a');
           if (d.v) { ctx.fillStyle = '#6b4a2e'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 8 * z), Math.max(1, Math.round(2 * z)), Math.max(2, Math.round(7 * z))); }
           else { ctx.strokeStyle = '#7fae5f'; ctx.beginPath(); ctx.moveTo(sx + sway, top); ctx.lineTo(sx + sway + 4 * z, top - 6 * z); ctx.stroke(); }
           break; }
@@ -698,25 +725,47 @@ const World = {
     const B = Biome.mixPal(cam.x);
     const step = Math.max(2, Math.round(3 * Math.min(1, z)));
     // underwater tint and depth shade, applied under the surface line
-    ctx.fillStyle = rgba(mixColor(B.water[0], '#04202a', 0.4), 0.16); ctx.fillRect(0, Math.max(0, Math.round(hy0)), W, H);
-    // sample the surface once
-    const xs = [], ys = [];
-    for (let sx = -step; sx <= W + step; sx += step) { const wx = cam.toWorldX(sx); xs.push([sx, wx]); ys.push(cam.toScreen(wx, this.surface(wx))[1]); }
-    const bandH = Math.max(2, Math.round(3 * z)), foam = mixColor('#eafcf6', B.water[0], 0.25), edge = mixColor(B.water[0], '#0a3038', 0.55);
-    // the surface reads as a solid pixel band: bright crest, darker lip, then the water body
+    // sample the surface once, and note which columns actually have water:
+    // above the waterline the ground is dry and must not get a surface line
+    const xs = [], ys = [], wet = [];
+    for (let sx = -step; sx <= W + step; sx += step) {
+      const wx = cam.toWorldX(sx), su = this.surface(wx);
+      xs.push([sx, wx]); ys.push(cam.toScreen(wx, su)[1]);
+      wet.push(this.floorY(wx) > su + 1);
+    }
+    {
+      // a shallow tint that fades out with depth, rather than one flat wash that
+      // turned every submerged bank into a black slab
+      const yT = Math.max(0, Math.round(hy0)), yB = cam.toScreen(0, 120)[1];
+      if (yB > yT) {
+        const tc = hexToRgb(mixColor(B.water[0], '#06222c', 0.4));
+        const gg = ctx.createLinearGradient(0, yT, 0, yB);
+        gg.addColorStop(0, `rgba(${tc[0]},${tc[1]},${tc[2]},0.16)`);
+        gg.addColorStop(1, `rgba(${tc[0]},${tc[1]},${tc[2]},0.03)`);
+        ctx.fillStyle = gg;
+        for (let i = 0; i < xs.length; i++) if (wet[i]) ctx.fillRect(xs[i][0], yT, step, Math.min(H, yB) - yT);
+      }
+    }
+    const bandH = Math.max(1, Math.round(1.6 * z)), foam = mixColor('#eafcf6', B.water[0], 0.25);
+    const sheen = mixColor(B.water[0], sc.bot, 0.45), edge = mixColor(B.water[0], '#0a3038', 0.4);
+    // A thin film rather than a painted ribbon: the lit part only shows where the
+    // surface actually tilts toward the sky, so the line breaks up along its length.
     for (let i = 0; i < xs.length; i++) {
+      if (!wet[i]) continue;
       const sx = xs[i][0], wx = xs[i][1], sy = Math.round(ys[i]);
       const lift = Water.surface(wx) - Water.ambient(wx), sl = Water.slope(wx);
-      // the band is a shallow lip of lit water, brightest where the surface tilts toward the light
-      ctx.fillStyle = mixColor(mixColor(B.water[0], sc.bot, 0.35), foam, clamp(0.18 + sl * 1.6 + light * 0.2, 0, 0.8));
-      ctx.fillRect(sx, sy - bandH, step, bandH + Math.max(1, Math.round(z)));
-      // the white crest line breaks up instead of running flat across the screen
-      const crest = ihash(Math.floor(wx / 9), 33) * 0.6 + Math.abs(sl) * 1.4 + clamp(Math.abs(lift) / 10, 0, 0.5);
-      if (crest > 0.55) { ctx.globalAlpha = clamp((crest - 0.5) * 1.6, 0, 1); ctx.fillStyle = foam; ctx.fillRect(sx, sy - bandH, step, Math.max(1, Math.round(z))); ctx.globalAlpha = 1; }
-      ctx.fillStyle = edge; ctx.fillRect(sx, sy + bandH * 0.4, step, Math.max(1, Math.round(z)));
+      const tilt = clamp(0.2 + sl * 2.2, 0, 1);
+      ctx.globalAlpha = 0.4 + tilt * 0.5;
+      ctx.fillStyle = mixColor(sheen, foam, tilt * 0.7);
+      ctx.fillRect(sx, sy - bandH, step, bandH);
+      ctx.globalAlpha = 1;
+      const crest = ihash(Math.floor(wx / 9), 33) * 0.55 + Math.abs(sl) * 1.7 + clamp(Math.abs(lift) / 9, 0, 0.6);
+      if (crest > 0.72) { ctx.globalAlpha = clamp((crest - 0.68) * 1.9, 0, 1); ctx.fillStyle = foam; ctx.fillRect(sx, sy - bandH, step, Math.max(1, Math.round(z * 0.8))); ctx.globalAlpha = 1; }
+      ctx.globalAlpha = 0.5; ctx.fillStyle = edge; ctx.fillRect(sx, sy + Math.round(z * 0.4), step, Math.max(1, Math.round(z * 0.7))); ctx.globalAlpha = 1;
     }
     // crest foam: round white blobs where the surface is steep or moving fast
     for (let i = 1; i < xs.length - 1; i++) {
+      if (!wet[i]) continue;
       const wx = xs[i][1], vv = Math.abs(Water.velocity(wx)), sl = Math.abs(Water.slope(wx));
       const f = clamp((vv - 16) / 55, 0, 1) + clamp((sl - 0.22) / 0.7, 0, 1);
       if (f <= 0.08) continue;
@@ -728,7 +777,7 @@ const World = {
     ctx.globalAlpha = 1;
     // scum and pollen riding the film
     ctx.globalAlpha = 0.2; ctx.fillStyle = B.scum || '#6a7a4a';
-    for (let i = 0; i < xs.length; i += 2) { const wx = xs[i][1]; if (ihash(Math.floor(wx / 7), 44) > 0.74) ctx.fillRect(xs[i][0], Math.round(ys[i]) - 1, step, Math.max(1, Math.round(z))); }
+    for (let i = 0; i < xs.length; i += 2) { if (!wet[i]) continue; const wx = xs[i][1]; if (ihash(Math.floor(wx / 7), 44) > 0.74) ctx.fillRect(xs[i][0], Math.round(ys[i]) - 1, step, Math.max(1, Math.round(z))); }
     ctx.globalAlpha = 1;
     if (light > 0.15) {
       ctx.globalAlpha = 0.28 * light; ctx.fillStyle = '#f4ecc0';

@@ -59,25 +59,29 @@ const Tex = {
       x.globalAlpha = 1;
     });
   },
-  // horizontal sediment courses. Real strata are level, so screen-space stripes
-  // clipped to the ground read correctly and cost one fill instead of hundreds.
+  // Sediment courses. Sparse and broken: a full-coverage stripe pattern reads as
+  // corduroy, so most rows are short lenses rather than lines across the tile.
   strata(dark, light) {
-    return this.get('st|' + dark + '|' + light, 64, (x, S) => {
+    return this.get('st2|' + dark + '|' + light, 96, (x, S) => {
       const r = mulberry32(0x5ed1);
-      const rows = [3, 5, 4, 7, 3, 6, 5, 4, 8, 4, 5, 6];
-      let y = 0, i = 0;
+      let y = 0;
       while (y < S) {
-        const gap = rows[i % rows.length];
-        const dk = r() < 0.5;
-        x.globalAlpha = 0.1 + r() * 0.16;
-        x.fillStyle = dk ? dark : light;
-        x.fillRect(0, y, S, 1);
-        if (r() < 0.4) { x.globalAlpha = 0.07 + r() * 0.1; x.fillStyle = dk ? light : dark; x.fillRect(0, y + 1, S, 1); }
-        // courses break up rather than running dead straight
-        x.globalAlpha = 0.14;
-        x.fillStyle = dk ? light : dark;
-        for (let k = 0; k < 3; k++) x.fillRect((r() * S) | 0, y, 3 + ((r() * 9) | 0), 1);
-        y += gap; i++;
+        const gap = 5 + ((r() * 9) | 0);
+        const dk = r() < 0.55;
+        const col = dk ? dark : light;
+        // a course is a run of lenses with breaks, not a continuous rule
+        let cx2 = -((r() * 30) | 0);
+        while (cx2 < S) {
+          const len = 5 + ((r() * 26) | 0);
+          if (r() < 0.62) {
+            x.globalAlpha = 0.06 + r() * 0.1;
+            x.fillStyle = col;
+            x.fillRect(cx2, y, len, 1);
+            if (r() < 0.35) { x.globalAlpha = 0.05 + r() * 0.06; x.fillStyle = dk ? light : dark; x.fillRect(cx2 + 1, y + 1, len - 2, 1); }
+          }
+          cx2 += len + 3 + ((r() * 14) | 0);
+        }
+        y += gap;
       }
       x.globalAlpha = 1;
     });
