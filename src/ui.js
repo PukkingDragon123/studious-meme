@@ -126,38 +126,16 @@ const UI = {
     // biome name, bottom right
     const B = Biome.at(P.x);
     Font.draw(ctx, B.name, W - 10, H - 12, { color: '#7f9a90', align: 'right' });
-    // death-roll timing ring: a marker sweeps and the window is the lit arc
-    if (P.rollT > 0) {
-      const [sx, sy] = G.cam.toScreen(P.x, P.y);
-      const R = 34, ph = P.qteT || 0;
-      ctx.save();
-      ctx.translate(sx, sy - 4);
-      ctx.strokeStyle = 'rgba(10,16,18,0.85)'; ctx.lineWidth = 7;
-      ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
-      // the good window, then the perfect core inside it
-      const a0 = (QTE_AT - QTE_GOOD) * TAU - Math.PI / 2, a1 = (QTE_AT + QTE_GOOD) * TAU - Math.PI / 2;
-      ctx.strokeStyle = '#3f8f7a'; ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.arc(0, 0, R, a0, a1); ctx.stroke();
-      const p0 = (QTE_AT - QTE_PERFECT) * TAU - Math.PI / 2, p1 = (QTE_AT + QTE_PERFECT) * TAU - Math.PI / 2;
-      ctx.strokeStyle = '#ffe060'; ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.arc(0, 0, R, p0, p1); ctx.stroke();
-      // sweeping marker
-      const ma = ph * TAU - Math.PI / 2;
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(Math.cos(ma) * (R - 6), Math.sin(ma) * (R - 6)); ctx.lineTo(Math.cos(ma) * (R + 6), Math.sin(ma) * (R + 6)); ctx.stroke();
-      // beats landed so far
-      const beats = P.qteBeats || 0, hits = P.qteHits || 0;
-      ctx.fillStyle = '#ffe060';
-      for (let i = 0; i < Math.min(6, hits); i++) ctx.fillRect(-14 + i * 5, R + 8, 3, 3);
-      if (beats > 0 && hits === 0) { ctx.fillStyle = '#ff8070'; ctx.fillRect(-3, R + 8, 6, 3); }
-      ctx.restore();
-    }
+    // The jaw-lock gauge. This used to be a ring drawn around the crocodile,
+    // which put the thing you had to read on top of the thing you had to watch.
+    // It is an instrument now, parked at the bottom of the screen where a
+    // fighting game would put it, and the window is most of the bar.
+    if (P.rollT > 0) this.drawRollGauge(ctx, P, t);
     // hints, stacked upward so two warnings never print on the same line
     const hints = [];
     if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
     if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
     if (P.latched && P.rollT <= 0) hints.push(['BITE TO ROLL', '#ff9080', 1]);
-    if (P.rollT > 0) hints.push(['BITE ON THE GOLD', '#ffe060', 1]);
     if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
     let hy = H - 20;
     for (const [txt, col, sc] of hints) {
@@ -196,12 +174,83 @@ const UI = {
       if (b.sub) Font.draw(ctx, b.sub, W / 2, H * 0.3 + 20, { color: '#ffffff', align: 'center', outline: '#000' });
       ctx.globalAlpha = 1;
     }
-    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher) {
+    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher && P.rollT <= 0) {
       const touch = G.touchUI || Input.touch.active;
       const msgs = touch
         ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   DASH PAD LUNGES', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
         : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
       Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
+    }
+  },
+  drawRollGauge(ctx, P, t) {
+    const W = G.W, H = G.H;
+    const gw = 214, gh = 15, gx = Math.round(W / 2 - gw / 2), gy = H - 60;
+    const ph = P.qteT || 0;
+    // window bounds as fractions of the bar, wrapped
+    const wrap = v => ((v % 1) + 1) % 1;
+    const zone = (c, half, col, h2, yoff) => {
+      const a = wrap(c - half), b = wrap(c + half);
+      ctx.fillStyle = col;
+      if (a < b) ctx.fillRect(gx + Math.round(a * gw), gy + yoff, Math.round((b - a) * gw), h2);
+      else { ctx.fillRect(gx, gy + yoff, Math.round(b * gw), h2); ctx.fillRect(gx + Math.round(a * gw), gy + yoff, gw - Math.round(a * gw), h2); }
+    };
+    // housing
+    ctx.fillStyle = 'rgba(4,10,12,0.9)'; ctx.fillRect(gx - 5, gy - 12, gw + 10, gh + 26);
+    this.bracket(ctx, gx - 5, gy - 12, gw + 10, gh + 26, 'rgba(255,180,90,0.55)', 7);
+    // track
+    ctx.fillStyle = '#101a1c'; ctx.fillRect(gx, gy, gw, gh);
+    // the bands: a wide green tear window with a gold core inside it
+    zone(QTE_AT, QTE_GOOD, '#1d5a4a', gh, 0);
+    zone(QTE_AT, QTE_PERFECT, '#8a6a10', gh, 0);
+    zone(QTE_AT, QTE_GOOD, '#2f8a72', 2, 0);
+    zone(QTE_AT, QTE_PERFECT, '#ffd040', 2, 0);
+    // tick marks along the track
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let i = 1; i < 16; i++) ctx.fillRect(gx + Math.round(i * gw / 16), gy, 1, i % 4 === 0 ? gh : 3);
+    // needle, with a trail behind it so the direction reads at a glance
+    const nx = gx + Math.round(wrap(ph) * gw);
+    const inWin = Math.min(Math.abs(ph - QTE_AT), 1 - Math.abs(ph - QTE_AT)) < QTE_GOOD;
+    for (let k = 1; k <= 5; k++) {
+      const tx = nx - k * 3;
+      if (tx < gx) continue;
+      ctx.globalAlpha = 0.32 - k * 0.05; ctx.fillStyle = '#ffffff';
+      ctx.fillRect(tx, gy + 2, 2, gh - 4);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#050a0c'; ctx.fillRect(nx - 2, gy - 3, 5, gh + 6);
+    ctx.fillStyle = inWin ? '#ffffff' : '#bfe8ff'; ctx.fillRect(nx - 1, gy - 3, 3, gh + 6);
+    // chevrons above and below the needle
+    ctx.fillStyle = inWin ? '#ffd040' : '#5f9fbf';
+    ctx.fillRect(nx - 3, gy - 6, 7, 2); ctx.fillRect(nx - 2, gy - 8, 5, 2);
+    ctx.fillRect(nx - 3, gy + gh + 4, 7, 2); ctx.fillRect(nx - 2, gy + gh + 6, 5, 2);
+    // the call to action, on a key cap so it matches the finisher
+    const beats = P.qteBeats || 0, hits = P.qteHits || 0;
+    const touch = G.touchUI || Input.touch.active;
+    const lit = inWin && Math.floor(t * 14) % 2 === 0;
+    drawKeyCap(ctx, gx - 2, gy - 34, 52, 18, touch ? 'TAP' : 'BITE', { lit: inWin, color: '#ffd040', scale: 2 });
+    Font.draw(ctx, inWin ? 'NOW' : 'WAIT', gx + 58, gy - 29, { color: inWin ? (lit ? '#ffffff' : '#ffd040') : '#5f7f78', scale: 2, outline: '#2a1400' });
+    Font.draw(ctx, 'JAW LOCK', gx + gw - 2, gy - 30, { color: '#a86a20', align: 'right' });
+    // beats landed, as a row of teeth
+    for (let i = 0; i < Math.max(6, beats); i++) {
+      const bx = gx + gw - 6 - i * 7;
+      const on = i < Math.min(hits, 12);
+      ctx.fillStyle = on ? '#ffd040' : '#2a2018';
+      ctx.fillRect(bx - 4, gy + gh + 5, 5, 4);
+      if (on) { ctx.fillStyle = '#fff0a0'; ctx.fillRect(bx - 4, gy + gh + 5, 5, 1); }
+    }
+    // the last call, punched out over the gauge
+    if (P.qteLastT > 0 && P.qteLast >= 0) {
+      const k = clamp(P.qteLastT * 2, 0, 1);
+      const txt = P.qteLast === 2 ? 'TEAR!' : P.qteLast === 1 ? 'GOOD' : 'EARLY';
+      const col = P.qteLast === 2 ? '#fff060' : P.qteLast === 1 ? '#9ef0c8' : '#ff9080';
+      ctx.globalAlpha = k;
+      Font.draw(ctx, txt, W / 2, gy - 58 - (1 - k) * 8, { color: col, align: 'center', scale: P.qteLast === 2 ? 4 : 3, outline: '#1a0e00' });
+      ctx.globalAlpha = 1;
+    }
+    if (P.perfectT > 0) {
+      ctx.globalAlpha = clamp(P.perfectT, 0, 1);
+      Font.draw(ctx, 'PERFECT ROLL', W / 2, 52, { color: '#fff060', align: 'center', scale: 3, outline: '#3a2000' });
+      ctx.globalAlpha = 1;
     }
   },
   // a filled hexagon with a border
@@ -919,39 +968,70 @@ const UI = {
       }
     }
   },
-  // the execution: one prompt at a time, its ring closing, the sequence
-  // laid out underneath so you can see what is coming
+  // The execution. One prompt at a time on a big key cap with a draining bar
+  // under it, the whole sequence laid out as a filmstrip so you can see what is
+  // coming, and three chances to miss. Cine supplies the bars and the vignette.
   drawFinisher(ctx) {
     const F = G.finisher; if (!F) return;
     const W = G.W, H = G.H, t = G.t;
-    ctx.fillStyle = 'rgba(6,2,2,0.4)'; ctx.fillRect(0, 0, W, H);
     const done = F.over > 0;
-    Font.draw(ctx, done ? (F.won ? 'EXECUTED' : 'THROWN OFF') : 'EXECUTION', W / 2, H * 0.17, { color: done && !F.won ? '#ff5030' : '#ffd060', align: 'center', scale: 3, outline: '#2a1000' });
-    Font.draw(ctx, F.e && F.e.name ? F.e.name : '', W / 2, H * 0.17 + 24, { color: '#c8a870', align: 'center', outline: '#1a0c00' });
-    const cx = W / 2, cy = H / 2 + 4;
-    if (!done) {
-      const want = F.seq[F.i], f = clamp(F.t / F.dur, 0, 1);
-      const R = 28;
-      // the closing ring is the window: press before it reaches the rim
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = f > 0.82 ? '#ff5030' : '#ffd060'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(cx, cy, R + 30 - 30 * f, 0, TAU); ctx.stroke();
-      const bl = F.flash > 0 ? '#ffffff' : '#ffe090';
-      this.panel(ctx, cx - 32, cy - 10, 64, 20, 'rgba(10,6,4,0.92)', '#6a4a20');
-      Font.draw(ctx, FIN_LABEL[want], cx, cy - 4, { color: bl, align: 'center', scale: 2, outline: '#2a1000' });
+    const touch = G.touchUI || Input.touch.active;
+
+    // --- title
+    const title = done ? (F.won ? 'EXECUTED' : 'THROWN OFF') : 'EXECUTION';
+    const tcol = done && !F.won ? '#ff5030' : '#ffd060';
+    if (done) {
+      // the verdict lands with a scale punch
+      const k = clamp(1 - F.over / (F.won ? 0.75 : 0.5), 0, 1);
+      const sc = Math.round(4 + (1 - k) * 3);
+      Font.draw(ctx, title, W / 2, H * 0.3, { color: tcol, align: 'center', scale: sc, outline: '#2a0c00' });
+      if (F.won) Font.draw(ctx, F.e && F.e.name ? F.e.name + ' IS FINISHED' : '', W / 2, H * 0.3 + 34, { color: '#e6eede', align: 'center', outline: '#2a0c00' });
+      else Font.draw(ctx, 'IT IS GETTING BACK UP', W / 2, H * 0.3 + 34, { color: '#c08070', align: 'center', outline: '#2a0c00' });
+      return;
     }
-    // the sequence, and how it has gone, in its own band along the bottom
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, H - 34, W, 34);
-    const n = F.seq.length, sw = 30, x0 = cx - (n * sw) / 2;
+    Font.draw(ctx, title, W / 2, 34, { color: tcol, align: 'center', scale: 2, outline: '#2a1000' });
+    Font.draw(ctx, F.e && F.e.name ? F.e.name : '', W / 2, 50, { color: '#c8a870', align: 'center', outline: '#1a0c00' });
+
+    // --- misses left, as a row of tally marks under the title
+    for (let i = 0; i < 3; i++) {
+      const on = i < 3 - F.misses;
+      ctx.fillStyle = on ? '#ffd060' : '#3a2018';
+      ctx.fillRect(W / 2 - 11 + i * 8, 60, 4, 5);
+    }
+
+    // --- the sequence as a filmstrip along the bottom band
+    const n = F.seq.length, cw = 26, x0 = W / 2 - (n * cw) / 2, fy = H - 36;
     for (let i = 0; i < n; i++) {
-      const past = i < F.i, now = i === F.i && !done;
-      const col = past ? (F.res[i] ? '#6ad040' : '#8a4038') : now ? '#ffd060' : '#4a5a54';
-      Font.draw(ctx, FIN_SHORT[F.seq[i]], Math.round(x0 + i * sw + (sw - 4) / 2), H - 30, { color: now && Math.floor(t * 10) % 2 ? '#ffffff' : col, align: 'center' });
-      ctx.fillStyle = col;
-      ctx.fillRect(Math.round(x0 + i * sw + 2), H - 20, sw - 8, 3);
+      const past = i < F.i, now = i === F.i;
+      const hit = F.res[i];
+      const col = past ? (hit ? '#6ad040' : '#c04030') : now ? '#ffd060' : '#3d4f52';
+      drawKeyCap(ctx, x0 + i * cw + 2, fy, cw - 6, 14, FIN_SHORT[F.seq[i]], { lit: now, color: col, dead: past && !hit, scale: 1 });
+      if (past) {
+        ctx.fillStyle = hit ? '#6ad040' : '#c04030';
+        ctx.fillRect(x0 + i * cw + 2, fy + 16, cw - 6, 2);
+      }
     }
-    Font.draw(ctx, 'TWO MISSES AND IT GETS UP', W / 2, H - 12, { color: '#c08070', align: 'center' });
+
+    // --- the live prompt: a big cap and a bar draining under it
+    const want = F.seq[F.i], f = clamp(F.t / F.dur, 0, 1);
+    const cx = W / 2, cy = H * 0.70;
+    const label = FIN_LABEL[want], lw = Math.max(74, Font.width(label, 2) + 26);
+    // a soft plate behind it so it reads over any background
+    ctx.fillStyle = 'rgba(4,8,10,0.55)'; ctx.fillRect(cx - lw / 2 - 8, cy - 22, lw + 16, 52);
+    this.bracket(ctx, cx - lw / 2 - 8, cy - 22, lw + 16, 52, 'rgba(255,200,110,0.5)', 8);
+    const punch = F.flash > 0 ? Math.round(F.flash * 12) : 0;
+    drawKeyCap(ctx, cx - lw / 2, cy - 16 - punch, lw, 26, label, { lit: true, color: '#ffd060', scale: 2 });
+    Font.draw(ctx, touch ? 'TAP THE PAD' : 'PRESS IT', cx, cy - 30, { color: '#a88a50', align: 'center' });
+    // timing bar: plenty of room, turning red only right at the end
+    const bw = lw, bx = cx - bw / 2, by = cy + 15;
+    ctx.fillStyle = '#0d1210'; ctx.fillRect(bx - 1, by - 1, bw + 2, 8);
+    const bc = f > 0.86 ? '#ff5030' : f > 0.6 ? '#ffa030' : '#6ad040';
+    ctx.fillStyle = bc; ctx.fillRect(bx, by, Math.round(bw * (1 - f)), 6);
+    ctx.fillStyle = mixColor(bc, '#ffffff', 0.5); ctx.fillRect(bx, by, Math.round(bw * (1 - f)), 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    for (let i = 8; i < bw; i += 8) ctx.fillRect(bx + i, by, 1, 6);
+
+    Font.draw(ctx, 'THREE MISSES AND IT GETS UP', W / 2, H - 12, { color: '#8a6a5a', align: 'center' });
   },
   drawEgg(ctx) {
     const W = G.W, H = G.H, e = G.egg; if (!e) return;

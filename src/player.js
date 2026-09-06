@@ -1,6 +1,9 @@
 'use strict';
 // death-roll timing: the window sits three quarters through each beat
-const QTE_AT = 0.74, QTE_PERFECT = 0.075, QTE_GOOD = 0.17;
+// Death-roll timing. Deliberately generous: the window is most of the beat and
+// the beat is slow, so the roll is a rhythm you play along to rather than a
+// reflex test you fail. Missing costs payout, never the grip.
+const QTE_AT = 0.72, QTE_PERFECT = 0.20, QTE_GOOD = 0.40;
 class Player {
   constructor() { this.reset(); }
   reset() {
@@ -28,6 +31,7 @@ class Player {
     this.dashCd = 0; this.dashCharges = 1; this.dashT = 0; this.ramHit = new Set();
     this.braceT = 0; this.braceCd = 0; this.braceFlash = 0; this.parries = 0; this.strainBonus = 0;
     this.spliceGlow = 0; this.spliceCol = '#40f0c8';
+    this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
@@ -87,6 +91,8 @@ class Player {
     if (this.braceCd > 0) this.braceCd -= dt;
     if (this.braceT > 0) this.braceT -= dt;
     if (this.braceFlash > 0) this.braceFlash -= dt;
+    if (this.qteLastT > 0) this.qteLastT -= dt;
+    if (this.perfectT > 0) this.perfectT -= dt;
     if (this.spliceGlow > 0) { this.spliceGlow -= dt * 0.8; if (chance(dt * 20)) G.fx.sparks(this.x + rand(-16, 16) * this.vis, this.y + rand(-8, 8) * this.vis, 2); }
     if (inp.brace) this.brace();
     if (inp.bite) this.bite();
@@ -217,8 +223,8 @@ class Player {
       this.roll = (1 - Math.max(0, this.rollT)) * TAU;
       G.shake(1.2);
       // the marker sweeps once per beat; the window sits at the far side
-      this.qteT = (this.qteT || 0) + dt * 2.6 * this.st.rollSpeed;
-      if (this.qteT >= 1) { this.qteT -= 1; this.qteMissed = true; this.qteBeats = (this.qteBeats || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); SFX.hurt && SFX.hurt(); }
+      this.qteT = (this.qteT || 0) + dt * 1.35 * Math.sqrt(this.st.rollSpeed);
+      if (this.qteT >= 1) { this.qteT -= 1; this.qteMissed = true; this.qteBeats = (this.qteBeats || 0) + 1; }
       if (under) { G.fx.bubbles(this.x, this.y, 2, 12 * this.vis, -20); if (chance(0.5)) G.fx.add({ type: 'foam', x: this.x + rand(-14, 14) * this.vis, y: World.surface(this.x), vx: rand(-30, 30), vy: 0, s: 1, life: 0.5 }); }
       if (this.rollT <= 0) { this.roll = 0; this.rollT = 0; this.qteT = 0; this.rollHit(); }
     }
@@ -281,10 +287,19 @@ class Player {
     }
     if (this.rollT > 0) {
       // scoring the beat: dead centre of the window is a tear, the edges graze
-      const ph = this.qteT || 0, off = Math.abs(ph - QTE_AT);
-      if (off < QTE_PERFECT) { this.qteHits = (this.qteHits || 0) + 2; G.fx.text(this.x, this.y - 24 * this.vis, 'TEAR!', { color: '#fff060', scale: 2 }); G.hitstop(0.07); G.shake(7); SFX.crunch(1.4, this.pan); }
-      else if (off < QTE_GOOD) { this.qteHits = (this.qteHits || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'GOOD', { color: '#9ef0c8' }); SFX.chomp(this.size, this.pan); }
-      else { this.qteMissed = true; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); }
+      const ph = this.qteT || 0;
+      let off = Math.abs(ph - QTE_AT); if (off > 0.5) off = 1 - off;   // the window wraps
+      const e = this.latched;
+      if (off < QTE_PERFECT) {
+        this.qteHits = (this.qteHits || 0) + 2;
+        G.shake(8); SFX.crunch(1.4, this.pan); Cine.hit(1, '#fff0a0');
+        if (e) { G.fx.gore(e.x, e.y, 70, 0, 0, false); G.fx.sparks(e.x, e.y, 8); }
+      } else if (off < QTE_GOOD) {
+        this.qteHits = (this.qteHits || 0) + 1;
+        G.shake(5); SFX.chomp(this.size, this.pan); Cine.hit(0.45, '#9ef0c8');
+        if (e) G.fx.blood(e.x, e.y, 6, 0, 0, 50, e.bloodColors);
+      } else { this.qteMissed = true; SFX.chomp(this.size, this.pan); }
+      this.qteLast = off < QTE_PERFECT ? 2 : off < QTE_GOOD ? 1 : 0; this.qteLastT = 0.5;
       this.qteBeats = (this.qteBeats || 0) + 1;
       this.qteT = 0;
       this.biteCd = 0.1;
@@ -344,15 +359,8 @@ class Player {
     // the roll is worth what you timed out of it: whiff every beat and it barely bruises
     const beats = Math.max(1, this.qteBeats || 1), hits = this.qteHits || 0;
     const acc = clamp(hits / (beats * 2), 0, 1);
-    const qmul = 0.35 + acc * 1.65;
-    if (this.qteMissed && acc < 0.34 && chance(0.5) && this.latched) {
-      // a fumbled roll loses the grip instead of paying out
-      const lost = this.latched; this.latched = null; this.latchT = 0;
-      lost.vx = -this.facing * 200; lost.vy = -50;
-      G.fx.text(lost.x, lost.y - 16 * lost.size, 'LOST GRIP', { color: '#ffb0b0', scale: 2 });
-      SFX.hurt && SFX.hurt();
-      return;
-    }
+    // a roll you barely played still tears; timing it well makes it brutal
+    const qmul = 0.8 + acc * 1.4;
     const dmg = this.biteDmg * 1.6 * this.st.rollDmg * qmul, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
     const lethal = e.hp <= dmg; this.lastKillHow = 'roll';
     e.takeDamage(dmg, this, { dx: -dx, dy: -dy, pierce: true });
@@ -361,7 +369,7 @@ class Player {
     G.fx.gore(e.x, e.y, 130, 0, 0, true); G.hitstop(0.08); G.shake(9); SFX.crunch(this.size * 1.5, e.pan); SFX.gib(e.pan);
     G.fx.text(e.x, e.y - 16 * e.size, choice(['TEAR!', 'SHRED!', 'RIP!']), { color: '#ff4040', scale: 2 });
     G.addScore(Math.round(25 * qmul));
-    if (acc >= 0.9) { G.fx.text(this.x, this.y - 30 * this.vis, 'PERFECT ROLL', { color: '#fff060', scale: 2, life: 1.2 }); G.addScore(120); }
+    if (acc >= 0.85) { this.perfectT = 1.2; G.addScore(120); G.whiteFlash(0.3); Cine.hit(1, '#fff060'); }
     if (!e.dead) this.latchT = 0;
   }
   ramCheck() {

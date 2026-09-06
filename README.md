@@ -48,14 +48,14 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 - **You start in a tank.** A containment lab, acid, and scientists on the other side of the glass. Mash bite to crack it, drop into the drain, and follow the storm sewer east past the rats.
 - **Chew through the outfall grate** and the Everglades open up in front of you.
 - **Eat** anything under half your size to swallow it whole. Bigger prey takes bites, bleeds, loses limbs and comes apart.
-- **Latch** onto medium prey with a bite, then bite again to **death roll** and tear it in half.
+- **Latch** onto medium prey with a bite, then bite again to **death roll**. The roll is a rhythm, not a reflex test: a **jaw-lock gauge** sweeps a needle across a wide window and you bite in time with it. The window is most of the bar, missing a beat only costs payout, and you never lose the grip.
 - **Hunger** drains constantly. Starving drains your health. Keep eating.
 - **Gene points** drop from every meal. Press `G` at any moment, in the middle of a fight if you want, and spend them.
 - **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God. Each one plays a **transformation**: the body seizes, a seam of light runs head to tail splitting the old hide off plate by plate, and the animal bursts out a third bigger than it settles at. Two free gene points at the far end. `ESC` skips it.
 - **Predators** hunt you while you are small and flee when you are big.
 - **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
 - **Bosses** arrive after certain sheds: Old Scar, the Poacher Warboat, Mother Python, the Skunk Ape, and Big Bull. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
-- **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight ends in a button sequence: three to five prompts, each with a closing window, drawn from bite, dash and brace. Miss two and it throws you off and gets back up with health.
+- **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight cuts to an **execution**: bars close in, the camera frames the pair, and three to five prompts come up on big key caps with a bar draining under each. You get three whole misses, and landing one prompt is enough. Every hit is a held impact frame with a blood wash over the lens.
 - **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run from the splice bay.
 - Death is permanent, but the traits and relics you unlock are not.
 
@@ -192,6 +192,17 @@ the vault on the globe screen and apply to every run afterwards.
 | Paradise Campground | take 10 people | Camp Lantern | prey lured from further off |
 | Florida Bay | kill 4 sharks | Megalodon Tooth | +15% death roll damage |
 | The Seawall | wreck 8 boats or builds | Containment Core | +1 dash charge |
+
+## Water
+
+The surface is a spring-mass system riding a four-component swell, substepped so
+it stays inside its CFL limit. The water *body* is clipped to that surface rather
+than filled to a flat line, so a crest holds water above the still level and a
+trough shows the bank through it, and the top edge is a hard pixel staircase
+instead of an antialiased diagonal. Crest and trough are judged against a
+smoothed baseline of the visible span in world units, so foam caps the actual
+tops at any zoom. The waves themselves carry an `s²` term that peaks the crests
+and flattens the troughs, which is what stops them reading as stacked sine waves.
 
 ## Gore
 

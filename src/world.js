@@ -16,6 +16,30 @@ const World = {
   isIndoor(x) { const r = this.roofY(x); return r !== null && r < -20; },
   isLand(x) { return this.floorY(x) < 0; },
   surface(x) { return Water.surface(x); },
+  // The wave surface in screen space, sampled once a frame and shared by the
+  // water body and the waterline detail so the two cannot drift apart. Columns
+  // are integer-aligned: the top edge is meant to be a hard pixel staircase,
+  // not an antialiased diagonal.
+  waterTop(cam) {
+    const W = G.W, step = 3;
+    if (this._wt && this._wtT === G.t && this._wtX === cam.x && this._wtY === cam.y && this._wtZ === cam.zoom) return this._wt;
+    const n = Math.ceil((W + step * 4) / step), xs = new Int32Array(n), ys = new Int32Array(n), wxs = new Float64Array(n), sus = new Float64Array(n), wet = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      const sx = -step * 2 + i * step, wx = cam.toWorldX(sx), su = this.surface(wx);
+      xs[i] = sx; wxs[i] = wx; sus[i] = su; ys[i] = Math.round(cam.toScreen(wx, su)[1]);
+      wet[i] = this.floorY(wx) > su + 1 ? 1 : 0;
+    }
+    this._wtT = G.t; this._wtX = cam.x; this._wtY = cam.y; this._wtZ = cam.zoom;
+    return (this._wt = { xs, ys, wxs, sus, wet, n, step });
+  },
+  // clip the context to everything below the wave surface
+  clipWater(ctx, cam) {
+    const T = this.waterTop(cam), H = G.H;
+    ctx.beginPath();
+    for (let i = 0; i < T.n; i++) { const y = T.ys[i]; if (y < H + 40 && T.wet[i]) ctx.rect(T.xs[i], y, T.step, H + 40 - y); }
+    ctx.clip();
+    return T;
+  },
   // nearest x (searching outward) where predicate holds, or null
   findX(fromX, pred, maxD = 4000, step = 24) {
     for (let d = 0; d < maxD; d += step) { if (pred(fromX + d)) return fromX + d; if (pred(fromX - d)) return fromX - d; }
@@ -210,7 +234,13 @@ const World = {
     const top = mixColor(tint[0], '#08202a', 1 - light);
     const mid = mixColor(tint[1], '#06181f', 1 - light);
     const deep = mixColor(tint[2], '#030c10', 1 - light);
-    const y0 = Math.max(Math.round(hy), 0);
+    // everything below is clipped to the actual wave surface, so a crest holds
+    // water above the still line and a trough shows the sky through it
+    ctx.save();
+    const T = this.clipWater(ctx, cam);
+    let minY = H;
+    for (let i = 0; i < T.n; i++) if (T.ys[i] < minY) minY = T.ys[i];
+    const y0 = Math.max(minY, 0);
     // --- depth ramp anchored to world depth, so the water does not slide with the camera
     const yA = cam.toScreen(0, -10)[1], yB = cam.toScreen(0, 820)[1];
     if (yB - yA > 1) {
@@ -272,6 +302,7 @@ const World = {
     Tex.fill(ctx, mo, cam.x * 0.9 + Math.sin(this.t * 0.2) * 9, cam.y * 0.9 - this.t * 3, z, 0.3);
     Tex.fill(ctx, mo, cam.x * 0.55 - 40 + Math.sin(this.t * 0.14 + 2) * 6, cam.y * 0.55 - this.t * 1.4, z, 0.16);
     ctx.restore();
+    ctx.restore();          // release the wave-surface clip
   },
   drawTerrain(ctx, cam) {
     const W = G.W, H = G.H, z = cam.zoom, BP = Biome.mixPal(cam.x), step = 3;
@@ -866,64 +897,104 @@ const World = {
   drawSurface(ctx, cam, day) {
     const W = G.W, H = G.H, z = cam.zoom, sc = this.skyColors(day), light = this.light(day);
     const hy0 = cam.toScreen(0, 0)[1];
-    if (hy0 < -60 || hy0 > H + 60) return;
+    if (hy0 < -160 || hy0 > H + 160) return;
     const B = Biome.mixPal(cam.x);
-    const step = Math.max(2, Math.round(3 * Math.min(1, z)));
-    // underwater tint and depth shade, applied under the surface line
-    // sample the surface once, and note which columns actually have water:
-    // above the waterline the ground is dry and must not get a surface line
-    const xs = [], ys = [], wet = [];
-    for (let sx = -step; sx <= W + step; sx += step) {
-      const wx = cam.toWorldX(sx), su = this.surface(wx);
-      xs.push([sx, wx]); ys.push(cam.toScreen(wx, su)[1]);
-      wet.push(this.floorY(wx) > su + 1);
-    }
+    // exactly the columns the water body was filled with, so the trim can never
+    // sit off the edge it is trimming
+    const T = this.waterTop(cam), step = T.step, xs = T.xs, ys = T.ys, wxs = T.wxs, wet = T.wet, n = T.n;
+
+    // --- shallow tint under the film, fading out with depth
     {
-      // a shallow tint that fades out with depth, rather than one flat wash that
-      // turned every submerged bank into a black slab
-      const yT = Math.max(0, Math.round(hy0)), yB = cam.toScreen(0, 120)[1];
-      if (yB > yT) {
-        const tc = hexToRgb(mixColor(B.water[0], '#06222c', 0.4));
-        const gg = ctx.createLinearGradient(0, yT, 0, yB);
+      const yB = cam.toScreen(0, 120)[1];
+      const tc = hexToRgb(mixColor(B.water[0], '#06222c', 0.4));
+      const yTmin = Math.max(0, Math.round(hy0) - 40);
+      if (yB > yTmin) {
+        const gg = ctx.createLinearGradient(0, yTmin, 0, yB);
         gg.addColorStop(0, `rgba(${tc[0]},${tc[1]},${tc[2]},0.16)`);
         gg.addColorStop(1, `rgba(${tc[0]},${tc[1]},${tc[2]},0.03)`);
         ctx.fillStyle = gg;
-        for (let i = 0; i < xs.length; i++) if (wet[i]) ctx.fillRect(xs[i][0], yT, step, Math.min(H, yB) - yT);
+        for (let i = 0; i < n; i++) { if (!wet[i]) continue; const y = Math.max(0, ys[i]); if (y < yB) ctx.fillRect(xs[i], y, step, Math.min(H, yB) - y); }
       }
     }
-    const bandH = Math.max(1, Math.round(1.6 * z)), foam = mixColor('#eafcf6', B.water[0], 0.25);
-    const sheen = mixColor(B.water[0], sc.bot, 0.45), edge = mixColor(B.water[0], '#0a3038', 0.4);
-    // A thin film rather than a painted ribbon: the lit part only shows where the
-    // surface actually tilts toward the sky, so the line breaks up along its length.
-    for (let i = 0; i < xs.length; i++) {
+
+    const px = Math.max(1, Math.round(z));                       // one "art pixel" at this zoom
+    const foam = mixColor('#eafcf6', B.water[0], 0.14);
+    const skin = mixColor(B.water[0], '#e8fbf4', 0.58);          // the lit film on the water's back
+    const face = mixColor(B.water[0], '#04181f', 0.62);          // the shaded front of a wave
+    const deepLip = mixColor(B.water[1] || B.water[0], '#04161c', 0.5);
+
+    // --- The surface itself. Crest and trough are judged against a smoothed
+    // baseline of the visible span rather than screen-space curvature: the
+    // screen ys are rounded to integers, so at low zoom curvature is mostly
+    // quantisation noise and the whole waterline lights up as foam.
+    let mean = 0, cnt = 0;
+    for (let i = 0; i < n; i++) if (wet[i]) { mean += T.sus[i]; cnt++; }
+    if (!cnt) return;
+    mean /= cnt;
+    let amp = 0;
+    for (let i = 0; i < n; i++) if (wet[i]) { const d = T.sus[i] - mean; amp += d * d; }
+    amp = Math.sqrt(amp / cnt);
+    const norm = Math.max(0.9, amp * 1.35), h = step / Math.max(0.05, z);
+    for (let i = 1; i < n - 1; i++) {
       if (!wet[i]) continue;
-      const sx = xs[i][0], wx = xs[i][1], sy = Math.round(ys[i]);
-      const lift = Water.surface(wx) - Water.ambient(wx), sl = Water.slope(wx);
-      const tilt = clamp(0.2 + sl * 2.2, 0, 1);
-      ctx.globalAlpha = 0.4 + tilt * 0.5;
-      ctx.fillStyle = mixColor(sheen, foam, tilt * 0.7);
-      ctx.fillRect(sx, sy - bandH, step, bandH);
+      const sx = xs[i], sy = ys[i];
+      if (sy < -24 || sy > H + 24) continue;
+      // world-space, so nothing here depends on the zoom
+      const rel = (mean - T.sus[i]) / norm;              // + above the mean, - below
+      const slope = (T.sus[i + 1] - T.sus[i - 1]) / (2 * h);   // + falling to the right
+      const crest = clamp(rel, 0, 1), trough = clamp(-rel, 0, 1);
+      const steep = clamp(Math.abs(slope) * 2.6, 0, 1);
+      // key light comes from up and to the left: the back of a wave catches it
+      const lit = clamp(slope * 3.2, 0, 1), shade2 = clamp(-slope * 3.2, 0, 1);
+
+      // body skin: lighter water hugging the top edge, brightest on the backs
+      ctx.globalAlpha = 0.6 + lit * 0.4;
+      ctx.fillStyle = mixColor(skin, foam, lit * 0.5);
+      ctx.fillRect(sx, sy, step, px * 2);
+      // the shaded face, pushed a little deeper
+      if (shade2 > 0.08) {
+        ctx.globalAlpha = 0.62 * shade2;
+        ctx.fillStyle = face;
+        ctx.fillRect(sx, sy + px, step, px * 4);
+      }
+      // the film line on top
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = mixColor(sc.bot, foam, 0.4 + lit * 0.45);
+      ctx.fillRect(sx, sy - px, step, px);
+      // crest cap: foam on the tops of waves, more of it the steeper they are
+      const cap = crest * (0.35 + steep * 0.95);
+      if (cap > 0.3) {
+        ctx.globalAlpha = clamp((cap - 0.25) * 1.6, 0, 1);
+        ctx.fillStyle = foam;
+        ctx.fillRect(sx, sy - px * 2, step, px * 2);
+        if (cap > 0.72) { ctx.globalAlpha = clamp((cap - 0.68) * 2.4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(sx, sy - px * 3, step, px); }
+      }
+      // troughs read darker, which is what gives the swell its volume
+      if (trough > 0.25) { ctx.globalAlpha = 0.45 * trough; ctx.fillStyle = deepLip; ctx.fillRect(sx, sy, step, px * 5); }
       ctx.globalAlpha = 1;
-      const crest = ihash(Math.floor(wx / 9), 33) * 0.55 + Math.abs(sl) * 1.7 + clamp(Math.abs(lift) / 9, 0, 0.6);
-      if (crest > 0.72) { ctx.globalAlpha = clamp((crest - 0.68) * 1.9, 0, 1); ctx.fillStyle = foam; ctx.fillRect(sx, sy - bandH, step, Math.max(1, Math.round(z * 0.8))); ctx.globalAlpha = 1; }
-      ctx.globalAlpha = 0.5; ctx.fillStyle = edge; ctx.fillRect(sx, sy + Math.round(z * 0.4), step, Math.max(1, Math.round(z * 0.7))); ctx.globalAlpha = 1;
     }
-    // crest foam: round white blobs where the surface is steep or moving fast
-    for (let i = 1; i < xs.length - 1; i++) {
+
+    // --- breaking crests: white caps where the surface is moving fast or is
+    // very steep, drawn as blocks rather than circles to stay in the palette
+    for (let i = 1; i < n - 1; i++) {
       if (!wet[i]) continue;
-      const wx = xs[i][1], vv = Math.abs(Water.velocity(wx)), sl = Math.abs(Water.slope(wx));
-      const f = clamp((vv - 16) / 55, 0, 1) + clamp((sl - 0.22) / 0.7, 0, 1);
-      if (f <= 0.08) continue;
-      const sy = ys[i], r = Math.max(1, Math.round((1.2 + f * 3) * z));
-      ctx.globalAlpha = clamp(f, 0, 1) * 0.95; ctx.fillStyle = '#f4fffb';
-      ctx.beginPath(); ctx.arc(xs[i][0], sy - r * 0.5, r, 0, TAU); ctx.fill();
-      if (f > 0.7) { ctx.globalAlpha = clamp(f - 0.5, 0, 1) * 0.8; ctx.beginPath(); ctx.arc(xs[i][0] + r, sy - r * 1.4, r * 0.6, 0, TAU); ctx.fill(); }
+      const wx = wxs[i], vv = Math.abs(Water.velocity(wx));
+      const sl = Math.abs((T.sus[i + 1] - T.sus[i - 1]) / (2 * (step / Math.max(0.05, z))));
+      const f = clamp((vv - 26) / 70, 0, 1) + clamp((sl - 0.42) / 0.9, 0, 1);
+      if (f <= 0.14) continue;
+      const sy = ys[i], w = Math.max(1, Math.round((1 + f * 2) * px));
+      ctx.globalAlpha = clamp(f, 0, 1) * 0.9; ctx.fillStyle = '#f4fffb';
+      ctx.fillRect(xs[i], sy - w, step, w);
+      if (f > 0.8) { ctx.globalAlpha = clamp(f - 0.6, 0, 1) * 0.85; ctx.fillRect(xs[i] - step, sy - w - px, step * 3, px); }
+      ctx.globalAlpha = 1;
     }
-    ctx.globalAlpha = 1;
-    // scum and pollen riding the film
+
+    // --- scum and pollen riding the film
     ctx.globalAlpha = 0.2; ctx.fillStyle = B.scum || '#6a7a4a';
-    for (let i = 0; i < xs.length; i += 2) { if (!wet[i]) continue; const wx = xs[i][1]; if (ihash(Math.floor(wx / 7), 44) > 0.74) ctx.fillRect(xs[i][0], Math.round(ys[i]) - 1, step, Math.max(1, Math.round(z))); }
+    for (let i = 0; i < n; i += 2) { if (!wet[i]) continue; const wx = wxs[i]; if (ihash(Math.floor(wx / 7), 44) > 0.74) ctx.fillRect(xs[i], ys[i] + px, step, px); }
     ctx.globalAlpha = 1;
+
+    // --- pollen drifting in the air over the water
     if (light > 0.15) {
       ctx.globalAlpha = 0.28 * light; ctx.fillStyle = '#f4ecc0';
       for (let i = 0; i < 22; i++) {
@@ -935,10 +1006,22 @@ const World = {
       }
       ctx.globalAlpha = 1;
     }
-    // sparkle chips on the crests
-    ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < xs.length; i += 2) { const wx = xs[i][1]; if (ihash(Math.floor(wx / 4), 21) < 0.07 && Math.sin(this.t * 4 + wx * 0.12) > 0.65) { ctx.globalAlpha = 0.8 * light; ctx.fillRect(xs[i][0], Math.round(ys[i]) - bandH - 1, Math.max(1, Math.round(z)), Math.max(1, Math.round(z))); } }
-    ctx.globalAlpha = 1;
+
+    // --- sun glitter, only on the backs of waves that face the light
+    if (light > 0.2) {
+      ctx.fillStyle = '#ffffff';
+      for (let i = 1; i < n - 1; i += 2) {
+        if (!wet[i]) continue;
+        const slope = (T.sus[i + 1] - T.sus[i - 1]) / (2 * (step / Math.max(0.05, z)));
+        if (slope < 0.08) continue;
+        const wx = wxs[i];
+        if (ihash(Math.floor(wx / 5), 21) > 0.22) continue;
+        if (Math.sin(this.t * 5 + wx * 0.19) < 0.3) continue;
+        ctx.globalAlpha = 0.85 * light;
+        ctx.fillRect(xs[i], ys[i] - px * 2, px, px);
+      }
+      ctx.globalAlpha = 1;
+    }
   },
   drawMist(ctx, cam, day) {
     const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1];

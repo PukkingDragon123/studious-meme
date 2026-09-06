@@ -105,7 +105,7 @@ const Finisher = {
     const seq = [];
     let last = null;
     for (let i = 0; i < steps; i++) { let k = choice(FIN_KEYS); if (k === last) k = FIN_KEYS[(FIN_KEYS.indexOf(k) + 1) % 3]; seq.push(k); last = k; }
-    G.finisher = { e, seq, res: [], i: 0, t: 0, dur: 1.05, hits: 0, misses: 0, flash: 0, over: 0, won: false };
+    G.finisher = { e, seq, res: [], i: 0, t: 0, dur: 2.2, hits: 0, misses: 0, flash: 0, over: 0, won: false, endT: 0, camK: 0 };
     G.banner = null;
     G.slowmo(0.28, 0.5); G.shake(6); SFX.roar(2.4, e.pan); G.zoomPunch(1.18);
     G.fx.text(G.player.x, G.player.y - 34 * G.player.vis, 'EXECUTION', { color: '#ffd060', scale: 3, life: 1.2 });
@@ -120,9 +120,24 @@ const Finisher = {
     if (F.flash > 0) F.flash -= raw;
     // hold the two of them together while it plays
     P.vx *= 0.8; P.vy *= 0.8; e.vx *= 0.8; e.vy *= 0.8;
-    P.invuln = Math.max(P.invuln, 0.2);
+    P.invuln = Math.max(P.invuln, 0.4);
+    // keep the camera on the pair and let the croc thrash through it
+    F.camK = Math.min(1, (F.camK || 0) + raw * 3);
+    // clamp the two of them together: the shot is only readable if the pair
+    // stays in frame, and a boss that keeps swimming drags the camera off it
+    e.stun = Math.max(e.stun || 0, 0.2);
+    const side = sign(P.x - e.x) || 1;
+    const reach = 16 * P.vis + (e.r || 6) * (e.size || 1) * 0.7;
+    P.x = lerp(P.x, e.x + side * reach, Math.min(1, raw * 9));
+    P.y = lerp(P.y, e.y, Math.min(1, raw * 7));
+    P.angle = angleLerp(P.angle, side > 0 ? Math.PI : 0, Math.min(1, raw * 8));
+    P.facing = side > 0 ? -1 : 1;
+    P.roll = lerp(P.roll || 0, 0, Math.min(1, raw * 3));
+    P.legPhase += raw * 12;
+    if (chance(raw * 30)) G.fx.blood(e.x + rand(-16, 16), e.y + rand(-10, 10), 2, 0, 0, 40, e.bloodColors);
+    if (P.inWater && chance(raw * 24)) G.fx.bubbles(P.x, P.y, 2, 14 * P.vis, -20);
     F.t += raw;
-    F.dur = 1.05 - F.i * 0.11;
+    F.dur = 2.2 - F.i * 0.1;          // still shrinking, but from a very long window
     const want = F.seq[F.i];
     let got = null;
     if (Input.bitePressed()) got = 'bite';
@@ -137,18 +152,23 @@ const Finisher = {
     F.res.push(hit);
     if (hit) {
       F.hits++;
-      G.hitstop(0.06); G.shake(8); SFX.crunch(2, e.pan); SFX.gib(e.pan);
+      G.shake(10); SFX.crunch(2, e.pan); SFX.gib(e.pan);
+      Cine.hit(1, '#ffffff'); Cine.wash('#c02020', 0.5);
       G.fx.gore(e.x, e.y, 90, 0, 0, true);
-      G.fx.text(e.x, e.y - 20 - F.i * 6, choice(['RIP!', 'TEAR!', 'CRUNCH!']), { color: '#fff060', scale: 2, life: 0.8 });
+      G.fx.flesh(e.x, e.y, 10, 120);
+      // throw the pair around a little so each prompt lands as a camera beat
+      P.roll = (P.roll || 0) + 1.3; P.vy -= 40;
+      e.vy -= 30; e.flash = 0.12;
       if (e.bleeds && G.settings.gore) { const l = Gore.limbsOf(e).filter(q => !(e.missing && e.missing.has(q.id))); if (l.length) Gore.tear(e, choice(l).id, rand(-1, 1), rand(-1, 0)); }
     } else {
       F.misses++;
-      G.shake(5); G.redFlash(0.3); SFX.hurt && SFX.hurt();
-      G.fx.text(P.x, P.y - 24 * P.vis, 'MISSED', { color: '#ff7060', scale: 2, life: 0.8 });
+      G.shake(5); G.redFlash(0.25); SFX.hurt && SFX.hurt();
+      Cine.wash('#602020', 0.4);
     }
     F.flash = 0.14; F.t = 0; F.i++;
-    if (F.misses >= 2) { F.over = 0.4; F.won = false; return; }
-    if (F.i >= F.seq.length) { F.over = 0.5; F.won = F.hits >= F.seq.length - 1; }
+    // three whole misses to lose it, and landing a single prompt is enough to win
+    if (F.misses >= 3) { F.over = 0.5; F.won = false; return; }
+    if (F.i >= F.seq.length) { F.over = 0.75; F.won = F.hits >= 1; }
   },
   end() {
     const F = G.finisher; if (!F) return;
@@ -156,8 +176,9 @@ const Finisher = {
     G.finisher = null;
     if (!e || e.dead) return;
     if (F.won) {
-      G.fx.text(e.x, e.y - 40, 'EXECUTED', { color: '#ffd060', scale: 3, life: 2.2 });
-      G.slowmo(0.16, 1.4); G.whiteFlash(0.7); G.shake(18); SFX.roar(3, e.pan);
+      G.slowmo(0.16, 1.6); G.whiteFlash(0.45); G.shake(22); SFX.roar(3, e.pan);
+      Cine.hit(1, '#ffffff'); Cine.wash('#c01818', 1);
+      G.fx.gore(e.x, e.y, 220, 0, 0, true); G.fx.flesh(e.x, e.y, 40, 200);
       e.hp = 0;
       P.lastKillHow = 'roll';
       // a boat comes apart rather than dying, and takes its crew with it
@@ -170,8 +191,8 @@ const Finisher = {
       Boss.recover(e, 0.3);
       const dx = sign(P.x - e.x) || 1;
       P.vx = dx * 320; P.vy = -160;
-      P.hurt(18 * (e.bossDmg || 1), e, 'crush');
-      G.fx.text(P.x, P.y - 26 * P.vis, 'THROWN OFF', { color: '#ff5030', scale: 2, life: 1.4 });
+      P.hurt(12 * (e.bossDmg || 1), e, 'crush');
+      Cine.wash('#802020', 0.8); G.shake(12);
     }
   },
 };

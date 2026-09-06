@@ -719,6 +719,7 @@ const G = {
     if (this.shakeAmt < 0.2) this.shakeAmt = 0;
     this.shakeX = Math.round(rand(-1, 1) * this.shakeAmt); this.shakeY = Math.round(rand(-1, 1) * this.shakeAmt);
     this.red *= Math.exp(-3 * raw); this.white *= Math.exp(-4.5 * raw); this.zoomP = lerp(this.zoomP, 1, 0.08);
+    Cine.update(raw);
     Input.tickTouch(raw);
     Input.mouse.moved = false;
     const P = this.player;
@@ -780,7 +781,12 @@ const G = {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
     c.zoom = lerp(c.zoom, tz, 1 - Math.exp(-2.5 * dt));
-    const tx = P.x + P.vx * 0.22; let ty = P.y + P.vy * 0.12;
+    let tx = P.x + P.vx * 0.22, ty = P.y + P.vy * 0.12;
+    // an execution is framed on both of them, so the boss never leaves the shot
+    if (this.finisher && this.finisher.e && !this.finisher.e.dead) {
+      const b = this.finisher.e;
+      tx = (P.x + b.x) / 2; ty = (P.y + b.y) / 2;
+    }
     if (this.state === 'title') ty = Math.max(ty, 75);
     const k = 1 - Math.exp(-5 * dt);
     c.x = lerp(c.x, tx, k); c.y = lerp(c.y, ty, k);
@@ -852,6 +858,7 @@ const G = {
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
     World.drawKaiju(ctx, cam, day);
+    Cine.draw(ctx);
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;

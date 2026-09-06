@@ -17,10 +17,20 @@ const Water = {
   // background swell the springs ride on: a long roller, a mid wave and fine chop
   ambient(x) {
     const t = this.t, w = this.wind;
-    return Math.sin(x * 0.0083 + t * 0.62) * (1.5 + w * 2.6)
-      + Math.sin(x * 0.026 + t * 1.9) * (1.5 + w * 0.8)
-      + Math.sin(x * 0.049 - t * 2.6) * (0.7 + w * 0.7)
-      + Math.sin(x * 0.107 - t * 4.1) * (0.28 + w * 0.5);
+    // Most of the energy travels with the wind; one small train runs against it
+    // so the field never reads as a single sliding sheet. The mid wave is phase
+    // modulated by the long roller, which is what stops the pattern repeating
+    // visibly across a screen.
+    const roll = Math.sin(x * 0.0083 + t * 0.62);
+    let s = roll * (2.6 + w * 3.4)
+      + Math.sin(x * 0.019 + t * 1.35 + roll * 1.5) * (2.2 + w * 2.2)
+      + Math.sin(x * 0.044 + t * 2.30 + roll * 0.9) * (1.3 + w * 1.6)
+      + Math.sin(x * 0.095 - t * 3.9) * (0.5 + w * 0.9);
+    // water is not a sine: crests come to a point, troughs are long and flat.
+    // Adding a term in s^2 lifts the peaks and fills the hollows; the constant
+    // takes the mean back out so the waterline does not climb with the wind.
+    const a = 4.4 + w * 5.2;
+    return s + 0.2 * (s * s / a - a * 0.42);
   },
   surface(x) {
     if (!this.h) return this.ambient(x);

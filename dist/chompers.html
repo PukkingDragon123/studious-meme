@@ -2754,10 +2754,20 @@ const Water = {
   // background swell the springs ride on: a long roller, a mid wave and fine chop
   ambient(x) {
     const t = this.t, w = this.wind;
-    return Math.sin(x * 0.0083 + t * 0.62) * (1.5 + w * 2.6)
-      + Math.sin(x * 0.026 + t * 1.9) * (1.5 + w * 0.8)
-      + Math.sin(x * 0.049 - t * 2.6) * (0.7 + w * 0.7)
-      + Math.sin(x * 0.107 - t * 4.1) * (0.28 + w * 0.5);
+    // Most of the energy travels with the wind; one small train runs against it
+    // so the field never reads as a single sliding sheet. The mid wave is phase
+    // modulated by the long roller, which is what stops the pattern repeating
+    // visibly across a screen.
+    const roll = Math.sin(x * 0.0083 + t * 0.62);
+    let s = roll * (2.6 + w * 3.4)
+      + Math.sin(x * 0.019 + t * 1.35 + roll * 1.5) * (2.2 + w * 2.2)
+      + Math.sin(x * 0.044 + t * 2.30 + roll * 0.9) * (1.3 + w * 1.6)
+      + Math.sin(x * 0.095 - t * 3.9) * (0.5 + w * 0.9);
+    // water is not a sine: crests come to a point, troughs are long and flat.
+    // Adding a term in s^2 lifts the peaks and fills the hollows; the constant
+    // takes the mean back out so the waterline does not climb with the wind.
+    const a = 4.4 + w * 5.2;
+    return s + 0.2 * (s * s / a - a * 0.42);
   },
   surface(x) {
     if (!this.h) return this.ambient(x);
@@ -2910,6 +2920,30 @@ const World = {
   isIndoor(x) { const r = this.roofY(x); return r !== null && r < -20; },
   isLand(x) { return this.floorY(x) < 0; },
   surface(x) { return Water.surface(x); },
+  // The wave surface in screen space, sampled once a frame and shared by the
+  // water body and the waterline detail so the two cannot drift apart. Columns
+  // are integer-aligned: the top edge is meant to be a hard pixel staircase,
+  // not an antialiased diagonal.
+  waterTop(cam) {
+    const W = G.W, step = 3;
+    if (this._wt && this._wtT === G.t && this._wtX === cam.x && this._wtY === cam.y && this._wtZ === cam.zoom) return this._wt;
+    const n = Math.ceil((W + step * 4) / step), xs = new Int32Array(n), ys = new Int32Array(n), wxs = new Float64Array(n), sus = new Float64Array(n), wet = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      const sx = -step * 2 + i * step, wx = cam.toWorldX(sx), su = this.surface(wx);
+      xs[i] = sx; wxs[i] = wx; sus[i] = su; ys[i] = Math.round(cam.toScreen(wx, su)[1]);
+      wet[i] = this.floorY(wx) > su + 1 ? 1 : 0;
+    }
+    this._wtT = G.t; this._wtX = cam.x; this._wtY = cam.y; this._wtZ = cam.zoom;
+    return (this._wt = { xs, ys, wxs, sus, wet, n, step });
+  },
+  // clip the context to everything below the wave surface
+  clipWater(ctx, cam) {
+    const T = this.waterTop(cam), H = G.H;
+    ctx.beginPath();
+    for (let i = 0; i < T.n; i++) { const y = T.ys[i]; if (y < H + 40 && T.wet[i]) ctx.rect(T.xs[i], y, T.step, H + 40 - y); }
+    ctx.clip();
+    return T;
+  },
   // nearest x (searching outward) where predicate holds, or null
   findX(fromX, pred, maxD = 4000, step = 24) {
     for (let d = 0; d < maxD; d += step) { if (pred(fromX + d)) return fromX + d; if (pred(fromX - d)) return fromX - d; }
@@ -3104,7 +3138,13 @@ const World = {
     const top = mixColor(tint[0], '#08202a', 1 - light);
     const mid = mixColor(tint[1], '#06181f', 1 - light);
     const deep = mixColor(tint[2], '#030c10', 1 - light);
-    const y0 = Math.max(Math.round(hy), 0);
+    // everything below is clipped to the actual wave surface, so a crest holds
+    // water above the still line and a trough shows the sky through it
+    ctx.save();
+    const T = this.clipWater(ctx, cam);
+    let minY = H;
+    for (let i = 0; i < T.n; i++) if (T.ys[i] < minY) minY = T.ys[i];
+    const y0 = Math.max(minY, 0);
     // --- depth ramp anchored to world depth, so the water does not slide with the camera
     const yA = cam.toScreen(0, -10)[1], yB = cam.toScreen(0, 820)[1];
     if (yB - yA > 1) {
@@ -3166,6 +3206,7 @@ const World = {
     Tex.fill(ctx, mo, cam.x * 0.9 + Math.sin(this.t * 0.2) * 9, cam.y * 0.9 - this.t * 3, z, 0.3);
     Tex.fill(ctx, mo, cam.x * 0.55 - 40 + Math.sin(this.t * 0.14 + 2) * 6, cam.y * 0.55 - this.t * 1.4, z, 0.16);
     ctx.restore();
+    ctx.restore();          // release the wave-surface clip
   },
   drawTerrain(ctx, cam) {
     const W = G.W, H = G.H, z = cam.zoom, BP = Biome.mixPal(cam.x), step = 3;
@@ -3760,64 +3801,104 @@ const World = {
   drawSurface(ctx, cam, day) {
     const W = G.W, H = G.H, z = cam.zoom, sc = this.skyColors(day), light = this.light(day);
     const hy0 = cam.toScreen(0, 0)[1];
-    if (hy0 < -60 || hy0 > H + 60) return;
+    if (hy0 < -160 || hy0 > H + 160) return;
     const B = Biome.mixPal(cam.x);
-    const step = Math.max(2, Math.round(3 * Math.min(1, z)));
-    // underwater tint and depth shade, applied under the surface line
-    // sample the surface once, and note which columns actually have water:
-    // above the waterline the ground is dry and must not get a surface line
-    const xs = [], ys = [], wet = [];
-    for (let sx = -step; sx <= W + step; sx += step) {
-      const wx = cam.toWorldX(sx), su = this.surface(wx);
-      xs.push([sx, wx]); ys.push(cam.toScreen(wx, su)[1]);
-      wet.push(this.floorY(wx) > su + 1);
-    }
+    // exactly the columns the water body was filled with, so the trim can never
+    // sit off the edge it is trimming
+    const T = this.waterTop(cam), step = T.step, xs = T.xs, ys = T.ys, wxs = T.wxs, wet = T.wet, n = T.n;
+
+    // --- shallow tint under the film, fading out with depth
     {
-      // a shallow tint that fades out with depth, rather than one flat wash that
-      // turned every submerged bank into a black slab
-      const yT = Math.max(0, Math.round(hy0)), yB = cam.toScreen(0, 120)[1];
-      if (yB > yT) {
-        const tc = hexToRgb(mixColor(B.water[0], '#06222c', 0.4));
-        const gg = ctx.createLinearGradient(0, yT, 0, yB);
+      const yB = cam.toScreen(0, 120)[1];
+      const tc = hexToRgb(mixColor(B.water[0], '#06222c', 0.4));
+      const yTmin = Math.max(0, Math.round(hy0) - 40);
+      if (yB > yTmin) {
+        const gg = ctx.createLinearGradient(0, yTmin, 0, yB);
         gg.addColorStop(0, `rgba(${tc[0]},${tc[1]},${tc[2]},0.16)`);
         gg.addColorStop(1, `rgba(${tc[0]},${tc[1]},${tc[2]},0.03)`);
         ctx.fillStyle = gg;
-        for (let i = 0; i < xs.length; i++) if (wet[i]) ctx.fillRect(xs[i][0], yT, step, Math.min(H, yB) - yT);
+        for (let i = 0; i < n; i++) { if (!wet[i]) continue; const y = Math.max(0, ys[i]); if (y < yB) ctx.fillRect(xs[i], y, step, Math.min(H, yB) - y); }
       }
     }
-    const bandH = Math.max(1, Math.round(1.6 * z)), foam = mixColor('#eafcf6', B.water[0], 0.25);
-    const sheen = mixColor(B.water[0], sc.bot, 0.45), edge = mixColor(B.water[0], '#0a3038', 0.4);
-    // A thin film rather than a painted ribbon: the lit part only shows where the
-    // surface actually tilts toward the sky, so the line breaks up along its length.
-    for (let i = 0; i < xs.length; i++) {
+
+    const px = Math.max(1, Math.round(z));                       // one "art pixel" at this zoom
+    const foam = mixColor('#eafcf6', B.water[0], 0.14);
+    const skin = mixColor(B.water[0], '#e8fbf4', 0.58);          // the lit film on the water's back
+    const face = mixColor(B.water[0], '#04181f', 0.62);          // the shaded front of a wave
+    const deepLip = mixColor(B.water[1] || B.water[0], '#04161c', 0.5);
+
+    // --- The surface itself. Crest and trough are judged against a smoothed
+    // baseline of the visible span rather than screen-space curvature: the
+    // screen ys are rounded to integers, so at low zoom curvature is mostly
+    // quantisation noise and the whole waterline lights up as foam.
+    let mean = 0, cnt = 0;
+    for (let i = 0; i < n; i++) if (wet[i]) { mean += T.sus[i]; cnt++; }
+    if (!cnt) return;
+    mean /= cnt;
+    let amp = 0;
+    for (let i = 0; i < n; i++) if (wet[i]) { const d = T.sus[i] - mean; amp += d * d; }
+    amp = Math.sqrt(amp / cnt);
+    const norm = Math.max(0.9, amp * 1.35), h = step / Math.max(0.05, z);
+    for (let i = 1; i < n - 1; i++) {
       if (!wet[i]) continue;
-      const sx = xs[i][0], wx = xs[i][1], sy = Math.round(ys[i]);
-      const lift = Water.surface(wx) - Water.ambient(wx), sl = Water.slope(wx);
-      const tilt = clamp(0.2 + sl * 2.2, 0, 1);
-      ctx.globalAlpha = 0.4 + tilt * 0.5;
-      ctx.fillStyle = mixColor(sheen, foam, tilt * 0.7);
-      ctx.fillRect(sx, sy - bandH, step, bandH);
+      const sx = xs[i], sy = ys[i];
+      if (sy < -24 || sy > H + 24) continue;
+      // world-space, so nothing here depends on the zoom
+      const rel = (mean - T.sus[i]) / norm;              // + above the mean, - below
+      const slope = (T.sus[i + 1] - T.sus[i - 1]) / (2 * h);   // + falling to the right
+      const crest = clamp(rel, 0, 1), trough = clamp(-rel, 0, 1);
+      const steep = clamp(Math.abs(slope) * 2.6, 0, 1);
+      // key light comes from up and to the left: the back of a wave catches it
+      const lit = clamp(slope * 3.2, 0, 1), shade2 = clamp(-slope * 3.2, 0, 1);
+
+      // body skin: lighter water hugging the top edge, brightest on the backs
+      ctx.globalAlpha = 0.6 + lit * 0.4;
+      ctx.fillStyle = mixColor(skin, foam, lit * 0.5);
+      ctx.fillRect(sx, sy, step, px * 2);
+      // the shaded face, pushed a little deeper
+      if (shade2 > 0.08) {
+        ctx.globalAlpha = 0.62 * shade2;
+        ctx.fillStyle = face;
+        ctx.fillRect(sx, sy + px, step, px * 4);
+      }
+      // the film line on top
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = mixColor(sc.bot, foam, 0.4 + lit * 0.45);
+      ctx.fillRect(sx, sy - px, step, px);
+      // crest cap: foam on the tops of waves, more of it the steeper they are
+      const cap = crest * (0.35 + steep * 0.95);
+      if (cap > 0.3) {
+        ctx.globalAlpha = clamp((cap - 0.25) * 1.6, 0, 1);
+        ctx.fillStyle = foam;
+        ctx.fillRect(sx, sy - px * 2, step, px * 2);
+        if (cap > 0.72) { ctx.globalAlpha = clamp((cap - 0.68) * 2.4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(sx, sy - px * 3, step, px); }
+      }
+      // troughs read darker, which is what gives the swell its volume
+      if (trough > 0.25) { ctx.globalAlpha = 0.45 * trough; ctx.fillStyle = deepLip; ctx.fillRect(sx, sy, step, px * 5); }
       ctx.globalAlpha = 1;
-      const crest = ihash(Math.floor(wx / 9), 33) * 0.55 + Math.abs(sl) * 1.7 + clamp(Math.abs(lift) / 9, 0, 0.6);
-      if (crest > 0.72) { ctx.globalAlpha = clamp((crest - 0.68) * 1.9, 0, 1); ctx.fillStyle = foam; ctx.fillRect(sx, sy - bandH, step, Math.max(1, Math.round(z * 0.8))); ctx.globalAlpha = 1; }
-      ctx.globalAlpha = 0.5; ctx.fillStyle = edge; ctx.fillRect(sx, sy + Math.round(z * 0.4), step, Math.max(1, Math.round(z * 0.7))); ctx.globalAlpha = 1;
     }
-    // crest foam: round white blobs where the surface is steep or moving fast
-    for (let i = 1; i < xs.length - 1; i++) {
+
+    // --- breaking crests: white caps where the surface is moving fast or is
+    // very steep, drawn as blocks rather than circles to stay in the palette
+    for (let i = 1; i < n - 1; i++) {
       if (!wet[i]) continue;
-      const wx = xs[i][1], vv = Math.abs(Water.velocity(wx)), sl = Math.abs(Water.slope(wx));
-      const f = clamp((vv - 16) / 55, 0, 1) + clamp((sl - 0.22) / 0.7, 0, 1);
-      if (f <= 0.08) continue;
-      const sy = ys[i], r = Math.max(1, Math.round((1.2 + f * 3) * z));
-      ctx.globalAlpha = clamp(f, 0, 1) * 0.95; ctx.fillStyle = '#f4fffb';
-      ctx.beginPath(); ctx.arc(xs[i][0], sy - r * 0.5, r, 0, TAU); ctx.fill();
-      if (f > 0.7) { ctx.globalAlpha = clamp(f - 0.5, 0, 1) * 0.8; ctx.beginPath(); ctx.arc(xs[i][0] + r, sy - r * 1.4, r * 0.6, 0, TAU); ctx.fill(); }
+      const wx = wxs[i], vv = Math.abs(Water.velocity(wx));
+      const sl = Math.abs((T.sus[i + 1] - T.sus[i - 1]) / (2 * (step / Math.max(0.05, z))));
+      const f = clamp((vv - 26) / 70, 0, 1) + clamp((sl - 0.42) / 0.9, 0, 1);
+      if (f <= 0.14) continue;
+      const sy = ys[i], w = Math.max(1, Math.round((1 + f * 2) * px));
+      ctx.globalAlpha = clamp(f, 0, 1) * 0.9; ctx.fillStyle = '#f4fffb';
+      ctx.fillRect(xs[i], sy - w, step, w);
+      if (f > 0.8) { ctx.globalAlpha = clamp(f - 0.6, 0, 1) * 0.85; ctx.fillRect(xs[i] - step, sy - w - px, step * 3, px); }
+      ctx.globalAlpha = 1;
     }
-    ctx.globalAlpha = 1;
-    // scum and pollen riding the film
+
+    // --- scum and pollen riding the film
     ctx.globalAlpha = 0.2; ctx.fillStyle = B.scum || '#6a7a4a';
-    for (let i = 0; i < xs.length; i += 2) { if (!wet[i]) continue; const wx = xs[i][1]; if (ihash(Math.floor(wx / 7), 44) > 0.74) ctx.fillRect(xs[i][0], Math.round(ys[i]) - 1, step, Math.max(1, Math.round(z))); }
+    for (let i = 0; i < n; i += 2) { if (!wet[i]) continue; const wx = wxs[i]; if (ihash(Math.floor(wx / 7), 44) > 0.74) ctx.fillRect(xs[i], ys[i] + px, step, px); }
     ctx.globalAlpha = 1;
+
+    // --- pollen drifting in the air over the water
     if (light > 0.15) {
       ctx.globalAlpha = 0.28 * light; ctx.fillStyle = '#f4ecc0';
       for (let i = 0; i < 22; i++) {
@@ -3829,10 +3910,22 @@ const World = {
       }
       ctx.globalAlpha = 1;
     }
-    // sparkle chips on the crests
-    ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < xs.length; i += 2) { const wx = xs[i][1]; if (ihash(Math.floor(wx / 4), 21) < 0.07 && Math.sin(this.t * 4 + wx * 0.12) > 0.65) { ctx.globalAlpha = 0.8 * light; ctx.fillRect(xs[i][0], Math.round(ys[i]) - bandH - 1, Math.max(1, Math.round(z)), Math.max(1, Math.round(z))); } }
-    ctx.globalAlpha = 1;
+
+    // --- sun glitter, only on the backs of waves that face the light
+    if (light > 0.2) {
+      ctx.fillStyle = '#ffffff';
+      for (let i = 1; i < n - 1; i += 2) {
+        if (!wet[i]) continue;
+        const slope = (T.sus[i + 1] - T.sus[i - 1]) / (2 * (step / Math.max(0.05, z)));
+        if (slope < 0.08) continue;
+        const wx = wxs[i];
+        if (ihash(Math.floor(wx / 5), 21) > 0.22) continue;
+        if (Math.sin(this.t * 5 + wx * 0.19) < 0.3) continue;
+        ctx.globalAlpha = 0.85 * light;
+        ctx.fillRect(xs[i], ys[i] - px * 2, px, px);
+      }
+      ctx.globalAlpha = 1;
+    }
   },
   drawMist(ctx, cam, day) {
     const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1];
@@ -6561,7 +6654,7 @@ const Finisher = {
     const seq = [];
     let last = null;
     for (let i = 0; i < steps; i++) { let k = choice(FIN_KEYS); if (k === last) k = FIN_KEYS[(FIN_KEYS.indexOf(k) + 1) % 3]; seq.push(k); last = k; }
-    G.finisher = { e, seq, res: [], i: 0, t: 0, dur: 1.05, hits: 0, misses: 0, flash: 0, over: 0, won: false };
+    G.finisher = { e, seq, res: [], i: 0, t: 0, dur: 2.2, hits: 0, misses: 0, flash: 0, over: 0, won: false, endT: 0, camK: 0 };
     G.banner = null;
     G.slowmo(0.28, 0.5); G.shake(6); SFX.roar(2.4, e.pan); G.zoomPunch(1.18);
     G.fx.text(G.player.x, G.player.y - 34 * G.player.vis, 'EXECUTION', { color: '#ffd060', scale: 3, life: 1.2 });
@@ -6576,9 +6669,24 @@ const Finisher = {
     if (F.flash > 0) F.flash -= raw;
     // hold the two of them together while it plays
     P.vx *= 0.8; P.vy *= 0.8; e.vx *= 0.8; e.vy *= 0.8;
-    P.invuln = Math.max(P.invuln, 0.2);
+    P.invuln = Math.max(P.invuln, 0.4);
+    // keep the camera on the pair and let the croc thrash through it
+    F.camK = Math.min(1, (F.camK || 0) + raw * 3);
+    // clamp the two of them together: the shot is only readable if the pair
+    // stays in frame, and a boss that keeps swimming drags the camera off it
+    e.stun = Math.max(e.stun || 0, 0.2);
+    const side = sign(P.x - e.x) || 1;
+    const reach = 16 * P.vis + (e.r || 6) * (e.size || 1) * 0.7;
+    P.x = lerp(P.x, e.x + side * reach, Math.min(1, raw * 9));
+    P.y = lerp(P.y, e.y, Math.min(1, raw * 7));
+    P.angle = angleLerp(P.angle, side > 0 ? Math.PI : 0, Math.min(1, raw * 8));
+    P.facing = side > 0 ? -1 : 1;
+    P.roll = lerp(P.roll || 0, 0, Math.min(1, raw * 3));
+    P.legPhase += raw * 12;
+    if (chance(raw * 30)) G.fx.blood(e.x + rand(-16, 16), e.y + rand(-10, 10), 2, 0, 0, 40, e.bloodColors);
+    if (P.inWater && chance(raw * 24)) G.fx.bubbles(P.x, P.y, 2, 14 * P.vis, -20);
     F.t += raw;
-    F.dur = 1.05 - F.i * 0.11;
+    F.dur = 2.2 - F.i * 0.1;          // still shrinking, but from a very long window
     const want = F.seq[F.i];
     let got = null;
     if (Input.bitePressed()) got = 'bite';
@@ -6593,18 +6701,23 @@ const Finisher = {
     F.res.push(hit);
     if (hit) {
       F.hits++;
-      G.hitstop(0.06); G.shake(8); SFX.crunch(2, e.pan); SFX.gib(e.pan);
+      G.shake(10); SFX.crunch(2, e.pan); SFX.gib(e.pan);
+      Cine.hit(1, '#ffffff'); Cine.wash('#c02020', 0.5);
       G.fx.gore(e.x, e.y, 90, 0, 0, true);
-      G.fx.text(e.x, e.y - 20 - F.i * 6, choice(['RIP!', 'TEAR!', 'CRUNCH!']), { color: '#fff060', scale: 2, life: 0.8 });
+      G.fx.flesh(e.x, e.y, 10, 120);
+      // throw the pair around a little so each prompt lands as a camera beat
+      P.roll = (P.roll || 0) + 1.3; P.vy -= 40;
+      e.vy -= 30; e.flash = 0.12;
       if (e.bleeds && G.settings.gore) { const l = Gore.limbsOf(e).filter(q => !(e.missing && e.missing.has(q.id))); if (l.length) Gore.tear(e, choice(l).id, rand(-1, 1), rand(-1, 0)); }
     } else {
       F.misses++;
-      G.shake(5); G.redFlash(0.3); SFX.hurt && SFX.hurt();
-      G.fx.text(P.x, P.y - 24 * P.vis, 'MISSED', { color: '#ff7060', scale: 2, life: 0.8 });
+      G.shake(5); G.redFlash(0.25); SFX.hurt && SFX.hurt();
+      Cine.wash('#602020', 0.4);
     }
     F.flash = 0.14; F.t = 0; F.i++;
-    if (F.misses >= 2) { F.over = 0.4; F.won = false; return; }
-    if (F.i >= F.seq.length) { F.over = 0.5; F.won = F.hits >= F.seq.length - 1; }
+    // three whole misses to lose it, and landing a single prompt is enough to win
+    if (F.misses >= 3) { F.over = 0.5; F.won = false; return; }
+    if (F.i >= F.seq.length) { F.over = 0.75; F.won = F.hits >= 1; }
   },
   end() {
     const F = G.finisher; if (!F) return;
@@ -6612,8 +6725,9 @@ const Finisher = {
     G.finisher = null;
     if (!e || e.dead) return;
     if (F.won) {
-      G.fx.text(e.x, e.y - 40, 'EXECUTED', { color: '#ffd060', scale: 3, life: 2.2 });
-      G.slowmo(0.16, 1.4); G.whiteFlash(0.7); G.shake(18); SFX.roar(3, e.pan);
+      G.slowmo(0.16, 1.6); G.whiteFlash(0.45); G.shake(22); SFX.roar(3, e.pan);
+      Cine.hit(1, '#ffffff'); Cine.wash('#c01818', 1);
+      G.fx.gore(e.x, e.y, 220, 0, 0, true); G.fx.flesh(e.x, e.y, 40, 200);
       e.hp = 0;
       P.lastKillHow = 'roll';
       // a boat comes apart rather than dying, and takes its crew with it
@@ -6626,8 +6740,8 @@ const Finisher = {
       Boss.recover(e, 0.3);
       const dx = sign(P.x - e.x) || 1;
       P.vx = dx * 320; P.vy = -160;
-      P.hurt(18 * (e.bossDmg || 1), e, 'crush');
-      G.fx.text(P.x, P.y - 26 * P.vis, 'THROWN OFF', { color: '#ff5030', scale: 2, life: 1.4 });
+      P.hurt(12 * (e.bossDmg || 1), e, 'crush');
+      Cine.wash('#802020', 0.8); G.shake(12);
     }
   },
 };
@@ -6635,7 +6749,10 @@ const Finisher = {
 /* ===== src/player.js ===== */
 'use strict';
 // death-roll timing: the window sits three quarters through each beat
-const QTE_AT = 0.74, QTE_PERFECT = 0.075, QTE_GOOD = 0.17;
+// Death-roll timing. Deliberately generous: the window is most of the beat and
+// the beat is slow, so the roll is a rhythm you play along to rather than a
+// reflex test you fail. Missing costs payout, never the grip.
+const QTE_AT = 0.72, QTE_PERFECT = 0.20, QTE_GOOD = 0.40;
 class Player {
   constructor() { this.reset(); }
   reset() {
@@ -6663,6 +6780,7 @@ class Player {
     this.dashCd = 0; this.dashCharges = 1; this.dashT = 0; this.ramHit = new Set();
     this.braceT = 0; this.braceCd = 0; this.braceFlash = 0; this.parries = 0; this.strainBonus = 0;
     this.spliceGlow = 0; this.spliceCol = '#40f0c8';
+    this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
@@ -6722,6 +6840,8 @@ class Player {
     if (this.braceCd > 0) this.braceCd -= dt;
     if (this.braceT > 0) this.braceT -= dt;
     if (this.braceFlash > 0) this.braceFlash -= dt;
+    if (this.qteLastT > 0) this.qteLastT -= dt;
+    if (this.perfectT > 0) this.perfectT -= dt;
     if (this.spliceGlow > 0) { this.spliceGlow -= dt * 0.8; if (chance(dt * 20)) G.fx.sparks(this.x + rand(-16, 16) * this.vis, this.y + rand(-8, 8) * this.vis, 2); }
     if (inp.brace) this.brace();
     if (inp.bite) this.bite();
@@ -6852,8 +6972,8 @@ class Player {
       this.roll = (1 - Math.max(0, this.rollT)) * TAU;
       G.shake(1.2);
       // the marker sweeps once per beat; the window sits at the far side
-      this.qteT = (this.qteT || 0) + dt * 2.6 * this.st.rollSpeed;
-      if (this.qteT >= 1) { this.qteT -= 1; this.qteMissed = true; this.qteBeats = (this.qteBeats || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); SFX.hurt && SFX.hurt(); }
+      this.qteT = (this.qteT || 0) + dt * 1.35 * Math.sqrt(this.st.rollSpeed);
+      if (this.qteT >= 1) { this.qteT -= 1; this.qteMissed = true; this.qteBeats = (this.qteBeats || 0) + 1; }
       if (under) { G.fx.bubbles(this.x, this.y, 2, 12 * this.vis, -20); if (chance(0.5)) G.fx.add({ type: 'foam', x: this.x + rand(-14, 14) * this.vis, y: World.surface(this.x), vx: rand(-30, 30), vy: 0, s: 1, life: 0.5 }); }
       if (this.rollT <= 0) { this.roll = 0; this.rollT = 0; this.qteT = 0; this.rollHit(); }
     }
@@ -6916,10 +7036,19 @@ class Player {
     }
     if (this.rollT > 0) {
       // scoring the beat: dead centre of the window is a tear, the edges graze
-      const ph = this.qteT || 0, off = Math.abs(ph - QTE_AT);
-      if (off < QTE_PERFECT) { this.qteHits = (this.qteHits || 0) + 2; G.fx.text(this.x, this.y - 24 * this.vis, 'TEAR!', { color: '#fff060', scale: 2 }); G.hitstop(0.07); G.shake(7); SFX.crunch(1.4, this.pan); }
-      else if (off < QTE_GOOD) { this.qteHits = (this.qteHits || 0) + 1; G.fx.text(this.x, this.y - 22 * this.vis, 'GOOD', { color: '#9ef0c8' }); SFX.chomp(this.size, this.pan); }
-      else { this.qteMissed = true; G.fx.text(this.x, this.y - 22 * this.vis, 'SLIP', { color: '#ff9080' }); }
+      const ph = this.qteT || 0;
+      let off = Math.abs(ph - QTE_AT); if (off > 0.5) off = 1 - off;   // the window wraps
+      const e = this.latched;
+      if (off < QTE_PERFECT) {
+        this.qteHits = (this.qteHits || 0) + 2;
+        G.shake(8); SFX.crunch(1.4, this.pan); Cine.hit(1, '#fff0a0');
+        if (e) { G.fx.gore(e.x, e.y, 70, 0, 0, false); G.fx.sparks(e.x, e.y, 8); }
+      } else if (off < QTE_GOOD) {
+        this.qteHits = (this.qteHits || 0) + 1;
+        G.shake(5); SFX.chomp(this.size, this.pan); Cine.hit(0.45, '#9ef0c8');
+        if (e) G.fx.blood(e.x, e.y, 6, 0, 0, 50, e.bloodColors);
+      } else { this.qteMissed = true; SFX.chomp(this.size, this.pan); }
+      this.qteLast = off < QTE_PERFECT ? 2 : off < QTE_GOOD ? 1 : 0; this.qteLastT = 0.5;
       this.qteBeats = (this.qteBeats || 0) + 1;
       this.qteT = 0;
       this.biteCd = 0.1;
@@ -6979,15 +7108,8 @@ class Player {
     // the roll is worth what you timed out of it: whiff every beat and it barely bruises
     const beats = Math.max(1, this.qteBeats || 1), hits = this.qteHits || 0;
     const acc = clamp(hits / (beats * 2), 0, 1);
-    const qmul = 0.35 + acc * 1.65;
-    if (this.qteMissed && acc < 0.34 && chance(0.5) && this.latched) {
-      // a fumbled roll loses the grip instead of paying out
-      const lost = this.latched; this.latched = null; this.latchT = 0;
-      lost.vx = -this.facing * 200; lost.vy = -50;
-      G.fx.text(lost.x, lost.y - 16 * lost.size, 'LOST GRIP', { color: '#ffb0b0', scale: 2 });
-      SFX.hurt && SFX.hurt();
-      return;
-    }
+    // a roll you barely played still tears; timing it well makes it brutal
+    const qmul = 0.8 + acc * 1.4;
     const dmg = this.biteDmg * 1.6 * this.st.rollDmg * qmul, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
     const lethal = e.hp <= dmg; this.lastKillHow = 'roll';
     e.takeDamage(dmg, this, { dx: -dx, dy: -dy, pierce: true });
@@ -6996,7 +7118,7 @@ class Player {
     G.fx.gore(e.x, e.y, 130, 0, 0, true); G.hitstop(0.08); G.shake(9); SFX.crunch(this.size * 1.5, e.pan); SFX.gib(e.pan);
     G.fx.text(e.x, e.y - 16 * e.size, choice(['TEAR!', 'SHRED!', 'RIP!']), { color: '#ff4040', scale: 2 });
     G.addScore(Math.round(25 * qmul));
-    if (acc >= 0.9) { G.fx.text(this.x, this.y - 30 * this.vis, 'PERFECT ROLL', { color: '#fff060', scale: 2, life: 1.2 }); G.addScore(120); }
+    if (acc >= 0.85) { this.perfectT = 1.2; G.addScore(120); G.whiteFlash(0.3); Cine.hit(1, '#fff060'); }
     if (!e.dead) this.latchT = 0;
   }
   ramCheck() {
@@ -7153,6 +7275,134 @@ class Player {
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     }
     if (this.frenzyT > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,60,30,${(0.06 + 0.04 * Math.sin(G.t * 20)).toFixed(3)})`; ctx.beginPath(); ctx.arc(this.x, this.y, 26 * this.vis, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+  }
+}
+
+/* ===== src/cine.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// The cinematic layer. Two moments in the game are meant to stop being a
+// side-scroller for a second — the death roll and a boss execution — and both
+// want the same furniture: bars closing in, the camera leaning forward, speed
+// lines, and a held impact frame on every hit. This owns all of it so the two
+// sequences look like they belong to the same film.
+// ---------------------------------------------------------------------------
+const Cine = {
+  k: 0, mode: null, bar: 0, flash: 0, flashCol: '#ffffff', shockT: 0, tint: 0, tintCol: '#ff3020',
+  // what the current game state wants from the camera
+  want() {
+    if (G.finisher) return { k: 1, zoom: 1.42, bar: 30, mode: 'finish' };
+    const P = G.player;
+    if (P && !P.dead && P.rollT > 0) {
+      // rolling a minnow should not get the full treatment; only something
+      // worth the drama pulls the bars in
+      const e = P.latched, big = !!e && (e.isBoss || e.threat || e.mass >= 40);
+      return { k: 1, zoom: big ? 1.16 : 1.05, bar: big ? 15 : 5, mode: big ? 'roll' : 'rolls' };
+    }
+    return { k: 0, zoom: 1, bar: 0, mode: null };
+  },
+  update(raw) {
+    const w = this.want();
+    // in fast, out slow: the cut should snap and the release should breathe
+    const rate = w.k > this.k ? 12 : 4.5;
+    this.k += (w.k - this.k) * Math.min(1, rate * raw);
+    if (w.mode) this.mode = w.mode; else if (this.k < 0.02) this.mode = null;
+    this.bar = lerp(this.bar, w.bar, Math.min(1, rate * raw));
+    if (this.flash > 0) this.flash -= raw * 4.5;
+    if (this.shockT > 0) this.shockT -= raw * 3;
+    if (this.tint > 0) this.tint -= raw * 2.2;
+    // Morph runs its own camera; never fight it
+    if (this.k > 0.01 && !G.morph) G.zoomP = Math.max(G.zoomP, lerp(1, w.zoom, this.k));
+  },
+  // a held frame on a landed hit
+  hit(power = 1, col = '#ffffff') {
+    this.flash = Math.min(1, 0.55 + power * 0.45); this.flashCol = col;
+    this.shockT = 1; G.hitstop(0.05 + power * 0.05);
+  },
+  wash(col = '#ff3020', amount = 1) { this.tint = Math.max(this.tint, amount); this.tintCol = col; },
+  draw(ctx) {
+    const W = G.W, H = G.H;
+    if (this.k <= 0.01 && this.flash <= 0 && this.tint <= 0) return;
+    const k = clamp(this.k, 0, 1);
+    if (k > 0.01) {
+      // the bars
+      const b = Math.round(this.bar * k);
+      if (b > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.88)';
+        ctx.fillRect(0, 0, W, b); ctx.fillRect(0, H - b, W, b);
+        ctx.fillStyle = 'rgba(140,220,200,0.18)';
+        ctx.fillRect(0, b, W, 1); ctx.fillRect(0, H - b - 1, W, 1);
+      }
+      // a corner frame, so it reads as a viewfinder rather than a black border
+      const m = 6, len = 10, a = 0.22 * k;
+      ctx.fillStyle = `rgba(190,240,225,${a.toFixed(3)})`;
+      for (const [cx, cy, dx, dy] of [[m, b + m, 1, 1], [W - m, b + m, -1, 1], [m, H - b - m, 1, -1], [W - m, H - b - m, -1, -1]]) {
+        ctx.fillRect(dx > 0 ? cx : cx - len, cy, len, 1);
+        ctx.fillRect(cx, dy > 0 ? cy : cy - len, 1, len);
+      }
+      // speed lines converging on the middle: only while the roll is spinning
+      if (this.mode === 'roll') {
+        const t = G.t, cx = W / 2, cy = H / 2;
+        ctx.globalAlpha = 0.3 * k;
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 26; i++) {
+          const a2 = ihash(i, 400) * TAU + t * 0.6;
+          const r0 = 90 + ihash(i, 401) * 60 + Math.sin(t * 9 + i) * 12;
+          const ln = 12 + ihash(i, 402) * 26;
+          const dx = Math.cos(a2), dy = Math.sin(a2);
+          for (let s = 0; s < ln; s += 3) {
+            const x = Math.round(cx + dx * (r0 + s)), y = Math.round(cy + dy * (r0 + s) * 0.62);
+            if (x < 0 || x > W || y < 0 || y > H) break;
+            ctx.fillRect(x, y, 2, 1);
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+      // vignette
+      const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.22, W / 2, H / 2, H * 0.72);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${(0.42 * k).toFixed(3)})`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+    // impact: a fat ring plus a one-frame wash, the comic-book hit
+    if (this.shockT > 0) {
+      const s = 1 - this.shockT, r = 26 + s * 170;
+      ctx.globalAlpha = clamp(this.shockT, 0, 1) * 0.34;
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, Math.round(4 * this.shockT));
+      ctx.beginPath(); ctx.ellipse(W / 2, H / 2, r, r * 0.66, 0, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    if (this.flash > 0) { ctx.globalAlpha = clamp(this.flash, 0, 1) * 0.3; ctx.fillStyle = this.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+    if (this.tint > 0) { ctx.globalAlpha = clamp(this.tint, 0, 1) * 0.35; ctx.fillStyle = this.tintCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+  },
+};
+
+// ---------------------------------------------------------------------------
+// A chunky pixel key cap, used everywhere a button is asked for.
+// ---------------------------------------------------------------------------
+function drawKeyCap(ctx, x, y, w, h, label, opts = {}) {
+  const lit = opts.lit, col = opts.color || '#ffd060', dead = opts.dead;
+  const base = dead ? '#1a2224' : lit ? mixColor(col, '#ffffff', 0.35) : '#22323a';
+  const top = dead ? '#243036' : lit ? '#ffffff' : mixColor(col, '#101a1e', 0.55);
+  const rim = dead ? '#101618' : col;
+  x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h);
+  // drop shadow / side
+  ctx.fillStyle = '#050a0c'; ctx.fillRect(x + 1, y + 3, w, h);
+  // body
+  ctx.fillStyle = base; ctx.fillRect(x, y, w, h);
+  // bevel: lit top edge, dark bottom
+  ctx.fillStyle = top; ctx.fillRect(x, y, w, 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x, y + h - 2, w, 2);
+  // rim
+  ctx.fillStyle = rim;
+  ctx.fillRect(x, y, w, 1); ctx.fillRect(x, y + h - 1, w, 1);
+  ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+  // corner notches, so it reads as a cap and not a box
+  ctx.fillStyle = '#050a0c';
+  ctx.fillRect(x, y, 1, 1); ctx.fillRect(x + w - 1, y, 1, 1);
+  ctx.fillRect(x, y + h - 1, 1, 1); ctx.fillRect(x + w - 1, y + h - 1, 1, 1);
+  if (label) {
+    const sc = opts.scale || 1;
+    Font.draw(ctx, label, x + w / 2, y + Math.round((h - Font.H * sc) / 2), { color: dead ? '#4a5a5e' : lit ? '#10201c' : '#dff4ec', align: 'center', scale: sc });
   }
 }
 
@@ -7648,38 +7898,16 @@ const UI = {
     // biome name, bottom right
     const B = Biome.at(P.x);
     Font.draw(ctx, B.name, W - 10, H - 12, { color: '#7f9a90', align: 'right' });
-    // death-roll timing ring: a marker sweeps and the window is the lit arc
-    if (P.rollT > 0) {
-      const [sx, sy] = G.cam.toScreen(P.x, P.y);
-      const R = 34, ph = P.qteT || 0;
-      ctx.save();
-      ctx.translate(sx, sy - 4);
-      ctx.strokeStyle = 'rgba(10,16,18,0.85)'; ctx.lineWidth = 7;
-      ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
-      // the good window, then the perfect core inside it
-      const a0 = (QTE_AT - QTE_GOOD) * TAU - Math.PI / 2, a1 = (QTE_AT + QTE_GOOD) * TAU - Math.PI / 2;
-      ctx.strokeStyle = '#3f8f7a'; ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.arc(0, 0, R, a0, a1); ctx.stroke();
-      const p0 = (QTE_AT - QTE_PERFECT) * TAU - Math.PI / 2, p1 = (QTE_AT + QTE_PERFECT) * TAU - Math.PI / 2;
-      ctx.strokeStyle = '#ffe060'; ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.arc(0, 0, R, p0, p1); ctx.stroke();
-      // sweeping marker
-      const ma = ph * TAU - Math.PI / 2;
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(Math.cos(ma) * (R - 6), Math.sin(ma) * (R - 6)); ctx.lineTo(Math.cos(ma) * (R + 6), Math.sin(ma) * (R + 6)); ctx.stroke();
-      // beats landed so far
-      const beats = P.qteBeats || 0, hits = P.qteHits || 0;
-      ctx.fillStyle = '#ffe060';
-      for (let i = 0; i < Math.min(6, hits); i++) ctx.fillRect(-14 + i * 5, R + 8, 3, 3);
-      if (beats > 0 && hits === 0) { ctx.fillStyle = '#ff8070'; ctx.fillRect(-3, R + 8, 6, 3); }
-      ctx.restore();
-    }
+    // The jaw-lock gauge. This used to be a ring drawn around the crocodile,
+    // which put the thing you had to read on top of the thing you had to watch.
+    // It is an instrument now, parked at the bottom of the screen where a
+    // fighting game would put it, and the window is most of the bar.
+    if (P.rollT > 0) this.drawRollGauge(ctx, P, t);
     // hints, stacked upward so two warnings never print on the same line
     const hints = [];
     if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
     if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
     if (P.latched && P.rollT <= 0) hints.push(['BITE TO ROLL', '#ff9080', 1]);
-    if (P.rollT > 0) hints.push(['BITE ON THE GOLD', '#ffe060', 1]);
     if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
     let hy = H - 20;
     for (const [txt, col, sc] of hints) {
@@ -7718,12 +7946,83 @@ const UI = {
       if (b.sub) Font.draw(ctx, b.sub, W / 2, H * 0.3 + 20, { color: '#ffffff', align: 'center', outline: '#000' });
       ctx.globalAlpha = 1;
     }
-    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher) {
+    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher && P.rollT <= 0) {
       const touch = G.touchUI || Input.touch.active;
       const msgs = touch
         ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   DASH PAD LUNGES', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
         : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
       Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
+    }
+  },
+  drawRollGauge(ctx, P, t) {
+    const W = G.W, H = G.H;
+    const gw = 214, gh = 15, gx = Math.round(W / 2 - gw / 2), gy = H - 60;
+    const ph = P.qteT || 0;
+    // window bounds as fractions of the bar, wrapped
+    const wrap = v => ((v % 1) + 1) % 1;
+    const zone = (c, half, col, h2, yoff) => {
+      const a = wrap(c - half), b = wrap(c + half);
+      ctx.fillStyle = col;
+      if (a < b) ctx.fillRect(gx + Math.round(a * gw), gy + yoff, Math.round((b - a) * gw), h2);
+      else { ctx.fillRect(gx, gy + yoff, Math.round(b * gw), h2); ctx.fillRect(gx + Math.round(a * gw), gy + yoff, gw - Math.round(a * gw), h2); }
+    };
+    // housing
+    ctx.fillStyle = 'rgba(4,10,12,0.9)'; ctx.fillRect(gx - 5, gy - 12, gw + 10, gh + 26);
+    this.bracket(ctx, gx - 5, gy - 12, gw + 10, gh + 26, 'rgba(255,180,90,0.55)', 7);
+    // track
+    ctx.fillStyle = '#101a1c'; ctx.fillRect(gx, gy, gw, gh);
+    // the bands: a wide green tear window with a gold core inside it
+    zone(QTE_AT, QTE_GOOD, '#1d5a4a', gh, 0);
+    zone(QTE_AT, QTE_PERFECT, '#8a6a10', gh, 0);
+    zone(QTE_AT, QTE_GOOD, '#2f8a72', 2, 0);
+    zone(QTE_AT, QTE_PERFECT, '#ffd040', 2, 0);
+    // tick marks along the track
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let i = 1; i < 16; i++) ctx.fillRect(gx + Math.round(i * gw / 16), gy, 1, i % 4 === 0 ? gh : 3);
+    // needle, with a trail behind it so the direction reads at a glance
+    const nx = gx + Math.round(wrap(ph) * gw);
+    const inWin = Math.min(Math.abs(ph - QTE_AT), 1 - Math.abs(ph - QTE_AT)) < QTE_GOOD;
+    for (let k = 1; k <= 5; k++) {
+      const tx = nx - k * 3;
+      if (tx < gx) continue;
+      ctx.globalAlpha = 0.32 - k * 0.05; ctx.fillStyle = '#ffffff';
+      ctx.fillRect(tx, gy + 2, 2, gh - 4);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#050a0c'; ctx.fillRect(nx - 2, gy - 3, 5, gh + 6);
+    ctx.fillStyle = inWin ? '#ffffff' : '#bfe8ff'; ctx.fillRect(nx - 1, gy - 3, 3, gh + 6);
+    // chevrons above and below the needle
+    ctx.fillStyle = inWin ? '#ffd040' : '#5f9fbf';
+    ctx.fillRect(nx - 3, gy - 6, 7, 2); ctx.fillRect(nx - 2, gy - 8, 5, 2);
+    ctx.fillRect(nx - 3, gy + gh + 4, 7, 2); ctx.fillRect(nx - 2, gy + gh + 6, 5, 2);
+    // the call to action, on a key cap so it matches the finisher
+    const beats = P.qteBeats || 0, hits = P.qteHits || 0;
+    const touch = G.touchUI || Input.touch.active;
+    const lit = inWin && Math.floor(t * 14) % 2 === 0;
+    drawKeyCap(ctx, gx - 2, gy - 34, 52, 18, touch ? 'TAP' : 'BITE', { lit: inWin, color: '#ffd040', scale: 2 });
+    Font.draw(ctx, inWin ? 'NOW' : 'WAIT', gx + 58, gy - 29, { color: inWin ? (lit ? '#ffffff' : '#ffd040') : '#5f7f78', scale: 2, outline: '#2a1400' });
+    Font.draw(ctx, 'JAW LOCK', gx + gw - 2, gy - 30, { color: '#a86a20', align: 'right' });
+    // beats landed, as a row of teeth
+    for (let i = 0; i < Math.max(6, beats); i++) {
+      const bx = gx + gw - 6 - i * 7;
+      const on = i < Math.min(hits, 12);
+      ctx.fillStyle = on ? '#ffd040' : '#2a2018';
+      ctx.fillRect(bx - 4, gy + gh + 5, 5, 4);
+      if (on) { ctx.fillStyle = '#fff0a0'; ctx.fillRect(bx - 4, gy + gh + 5, 5, 1); }
+    }
+    // the last call, punched out over the gauge
+    if (P.qteLastT > 0 && P.qteLast >= 0) {
+      const k = clamp(P.qteLastT * 2, 0, 1);
+      const txt = P.qteLast === 2 ? 'TEAR!' : P.qteLast === 1 ? 'GOOD' : 'EARLY';
+      const col = P.qteLast === 2 ? '#fff060' : P.qteLast === 1 ? '#9ef0c8' : '#ff9080';
+      ctx.globalAlpha = k;
+      Font.draw(ctx, txt, W / 2, gy - 58 - (1 - k) * 8, { color: col, align: 'center', scale: P.qteLast === 2 ? 4 : 3, outline: '#1a0e00' });
+      ctx.globalAlpha = 1;
+    }
+    if (P.perfectT > 0) {
+      ctx.globalAlpha = clamp(P.perfectT, 0, 1);
+      Font.draw(ctx, 'PERFECT ROLL', W / 2, 52, { color: '#fff060', align: 'center', scale: 3, outline: '#3a2000' });
+      ctx.globalAlpha = 1;
     }
   },
   // a filled hexagon with a border
@@ -8441,39 +8740,70 @@ const UI = {
       }
     }
   },
-  // the execution: one prompt at a time, its ring closing, the sequence
-  // laid out underneath so you can see what is coming
+  // The execution. One prompt at a time on a big key cap with a draining bar
+  // under it, the whole sequence laid out as a filmstrip so you can see what is
+  // coming, and three chances to miss. Cine supplies the bars and the vignette.
   drawFinisher(ctx) {
     const F = G.finisher; if (!F) return;
     const W = G.W, H = G.H, t = G.t;
-    ctx.fillStyle = 'rgba(6,2,2,0.4)'; ctx.fillRect(0, 0, W, H);
     const done = F.over > 0;
-    Font.draw(ctx, done ? (F.won ? 'EXECUTED' : 'THROWN OFF') : 'EXECUTION', W / 2, H * 0.17, { color: done && !F.won ? '#ff5030' : '#ffd060', align: 'center', scale: 3, outline: '#2a1000' });
-    Font.draw(ctx, F.e && F.e.name ? F.e.name : '', W / 2, H * 0.17 + 24, { color: '#c8a870', align: 'center', outline: '#1a0c00' });
-    const cx = W / 2, cy = H / 2 + 4;
-    if (!done) {
-      const want = F.seq[F.i], f = clamp(F.t / F.dur, 0, 1);
-      const R = 28;
-      // the closing ring is the window: press before it reaches the rim
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = f > 0.82 ? '#ff5030' : '#ffd060'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(cx, cy, R + 30 - 30 * f, 0, TAU); ctx.stroke();
-      const bl = F.flash > 0 ? '#ffffff' : '#ffe090';
-      this.panel(ctx, cx - 32, cy - 10, 64, 20, 'rgba(10,6,4,0.92)', '#6a4a20');
-      Font.draw(ctx, FIN_LABEL[want], cx, cy - 4, { color: bl, align: 'center', scale: 2, outline: '#2a1000' });
+    const touch = G.touchUI || Input.touch.active;
+
+    // --- title
+    const title = done ? (F.won ? 'EXECUTED' : 'THROWN OFF') : 'EXECUTION';
+    const tcol = done && !F.won ? '#ff5030' : '#ffd060';
+    if (done) {
+      // the verdict lands with a scale punch
+      const k = clamp(1 - F.over / (F.won ? 0.75 : 0.5), 0, 1);
+      const sc = Math.round(4 + (1 - k) * 3);
+      Font.draw(ctx, title, W / 2, H * 0.3, { color: tcol, align: 'center', scale: sc, outline: '#2a0c00' });
+      if (F.won) Font.draw(ctx, F.e && F.e.name ? F.e.name + ' IS FINISHED' : '', W / 2, H * 0.3 + 34, { color: '#e6eede', align: 'center', outline: '#2a0c00' });
+      else Font.draw(ctx, 'IT IS GETTING BACK UP', W / 2, H * 0.3 + 34, { color: '#c08070', align: 'center', outline: '#2a0c00' });
+      return;
     }
-    // the sequence, and how it has gone, in its own band along the bottom
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, H - 34, W, 34);
-    const n = F.seq.length, sw = 30, x0 = cx - (n * sw) / 2;
+    Font.draw(ctx, title, W / 2, 34, { color: tcol, align: 'center', scale: 2, outline: '#2a1000' });
+    Font.draw(ctx, F.e && F.e.name ? F.e.name : '', W / 2, 50, { color: '#c8a870', align: 'center', outline: '#1a0c00' });
+
+    // --- misses left, as a row of tally marks under the title
+    for (let i = 0; i < 3; i++) {
+      const on = i < 3 - F.misses;
+      ctx.fillStyle = on ? '#ffd060' : '#3a2018';
+      ctx.fillRect(W / 2 - 11 + i * 8, 60, 4, 5);
+    }
+
+    // --- the sequence as a filmstrip along the bottom band
+    const n = F.seq.length, cw = 26, x0 = W / 2 - (n * cw) / 2, fy = H - 36;
     for (let i = 0; i < n; i++) {
-      const past = i < F.i, now = i === F.i && !done;
-      const col = past ? (F.res[i] ? '#6ad040' : '#8a4038') : now ? '#ffd060' : '#4a5a54';
-      Font.draw(ctx, FIN_SHORT[F.seq[i]], Math.round(x0 + i * sw + (sw - 4) / 2), H - 30, { color: now && Math.floor(t * 10) % 2 ? '#ffffff' : col, align: 'center' });
-      ctx.fillStyle = col;
-      ctx.fillRect(Math.round(x0 + i * sw + 2), H - 20, sw - 8, 3);
+      const past = i < F.i, now = i === F.i;
+      const hit = F.res[i];
+      const col = past ? (hit ? '#6ad040' : '#c04030') : now ? '#ffd060' : '#3d4f52';
+      drawKeyCap(ctx, x0 + i * cw + 2, fy, cw - 6, 14, FIN_SHORT[F.seq[i]], { lit: now, color: col, dead: past && !hit, scale: 1 });
+      if (past) {
+        ctx.fillStyle = hit ? '#6ad040' : '#c04030';
+        ctx.fillRect(x0 + i * cw + 2, fy + 16, cw - 6, 2);
+      }
     }
-    Font.draw(ctx, 'TWO MISSES AND IT GETS UP', W / 2, H - 12, { color: '#c08070', align: 'center' });
+
+    // --- the live prompt: a big cap and a bar draining under it
+    const want = F.seq[F.i], f = clamp(F.t / F.dur, 0, 1);
+    const cx = W / 2, cy = H * 0.70;
+    const label = FIN_LABEL[want], lw = Math.max(74, Font.width(label, 2) + 26);
+    // a soft plate behind it so it reads over any background
+    ctx.fillStyle = 'rgba(4,8,10,0.55)'; ctx.fillRect(cx - lw / 2 - 8, cy - 22, lw + 16, 52);
+    this.bracket(ctx, cx - lw / 2 - 8, cy - 22, lw + 16, 52, 'rgba(255,200,110,0.5)', 8);
+    const punch = F.flash > 0 ? Math.round(F.flash * 12) : 0;
+    drawKeyCap(ctx, cx - lw / 2, cy - 16 - punch, lw, 26, label, { lit: true, color: '#ffd060', scale: 2 });
+    Font.draw(ctx, touch ? 'TAP THE PAD' : 'PRESS IT', cx, cy - 30, { color: '#a88a50', align: 'center' });
+    // timing bar: plenty of room, turning red only right at the end
+    const bw = lw, bx = cx - bw / 2, by = cy + 15;
+    ctx.fillStyle = '#0d1210'; ctx.fillRect(bx - 1, by - 1, bw + 2, 8);
+    const bc = f > 0.86 ? '#ff5030' : f > 0.6 ? '#ffa030' : '#6ad040';
+    ctx.fillStyle = bc; ctx.fillRect(bx, by, Math.round(bw * (1 - f)), 6);
+    ctx.fillStyle = mixColor(bc, '#ffffff', 0.5); ctx.fillRect(bx, by, Math.round(bw * (1 - f)), 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    for (let i = 8; i < bw; i += 8) ctx.fillRect(bx + i, by, 1, 6);
+
+    Font.draw(ctx, 'THREE MISSES AND IT GETS UP', W / 2, H - 12, { color: '#8a6a5a', align: 'center' });
   },
   drawEgg(ctx) {
     const W = G.W, H = G.H, e = G.egg; if (!e) return;
@@ -9306,6 +9636,7 @@ const G = {
     if (this.shakeAmt < 0.2) this.shakeAmt = 0;
     this.shakeX = Math.round(rand(-1, 1) * this.shakeAmt); this.shakeY = Math.round(rand(-1, 1) * this.shakeAmt);
     this.red *= Math.exp(-3 * raw); this.white *= Math.exp(-4.5 * raw); this.zoomP = lerp(this.zoomP, 1, 0.08);
+    Cine.update(raw);
     Input.tickTouch(raw);
     Input.mouse.moved = false;
     const P = this.player;
@@ -9367,7 +9698,12 @@ const G = {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
     c.zoom = lerp(c.zoom, tz, 1 - Math.exp(-2.5 * dt));
-    const tx = P.x + P.vx * 0.22; let ty = P.y + P.vy * 0.12;
+    let tx = P.x + P.vx * 0.22, ty = P.y + P.vy * 0.12;
+    // an execution is framed on both of them, so the boss never leaves the shot
+    if (this.finisher && this.finisher.e && !this.finisher.e.dead) {
+      const b = this.finisher.e;
+      tx = (P.x + b.x) / 2; ty = (P.y + b.y) / 2;
+    }
     if (this.state === 'title') ty = Math.max(ty, 75);
     const k = 1 - Math.exp(-5 * dt);
     c.x = lerp(c.x, tx, k); c.y = lerp(c.y, ty, k);
@@ -9439,6 +9775,7 @@ const G = {
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
     World.drawKaiju(ctx, cam, day);
+    Cine.draw(ctx);
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;
