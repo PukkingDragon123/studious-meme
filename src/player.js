@@ -27,6 +27,7 @@ class Player {
     this.grabbed = null; this.tether = null; this.breakFree = 0;
     this.dashCd = 0; this.dashCharges = 1; this.dashT = 0; this.ramHit = new Set();
     this.braceT = 0; this.braceCd = 0; this.braceFlash = 0; this.parries = 0; this.strainBonus = 0;
+    this.spliceGlow = 0; this.spliceCol = '#40f0c8';
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
@@ -86,6 +87,7 @@ class Player {
     if (this.braceCd > 0) this.braceCd -= dt;
     if (this.braceT > 0) this.braceT -= dt;
     if (this.braceFlash > 0) this.braceFlash -= dt;
+    if (this.spliceGlow > 0) { this.spliceGlow -= dt * 0.8; if (chance(dt * 20)) G.fx.sparks(this.x + rand(-16, 16) * this.vis, this.y + rand(-8, 8) * this.vis, 2); }
     if (inp.brace) this.brace();
     if (inp.bite) this.bite();
     if (inp.dash) this.dash(ix, iy);
@@ -507,6 +509,14 @@ class Player {
     drawCroc(ctx, this.chain, this.parts, this.vis, { jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll, alpha: blink ? 0.5 : 1 });
     if (this.mudT > 0.05) { ctx.globalAlpha = 0.35 * Math.min(1, this.mudT); ctx.fillStyle = '#4a3a24'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 4 * this.vis, n.y - 1 * this.vis, 8 * this.vis, 5 * this.vis); ctx.globalAlpha = 1; }
     if (this.poisonT > 0) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#40ff60'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 3 * this.vis, n.y - 3 * this.vis, 6 * this.vis, 6 * this.vis); ctx.globalAlpha = 1; }
+    if (this.spliceGlow > 0) {
+      // the splice still settling in: a colour bleed along the body that fades
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = clamp(this.spliceGlow, 0, 1) * 0.35;
+      ctx.fillStyle = this.spliceCol;
+      for (const n of this.chain.nodes) ctx.fillRect(n.x - 4 * this.vis, n.y - 3 * this.vis, 8 * this.vis, 6 * this.vis);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
     if (this.frenzyT > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,60,30,${(0.06 + 0.04 * Math.sin(G.t * 20)).toFixed(3)})`; ctx.beginPath(); ctx.arc(this.x, this.y, 26 * this.vis, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
   }
 }

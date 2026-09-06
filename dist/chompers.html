@@ -842,6 +842,15 @@ const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const R = {
   mk(w, h) { w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); const c = mkCanvas(w, h); return { c, x: c.getContext('2d'), w, h }; },
   px(o, i, j, col, w = 1, h = 1) { o.x.fillStyle = col; o.x.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); },
+  // a diagonal dither band, used for keeled scutes and other rough textures
+  dith(o, x, y, w, h, col, phase = 0, step = 3) {
+    const c = o.x; c.fillStyle = col;
+    const x0 = Math.round(x), y0 = Math.round(y), x1 = Math.round(x + w), y1 = Math.round(y + h);
+    for (let j = Math.max(0, y0); j < Math.min(o.h, y1); j++) {
+      let i = x0 + (((j + phase) % step) + step) % step;
+      for (; i < x1; i += step) if (i >= 0 && i < o.w) c.fillRect(i, j, 1, 1);
+    }
+  },
   hi: c => mixColor(c, '#ffffff', 0.28), hi2: c => mixColor(c, '#ffffff', 0.5), lo: c => shade(c, 0.72), lo2: c => shade(c, 0.5),
   ol: c => mixColor(shade(c, 0.42), '#181410', 0.34),
   // solid disc
@@ -2215,7 +2224,7 @@ class FXSystem {
   sparks(x, y, n, dx = 0, dy = 0) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(40, 180); this.add({ type: 'spark', x, y, vx: Math.cos(a) * sp + dx * 80, vy: Math.sin(a) * sp + dy * 80, s: 1, color: choice(['#fff8c0', '#ffd060', '#ff9030']), life: rand(0.15, 0.4) }); } }
   splinters(x, y, n, power = 100) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(0.3, 1) * power; this.add({ type: 'splinter', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, s: randi(1, 3), w: randi(2, 6), color: choice(['#6b4a2e', '#8a6a44', '#4a3524', '#a0a0a0']), rot: rand(TAU), vr: rand(-6, 6), life: rand(5, 9) }); } }
   smoke(x, y, n = 1, color = '#888') { for (let i = 0; i < n; i++) this.add({ type: 'smoke', x: x + rand(-3, 3), y: y + rand(-3, 3), vx: rand(-10, 10), vy: rand(-30, -10), s: rand(2, 4), color, life: rand(0.6, 1.4) }); }
-  husk(img, sx, sy, sw, sh, x, y, angle, size, flipY) { this.add({ type: 'husk', img, sx, sy, sw, sh, x, y, angle, size, flipY, vx: rand(-15, 15), vy: rand(-25, 5), vr: rand(-1.2, 1.2), life: rand(2.2, 3.4) }); }
+  husk(img, sx, sy, sw, sh, x, y, angle, size, flipY, vel) { this.add({ type: 'husk', img, sx, sy, sw, sh, x, y, angle, size, flipY, vx: vel ? vel.vx : rand(-15, 15), vy: vel ? vel.vy : rand(-25, 5), vr: vel ? vel.vr : rand(-1.2, 1.2), life: vel && vel.life ? vel.life : rand(2.2, 3.4) }); }
   glow(x, y, r, color, life = 0.5) { this.add({ type: 'glow', x, y, r, color, life }); }
   shock(x, y, r, color = '#ffffff', life = 0.5) { this.add({ type: 'shock', x, y, r0: 4, r, color, life }); }
   flesh(x, y, n, power = 90) { // meat flecks used for boss/large gore
@@ -4173,6 +4182,9 @@ function computeLook(player) {
   if (player.evo.phantom) { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }
   if (player.evo.abyssal) { L.glow = '#40f0c8'; L.spots = '#80fff0'; }
   for (const id of player.traits) { const t = TRAIT_BY_ID[id]; if (t && t.look) t.look(L); }
+  // spliced genes change the animal, not just the numbers: tusks, plates,
+  // stripes, glow. Without this the gene tree was invisible on the body.
+  for (const id of player.genes || []) { const g = GENE_BY_ID[id]; if (g && g.look) g.look(L); }
   // the morph picked in the loadout is cosmetic and applied last
   const hide = typeof HIDE_BY_ID !== 'undefined' && HIDE_BY_ID[player.hide];
   if (hide && hide.apply) hide.apply(L);
@@ -4252,26 +4264,85 @@ function gene(o) { GENES.push(o); return o; }
       ['manhunter', 'MAN-EATER', 'APEX: people panic near you, are worth triple, and boats break like sticks.', p => { p.st.manEater = true; p.st.fearAura = true; p.st.hullMul = 3; p.st.airGrab = true; p.evo.savage = true; }, L => { L.scars = true; L.eye = '#ff2010'; L.mane = '#4a1010'; }, 'Lean and reckless: -25% max HP.', p => { p.st.hpMul *= 0.75; }, 6],
     ],
   };
+  // Two small adaptations flank every lineage, sitting out on ring 3 between it
+  // and its neighbour. They are cheap, low-strain and, crucially, adjacent to
+  // BOTH lineages either side of them: the network's lateral roads.
+  const MINOR = {
+    ripper: [
+      ['fangs', 'HOOKED FANGS', '+12% bite, and torn prey drops more meat.', p => { p.st.bite *= 1.12; p.st.goreMul *= 1.2; }, null, '-6% swim speed.', p => { p.st.speed *= 0.94; }],
+      ['ragged', 'RAGGED EDGE', 'Wounds keep bleeding for half again as long.', p => { p.st.bleed = true; p.st.woundMul = Math.max(p.st.woundMul, 1.3); }, null, '-8% armour.', p => { p.st.armor -= 0.08; }],
+    ],
+    bulwark: [
+      ['grit', 'DERMAL GRIT', '-8% damage taken.', p => { p.st.armor += 0.08; }, null, '-6% acceleration.', p => { p.st.accel *= 0.94; }],
+      ['ballast', 'BALLAST', '+14% max health.', p => { p.st.hpMul *= 1.14; }, null, '-8% swim speed.', p => { p.st.speed *= 0.92; }],
+    ],
+    phantom: [
+      ['finescale', 'FINE SCALES', '+10% swim speed.', p => { p.st.speed *= 1.10; }, null, '-8% max health.', p => { p.st.hpMul *= 0.92; }],
+      ['lowwake', 'LOW WAKE', 'Prey notices you 25% later.', p => { p.st.stealth *= 0.75; }, null, '-8% bite.', p => { p.st.bite *= 0.92; }],
+    ],
+    abyssal: [
+      ['gillslit', 'GILL SLITS', 'Regenerate 1% health a second while fed.', p => { p.st.regen += 0.01; }, null, '-8% growth.', p => { p.st.growth *= 0.92; }],
+      ['toxinsac', 'TOXIN SAC', 'Bites carry a small dose of venom.', p => { p.st.venom += 0.18; }, null, '-6% bite.', p => { p.st.bite *= 0.94; }],
+    ],
+    colossus: [
+      ['widegullet', 'WIDE GULLET', 'Swallow prey 30% larger whole.', p => { p.st.swallow *= 1.3; }, null, '-6% turn rate.', p => { p.st.turn *= 0.94; }],
+      ['fatstore', 'FAT STORES', 'Hunger drains 18% slower.', p => { p.st.hungerRate *= 0.82; }, null, '-8% acceleration.', p => { p.st.accel *= 0.92; }],
+    ],
+    savage: [
+      ['padfeet', 'PADDED FEET', '+35% land speed.', p => { p.st.landSpeed *= 1.35; }, null, '-6% swim speed.', p => { p.st.speed *= 0.94; }],
+      ['nightpupil', 'NIGHT PUPIL', 'You see in the dark.', p => { p.st.nightEyes = true; }, L => { L.eye = '#c0ffe0'; }, '-8% armour.', p => { p.st.armor -= 0.08; }],
+    ],
+  };
+  // Ring-2 hybrids, sitting between two neighbouring lineages.
+  const HYB = {
+    'ripper|bulwark': ['bonecrusher', 'BONE CRUSHER', 'Bites ignore armor and crack shells, hulls and bone. 20% crit.', p => { p.st.pierce = true; p.st.crit += 0.2; }, L => { L.horn = true; }, 'Brittle enamel: -15% max HP.', p => { p.st.hpMul *= 0.85; }, 5],
+    'bulwark|phantom': ['keel', 'KEELED SCUTES', '-15% damage taken and +15% speed: armor that swims.', p => { p.st.armor += 0.15; p.st.speed *= 1.15; }, L => { L.denticle = true; }, 'Ridges catch: -15% acceleration.', p => { p.st.accel *= 0.85; }, 5],
+    'phantom|abyssal': ['barb', 'CAUDAL BARB', 'Your tail stabs and poisons whatever crowds you.', p => { p.st.barb = 16; p.st.venom += 0.2; }, L => { L.barb = true; }, 'Tail busy stabbing: -12% speed.', p => { p.st.speed *= 0.88; }, 5],
+    'abyssal|colossus': ['gullet', 'GOLIATH GULLET', 'Swallow anything your own size, and gain 25% more mass.', p => { p.st.swallow *= 2; p.st.growth *= 1.25; }, L => { L.gills = true; }, 'A full gullet is slow: -18% acceleration.', p => { p.st.accel *= 0.82; }, 5],
+    'colossus|savage': ['tusks', 'BOAR TUSKS', 'Dashing gores for 140% bite damage.', p => { p.st.bullRush = true; p.st.ramMul *= 1.4; }, L => { L.tusks = true; }, 'Tusks foul the bite: -12% bite.', p => { p.st.bite *= 0.88; }, 5],
+    'savage|ripper': ['scent', 'BLOOD SCENT', 'Wounded prey is marked and takes double damage.', p => { p.st.bloodScent = true; p.st.woundMul = 2; }, L => { L.eye = '#ff5030'; }, 'Nose over armour: -15% armour.', p => { p.st.armor -= 0.15; }, 5],
+  };
+  // Ring-4 chimeras: the far side of the network, where two lineages fuse into
+  // something neither of them would have made on its own.
+  const DEEP = {
+    'ripper|bulwark': ['siegejaw', 'SIEGE JAW', 'CHIMERA: +30% bite, nothing can be too tough, and you cannot be moved.', p => { p.st.bite *= 1.3; p.st.pierce = true; p.st.hullMul = Math.max(p.st.hullMul, 2.5); p.st.knockImmune = true; }, L => { L.horn = true; L.plates = true; }, 'A siege engine does not chase: -22% speed.', p => { p.st.speed *= 0.78; }],
+    'bulwark|phantom': ['mirror', 'MIRROR SCUTE', 'CHIMERA: attackers take 30% back, bullets glance, +20% speed.', p => { p.st.reflect += 0.3; p.st.bulletArmor += 0.35; p.st.speed *= 1.2; }, L => { L.denticle = true; L.glow = '#bfe8ff'; }, 'Mirrors are thin: -18% max HP.', p => { p.st.hpMul *= 0.82; }],
+    'phantom|abyssal': ['ghostvenom', 'GHOST VENOM', 'CHIMERA: ambushes inject a killing dose, and venom cannot touch you.', p => { p.st.ambush = true; p.st.venom += 0.6; p.st.venomImmune = true; p.st.stealth *= 0.7; }, L => { L.glow = '#7affda'; L.spots = '#40f0c8'; }, 'Hollow-boned: -22% armour.', p => { p.st.armor -= 0.22; }],
+    'abyssal|colossus': ['deepgorge', 'DEEP GORGE', 'CHIMERA: swallow anything, +35% growth, and mend as you feed.', p => { p.st.swallow *= 2.4; p.st.growth *= 1.35; p.st.regen += 0.02; p.st.lifesteal += 0.05; }, L => { L.gills = true; L.paddle = shade(L.mid, 0.8); }, 'A whale is not quick: -25% speed.', p => { p.st.speed *= 0.75; }],
+    'colossus|savage': ['stampede', 'STAMPEDE', 'CHIMERA: rams hit triple, footfalls shake the bank, +50% land speed.', p => { p.st.bullRush = true; p.st.ramMul *= 3; p.st.quake = true; p.st.landSpeed *= 1.5; p.st.hop *= 1.4; }, L => { L.tusks = true; L.mane = '#4a3a1a'; }, 'All shoulder, no jaw: -20% bite.', p => { p.st.bite *= 0.8; }],
+    'savage|ripper': ['bloodhunt', 'BLOOD HUNT', 'CHIMERA: wounded prey takes 2.5x, and every kill heals 12%.', p => { p.st.bloodScent = true; p.st.woundMul = 2.5; p.st.lifesteal += 0.12; p.st.frenzy = true; }, L => { L.eye = '#ff2010'; L.scars = true; }, 'It burns: hunger drains 40% faster.', p => { p.st.hungerRate *= 1.4; }],
+  };
+  // hex ring walk: start at dir 4 scaled by N, then N steps along each direction
+  const ring = N => { const out = []; let q = HEX_DIR[4][0] * N, r = HEX_DIR[4][1] * N; for (let i = 0; i < 6; i++) for (let j = 0; j < N; j++) { out.push([q, r, i, j]); q += HEX_DIR[i][0]; r += HEX_DIR[i][1]; } return out; };
+  // segment i of a ring runs from lineage (i+4)%6 to lineage (i+5)%6
+  const segA = i => LIN_KEYS[(i + 4) % 6], segB = i => LIN_KEYS[(i + 5) % 6];
+  // ---- lineage spines: one major per ring, out along each lineage's axis
   LIN_KEYS.forEach((lin, li) => {
-    const dir = HEX_DIR[li], side = HEX_DIR[(li + 1) % 6];
+    const dir = HEX_DIR[li];
     T[lin].forEach((n, i) => {
-      const ring = i + 1;
-      gene({ id: lin + ':' + n[0], lin, ring, q: dir[0] * ring, r: dir[1] * ring, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [2, 4, 7, 12][i], apex: i === 3 });
+      const rr = i + 1;
+      gene({ id: lin + ':' + n[0], lin, ring: rr, q: dir[0] * rr, r: dir[1] * rr, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [2, 4, 7, 12][i], apex: i === 3 });
     });
-    // a cross-link gene sitting between this lineage and the next
-    const cq = dir[0] * 2 + side[0], cr = dir[1] * 2 + side[1];
-    const other = LIN_KEYS[(li + 1) % 6];
-    const HYB = {
-      'ripper|bulwark': ['bonecrusher', 'BONE CRUSHER', 'Bites ignore armor and crack shells, hulls and bone. 20% crit.', p => { p.st.pierce = true; p.st.crit += 0.2; }, L => { L.horn = true; }, 'Brittle enamel: -15% max HP.', p => { p.st.hpMul *= 0.85; }, 5],
-      'bulwark|phantom': ['keel', 'KEELED SCUTES', '-15% damage taken and +15% speed: armor that swims.', p => { p.st.armor += 0.15; p.st.speed *= 1.15; }, L => { L.denticle = true; }, 'Ridges catch: -15% acceleration.', p => { p.st.accel *= 0.85; }, 5],
-      'phantom|abyssal': ['barb', 'CAUDAL BARB', 'Your tail stabs and poisons whatever crowds you.', p => { p.st.barb = 16; p.st.venom += 0.2; }, L => { L.barb = true; }, 'Tail busy stabbing: -12% speed.', p => { p.st.speed *= 0.88; }, 5],
-      'abyssal|colossus': ['gullet', 'GOLIATH GULLET', 'Swallow anything your own size, and gain 25% more mass.', p => { p.st.swallow *= 2; p.st.growth *= 1.25; }, L => { L.gills = true; }, 'A full gullet is slow: -18% acceleration.', p => { p.st.accel *= 0.82; }, 5],
-      'colossus|savage': ['tusks', 'BOAR TUSKS', 'Dashing gores for 140% bite damage.', p => { p.st.bullRush = true; p.st.ramMul *= 1.4; }, L => { L.tusks = true; }, 'Tusks foul the bite: -12% bite.', p => { p.st.bite *= 0.88; }, 5],
-      'savage|ripper': ['scent', 'BLOOD SCENT', 'Wounded prey is marked and takes double damage.', p => { p.st.bloodScent = true; p.st.woundMul = 2; }, L => { L.eye = '#ff5030'; }, 'Nose over armour: -15% armour.', p => { p.st.armor -= 0.15; }, 5],
-    };
-    const h = HYB[lin + '|' + other];
-    if (h) gene({ id: 'hy:' + h[0], lin, lin2: other, ring: 2, q: cq, r: cr, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 6, hybrid: true });
   });
+  // ---- ring 2: the hybrids, on the edge between two lineages
+  for (const [q, r, i, j] of ring(2)) {
+    if (j !== 1) continue;
+    const h = HYB[segA(i) + '|' + segB(i)]; if (!h) continue;
+    gene({ id: 'hy:' + h[0], lin: segA(i), lin2: segB(i), ring: 2, q, r, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 6, hybrid: true });
+  }
+  // ---- ring 3: two minor adaptations per edge, one owned by each side
+  for (const [q, r, i, j] of ring(3)) {
+    if (j === 0) continue;
+    const lin = j === 1 ? segA(i) : segB(i);
+    const m = MINOR[lin] && MINOR[lin][j === 1 ? 0 : 1]; if (!m) continue;
+    gene({ id: 'mn:' + m[0], lin, ring: 3, q, r, name: m[1], desc: m[2], apply: m[3], look: m[4], down: m[5], downApply: m[6], load: 1, cost: 3, minor: true });
+  }
+  // ---- ring 4: the chimeras, halfway between two apexes
+  for (const [q, r, i, j] of ring(4)) {
+    if (j !== 2) continue;
+    const d = DEEP[segA(i) + '|' + segB(i)]; if (!d) continue;
+    gene({ id: 'ch:' + d[0], lin: segA(i), lin2: segB(i), ring: 4, q, r, name: d[1], desc: d[2], apply: d[3], look: d[4], down: d[5], downApply: d[6], load: 7, cost: 11, hybrid: true, chimera: true });
+  }
 })();
 const GENE_BY_ID = {};
 for (const g of GENES) GENE_BY_ID[g.id] = g;
@@ -4325,7 +4396,7 @@ const Genome = {
   // 0 while stable, rising past 1 once the genome is over its limit
   strain(P) { const l = this.limit(P); return l <= 0 ? 0 : Math.max(0, (this.load(P) - l) / Math.max(4, l * 0.5)); },
   // how far down each lineage the player has gone
-  depth(P, lin) { let d = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin === lin && !g.hybrid) d = Math.max(d, g.ring); } return d; },
+  depth(P, lin) { let d = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin === lin && !g.hybrid && !g.minor) d = Math.max(d, g.ring); } return d; },
   // Gene points from a meal. Deliberately scarce: a run should fund maybe two
   // lineages, not the whole tree. Minnows feed you, they do not evolve you —
   // only prey that is a real share of your own mass, a threat, a person or a
@@ -6591,6 +6662,7 @@ class Player {
     this.grabbed = null; this.tether = null; this.breakFree = 0;
     this.dashCd = 0; this.dashCharges = 1; this.dashT = 0; this.ramHit = new Set();
     this.braceT = 0; this.braceCd = 0; this.braceFlash = 0; this.parries = 0; this.strainBonus = 0;
+    this.spliceGlow = 0; this.spliceCol = '#40f0c8';
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
@@ -6650,6 +6722,7 @@ class Player {
     if (this.braceCd > 0) this.braceCd -= dt;
     if (this.braceT > 0) this.braceT -= dt;
     if (this.braceFlash > 0) this.braceFlash -= dt;
+    if (this.spliceGlow > 0) { this.spliceGlow -= dt * 0.8; if (chance(dt * 20)) G.fx.sparks(this.x + rand(-16, 16) * this.vis, this.y + rand(-8, 8) * this.vis, 2); }
     if (inp.brace) this.brace();
     if (inp.bite) this.bite();
     if (inp.dash) this.dash(ix, iy);
@@ -7071,9 +7144,203 @@ class Player {
     drawCroc(ctx, this.chain, this.parts, this.vis, { jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll, alpha: blink ? 0.5 : 1 });
     if (this.mudT > 0.05) { ctx.globalAlpha = 0.35 * Math.min(1, this.mudT); ctx.fillStyle = '#4a3a24'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 4 * this.vis, n.y - 1 * this.vis, 8 * this.vis, 5 * this.vis); ctx.globalAlpha = 1; }
     if (this.poisonT > 0) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#40ff60'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 3 * this.vis, n.y - 3 * this.vis, 6 * this.vis, 6 * this.vis); ctx.globalAlpha = 1; }
+    if (this.spliceGlow > 0) {
+      // the splice still settling in: a colour bleed along the body that fades
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = clamp(this.spliceGlow, 0, 1) * 0.35;
+      ctx.fillStyle = this.spliceCol;
+      for (const n of this.chain.nodes) ctx.fillRect(n.x - 4 * this.vis, n.y - 3 * this.vis, 8 * this.vis, 6 * this.vis);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
     if (this.frenzyT > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,60,30,${(0.06 + 0.04 * Math.sin(G.t * 20)).toFixed(3)})`; ctx.beginPath(); ctx.arc(this.x, this.y, 26 * this.vis, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
   }
 }
+
+/* ===== src/morph.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// The transformation. Growing a tier or expressing an apex gene is the loudest
+// thing that happens to the crocodile, and it used to be a white flash and a
+// banner. Now it is a scene: the body seizes, a seam of light runs head to tail
+// splitting the old hide off plate by plate, the animal bursts a third bigger
+// than it will settle at, and the new form comes down out of the overshoot.
+//
+// It runs on real time, not the slowed clock it causes, so the beats land the
+// same however hard the game is lagging.
+// ---------------------------------------------------------------------------
+const Morph = {
+  DUR: 2.5,
+  BURST: 0.5,          // where in the run the change is actually applied
+  begin(o) {
+    const P = G.player;
+    if (G.morph || P.dead) return;
+    G.morph = {
+      t: 0, dur: this.DUR, color: o.color || '#9ad8b0',
+      title: o.title || 'TRANSFORMING', sub: o.sub || '', kind: o.kind || 'tier',
+      apply: o.apply || null, applied: false,
+      base: P.size, seam: -0.2, husked: 0, ring: 0,
+    };
+    G.state = 'morph';
+    P.frozen = true; P.latched = null; P.latchT = 0; P.rollT = 0; P.qteT = 0;
+    if (P.grabbed) { if (P.grabbed.release) P.grabbed.release(); P.grabbed = null; }
+    if (P.tether) { if (P.tether.boat) P.tether.boat.cutTether(); P.tether = null; }
+    G.banner = null; G.finisher = null;
+    G.slowmo(0.4, 0.5); SFX.shed(); SFX.warning && SFX.warning();
+  },
+  // 1 at rest. Coils in, snaps out past the target, then rings down onto it.
+  scaleAt(u) {
+    if (u < 0.16) return 1 + Math.sin(u * 190) * 0.014;                       // tremor
+    if (u < this.BURST) { const k = (u - 0.16) / (this.BURST - 0.16); return 1 - 0.08 * k * k; }   // coil
+    if (u < 0.6) { const k = (u - this.BURST) / (0.6 - this.BURST); return 0.92 + 0.44 * Math.sqrt(k); }  // burst
+    const k = u - 0.6;
+    return 1 + 0.36 * Math.exp(-k * 9) * Math.cos(k * 20);                    // elastic settle
+  },
+  update(raw) {
+    const M = G.morph, P = G.player; if (!M) return;
+    const prev = M.t / M.dur;
+    M.t += raw;
+    const u = M.t / M.dur;
+    P.invuln = Math.max(P.invuln, 0.6);
+    P.vx = 0; P.vy = 0;
+    // a frozen player skips its own timers, so the strobe has to be decayed
+    // here or the first flash sticks and paints the croc white all scene
+    if (P.hurtFlash > 0) P.hurtFlash -= raw;
+    // the seam runs head to tail across the split
+    if (u > 0.16) M.seam = clamp((u - 0.16) / (this.BURST - 0.16), 0, 1) * 1.25 - 0.05;
+    // size: the whole animation reads through this one curve
+    P.size = M.base * this.scaleAt(u);
+    // thrash while it is fighting the change, then hold still while it settles
+    const swim = u < this.BURST ? 1.5 : Math.max(0, 1.2 - (u - this.BURST) * 3);
+    P.legPhase += raw * (u < this.BURST ? 26 : 6);
+    P.chain.solve(P.x, P.y, P.angle, P.vis, raw, swim, false);
+    // spin the body through the split, then let it come to rest square
+    if (u > 0.16 && u < 0.72) P.roll = (u - 0.16) * TAU * 3.2;
+    else if (u >= 0.72) P.roll = lerp(P.roll, Math.round(P.roll / TAU) * TAU, 1 - Math.exp(-8 * raw));
+    // push the camera in and let it fall back at the end
+    const zi = u < this.BURST ? u / this.BURST : clamp(1 - (u - 0.72) / 0.28, 0, 1);
+    G.zoomP = 1 + 0.5 * zi;
+    // ---- phase beats
+    if (u < 0.16) {
+      if (chance(raw * 22)) { G.fx.sparks(P.x + rand(-14, 14) * P.vis, P.y + rand(-8, 8) * P.vis, 2); }
+      if (chance(raw * 6)) { G.shake(3); P.hurtFlash = 0.05; }
+      if (P.inWater && chance(raw * 20)) G.fx.bubbles(P.x + rand(-16, 16) * P.vis, P.y, 1, 6 * P.vis, -30);
+    } else if (u < this.BURST) {
+      G.shake(2 + u * 6);
+      // shed one plate of the old hide behind the seam as it passes
+      const n = P.chain.nodes, want = Math.min(n.length, Math.floor(clamp(M.seam, 0, 1) * n.length + 0.001));
+      while (M.husked < want) {
+        const i = M.husked++;
+        const part = i === 0 ? P.parts.head : i <= 5 ? P.parts.body[i - 1] : P.parts.tail[i - 6];
+        // the plate lifts off the spine rather than hanging on it: without a
+        // real escape velocity twelve of them stack into one white plank
+        if (part) {
+          const a = n[i].a - Math.PI / 2 * (i % 2 ? 1 : -1);
+          G.fx.husk(part.c, 0, 0, part.w, part.h, n[i].x, n[i].y, n[i].a, P.vis / CROC_PX, P.facing,
+            { vx: Math.cos(a) * rand(40, 90) - Math.cos(n[i].a) * 25, vy: Math.sin(a) * rand(40, 90) - 20, vr: rand(-4, 4), life: rand(1.8, 2.8) });
+        }
+        G.fx.glow(n[i].x, n[i].y, 5 * P.vis, M.color, 0.5);
+        G.fx.sparks(n[i].x, n[i].y, 5);
+        SFX.crack && SFX.crack(i);
+        if (P.inWater) G.fx.bubbles(n[i].x, n[i].y, 2, 7 * P.vis, -20);
+      }
+    }
+    // ---- the burst: this is where the change actually lands
+    if (!M.applied && u >= this.BURST) {
+      M.applied = true;
+      if (M.apply) M.apply();
+      P.recomputeStats();
+      G.whiteFlash(0.85); G.shake(20); G.hitstop(0.1); G.slowmo(0.22, 1.1);
+      G.fx.shock(P.x, P.y, 90 * Math.sqrt(P.vis), M.color, 0.7);
+      G.fx.glow(P.x, P.y, 12 * P.vis, '#ffffff', 0.7);
+      for (let i = 0; i < 26; i++) G.fx.glow(P.x + rand(-50, 50) * P.vis, P.y + rand(-30, 30) * P.vis, rand(1.5, 4) * P.vis, M.color, rand(0.4, 1));
+      if (P.inWater) { G.fx.bubbles(P.x, P.y, 22, 20 * P.vis, -30); Water.splash(P.x, 160, 24 * P.size); }
+      else G.fx.smoke(P.x, P.y, 10, '#7a6a4a');
+      SFX.roar(P.size); SFX.levelup(); SFX.shock && SFX.shock();
+    }
+    // ---- the new form snapping into place
+    if (M.applied && u < 0.82 && chance(raw * 26)) {
+      const n = P.chain.nodes, k = n[randi(0, n.length - 1)];
+      G.fx.sparks(k.x, k.y, 4); G.fx.glow(k.x, k.y, 5 * P.vis, M.color, 0.5);
+    }
+    if (prev < 0.66 && u >= 0.66) SFX.roar(P.size * 1.2);
+    // ---- out
+    if (u >= 1 || Input.hit('Escape', 'Enter', 'KeyP')) this.finish();
+  },
+  finish() {
+    const M = G.morph, P = G.player; if (!M) return;
+    if (!M.applied && M.apply) { M.apply(); P.recomputeStats(); }
+    P.size = massToSize(P.mass); P.sizeTarget = P.size;
+    P.hp = Math.min(P.hp, P.maxHp); P.roll = 0; P.frozen = false; P.invuln = Math.max(P.invuln, 1.4);
+    G.morph = null; G.zoomP = 1;
+    G.state = 'play'; G.slowT = 0; G.slowScale = 1; G.timeScale = 1;
+    // the title hands off to a banner as the letterbox closes
+    G.banner = { text: M.title, sub: M.sub, t: 2.2, max: 2.2, color: M.color };
+  },
+  // world-space: the seam of light, drawn over the body
+  drawWorld(ctx) {
+    const M = G.morph, P = G.player; if (!M) return;
+    const u = M.t / M.dur, col = M.color, n = P.chain.nodes, N = n.length;
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < N; i++) {
+      const ni = i / (N - 1), d = M.seam - ni;
+      if (d < -0.08) continue;
+      const peak = Math.max(0, 1 - Math.abs(d) * 6);
+      // behind the seam the split keeps glowing, but faintly: a hot line down
+      // the back, never a slab of white over the animal
+      const resid = d > 0 ? clamp(1 - (u - this.BURST) * 3.4, 0, 1) * 0.16 : 0;
+      const a = clamp(peak + resid, 0, 1);
+      if (a <= 0.03) continue;
+      const w = (7 + 9 * peak) * P.vis * (1 - ni * 0.45);
+      ctx.save(); ctx.translate(n[i].x, n[i].y); ctx.rotate(n[i].a);
+      ctx.fillStyle = rgba(col, a * 0.4); ctx.fillRect(-0.9 * P.vis, -w / 2, 1.8 * P.vis, w);
+      if (peak > 0.08) { ctx.fillStyle = rgba('#ffffff', peak * 0.65); ctx.fillRect(-0.5 * P.vis, -w * 0.42, 1 * P.vis, w * 0.84); }
+      ctx.restore();
+    }
+    // the bloom around the burst
+    // a tight flare on the burst itself: big enough to punctuate, small enough
+    // that the animal is never hidden behind it
+    const bl = clamp(1 - Math.abs(u - this.BURST) * 16, 0, 1);
+    if (bl > 0.01) {
+      ctx.fillStyle = rgba(col, bl * 0.20);
+      ctx.beginPath(); ctx.arc(P.x, P.y, 30 * P.vis * bl, 0, TAU); ctx.fill();
+      ctx.fillStyle = rgba('#ffffff', bl * 0.34);
+      ctx.beginPath(); ctx.arc(P.x, P.y, 15 * P.vis * bl, 0, TAU); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  // screen-space: letterbox, a title that lands on the burst, a rewrite meter
+  drawUI(ctx) {
+    const M = G.morph; if (!M) return;
+    const W = G.W, H = G.H, u = M.t / M.dur;
+    const band = Math.round(24 * clamp(Math.min(u / 0.12, (1 - u) / 0.12), 0, 1));
+    if (band > 0) { ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, band); ctx.fillRect(0, H - band, W, band); }
+    // vignette that tightens into the burst and opens after it
+    const vg = clamp(1 - Math.abs(u - this.BURST) * 2.2, 0, 1);
+    if (vg > 0.02) {
+      const g2 = ctx.createRadialGradient(W / 2, H / 2, H * 0.16, W / 2, H / 2, H * (0.8 - vg * 0.3));
+      g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, rgba('#000000', 0.3 + vg * 0.45));
+      ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+    }
+    if (u < this.BURST) {
+      const f = u / this.BURST;
+      Font.draw(ctx, M.kind === 'gene' ? 'EXPRESSING' : 'SHEDDING', W / 2, H * 0.22, { color: M.color, align: 'center', scale: 2, outline: '#04120e' });
+      const bw = 120, bx = W / 2 - bw / 2, by = H * 0.22 + 22;
+      ctx.fillStyle = '#0d1210'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
+      ctx.fillStyle = M.color; ctx.fillRect(bx, by, Math.round(bw * f), 4);
+      // scanning ticks, so the meter reads as a machine and not a loading bar
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      for (let i = 8; i < bw; i += 8) ctx.fillRect(bx + i, by, 1, 4);
+    } else {
+      const k = clamp((u - this.BURST) / 0.16, 0, 1);
+      const sc = 3 + (1 - k) * 3;
+      ctx.globalAlpha = clamp(Math.min(k * 3, (1 - u) / 0.18), 0, 1);
+      Font.draw(ctx, M.title, W / 2, H * 0.2, { color: M.color, align: 'center', scale: Math.round(sc), outline: '#04120e' });
+      if (M.sub) Font.draw(ctx, M.sub, W / 2, H * 0.2 + 26, { color: '#e6eede', align: 'center', outline: '#04120e' });
+      ctx.globalAlpha = 1;
+    }
+    if (u > 0.3) Font.draw(ctx, (G.touchUI || Input.touch.active) ? '' : 'ESC: SKIP', W - 8, H - 10, { color: 'rgba(160,190,180,0.5)', align: 'right' });
+  },
+};
 
 /* ===== src/dna.js ===== */
 'use strict';
@@ -7484,21 +7751,67 @@ const UI = {
     const R = Math.min(26, (W - 12) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
     const cx = W / 2 - (f.minX + f.maxX) * 0.5 * R;
     const cy = (top + bot) * 0.5 - (f.minY + f.maxY) * 0.5 * R;
-    return GENES.map(g => { const [sx, sy] = Genome.pos(g, cx, cy, R); return { g, sx, sy, R }; });
+    return GENES.map(g => {
+      const [sx, sy] = Genome.pos(g, cx, cy, R);
+      // node size carries its role: minors are beads on the lateral roads,
+      // chimeras and apexes are the far ends of the network
+      const k = g.root ? 0.74 : g.minor ? 0.56 : g.chimera ? 0.94 : g.hybrid ? 0.74 : g.apex ? 1.0 : 0.9;
+      return { g, sx, sy, R, r: R * k };
+    });
   },
   drawGenes(ctx) {
     const W = G.W, H = G.H, P = G.player, t = G.t;
     ctx.fillStyle = 'rgba(3,8,10,0.95)'; ctx.fillRect(0, 0, W, H);
     const cells = this.geneCells(), byId = {};
     for (const c of cells) byId[c.g.id] = c;
-    // links between adjacent cells
-    ctx.lineWidth = 1;
-    for (const c of cells) for (const n of hexNbrs(c.g)) {
-      const o = byId[n.id]; if (!o || o.sx < c.sx || (o.sx === c.sx && o.sy < c.sy)) continue;
-      const both = Genome.has(P, c.g.id) && Genome.has(P, n.id);
-      const one = Genome.has(P, c.g.id) || Genome.has(P, n.id);
-      ctx.strokeStyle = both ? 'rgba(120,240,210,0.55)' : one ? 'rgba(90,150,140,0.3)' : 'rgba(60,90,86,0.16)';
-      ctx.beginPath(); ctx.moveTo(c.sx, c.sy); ctx.lineTo(o.sx, o.sy); ctx.stroke();
+    // Links. The tree is really a graph now, so the edges get to carry the
+    // reading: dim filaments where nothing is spliced, a lit lineage-coloured
+    // trunk with a pulse running along it where both ends are yours.
+    const linkCol = (a, b) => {
+      const la = a.lin ? LINEAGES[a.lin].color : '#9ad8c0', lb = b.lin ? LINEAGES[b.lin].color : '#9ad8c0';
+      return mixColor(la, lb, 0.5);
+    };
+    const edges = [];
+    for (const c of cells) for (const n2 of hexNbrs(c.g)) {
+      const o2 = byId[n2.id]; if (!o2) continue;
+      if (o2.sx < c.sx || (o2.sx === c.sx && o2.sy < c.sy)) continue;
+      edges.push([c, o2]);
+    }
+    for (const [a, b] of edges) {
+      const oa = Genome.has(P, a.g.id), ob = Genome.has(P, b.g.id);
+      const both = oa && ob, one = oa || ob;
+      const ax = a.sx, ay = a.sy, bx = b.sx, by = b.sy;
+      const col = linkCol(a.g, b.g);
+      if (both) {
+        ctx.strokeStyle = rgba(col, 0.22); ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.strokeStyle = rgba(mixColor(col, '#ffffff', 0.45), 0.9); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      } else {
+        ctx.strokeStyle = one ? rgba(col, 0.34) : 'rgba(70,104,100,0.14)';
+        ctx.lineWidth = one ? 2 : 1;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      }
+    }
+    // signal running down the spliced edges, so the network looks alive
+    for (const [a, b] of edges) {
+      if (!(Genome.has(P, a.g.id) && Genome.has(P, b.g.id))) continue;
+      const ph = ((t * 0.42) + (a.sx + a.sy) * 0.004) % 1;
+      const px4 = Math.round(a.sx + (b.sx - a.sx) * ph), py4 = Math.round(a.sy + (b.sy - a.sy) * ph);
+      ctx.fillStyle = 'rgba(210,255,240,0.85)'; ctx.fillRect(px4 - 1, py4 - 1, 2, 2);
+    }
+    // junction stubs: a short tick where an unspliced but reachable node meets
+    // something you own, so the frontier of the network is obvious
+    for (const [a, b] of edges) {
+      const oa = Genome.has(P, a.g.id), ob = Genome.has(P, b.g.id);
+      if (oa === ob) continue;
+      const from = oa ? a : b, to = oa ? b : a;
+      const dx = to.sx - from.sx, dy = to.sy - from.sy, d = Math.hypot(dx, dy) || 1;
+      const k2 = (to.r + 3) / d;
+      const gx2 = Math.round(to.sx - dx * k2), gy2 = Math.round(to.sy - dy * k2);
+      const afford2 = Genome.unlocked(P, to.g) && P.genePoints >= Genome.cost(P, to.g);
+      ctx.fillStyle = afford2 && Math.floor(t * 3) % 2 ? '#b8ffe8' : 'rgba(140,220,200,0.5)';
+      ctx.fillRect(gx2 - 1, gy2 - 1, 3, 3);
     }
     // cells
     for (const c of cells) {
@@ -7506,16 +7819,20 @@ const UI = {
       const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
       const cost = Genome.cost(P, g), afford = open && P.genePoints >= cost;
       const sel = G.geneSel === g.id;
-      const r = c.R * (g.root ? 0.8 : g.apex ? 1.06 : 1) * (sel ? 1.12 : 1);
+      const r = c.r * (sel ? 1.14 : 1);
       if (own) { ctx.globalCompositeOperation = 'lighter'; this.hex(ctx, c.sx, c.sy, r * 1.3, rgba(col, 0.12), null); ctx.globalCompositeOperation = 'source-over'; }
       this.hex(ctx, c.sx, c.sy, r, own ? rgba(col, 0.3) : afford ? 'rgba(14,30,28,0.95)' : 'rgba(10,16,18,0.9)', own ? col : afford ? mixColor(col, '#ffffff', 0.2) : open ? shade(col, 0.55) : '#2a3a38', sel ? 2 : 1);
       // icon
       const ic = L ? ICONS[L.icon] : ICONS.croc;
-      if (ic) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
+      if (ic && !g.minor) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
+      // a minor is a bead, not a portrait: a single dot in its lineage colour
+      if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
+      // a chimera gets a second ring: it is the far end of two lineages at once
+      if (g.chimera && g.lin2) this.hex(ctx, c.sx, c.sy, r * 0.62, null, own ? LINEAGES[g.lin2].color : shade(LINEAGES[g.lin2].color, 0.5), 1);
       if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
       // cost pip
-      if (!own && g.cost) { const cy2 = c.sy + r - 5; ctx.fillStyle = afford ? '#0d2a24' : '#1a1210'; ctx.fillRect(c.sx - 7, cy2 - 4, 14, 9); Font.draw(ctx, String(cost), c.sx, cy2 - 3, { color: afford ? '#7affda' : '#8a6a6a', align: 'center' }); }
-      if (own) { ctx.fillStyle = col; ctx.fillRect(c.sx - 2, c.sy + r - 7, 4, 4); }
+      if (!own && g.cost && (open || sel)) { const cy2 = c.sy + r + 1; ctx.fillStyle = afford ? '#0d2a24' : '#141a1c'; ctx.fillRect(c.sx - 7, cy2 - 4, 14, 9); Font.draw(ctx, String(cost), c.sx, cy2 - 3, { color: afford ? '#7affda' : '#8a6a6a', align: 'center' }); }
+      if (own && !g.minor) { ctx.fillStyle = col; ctx.fillRect(c.sx - 2, c.sy + r - 5, 4, 4); }
       if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; this.hex(ctx, c.sx, c.sy, r + 3, null, 'rgba(255,255,255,0.5)', 1); }
     }
     // header
@@ -7551,7 +7868,8 @@ const UI = {
     const pw = 214, px3 = W - pw - 8, py3 = 8, phh = 96;
     this.panel(ctx, px3, py3, pw, phh, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
-    Font.draw(ctx, L ? L.name + (g.hybrid ? ' HYBRID' : g.apex ? ' APEX' : ' TIER ' + g.ring) : 'ORIGIN', px3 + 8, py3 + 18, { color: '#8aa89c' });
+    const kind = !L ? 'ORIGIN' : g.chimera ? LINEAGES[g.lin2].name + ' CHIMERA' : g.hybrid ? LINEAGES[g.lin2].name + ' HYBRID' : g.minor ? 'MINOR ADAPTATION' : g.apex ? 'APEX' : 'TIER ' + g.ring;
+    Font.draw(ctx, (L ? L.name + '  ' : '') + kind, px3 + 8, py3 + 18, { color: g.chimera ? mixColor(col, LINEAGES[g.lin2].color, 0.5) : '#8aa89c' });
     Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 30, pw - 16, { color: '#9ef0c8', lineHeight: 9 });
     if (g.down) Font.drawWrapped(ctx, g.down, px3 + 8, py3 + 52, pw - 16, { color: '#ff8a7a', lineHeight: 9 });
     if (g.load) Font.draw(ctx, '+' + g.load + ' STRAIN', px3 + pw - 8, py3 + 18, { color: '#ffb060', align: 'right' });
@@ -8385,7 +8703,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -8427,7 +8745,7 @@ const G = {
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
-    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null;
+    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
@@ -8635,21 +8953,22 @@ const G = {
     this.fx.text(e.x, e.y - 40, 'BOSS DEVOURED', { scale: 3, color: '#ffd060', life: 2 });
   },
   onPlayerDeath(cause, src) { this.deathInfo = { cause, killer: src && src.name }; this.dyingT = 0; this.state = 'dying'; this.storeSave(); },
-  // growing into a new tier: shed the skin, gain a gene point, no menu
+  // growing into a new tier: the body splits out of its old hide on screen,
+  // and the tier itself lands at the burst halfway through
   growTier(tier) {
-    const P = this.player;
-    P.tier = Math.min(tier, TIERS.length - 1); P.sheds++;
-    P.hp = P.maxHp; P.lastMax = P.maxHp; P.invuln = 1.6; P.hunger = Math.max(P.hunger, 55);
-    P.genePoints += 2; P.newPoints += 2;
-    this.slowmo(0.35, 0.7); SFX.shed(); this.whiteFlash(0.45); this.shake(6);
-    const n = P.chain.nodes;
-    for (let i = 0; i < n.length; i++) { const part = i === 0 ? P.parts.head : i <= 5 ? P.parts.body[i - 1] : P.parts.tail[i - 6]; this.fx.husk(part.c, 0, 0, part.w, part.h, n[i].x, n[i].y, n[i].a, P.vis / CROC_PX, P.facing); }
-    for (let i = 0; i < 16; i++) this.fx.glow(P.x + rand(-40, 40) * P.vis, P.y + rand(-16, 16) * P.vis, rand(2, 5) * P.vis, '#ffffff', rand(0.4, 1.0));
-    this.fx.bubbles(P.x, P.y, 30, 30 * P.vis, -20);
-    this.banner = { text: TIERS[P.tier].name, sub: 'SHED YOUR SKIN  +2 GENE POINTS', t: 3, max: 3, color: '#9ad8b0' };
-    if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
-    if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
-    this.storeSave();
+    const P = this.player, t2 = Math.min(tier, TIERS.length - 1);
+    Morph.begin({
+      kind: 'tier', color: '#9ad8b0',
+      title: TIERS[t2].name, sub: 'SHED YOUR SKIN   +2 GENE POINTS',
+      apply: () => {
+        P.tier = t2; P.sheds++;
+        P.hp = P.maxHp; P.lastMax = P.maxHp; P.hunger = Math.max(P.hunger, 55);
+        P.genePoints += 2; P.newPoints += 2;
+        if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
+        if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t3 of Meta.checkUnlocks()) this.announceUnlock(t3); Meta.save(); }
+        this.storeSave();
+      },
+    });
   },
   // ---------- shedding ----------
   startShed(tier) {
@@ -8886,6 +9205,10 @@ const G = {
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
         break;
+      case 'morph':
+        this.updateWorld(dt * 0.5, false);
+        Morph.update(raw);
+        break;
       case 'shedding':
         this.updateWorld(dt, false); this.shedT += raw;
         if (this.shedT > 1.3) { this.state = 'shed'; this.shedCards = rollCards(this.player, 3); this.shedSel = 0; this.shedUiT = 0; this.slowT = 0; this.slowScale = 1; }
@@ -8945,13 +9268,27 @@ const G = {
           for (const c of cells) { if (c === cur) continue; const ox = c.sx - cur.sx, oy = c.sy - cur.sy; if (ox * dx + oy * dy <= 4) continue; const d = Math.hypot(ox, oy) + Math.abs(ox * dy - oy * dx) * 1.5; if (d < bd) { bd = d; best = c; } }
           if (best) { this.geneSel = best.g.id; SFX.ui(); }
         }
-        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < c.R + 1));
+        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < c.r + 4));
         if (take) {
           const g = GENE_BY_ID[this.geneSel];
+          // hold the old body so a big splice can grow into the new one on screen
+          const wasParts = P.parts, wasLook = P.look;
           if (g && Genome.buy(P, g)) {
-            SFX.pick(); SFX.levelup(); this.whiteFlash(0.3); this.shake(4);
-            this.fx.glow(P.x, P.y, 60 * P.vis, LINEAGES[g.lin] ? LINEAGES[g.lin].color : '#ffffff', 0.8);
-            this.banner = { text: g.name, sub: g.apex ? 'APEX GENE SPLICED' : 'GENE SPLICED', t: 2.6, max: 2.6, color: g.lin ? LINEAGES[g.lin].color : '#ffffff' };
+            const col = g.lin ? LINEAGES[g.lin].color : '#ffffff';
+            if (g.apex || g.chimera) {
+              const newParts = P.parts, newLook = P.look;
+              P.parts = wasParts; P.look = wasLook;
+              Morph.begin({
+                kind: 'gene', color: col, title: g.name,
+                sub: g.apex ? 'APEX GENE EXPRESSED' : 'CHIMERA EXPRESSED',
+                apply: () => { P.parts = newParts; P.look = newLook; },
+              });
+            } else {
+              SFX.pick(); SFX.levelup(); this.whiteFlash(0.3); this.shake(4);
+              this.fx.glow(P.x, P.y, 60 * P.vis, col, 0.8);
+              P.spliceGlow = 1; P.spliceCol = col;
+              this.banner = { text: g.name, sub: 'GENE SPLICED', t: 2.6, max: 2.6, color: col };
+            }
           } else SFX.clank();
         }
         break;
@@ -9092,6 +9429,7 @@ const G = {
     for (const e of vis) { if (!drewPlayer && e.layer >= 2) { P.draw(ctx); drewPlayer = true; } e.draw(ctx); }
     if (!drewPlayer) P.draw(ctx);
     if (this.state === 'egg') this.drawEgg(ctx);
+    if (this.morph) Morph.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
@@ -9108,6 +9446,7 @@ const G = {
       case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
+      case 'morph': Morph.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;
       case 'shed': UI.drawShed(ctx); break;
       case 'dead': UI.drawDeath(ctx); break;

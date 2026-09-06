@@ -47,7 +47,7 @@ class FXSystem {
   sparks(x, y, n, dx = 0, dy = 0) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(40, 180); this.add({ type: 'spark', x, y, vx: Math.cos(a) * sp + dx * 80, vy: Math.sin(a) * sp + dy * 80, s: 1, color: choice(['#fff8c0', '#ffd060', '#ff9030']), life: rand(0.15, 0.4) }); } }
   splinters(x, y, n, power = 100) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(0.3, 1) * power; this.add({ type: 'splinter', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, s: randi(1, 3), w: randi(2, 6), color: choice(['#6b4a2e', '#8a6a44', '#4a3524', '#a0a0a0']), rot: rand(TAU), vr: rand(-6, 6), life: rand(5, 9) }); } }
   smoke(x, y, n = 1, color = '#888') { for (let i = 0; i < n; i++) this.add({ type: 'smoke', x: x + rand(-3, 3), y: y + rand(-3, 3), vx: rand(-10, 10), vy: rand(-30, -10), s: rand(2, 4), color, life: rand(0.6, 1.4) }); }
-  husk(img, sx, sy, sw, sh, x, y, angle, size, flipY) { this.add({ type: 'husk', img, sx, sy, sw, sh, x, y, angle, size, flipY, vx: rand(-15, 15), vy: rand(-25, 5), vr: rand(-1.2, 1.2), life: rand(2.2, 3.4) }); }
+  husk(img, sx, sy, sw, sh, x, y, angle, size, flipY, vel) { this.add({ type: 'husk', img, sx, sy, sw, sh, x, y, angle, size, flipY, vx: vel ? vel.vx : rand(-15, 15), vy: vel ? vel.vy : rand(-25, 5), vr: vel ? vel.vr : rand(-1.2, 1.2), life: vel && vel.life ? vel.life : rand(2.2, 3.4) }); }
   glow(x, y, r, color, life = 0.5) { this.add({ type: 'glow', x, y, r, color, life }); }
   shock(x, y, r, color = '#ffffff', life = 0.5) { this.add({ type: 'shock', x, y, r0: 4, r, color, life }); }
   flesh(x, y, n, power = 90) { // meat flecks used for boss/large gore

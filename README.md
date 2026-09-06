@@ -51,7 +51,7 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 - **Latch** onto medium prey with a bite, then bite again to **death roll** and tear it in half.
 - **Hunger** drains constantly. Starving drains your health. Keep eating.
 - **Gene points** drop from every meal. Press `G` at any moment, in the middle of a fight if you want, and spend them.
-- **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God. Each tier sheds your skin and pays two free points.
+- **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God. Each one plays a **transformation**: the body seizes, a seam of light runs head to tail splitting the old hide off plate by plate, and the animal bursts out a third bigger than it settles at. Two free gene points at the far end. `ESC` skips it.
 - **Predators** hunt you while you are small and flee when you are big.
 - **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
 - **Bosses** arrive after certain sheds: Old Scar, the Poacher Warboat, Mother Python, the Skunk Ape, and Big Bull. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
@@ -59,11 +59,23 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 - **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run from the splice bay.
 - Death is permanent, but the traits and relics you unlock are not.
 
-## The gene tree
+## The gene network
 
-Six lineages radiate from one primordial cell on a hex grid, four genes deep, with hybrid genes sitting
-between neighbouring lineages. A gene can be taken whenever it touches something you already own, so
-you can drive straight down one branch or weave across the middle.
+Forty-nine nodes on a hex grid, four rings out from one primordial cell, and a gene can be taken
+whenever it touches something you already own. It is a graph rather than a tree: the average node
+touches four others, so almost every gene has more than one way in.
+
+- **Spines** (24) — six lineages, four genes deep, running straight out along their own axis. Ring 4
+  is the apex.
+- **Hybrids** (6) — ring 2, sitting on the edge between two neighbouring lineages.
+- **Minor adaptations** (12) — ring 3, two flanking every lineage. Cheap, low strain, and adjacent to
+  *both* lineages either side of them: these are the lateral roads that turn the tree into a network.
+  You can travel around a ring on them instead of straight out.
+- **Chimeras** (6) — ring 4, halfway between two apexes. The strongest genes in the game and the only
+  ones that fuse two lineages at full depth.
+
+Everything you splice shows on the animal: tusks, plates, keeled scutes, stripes, a glow behind the
+eyes. Taking an apex or a chimera plays a full transformation.
 
 | Lineage | Theme | Apex |
 | --- | --- | --- |

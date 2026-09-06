@@ -229,21 +229,67 @@ const UI = {
     const R = Math.min(26, (W - 12) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
     const cx = W / 2 - (f.minX + f.maxX) * 0.5 * R;
     const cy = (top + bot) * 0.5 - (f.minY + f.maxY) * 0.5 * R;
-    return GENES.map(g => { const [sx, sy] = Genome.pos(g, cx, cy, R); return { g, sx, sy, R }; });
+    return GENES.map(g => {
+      const [sx, sy] = Genome.pos(g, cx, cy, R);
+      // node size carries its role: minors are beads on the lateral roads,
+      // chimeras and apexes are the far ends of the network
+      const k = g.root ? 0.74 : g.minor ? 0.56 : g.chimera ? 0.94 : g.hybrid ? 0.74 : g.apex ? 1.0 : 0.9;
+      return { g, sx, sy, R, r: R * k };
+    });
   },
   drawGenes(ctx) {
     const W = G.W, H = G.H, P = G.player, t = G.t;
     ctx.fillStyle = 'rgba(3,8,10,0.95)'; ctx.fillRect(0, 0, W, H);
     const cells = this.geneCells(), byId = {};
     for (const c of cells) byId[c.g.id] = c;
-    // links between adjacent cells
-    ctx.lineWidth = 1;
-    for (const c of cells) for (const n of hexNbrs(c.g)) {
-      const o = byId[n.id]; if (!o || o.sx < c.sx || (o.sx === c.sx && o.sy < c.sy)) continue;
-      const both = Genome.has(P, c.g.id) && Genome.has(P, n.id);
-      const one = Genome.has(P, c.g.id) || Genome.has(P, n.id);
-      ctx.strokeStyle = both ? 'rgba(120,240,210,0.55)' : one ? 'rgba(90,150,140,0.3)' : 'rgba(60,90,86,0.16)';
-      ctx.beginPath(); ctx.moveTo(c.sx, c.sy); ctx.lineTo(o.sx, o.sy); ctx.stroke();
+    // Links. The tree is really a graph now, so the edges get to carry the
+    // reading: dim filaments where nothing is spliced, a lit lineage-coloured
+    // trunk with a pulse running along it where both ends are yours.
+    const linkCol = (a, b) => {
+      const la = a.lin ? LINEAGES[a.lin].color : '#9ad8c0', lb = b.lin ? LINEAGES[b.lin].color : '#9ad8c0';
+      return mixColor(la, lb, 0.5);
+    };
+    const edges = [];
+    for (const c of cells) for (const n2 of hexNbrs(c.g)) {
+      const o2 = byId[n2.id]; if (!o2) continue;
+      if (o2.sx < c.sx || (o2.sx === c.sx && o2.sy < c.sy)) continue;
+      edges.push([c, o2]);
+    }
+    for (const [a, b] of edges) {
+      const oa = Genome.has(P, a.g.id), ob = Genome.has(P, b.g.id);
+      const both = oa && ob, one = oa || ob;
+      const ax = a.sx, ay = a.sy, bx = b.sx, by = b.sy;
+      const col = linkCol(a.g, b.g);
+      if (both) {
+        ctx.strokeStyle = rgba(col, 0.22); ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.strokeStyle = rgba(mixColor(col, '#ffffff', 0.45), 0.9); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      } else {
+        ctx.strokeStyle = one ? rgba(col, 0.34) : 'rgba(70,104,100,0.14)';
+        ctx.lineWidth = one ? 2 : 1;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      }
+    }
+    // signal running down the spliced edges, so the network looks alive
+    for (const [a, b] of edges) {
+      if (!(Genome.has(P, a.g.id) && Genome.has(P, b.g.id))) continue;
+      const ph = ((t * 0.42) + (a.sx + a.sy) * 0.004) % 1;
+      const px4 = Math.round(a.sx + (b.sx - a.sx) * ph), py4 = Math.round(a.sy + (b.sy - a.sy) * ph);
+      ctx.fillStyle = 'rgba(210,255,240,0.85)'; ctx.fillRect(px4 - 1, py4 - 1, 2, 2);
+    }
+    // junction stubs: a short tick where an unspliced but reachable node meets
+    // something you own, so the frontier of the network is obvious
+    for (const [a, b] of edges) {
+      const oa = Genome.has(P, a.g.id), ob = Genome.has(P, b.g.id);
+      if (oa === ob) continue;
+      const from = oa ? a : b, to = oa ? b : a;
+      const dx = to.sx - from.sx, dy = to.sy - from.sy, d = Math.hypot(dx, dy) || 1;
+      const k2 = (to.r + 3) / d;
+      const gx2 = Math.round(to.sx - dx * k2), gy2 = Math.round(to.sy - dy * k2);
+      const afford2 = Genome.unlocked(P, to.g) && P.genePoints >= Genome.cost(P, to.g);
+      ctx.fillStyle = afford2 && Math.floor(t * 3) % 2 ? '#b8ffe8' : 'rgba(140,220,200,0.5)';
+      ctx.fillRect(gx2 - 1, gy2 - 1, 3, 3);
     }
     // cells
     for (const c of cells) {
@@ -251,16 +297,20 @@ const UI = {
       const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
       const cost = Genome.cost(P, g), afford = open && P.genePoints >= cost;
       const sel = G.geneSel === g.id;
-      const r = c.R * (g.root ? 0.8 : g.apex ? 1.06 : 1) * (sel ? 1.12 : 1);
+      const r = c.r * (sel ? 1.14 : 1);
       if (own) { ctx.globalCompositeOperation = 'lighter'; this.hex(ctx, c.sx, c.sy, r * 1.3, rgba(col, 0.12), null); ctx.globalCompositeOperation = 'source-over'; }
       this.hex(ctx, c.sx, c.sy, r, own ? rgba(col, 0.3) : afford ? 'rgba(14,30,28,0.95)' : 'rgba(10,16,18,0.9)', own ? col : afford ? mixColor(col, '#ffffff', 0.2) : open ? shade(col, 0.55) : '#2a3a38', sel ? 2 : 1);
       // icon
       const ic = L ? ICONS[L.icon] : ICONS.croc;
-      if (ic) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
+      if (ic && !g.minor) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
+      // a minor is a bead, not a portrait: a single dot in its lineage colour
+      if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
+      // a chimera gets a second ring: it is the far end of two lineages at once
+      if (g.chimera && g.lin2) this.hex(ctx, c.sx, c.sy, r * 0.62, null, own ? LINEAGES[g.lin2].color : shade(LINEAGES[g.lin2].color, 0.5), 1);
       if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
       // cost pip
-      if (!own && g.cost) { const cy2 = c.sy + r - 5; ctx.fillStyle = afford ? '#0d2a24' : '#1a1210'; ctx.fillRect(c.sx - 7, cy2 - 4, 14, 9); Font.draw(ctx, String(cost), c.sx, cy2 - 3, { color: afford ? '#7affda' : '#8a6a6a', align: 'center' }); }
-      if (own) { ctx.fillStyle = col; ctx.fillRect(c.sx - 2, c.sy + r - 7, 4, 4); }
+      if (!own && g.cost && (open || sel)) { const cy2 = c.sy + r + 1; ctx.fillStyle = afford ? '#0d2a24' : '#141a1c'; ctx.fillRect(c.sx - 7, cy2 - 4, 14, 9); Font.draw(ctx, String(cost), c.sx, cy2 - 3, { color: afford ? '#7affda' : '#8a6a6a', align: 'center' }); }
+      if (own && !g.minor) { ctx.fillStyle = col; ctx.fillRect(c.sx - 2, c.sy + r - 5, 4, 4); }
       if (sel) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; this.hex(ctx, c.sx, c.sy, r + 3, null, 'rgba(255,255,255,0.5)', 1); }
     }
     // header
@@ -296,7 +346,8 @@ const UI = {
     const pw = 214, px3 = W - pw - 8, py3 = 8, phh = 96;
     this.panel(ctx, px3, py3, pw, phh, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
-    Font.draw(ctx, L ? L.name + (g.hybrid ? ' HYBRID' : g.apex ? ' APEX' : ' TIER ' + g.ring) : 'ORIGIN', px3 + 8, py3 + 18, { color: '#8aa89c' });
+    const kind = !L ? 'ORIGIN' : g.chimera ? LINEAGES[g.lin2].name + ' CHIMERA' : g.hybrid ? LINEAGES[g.lin2].name + ' HYBRID' : g.minor ? 'MINOR ADAPTATION' : g.apex ? 'APEX' : 'TIER ' + g.ring;
+    Font.draw(ctx, (L ? L.name + '  ' : '') + kind, px3 + 8, py3 + 18, { color: g.chimera ? mixColor(col, LINEAGES[g.lin2].color, 0.5) : '#8aa89c' });
     Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 30, pw - 16, { color: '#9ef0c8', lineHeight: 9 });
     if (g.down) Font.drawWrapped(ctx, g.down, px3 + 8, py3 + 52, pw - 16, { color: '#ff8a7a', lineHeight: 9 });
     if (g.load) Font.draw(ctx, '+' + g.load + ' STRAIN', px3 + pw - 8, py3 + 18, { color: '#ffb060', align: 'right' });

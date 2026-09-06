@@ -61,26 +61,85 @@ function gene(o) { GENES.push(o); return o; }
       ['manhunter', 'MAN-EATER', 'APEX: people panic near you, are worth triple, and boats break like sticks.', p => { p.st.manEater = true; p.st.fearAura = true; p.st.hullMul = 3; p.st.airGrab = true; p.evo.savage = true; }, L => { L.scars = true; L.eye = '#ff2010'; L.mane = '#4a1010'; }, 'Lean and reckless: -25% max HP.', p => { p.st.hpMul *= 0.75; }, 6],
     ],
   };
+  // Two small adaptations flank every lineage, sitting out on ring 3 between it
+  // and its neighbour. They are cheap, low-strain and, crucially, adjacent to
+  // BOTH lineages either side of them: the network's lateral roads.
+  const MINOR = {
+    ripper: [
+      ['fangs', 'HOOKED FANGS', '+12% bite, and torn prey drops more meat.', p => { p.st.bite *= 1.12; p.st.goreMul *= 1.2; }, null, '-6% swim speed.', p => { p.st.speed *= 0.94; }],
+      ['ragged', 'RAGGED EDGE', 'Wounds keep bleeding for half again as long.', p => { p.st.bleed = true; p.st.woundMul = Math.max(p.st.woundMul, 1.3); }, null, '-8% armour.', p => { p.st.armor -= 0.08; }],
+    ],
+    bulwark: [
+      ['grit', 'DERMAL GRIT', '-8% damage taken.', p => { p.st.armor += 0.08; }, null, '-6% acceleration.', p => { p.st.accel *= 0.94; }],
+      ['ballast', 'BALLAST', '+14% max health.', p => { p.st.hpMul *= 1.14; }, null, '-8% swim speed.', p => { p.st.speed *= 0.92; }],
+    ],
+    phantom: [
+      ['finescale', 'FINE SCALES', '+10% swim speed.', p => { p.st.speed *= 1.10; }, null, '-8% max health.', p => { p.st.hpMul *= 0.92; }],
+      ['lowwake', 'LOW WAKE', 'Prey notices you 25% later.', p => { p.st.stealth *= 0.75; }, null, '-8% bite.', p => { p.st.bite *= 0.92; }],
+    ],
+    abyssal: [
+      ['gillslit', 'GILL SLITS', 'Regenerate 1% health a second while fed.', p => { p.st.regen += 0.01; }, null, '-8% growth.', p => { p.st.growth *= 0.92; }],
+      ['toxinsac', 'TOXIN SAC', 'Bites carry a small dose of venom.', p => { p.st.venom += 0.18; }, null, '-6% bite.', p => { p.st.bite *= 0.94; }],
+    ],
+    colossus: [
+      ['widegullet', 'WIDE GULLET', 'Swallow prey 30% larger whole.', p => { p.st.swallow *= 1.3; }, null, '-6% turn rate.', p => { p.st.turn *= 0.94; }],
+      ['fatstore', 'FAT STORES', 'Hunger drains 18% slower.', p => { p.st.hungerRate *= 0.82; }, null, '-8% acceleration.', p => { p.st.accel *= 0.92; }],
+    ],
+    savage: [
+      ['padfeet', 'PADDED FEET', '+35% land speed.', p => { p.st.landSpeed *= 1.35; }, null, '-6% swim speed.', p => { p.st.speed *= 0.94; }],
+      ['nightpupil', 'NIGHT PUPIL', 'You see in the dark.', p => { p.st.nightEyes = true; }, L => { L.eye = '#c0ffe0'; }, '-8% armour.', p => { p.st.armor -= 0.08; }],
+    ],
+  };
+  // Ring-2 hybrids, sitting between two neighbouring lineages.
+  const HYB = {
+    'ripper|bulwark': ['bonecrusher', 'BONE CRUSHER', 'Bites ignore armor and crack shells, hulls and bone. 20% crit.', p => { p.st.pierce = true; p.st.crit += 0.2; }, L => { L.horn = true; }, 'Brittle enamel: -15% max HP.', p => { p.st.hpMul *= 0.85; }, 5],
+    'bulwark|phantom': ['keel', 'KEELED SCUTES', '-15% damage taken and +15% speed: armor that swims.', p => { p.st.armor += 0.15; p.st.speed *= 1.15; }, L => { L.denticle = true; }, 'Ridges catch: -15% acceleration.', p => { p.st.accel *= 0.85; }, 5],
+    'phantom|abyssal': ['barb', 'CAUDAL BARB', 'Your tail stabs and poisons whatever crowds you.', p => { p.st.barb = 16; p.st.venom += 0.2; }, L => { L.barb = true; }, 'Tail busy stabbing: -12% speed.', p => { p.st.speed *= 0.88; }, 5],
+    'abyssal|colossus': ['gullet', 'GOLIATH GULLET', 'Swallow anything your own size, and gain 25% more mass.', p => { p.st.swallow *= 2; p.st.growth *= 1.25; }, L => { L.gills = true; }, 'A full gullet is slow: -18% acceleration.', p => { p.st.accel *= 0.82; }, 5],
+    'colossus|savage': ['tusks', 'BOAR TUSKS', 'Dashing gores for 140% bite damage.', p => { p.st.bullRush = true; p.st.ramMul *= 1.4; }, L => { L.tusks = true; }, 'Tusks foul the bite: -12% bite.', p => { p.st.bite *= 0.88; }, 5],
+    'savage|ripper': ['scent', 'BLOOD SCENT', 'Wounded prey is marked and takes double damage.', p => { p.st.bloodScent = true; p.st.woundMul = 2; }, L => { L.eye = '#ff5030'; }, 'Nose over armour: -15% armour.', p => { p.st.armor -= 0.15; }, 5],
+  };
+  // Ring-4 chimeras: the far side of the network, where two lineages fuse into
+  // something neither of them would have made on its own.
+  const DEEP = {
+    'ripper|bulwark': ['siegejaw', 'SIEGE JAW', 'CHIMERA: +30% bite, nothing can be too tough, and you cannot be moved.', p => { p.st.bite *= 1.3; p.st.pierce = true; p.st.hullMul = Math.max(p.st.hullMul, 2.5); p.st.knockImmune = true; }, L => { L.horn = true; L.plates = true; }, 'A siege engine does not chase: -22% speed.', p => { p.st.speed *= 0.78; }],
+    'bulwark|phantom': ['mirror', 'MIRROR SCUTE', 'CHIMERA: attackers take 30% back, bullets glance, +20% speed.', p => { p.st.reflect += 0.3; p.st.bulletArmor += 0.35; p.st.speed *= 1.2; }, L => { L.denticle = true; L.glow = '#bfe8ff'; }, 'Mirrors are thin: -18% max HP.', p => { p.st.hpMul *= 0.82; }],
+    'phantom|abyssal': ['ghostvenom', 'GHOST VENOM', 'CHIMERA: ambushes inject a killing dose, and venom cannot touch you.', p => { p.st.ambush = true; p.st.venom += 0.6; p.st.venomImmune = true; p.st.stealth *= 0.7; }, L => { L.glow = '#7affda'; L.spots = '#40f0c8'; }, 'Hollow-boned: -22% armour.', p => { p.st.armor -= 0.22; }],
+    'abyssal|colossus': ['deepgorge', 'DEEP GORGE', 'CHIMERA: swallow anything, +35% growth, and mend as you feed.', p => { p.st.swallow *= 2.4; p.st.growth *= 1.35; p.st.regen += 0.02; p.st.lifesteal += 0.05; }, L => { L.gills = true; L.paddle = shade(L.mid, 0.8); }, 'A whale is not quick: -25% speed.', p => { p.st.speed *= 0.75; }],
+    'colossus|savage': ['stampede', 'STAMPEDE', 'CHIMERA: rams hit triple, footfalls shake the bank, +50% land speed.', p => { p.st.bullRush = true; p.st.ramMul *= 3; p.st.quake = true; p.st.landSpeed *= 1.5; p.st.hop *= 1.4; }, L => { L.tusks = true; L.mane = '#4a3a1a'; }, 'All shoulder, no jaw: -20% bite.', p => { p.st.bite *= 0.8; }],
+    'savage|ripper': ['bloodhunt', 'BLOOD HUNT', 'CHIMERA: wounded prey takes 2.5x, and every kill heals 12%.', p => { p.st.bloodScent = true; p.st.woundMul = 2.5; p.st.lifesteal += 0.12; p.st.frenzy = true; }, L => { L.eye = '#ff2010'; L.scars = true; }, 'It burns: hunger drains 40% faster.', p => { p.st.hungerRate *= 1.4; }],
+  };
+  // hex ring walk: start at dir 4 scaled by N, then N steps along each direction
+  const ring = N => { const out = []; let q = HEX_DIR[4][0] * N, r = HEX_DIR[4][1] * N; for (let i = 0; i < 6; i++) for (let j = 0; j < N; j++) { out.push([q, r, i, j]); q += HEX_DIR[i][0]; r += HEX_DIR[i][1]; } return out; };
+  // segment i of a ring runs from lineage (i+4)%6 to lineage (i+5)%6
+  const segA = i => LIN_KEYS[(i + 4) % 6], segB = i => LIN_KEYS[(i + 5) % 6];
+  // ---- lineage spines: one major per ring, out along each lineage's axis
   LIN_KEYS.forEach((lin, li) => {
-    const dir = HEX_DIR[li], side = HEX_DIR[(li + 1) % 6];
+    const dir = HEX_DIR[li];
     T[lin].forEach((n, i) => {
-      const ring = i + 1;
-      gene({ id: lin + ':' + n[0], lin, ring, q: dir[0] * ring, r: dir[1] * ring, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [2, 4, 7, 12][i], apex: i === 3 });
+      const rr = i + 1;
+      gene({ id: lin + ':' + n[0], lin, ring: rr, q: dir[0] * rr, r: dir[1] * rr, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [2, 4, 7, 12][i], apex: i === 3 });
     });
-    // a cross-link gene sitting between this lineage and the next
-    const cq = dir[0] * 2 + side[0], cr = dir[1] * 2 + side[1];
-    const other = LIN_KEYS[(li + 1) % 6];
-    const HYB = {
-      'ripper|bulwark': ['bonecrusher', 'BONE CRUSHER', 'Bites ignore armor and crack shells, hulls and bone. 20% crit.', p => { p.st.pierce = true; p.st.crit += 0.2; }, L => { L.horn = true; }, 'Brittle enamel: -15% max HP.', p => { p.st.hpMul *= 0.85; }, 5],
-      'bulwark|phantom': ['keel', 'KEELED SCUTES', '-15% damage taken and +15% speed: armor that swims.', p => { p.st.armor += 0.15; p.st.speed *= 1.15; }, L => { L.denticle = true; }, 'Ridges catch: -15% acceleration.', p => { p.st.accel *= 0.85; }, 5],
-      'phantom|abyssal': ['barb', 'CAUDAL BARB', 'Your tail stabs and poisons whatever crowds you.', p => { p.st.barb = 16; p.st.venom += 0.2; }, L => { L.barb = true; }, 'Tail busy stabbing: -12% speed.', p => { p.st.speed *= 0.88; }, 5],
-      'abyssal|colossus': ['gullet', 'GOLIATH GULLET', 'Swallow anything your own size, and gain 25% more mass.', p => { p.st.swallow *= 2; p.st.growth *= 1.25; }, L => { L.gills = true; }, 'A full gullet is slow: -18% acceleration.', p => { p.st.accel *= 0.82; }, 5],
-      'colossus|savage': ['tusks', 'BOAR TUSKS', 'Dashing gores for 140% bite damage.', p => { p.st.bullRush = true; p.st.ramMul *= 1.4; }, L => { L.tusks = true; }, 'Tusks foul the bite: -12% bite.', p => { p.st.bite *= 0.88; }, 5],
-      'savage|ripper': ['scent', 'BLOOD SCENT', 'Wounded prey is marked and takes double damage.', p => { p.st.bloodScent = true; p.st.woundMul = 2; }, L => { L.eye = '#ff5030'; }, 'Nose over armour: -15% armour.', p => { p.st.armor -= 0.15; }, 5],
-    };
-    const h = HYB[lin + '|' + other];
-    if (h) gene({ id: 'hy:' + h[0], lin, lin2: other, ring: 2, q: cq, r: cr, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 6, hybrid: true });
   });
+  // ---- ring 2: the hybrids, on the edge between two lineages
+  for (const [q, r, i, j] of ring(2)) {
+    if (j !== 1) continue;
+    const h = HYB[segA(i) + '|' + segB(i)]; if (!h) continue;
+    gene({ id: 'hy:' + h[0], lin: segA(i), lin2: segB(i), ring: 2, q, r, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 6, hybrid: true });
+  }
+  // ---- ring 3: two minor adaptations per edge, one owned by each side
+  for (const [q, r, i, j] of ring(3)) {
+    if (j === 0) continue;
+    const lin = j === 1 ? segA(i) : segB(i);
+    const m = MINOR[lin] && MINOR[lin][j === 1 ? 0 : 1]; if (!m) continue;
+    gene({ id: 'mn:' + m[0], lin, ring: 3, q, r, name: m[1], desc: m[2], apply: m[3], look: m[4], down: m[5], downApply: m[6], load: 1, cost: 3, minor: true });
+  }
+  // ---- ring 4: the chimeras, halfway between two apexes
+  for (const [q, r, i, j] of ring(4)) {
+    if (j !== 2) continue;
+    const d = DEEP[segA(i) + '|' + segB(i)]; if (!d) continue;
+    gene({ id: 'ch:' + d[0], lin: segA(i), lin2: segB(i), ring: 4, q, r, name: d[1], desc: d[2], apply: d[3], look: d[4], down: d[5], downApply: d[6], load: 7, cost: 11, hybrid: true, chimera: true });
+  }
 })();
 const GENE_BY_ID = {};
 for (const g of GENES) GENE_BY_ID[g.id] = g;
@@ -134,7 +193,7 @@ const Genome = {
   // 0 while stable, rising past 1 once the genome is over its limit
   strain(P) { const l = this.limit(P); return l <= 0 ? 0 : Math.max(0, (this.load(P) - l) / Math.max(4, l * 0.5)); },
   // how far down each lineage the player has gone
-  depth(P, lin) { let d = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin === lin && !g.hybrid) d = Math.max(d, g.ring); } return d; },
+  depth(P, lin) { let d = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.lin === lin && !g.hybrid && !g.minor) d = Math.max(d, g.ring); } return d; },
   // Gene points from a meal. Deliberately scarce: a run should fund maybe two
   // lineages, not the whole tree. Minnows feed you, they do not evolve you —
   // only prey that is a real share of your own mass, a threat, a person or a

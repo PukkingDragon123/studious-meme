@@ -116,7 +116,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -158,7 +158,7 @@ const G = {
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
-    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null;
+    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
@@ -366,21 +366,22 @@ const G = {
     this.fx.text(e.x, e.y - 40, 'BOSS DEVOURED', { scale: 3, color: '#ffd060', life: 2 });
   },
   onPlayerDeath(cause, src) { this.deathInfo = { cause, killer: src && src.name }; this.dyingT = 0; this.state = 'dying'; this.storeSave(); },
-  // growing into a new tier: shed the skin, gain a gene point, no menu
+  // growing into a new tier: the body splits out of its old hide on screen,
+  // and the tier itself lands at the burst halfway through
   growTier(tier) {
-    const P = this.player;
-    P.tier = Math.min(tier, TIERS.length - 1); P.sheds++;
-    P.hp = P.maxHp; P.lastMax = P.maxHp; P.invuln = 1.6; P.hunger = Math.max(P.hunger, 55);
-    P.genePoints += 2; P.newPoints += 2;
-    this.slowmo(0.35, 0.7); SFX.shed(); this.whiteFlash(0.45); this.shake(6);
-    const n = P.chain.nodes;
-    for (let i = 0; i < n.length; i++) { const part = i === 0 ? P.parts.head : i <= 5 ? P.parts.body[i - 1] : P.parts.tail[i - 6]; this.fx.husk(part.c, 0, 0, part.w, part.h, n[i].x, n[i].y, n[i].a, P.vis / CROC_PX, P.facing); }
-    for (let i = 0; i < 16; i++) this.fx.glow(P.x + rand(-40, 40) * P.vis, P.y + rand(-16, 16) * P.vis, rand(2, 5) * P.vis, '#ffffff', rand(0.4, 1.0));
-    this.fx.bubbles(P.x, P.y, 30, 30 * P.vis, -20);
-    this.banner = { text: TIERS[P.tier].name, sub: 'SHED YOUR SKIN  +2 GENE POINTS', t: 3, max: 3, color: '#9ad8b0' };
-    if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
-    if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
-    this.storeSave();
+    const P = this.player, t2 = Math.min(tier, TIERS.length - 1);
+    Morph.begin({
+      kind: 'tier', color: '#9ad8b0',
+      title: TIERS[t2].name, sub: 'SHED YOUR SKIN   +2 GENE POINTS',
+      apply: () => {
+        P.tier = t2; P.sheds++;
+        P.hp = P.maxHp; P.lastMax = P.maxHp; P.hunger = Math.max(P.hunger, 55);
+        P.genePoints += 2; P.newPoints += 2;
+        if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
+        if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t3 of Meta.checkUnlocks()) this.announceUnlock(t3); Meta.save(); }
+        this.storeSave();
+      },
+    });
   },
   // ---------- shedding ----------
   startShed(tier) {
@@ -617,6 +618,10 @@ const G = {
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
         break;
+      case 'morph':
+        this.updateWorld(dt * 0.5, false);
+        Morph.update(raw);
+        break;
       case 'shedding':
         this.updateWorld(dt, false); this.shedT += raw;
         if (this.shedT > 1.3) { this.state = 'shed'; this.shedCards = rollCards(this.player, 3); this.shedSel = 0; this.shedUiT = 0; this.slowT = 0; this.slowScale = 1; }
@@ -676,13 +681,27 @@ const G = {
           for (const c of cells) { if (c === cur) continue; const ox = c.sx - cur.sx, oy = c.sy - cur.sy; if (ox * dx + oy * dy <= 4) continue; const d = Math.hypot(ox, oy) + Math.abs(ox * dy - oy * dx) * 1.5; if (d < bd) { bd = d; best = c; } }
           if (best) { this.geneSel = best.g.id; SFX.ui(); }
         }
-        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < c.R + 1));
+        const take = Input.hit('Space', 'KeyJ', 'KeyZ') || (Input.mouse.clicked && cells.some(c => c.g.id === this.geneSel && dist(Input.mouse.x, Input.mouse.y, c.sx, c.sy) < c.r + 4));
         if (take) {
           const g = GENE_BY_ID[this.geneSel];
+          // hold the old body so a big splice can grow into the new one on screen
+          const wasParts = P.parts, wasLook = P.look;
           if (g && Genome.buy(P, g)) {
-            SFX.pick(); SFX.levelup(); this.whiteFlash(0.3); this.shake(4);
-            this.fx.glow(P.x, P.y, 60 * P.vis, LINEAGES[g.lin] ? LINEAGES[g.lin].color : '#ffffff', 0.8);
-            this.banner = { text: g.name, sub: g.apex ? 'APEX GENE SPLICED' : 'GENE SPLICED', t: 2.6, max: 2.6, color: g.lin ? LINEAGES[g.lin].color : '#ffffff' };
+            const col = g.lin ? LINEAGES[g.lin].color : '#ffffff';
+            if (g.apex || g.chimera) {
+              const newParts = P.parts, newLook = P.look;
+              P.parts = wasParts; P.look = wasLook;
+              Morph.begin({
+                kind: 'gene', color: col, title: g.name,
+                sub: g.apex ? 'APEX GENE EXPRESSED' : 'CHIMERA EXPRESSED',
+                apply: () => { P.parts = newParts; P.look = newLook; },
+              });
+            } else {
+              SFX.pick(); SFX.levelup(); this.whiteFlash(0.3); this.shake(4);
+              this.fx.glow(P.x, P.y, 60 * P.vis, col, 0.8);
+              P.spliceGlow = 1; P.spliceCol = col;
+              this.banner = { text: g.name, sub: 'GENE SPLICED', t: 2.6, max: 2.6, color: col };
+            }
           } else SFX.clank();
         }
         break;
@@ -823,6 +842,7 @@ const G = {
     for (const e of vis) { if (!drewPlayer && e.layer >= 2) { P.draw(ctx); drewPlayer = true; } e.draw(ctx); }
     if (!drewPlayer) P.draw(ctx);
     if (this.state === 'egg') this.drawEgg(ctx);
+    if (this.morph) Morph.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
@@ -839,6 +859,7 @@ const G = {
       case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
+      case 'morph': Morph.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;
       case 'shed': UI.drawShed(ctx); break;
       case 'dead': UI.drawDeath(ctx); break;

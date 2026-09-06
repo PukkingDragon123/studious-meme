@@ -47,6 +47,15 @@ const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const R = {
   mk(w, h) { w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); const c = mkCanvas(w, h); return { c, x: c.getContext('2d'), w, h }; },
   px(o, i, j, col, w = 1, h = 1) { o.x.fillStyle = col; o.x.fillRect(Math.round(i), Math.round(j), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); },
+  // a diagonal dither band, used for keeled scutes and other rough textures
+  dith(o, x, y, w, h, col, phase = 0, step = 3) {
+    const c = o.x; c.fillStyle = col;
+    const x0 = Math.round(x), y0 = Math.round(y), x1 = Math.round(x + w), y1 = Math.round(y + h);
+    for (let j = Math.max(0, y0); j < Math.min(o.h, y1); j++) {
+      let i = x0 + (((j + phase) % step) + step) % step;
+      for (; i < x1; i += step) if (i >= 0 && i < o.w) c.fillRect(i, j, 1, 1);
+    }
+  },
   hi: c => mixColor(c, '#ffffff', 0.28), hi2: c => mixColor(c, '#ffffff', 0.5), lo: c => shade(c, 0.72), lo2: c => shade(c, 0.5),
   ol: c => mixColor(shade(c, 0.42), '#181410', 0.34),
   // solid disc
