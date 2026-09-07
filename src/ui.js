@@ -472,60 +472,232 @@ const UI = {
     ctx.fillStyle = '#f4f1e6';
     for (let i = 0; i < 12; i++) { const tx = Math.round(x - w / 2 + i * (w / 11)); ctx.beginPath(); ctx.moveTo(tx - 3, y - 2); ctx.lineTo(tx + 3, y - 2); ctx.lineTo(tx, y + 4); ctx.closePath(); ctx.fill(); }
   },
+  // ---------- the Science Center front end ----------
+  // The room does the talking. This is a hanging sign, a selection bracket
+  // around whichever piece of furniture you are pointed at, and a footer.
+  labStations() {
+    const F = LAB.FLOOR;
+    return [
+      { id: 'archive', x: 6, y: F - 180, w: 164, h: 180, lx: 88, label: 'GENOME ARCHIVE', sub: 'EVERY SPECIES YOU HAVE EATEN' },
+      { id: 'create', x: 258, y: 78, w: 124, h: 218, lx: 320, label: 'CREATE SPECIMEN', sub: 'BUILD AN EMBRYO AND RELEASE IT' },
+      { id: 'vials', x: 434, y: F - 126, w: 200, h: 126, lx: 534, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
+    ];
+  },
   drawTitle(ctx) {
     const W = G.W, H = G.H, t = G.titleT, touch = G.touchUI;
-    // darken the top and the bottom only, so the swamp behind stays bright in the middle
-    const top = ctx.createLinearGradient(0, 0, 0, 138);
-    top.addColorStop(0, 'rgba(4,10,10,0.58)'); top.addColorStop(1, 'rgba(4,10,10,0)');
-    ctx.fillStyle = top; ctx.fillRect(0, 0, W, 138);
-    const bot = ctx.createLinearGradient(0, H - 70, 0, H);
-    bot.addColorStop(0, 'rgba(4,10,10,0)'); bot.addColorStop(1, 'rgba(4,10,10,0.7)');
-    ctx.fillStyle = bot; ctx.fillRect(0, H - 70, W, 70);
-    // vignette
-    const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.34, W / 2, H / 2, H * 0.88);
-    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.22)');
-    ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+    const st = this.labStations(), sel = st[clamp(G.labSel === undefined ? 1 : G.labSel, 0, st.length - 1)];
 
-    this.drawLogo(ctx, W / 2, 22, 6, t);
-    Font.draw(ctx, 'AN EVERGLADES EATER ROGUELIKE', W / 2, 92, { color: '#7fd8b8', align: 'center', outline: '#04100c' });
-    Font.draw(ctx, 'THEY SPLICED EVERY ANIMAL INTO YOU. NOW USE THEM ALL.', W / 2, 104, { color: '#e6eede', align: 'center', outline: '#04100c' });
+    // --- hanging illuminated sign, slung from the ceiling pipes
+    const sw = 246, sx = Math.round(W / 2 - sw / 2), sy = 40, sh = 40;
+    ctx.fillStyle = '#2a3c42'; ctx.fillRect(sx + 26, 26, 3, 16); ctx.fillRect(sx + sw - 29, 26, 3, 16);
+    ctx.fillStyle = '#0c1417'; ctx.fillRect(sx - 3, sy - 3, sw + 6, sh + 6);
+    ctx.fillStyle = '#16242a'; ctx.fillRect(sx, sy, sw, sh);
+    ctx.fillStyle = '#20343a'; ctx.fillRect(sx, sy, sw, 2);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.10 + 0.03 * Math.sin(t * 3);
+    ctx.fillStyle = '#ff5030'; ctx.fillRect(sx + 4, sy + 4, sw - 8, sh - 8);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    this.drawLogo(ctx, W / 2, sy + 6, 3, t);
+    Font.draw(ctx, 'CHIMERA PROJECT   BIO-4 GENETICS', W / 2, sy + 30, { color: '#5f9f94', align: 'center' });
 
-    // start prompt: a chevron pair that breathes rather than a hard blink
-    const pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
-    const label = touch ? 'TAP TO HUNT' : 'PRESS ENTER TO HUNT';
-    const lw = Font.width(label, 2);
-    ctx.globalAlpha = 0.55 + 0.45 * pulse;
-    Font.draw(ctx, label, W / 2, 128, { color: '#ffe060', align: 'center', scale: 2, outline: '#3a1c00' });
-    ctx.globalAlpha = 0.3 + 0.7 * pulse;
-    const chev = 10 + Math.round(pulse * 4);
-    Font.draw(ctx, '>', W / 2 - lw / 2 - chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
-    Font.draw(ctx, '<', W / 2 + lw / 2 + chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
+    // --- selection bracket drawn around the chosen station, inside the room
+    const pulse = 0.55 + 0.45 * Math.sin(t * 4);
+    ctx.globalAlpha = 0.35 + pulse * 0.5;
+    this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 13);
     ctx.globalAlpha = 1;
+    ctx.fillStyle = '#7affda';
+    for (let i = 0; i < 4; i++) {
+      const px = sel.x + (i % 2 ? sel.w : 0), py = sel.y + (i > 1 ? sel.h : 0);
+      ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 2, 2);
+    }
 
-    // controls: two tidy columns, keyboard or touch depending on the device
-    const rows = touch
-      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['SPEED PAD', 'HOLD TO RUN'], ['BRACE PAD', 'PARRY AND COUNTER'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
-      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'HOLD: SPEED, UP: LEAP'], ['L / V', 'BRACE: PARRY'], ['G', 'GENE TREE'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
-    const _stageHint = 'PICK A STAGE AND A PRIME MUTATION BEFORE EACH RUN';
-    const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
-    const boxH = per * 11 + 10, boxY = H - 74 - boxH;
-    this.panel(ctx, 20, boxY, pw2, boxH, 'rgba(6,14,14,0.68)', 'rgba(120,180,160,0.35)');
-    rows.forEach((r, i) => {
-      const c = Math.floor(i / per), ry = boxY + 7 + (i % per) * 11, rx = x0 + c * colW;
-      Font.draw(ctx, r[0], rx, ry, { color: '#8fe8c8' });
-      Font.draw(ctx, r[1], rx + 96, ry, { color: '#d4e0d0' });
+    // --- the plate under the selected station
+    const plw = Math.max(158, Font.width(sel.sub, 1) + 22), plx = clamp(Math.round(sel.lx - plw / 2), 6, W - plw - 6);
+    const ply = H - 56;
+    ctx.fillStyle = 'rgba(4,10,12,0.88)'; ctx.fillRect(plx, ply, plw, 30);
+    this.bracket(ctx, plx, ply, plw, 30, 'rgba(120,255,215,0.5)', 7);
+    Font.draw(ctx, sel.label, plx + plw / 2, ply + 5, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, sel.sub, plx + plw / 2, ply + 21, { color: '#5f9f94', align: 'center' });
+
+    // --- three tabs, so the whole room's options are visible at once
+    const tw = 56, ty = H - 20;
+    st.forEach((s2, i) => {
+      const tx = Math.round(W / 2 - (st.length * tw) / 2 + i * tw);
+      const on = i === (G.labSel === undefined ? 1 : G.labSel);
+      ctx.fillStyle = on ? '#1d4a42' : '#101c1b'; ctx.fillRect(tx + 2, ty, tw - 4, 13);
+      ctx.fillStyle = on ? '#7affda' : '#2e4a46'; ctx.fillRect(tx + 2, ty, tw - 4, 1);
+      Font.draw(ctx, ['ARCHIVE', 'CREATE', 'VIALS'][i], tx + tw / 2, ty + 4, { color: on ? '#e8fff8' : '#4f7f74', align: 'center' });
     });
 
-    Font.draw(ctx, _stageHint, W / 2, boxY - 10, { color: '#7fd8b8', align: 'center', outline: '#04140f' });
-    Font.draw(ctx, 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.', W / 2, boxY + boxH + 8, { color: '#ffb060', align: 'center', outline: '#2a1200' });
-
-    const s = G.save;
-    const have = ANIMAL_TRAITS.filter(t2 => !t2.unlock || Meta.isUnlocked(t2.id)).length;
-    Font.draw(ctx, 'BEST ' + fmt(s.best) + '     LONGEST ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 20, { color: '#90a898', align: 'center', shadow: true });
-    Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
-    if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
+    // --- prompt and footer
+    ctx.globalAlpha = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 3.2));
+    Font.draw(ctx, touch ? 'TAP A STATION' : 'ARROWS: WALK      ENTER: USE', W / 2, ply - 16, { color: '#ffe060', align: 'center', outline: '#3a1c00' });
+    ctx.globalAlpha = 1;
+    const sv = G.save;
+    Font.draw(ctx, 'BEST ' + fmt(sv.best || 0) + '   LONGEST ' + (sv.bestLen || 0).toFixed(1) + 'FT   RELICS ' + Missions.owned().length + '/' + ARTIFACTS.length, 8, H - 8, { color: '#3f6f66' });
+    Font.draw(ctx, 'SOUND ' + (SFX.muted ? 'OFF' : 'ON') + ' (M)   HELP (H)', W - 8, H - 8, { color: '#3f6f66', align: 'right' });
   },
-  // a small landmark icon standing in for the paragraph a site used to need
+  // ---------- the creation bay ----------
+  createCells() {
+    const W = G.W, out = [];
+    const px0 = 214, cw = Math.floor((W - px0 - 12) / 3);
+    BASE_SPECIES.forEach((sp, i) => out.push({ row: 0, i, x: px0 + (i % 3) * cw, y: 44 + Math.floor(i / 3) * 20, w: cw - 3, h: 18, item: sp }));
+    SIZE_GRADES.forEach((gr, i) => out.push({ row: 1, i, x: px0 + i * Math.floor((W - px0 - 12) / 4), y: 106, w: Math.floor((W - px0 - 12) / 4) - 3, h: 18, item: gr }));
+    const vw = Math.floor((W - px0 - 12) / 4);
+    VIALS.forEach((v, i) => out.push({ row: 2, i, x: px0 + (i % 4) * vw, y: 160 + Math.floor(i / 4) * 20, w: vw - 3, h: 18, item: v }));
+    return out;
+  },
+  createGoRect() { return { x: G.W - 152, y: G.H - 40, w: 134, h: 26 }; },
+  drawCreate(ctx) {
+    const W = G.W, H = G.H, t = G.menuT, E = G.embryo, b = Create.spec();
+    // the room stays behind, dimmed: you are still standing in the lab
+    ctx.fillStyle = 'rgba(3,10,12,0.82)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'CREATION BAY', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, 'GROW A SPECIMEN', 128, 12, { color: '#4f7f74' });
+
+    // --- live embryo preview, in its own tank on the left
+    const tx = 16, ty = 44, tw = 186, th = 250;
+    ctx.fillStyle = '#0a1416'; ctx.fillRect(tx - 3, ty - 3, tw + 6, th + 6);
+    const fg = ctx.createLinearGradient(0, ty, 0, ty + th);
+    fg.addColorStop(0, '#1e5e58'); fg.addColorStop(1, '#0d3336');
+    ctx.fillStyle = fg; ctx.fillRect(tx, ty, tw, th);
+    ctx.save(); ctx.beginPath(); ctx.rect(tx, ty, tw, th); ctx.clip();
+    // drifting matter
+    ctx.globalAlpha = 0.45;
+    for (let i = 0; i < 40; i++) {
+      const px = tx + 3 + ihash(i, 41) * (tw - 6);
+      const py = ty + th - ((t * (7 + ihash(i, 42) * 13) + ihash(i, 43) * 500) % (th - 6));
+      ctx.fillStyle = ihash(i, 44) > 0.6 ? '#8fe8d0' : '#5fa89c';
+      ctx.fillRect(Math.round(px), Math.round(py), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+    // the embryo, scaled by the chosen grade
+    const scale = clamp(0.8 + b.size * 0.42, 0.8, 1.55);
+    ctx.save();
+    ctx.translate(tx + tw / 2, ty + th / 2 + 10);
+    ctx.scale(scale, scale);
+    ctx.translate(-(tx + tw / 2), -(ty + th / 2 + 10));
+    Lab.embryo(ctx, tx + tw / 2, ty + th / 2 + 10, t, 0.55);
+    ctx.restore();
+    // the vial's colour bleeds into the fluid
+    if (b.vial && b.vial.id !== 'none') {
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.10 + 0.04 * Math.sin(t * 2.4);
+      ctx.fillStyle = b.vial.col; ctx.fillRect(tx, ty, tw, th);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
+    // glass furniture
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#dffdf4'; ctx.fillRect(tx + 8, ty + 4, 3, th - 8); ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(150,230,220,0.3)'; ctx.fillRect(tx, ty, 2, th); ctx.fillRect(tx + tw - 2, ty, 2, th);
+    ctx.fillStyle = '#2b4149'; ctx.fillRect(tx - 5, ty - 12, tw + 10, 13);
+    Font.draw(ctx, b.sp.name, tx + tw / 2, ty - 9, { color: '#b8ffe8', align: 'center' });
+    // vitals readout under the tank
+    const st2 = [['LENGTH', (b.size * 1.5).toFixed(1) + ' FT'], ['HEALTH', Math.round(b.hp * 100) + '%'], ['SPEED', Math.round(b.spd * 100) + '%'], ['BITE', Math.round(b.bite * 100) + '%'], ['HUNGER', Math.round(b.hunger * 100) + '%']];
+    st2.forEach((r, i) => {
+      const ry = ty + th + 6 + i * 10;
+      Font.draw(ctx, r[0], tx + 2, ry, { color: '#4f7f74' });
+      Font.draw(ctx, r[1], tx + tw - 2, ry, { color: '#d8e8de', align: 'right' });
+    });
+
+    // --- the three choice banks
+    const cells = this.createCells();
+    const label = (txt, y) => { Font.draw(ctx, txt, 214, y, { color: '#7affda' }); ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(214, y + 9, W - 226, 1); };
+    label('BASE SPECIES', 32);
+    label('GROWTH GRADE', 94);
+    label('SUBSTANCE', 148);
+    for (const c of cells) {
+      const item = c.item;
+      const open = c.row === 0 ? Create.speciesUnlocked(item) : c.row === 2 ? Create.vialUnlocked(item) : true;
+      const cur = c.row === 0 ? E.species === item.id : c.row === 1 ? E.size === c.i : E.vial === item.id;
+      const on = (G.createRow || 0) === c.row && ((c.row === 0 && E.species === item.id) || (c.row === 1 && E.size === c.i) || (c.row === 2 && E.vial === item.id));
+      const col = c.row === 2 ? item.col : '#7affda';
+      ctx.fillStyle = cur ? 'rgba(30,80,70,0.9)' : 'rgba(10,22,24,0.85)'; ctx.fillRect(c.x, c.y, c.w, c.h);
+      ctx.fillStyle = !open ? '#2a2420' : cur ? col : '#2e4a46'; ctx.fillRect(c.x, c.y, c.w, 1);
+      if (on) this.bracket(ctx, c.x - 1, c.y - 1, c.w + 2, c.h + 2, '#ffffff', 5);
+      // vial swatch
+      if (c.row === 2) { ctx.fillStyle = open ? item.col : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 4, 4, 10); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(c.x + 3, c.y + 4, 1, 10); }
+      // a locked cell shows what it wants, not the word LOCKED over the top of it
+      let nm = item.name;
+      if (!open) nm = (c.row === 0 && item.need ? (item.need.best !== undefined ? 'SCORE ' + fmt(item.need.best) : Stages.hint(item.need)) : '') || 'LOCKED';
+      const maxc = Math.floor((c.w - (c.row === 2 ? 12 : 6)) / 6);
+      Font.draw(ctx, nm.length > maxc ? nm.slice(0, maxc) : nm, c.x + (c.row === 2 ? 10 : 4), c.y + 6, { color: !open ? '#6a5a4a' : cur ? '#e8fff8' : '#8fbfb6' });
+    }
+
+    // --- artifacts spliced into the embryo
+    Font.draw(ctx, 'SPLICED ARTIFACTS', 214, 204, { color: '#7affda' });
+    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(214, 213, W - 226, 1);
+    const owned = Missions.owned();
+    const slots = 5, sw2 = 26;
+    for (let i = 0; i < slots; i++) {
+      const sx2 = 216 + i * (sw2 + 4), sy2 = 220;
+      ctx.fillStyle = 'rgba(10,22,24,0.85)'; ctx.fillRect(sx2, sy2, sw2, 24);
+      const a = owned[i] ? ARTIFACT_BY_ID[owned[i]] : null;
+      if (a) { drawRelicGlyph(ctx, a, sx2 + sw2 / 2, sy2 + 12, t * 0.5, 0.85); ctx.fillStyle = a.col; ctx.fillRect(sx2, sy2, sw2, 1); }
+      else { ctx.fillStyle = '#2a3230'; ctx.fillRect(sx2 + sw2 / 2 - 4, sy2 + 10, 8, 3); ctx.fillRect(sx2 + sw2 / 2 - 1, sy2 + 7, 2, 9); }
+    }
+    Font.draw(ctx, owned.length ? owned.length + ' OF ' + ARTIFACTS.length + ' RECOVERED — ALL ACTIVE' : 'NONE RECOVERED. THEY ARE OUT THERE.', 216 + slots * (sw2 + 4) + 6, 228, { color: owned.length ? '#c8b070' : '#5f7f78' });
+
+    // --- the flavour line for whatever is highlighted
+    const row = G.createRow || 0;
+    const cur2 = row === 0 ? b.sp : row === 1 ? b.gr : row === 2 ? b.vial : null;
+    if (cur2) {
+      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(214, 254, W - 226, 32);
+      Font.draw(ctx, cur2.latin || cur2.eff || '', 218, 258, { color: '#5f9f94' });
+      Font.drawWrapped(ctx, cur2.line || '', 218, 269, W - 236, { color: '#c8d8d0', lineHeight: 9 });
+    }
+
+    // --- release
+    const go = this.createGoRect();
+    const p2 = 0.5 + 0.5 * Math.sin(t * 4);
+    ctx.fillStyle = 'rgba(60,20,10,0.9)'; ctx.fillRect(go.x, go.y, go.w, go.h);
+    ctx.fillStyle = mixColor('#8a2a10', '#ff6030', p2); ctx.fillRect(go.x, go.y, go.w, 2);
+    this.bracket(ctx, go.x, go.y, go.w, go.h, '#ff8050', 8);
+    Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 7, { color: '#ffd0a0', align: 'center', scale: 2, outline: '#2a0c00' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK' : 'ARROWS PICK    ENTER: RELEASE    ESC: BACK', 12, H - 10, { color: '#4f7f74' });
+  },
+
+  // ---------- the substance store ----------
+  drawVialStore(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    ctx.fillStyle = 'rgba(3,10,12,0.9)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'SUBSTANCE STORE', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    const owned = (G.save && G.save.vials) || [];
+    Font.draw(ctx, owned.length + ' OF ' + (VIALS.length - 1) + ' RECOVERED', W - 12, 14, { color: '#5f9f94', align: 'right' });
+    // a rack of vials, drawn as glass
+    const list = VIALS.slice(1);
+    const cw = Math.floor((W - 24) / list.length);
+    list.forEach((v, i) => {
+      const x = 12 + i * cw, y = 44, have = owned.indexOf(v.id) >= 0;
+      const sel = i === (G.vialSel || 0);
+      // stopper, glass body, fluid
+      ctx.fillStyle = '#5a5248'; ctx.fillRect(x + cw / 2 - 5, y, 10, 4);
+      ctx.fillStyle = 'rgba(150,220,215,0.14)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 14, 54);
+      if (have) {
+        ctx.fillStyle = v.col; ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 37);
+        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.45); ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 2);
+        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.7); ctx.fillRect(x + cw / 2 - 5, y + 24, 2, 28);
+        // it bubbles
+        if (chance(0.4)) { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(x + cw / 2 + ((i * 3) % 4) - 2, y + 24 + ((t * 22 + i * 9) % 30), 1, 1); }
+        ctx.globalCompositeOperation = 'lighter'; Shape.star(ctx, x + cw / 2, y + 38, 12, v.col, 0.22); ctx.globalCompositeOperation = 'source-over';
+      } else {
+        ctx.fillStyle = 'rgba(40,52,52,0.5)'; ctx.fillRect(x + cw / 2 - 6, y + 40, 12, 17);
+      }
+      ctx.fillStyle = 'rgba(220,250,250,0.28)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 1, 54);
+      if (sel) this.bracket(ctx, x + 2, y - 4, cw - 4, 70, '#ffffff', 7);
+      Font.draw(ctx, have ? String(i + 1) : '?', x + cw / 2, y + 62, { color: have ? '#d8e8de' : '#4a5a56', align: 'center' });
+    });
+    const v = list[clamp(G.vialSel || 0, 0, list.length - 1)];
+    const have = owned.indexOf(v.id) >= 0;
+    ctx.fillStyle = 'rgba(6,14,16,0.9)'; ctx.fillRect(12, 130, W - 24, 78);
+    this.bracket(ctx, 12, 130, W - 24, 78, have ? v.col : '#3a4a48', 9);
+    Font.draw(ctx, have ? v.name : 'UNIDENTIFIED SUBSTANCE', 20, 138, { color: have ? v.col : '#5f7f78', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, have ? v.eff : 'RECOVER IT IN THE FIELD TO READ THE LABEL', 20, 158, { color: have ? '#d8e8de' : '#4f6f6a' });
+    if (have) Font.drawWrapped(ctx, v.line, 20, 172, W - 40, { color: '#8fbfb6', lineHeight: 9 });
+    Font.draw(ctx, 'ONE SUBSTANCE MAY BE LOADED PER RUN, IN THE CREATION BAY.', 12, 226, { color: '#4f7f74' });
+    Font.draw(ctx, 'VIALS DROP FROM BOSSES AND HIDE IN SECRET AREAS. THEY ARE KEPT FOREVER.', 12, 238, { color: '#3f6f66' });
+    Font.draw(ctx, 'ARROWS: BROWSE      ESC: BACK', W / 2, H - 14, { color: '#4f7f74', align: 'center' });
+  },
+
   drawLandmark(ctx, kind, x, y, on) {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
     const dim = c => (on ? c : mixColor(c, '#20302c', 0.62));

@@ -8128,6 +8128,905 @@ const DNA = {
   },
 };
 
+/* ===== src/creation.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// THE CREATION BAY and the SUBSTANCE STORE.
+//
+// Before a run you build the thing you are going to be. Three decisions:
+// which base species the lab grows you from, how big they let you come out,
+// and which recovered artifacts get spliced into the embryo. You start with a
+// dwarf alligator and nothing else; everything past that is earned.
+//
+// Vials are the other half of progression: biological substances recovered in
+// the field. One is loaded before a run and its effects are permanent for that
+// run. They are the reason to go back into a map you have already cleared.
+// ---------------------------------------------------------------------------
+const BASE_SPECIES = [
+  { id: 'dwarf', name: 'DWARF ALLIGATOR', latin: 'A. MISSISSIPPIENSIS (DWARF)',
+    line: 'STUNTED, STUBBORN, CHEAP TO GROW. THE ONE THEY START EVERYONE ON.',
+    size: 1.0, hp: 1.0, spd: 1.0, bite: 1.0, need: null,
+    look: { back: '#4a5a3a', mid: '#5f7048', belly: '#c8c0a0', dark: '#2e3a24', eye: '#c8a030' } },
+  { id: 'caiman', name: 'SPECTACLED CAIMAN', latin: 'C. CROCODILUS',
+    line: 'BONY BROW, BAD TEMPER. FASTER OUT OF THE GATE, THINNER SKINNED.',
+    size: 1.15, hp: 0.9, spd: 1.18, bite: 1.05, need: { runs: 3 },
+    look: { back: '#5a5a3a', mid: '#74744a', belly: '#d0c8a0', dark: '#3a3a22', eye: '#a0c840' } },
+  { id: 'nile', name: 'NILE CROCODILE', latin: 'C. NILOTICUS',
+    line: 'THE STANDARD AGAINST WHICH THE PROJECT MEASURES ITSELF.',
+    size: 1.35, hp: 1.15, spd: 1.05, bite: 1.2, need: { bestTier: 5 },
+    look: { back: '#4a4436', mid: '#635c46', belly: '#c4bc9c', dark: '#2c281e', eye: '#c8b040' } },
+  { id: 'gharial', name: 'GHARIAL', latin: 'G. GANGETICUS',
+    line: 'A JAW LIKE A NEEDLE FILE. BUILT FOR FISH AND FOR SPEED.',
+    size: 1.25, hp: 0.85, spd: 1.35, bite: 0.9, need: { kills: 400 },
+    look: { back: '#3e4a52', mid: '#546470', belly: '#c0c8cc', dark: '#242c33', eye: '#e0e8a0' } },
+  { id: 'salt', name: 'SALTWATER CROCODILE', latin: 'C. POROSUS',
+    line: 'THE LARGEST LIVING REPTILE. THE PROJECT KEEPS ONE. IT IS NOT FOR SALE.',
+    size: 1.7, hp: 1.35, spd: 0.92, bite: 1.35, need: { bestTier: 9 },
+    look: { back: '#3a3a2c', mid: '#4e4e3a', belly: '#b8b494', dark: '#20201a', eye: '#d8c050' } },
+  { id: 'deino', name: 'DEINOSUCHUS EMBRYO', latin: 'D. RIOGRANDENSIS (RECONSTRUCTED)',
+    line: 'GROWN FROM A FRAGMENT. IT SHOULD NOT BE ALIVE. IT IS VERY MUCH ALIVE.',
+    size: 2.2, hp: 1.6, spd: 0.85, bite: 1.6, need: { best: 400000 },
+    look: { back: '#4a3a3a', mid: '#5f4a48', belly: '#c0a898', dark: '#2a1e1e', eye: '#ff6030', spikes: 1 } },
+];
+const SPECIES_BY_ID = {};
+for (const s of BASE_SPECIES) SPECIES_BY_ID[s.id] = s;
+
+// Size is a real trade, not a difficulty slider: bigger starts you higher up
+// the food chain but eats hunger and slows you down.
+const SIZE_GRADES = [
+  { id: 'runt', name: 'RUNT', mul: 0.78, line: 'SMALLEST VIABLE. FAST, STARVES SLOWLY, DIES TO ANYTHING.', hp: 0.8, spd: 1.22, hunger: 0.72 },
+  { id: 'standard', name: 'STANDARD', mul: 1.0, line: 'WHAT THE PAPERWORK SAYS.', hp: 1, spd: 1, hunger: 1 },
+  { id: 'large', name: 'OVERGROWN', mul: 1.3, line: 'FED PAST SPEC. HITS HARDER, BURNS THROUGH FOOD.', hp: 1.2, spd: 0.9, hunger: 1.34 },
+  { id: 'huge', name: 'HYPERTROPHIC', mul: 1.7, line: 'THEY DO NOT AUTHORISE THIS. IT WILL BE HUNGRY.', hp: 1.45, spd: 0.8, hunger: 1.8 },
+];
+
+// ---------------------------------------------------------------------------
+// Vials. Each is a substance with a real upside and a real cost.
+// ---------------------------------------------------------------------------
+const VIALS = [
+  { id: 'none', name: 'NO SUBSTANCE', col: '#5f7f78', line: 'CLEAN BLOOD. NOTHING TO REJECT.', eff: 'NO EFFECT', apply: () => {} },
+  { id: 'adren', name: 'ADRENAL CONCENTRATE', col: '#ff8030', line: 'DRAWN FROM A PANTHER THAT WOULD NOT STOP RUNNING.',
+    eff: '+18% SPEED AND STAMINA, -12% MAX HEALTH', apply: P => { P.st.speed *= 1.18; P.st.dashCd *= 0.8; P.st.hpMul *= 0.88; } },
+  { id: 'clot', name: 'CLOTTING FACTOR IX', col: '#c02828', line: 'IT MENDS. IT ALSO THICKENS.',
+    eff: 'REGENERATE WHILE FED, -10% SPEED', apply: P => { P.st.regen += 0.02; P.st.speed *= 0.9; } },
+  { id: 'myo', name: 'MYOSTATIN BLOCKER', col: '#e8d060', line: 'THE MUSCLE NEVER GETS THE MESSAGE TO STOP.',
+    eff: '+25% BITE, HUNGER DRAINS 25% FASTER', apply: P => { P.st.bite *= 1.25; P.st.hungerRate *= 1.25; } },
+  { id: 'chitin', name: 'CHITIN GRAFT SERUM', col: '#8a9a40', line: 'HARVESTED OFF SOMETHING THAT LIVED IN THE PIPES.',
+    eff: '-18% DAMAGE TAKEN, -15% GROWTH', apply: P => { P.st.armor += 0.18; P.st.growth *= 0.85; } },
+  { id: 'lumen', name: 'LUMINOUS PLASMA', col: '#40f0c8', line: 'IT GLOWS. THINGS COME TO LOOK.',
+    eff: 'PREY IS DRAWN TO YOU, EVERYTHING SEES YOU COMING', apply: P => { P.st.magnet = Math.max(P.st.magnet, 90); P.st.lure = 1; P.st.stealth *= 1.5; } },
+  { id: 'neuro', name: 'NEURAL ACCELERANT', col: '#a070ff', line: 'TIME OPENS UP. SO DOES THE HEADACHE.',
+    eff: '+2 GENE POINTS PER TIER, +1 STRAIN TOLERANCE', apply: P => { P.vialTierBonus = 2; P.strainBonus = (P.strainBonus || 0) + 1; } },
+  { id: 'bile', name: 'DIGESTIVE BILE', col: '#7a9a20', line: 'DISSOLVES BONE, SHELL AND HULL.',
+    eff: 'EAT ARMOURED PREY WHOLE, -10% BITE', apply: P => { P.st.ironStomach = true; P.st.swallow *= 1.3; P.st.bite *= 0.9; } },
+];
+const VIAL_BY_ID = {};
+for (const v of VIALS) VIAL_BY_ID[v.id] = v;
+
+const Create = {
+  rows: ['species', 'size', 'vial', 'artifacts'],
+  met(need) { return typeof Stages !== 'undefined' ? Stages.met(need) : true; },
+  speciesUnlocked(sp) { if (!sp.need) return true; const s = G.save || {}; if (sp.need.best !== undefined && (s.best || 0) < sp.need.best) return false; return this.met(sp.need); },
+  vialUnlocked(v) {
+    if (v.id === 'none') return true;
+    const owned = (G.save && G.save.vials) || [];
+    return owned.indexOf(v.id) >= 0;
+  },
+  // what the current build works out to
+  spec() {
+    const e = G.embryo || { species: 'dwarf', size: 1, vial: 'none' };
+    const sp = SPECIES_BY_ID[e.species] || BASE_SPECIES[0];
+    const gr = SIZE_GRADES[clamp(e.size, 0, SIZE_GRADES.length - 1)] || SIZE_GRADES[1];
+    return { sp, gr, size: sp.size * gr.mul, hp: sp.hp * gr.hp, spd: sp.spd * gr.spd, bite: sp.bite, hunger: gr.hunger, vial: VIAL_BY_ID[e.vial] || VIALS[0] };
+  },
+  // stamp the build onto a fresh player
+  applyTo(P) {
+    const b = this.spec();
+    P.baseSpecies = b.sp.id;
+    P.st.hpMul *= b.hp; P.st.speed *= b.spd; P.st.bite *= b.bite; P.st.hungerRate *= b.hunger;
+    P.startSize = b.size;
+    if (b.vial && b.vial.apply) b.vial.apply(P);
+    P.vialId = b.vial ? b.vial.id : 'none';
+    // the species' own hide, before genes and morphs
+    if (b.sp.look) { P.speciesLook = b.sp.look; P.rebuildLook(); }
+  },
+};
+
+/* ===== src/drop.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// THE DROP. Between the creation bay and the first frame of gameplay there is
+// a release: a transport helicopter comes in over the site with a containment
+// crate slung under it, holds, drops the crate, and the crate opens.
+//
+// It runs on real time and it is skippable. The world underneath is the real
+// world, already loaded, so the camera simply hands over at the end.
+// ---------------------------------------------------------------------------
+const Drop = {
+  DUR: 7.2,
+  begin(stage) {
+    const P = G.player;
+    G.drop = {
+      t: 0, dur: this.DUR, stage,
+      hx: -180, hy: 62,            // helicopter, in world space relative to the site
+      cy: 0, released: false, opened: false, landed: false,
+      rotor: 0, tilt: 0, shake: 0,
+      name: (stage && stage.name) || 'RELEASE SITE', sub: (stage && stage.sub) || '',
+    };
+    G.state = 'drop';
+    P.frozen = true; P.invuln = 30; P.hidden = true;
+    G.banner = null;
+    SFX.warning && SFX.warning();
+  },
+  update(raw) {
+    const D = G.drop, P = G.player; if (!D) return;
+    D.t += raw;
+    const u = D.t / D.dur;
+    D.rotor += raw * 34;
+    P.vx = 0; P.vy = 0;
+    // camera: hold on the site, high and wide, then settle onto the animal
+    const site = P.x;
+    // --- 0.00-0.42  inbound. the helicopter crosses from the left and slows.
+    if (u < 0.42) {
+      const k = u / 0.42, e = 1 - Math.pow(1 - k, 3);
+      D.hx = lerp(-320, 0, e);
+      D.hy = lerp(96, 58, e);
+      D.tilt = (1 - e) * 0.26;
+      D.cy = D.hy + 40;
+      G.cam.x = site + D.hx * 0.5;
+      G.cam.y = -30;
+      G.cam.zoom = 0.62;
+      if (chance(raw * 26)) G.fx.add({ type: 'mote', x: site + D.hx + rand(-30, 30), y: -D.hy + rand(-8, 8), vx: rand(-30, -10), vy: rand(-4, 4), s: 1, color: '#cbb98e', seed: rand(TAU), life: 1.2 });
+    // --- 0.42-0.58  hover. rotor wash flattens the water and the reeds.
+    } else if (u < 0.58) {
+      const k = (u - 0.42) / 0.16;
+      D.hx = Math.sin(k * 6) * 3; D.hy = 58 - Math.sin(k * Math.PI) * 5;
+      D.tilt = Math.sin(k * 9) * 0.03;
+      D.cy = D.hy + 40;
+      G.cam.x = site; G.cam.y = -20; G.cam.zoom = lerp(0.62, 0.8, k);
+      this.wash(raw, site, 1);
+    // --- 0.58-0.78  the crate falls.
+    } else if (u < 0.78) {
+      const k = (u - 0.58) / 0.20;
+      D.released = true;
+      D.hx = Math.sin(k * 3) * 2; D.hy = 54 - k * 6;
+      D.cy = lerp(D.hy + 40, -6, k * k);
+      G.cam.x = site; G.cam.y = lerp(-20, 20, k); G.cam.zoom = lerp(0.8, 1.05, k);
+      this.wash(raw, site, 1 - k * 0.6);
+      if (k > 0.95 && !D.landed) {
+        D.landed = true;
+        // it hits the water or the ground, hard
+        const fy = World.floorY(site), su = World.surface(site);
+        if (fy > su + 20) { G.fx.splash(site, 3.4, 0); Water.splash(site, 320, 40); SFX.splash(3); G.fx.bubbles(site, su + 20, 40, 40, -30); }
+        else { G.fx.smoke(site, fy - 4, 12, '#8a7a5a'); G.fx.silt(site, fy - 2, 14, 60); SFX.thud(0); }
+        G.shake(16); G.hitstop(0.06); D.shake = 1;
+      }
+    // --- 0.78-0.92  the crate opens and the specimen comes out.
+    } else if (u < 0.92) {
+      const k = (u - 0.78) / 0.14;
+      D.released = true; D.landed = true;
+      D.hx = k * 120; D.hy = 54 + k * 30; D.tilt = -0.2;
+      if (!D.opened && k > 0.25) {
+        D.opened = true;
+        P.hidden = false;
+        G.fx.splinters(P.x, P.y, 26, 150);
+        G.whiteFlash(0.25); G.shake(9); SFX.crack && SFX.crack(4); SFX.roar(P.size);
+        for (let i = 0; i < 10; i++) G.fx.glow(P.x + rand(-20, 20), P.y + rand(-10, 10), rand(2, 5), '#7affda', 0.5);
+        if (P.inWater) G.fx.bubbles(P.x, P.y, 26, 26, -20);
+      }
+      G.cam.x = lerp(G.cam.x, P.x, Math.min(1, raw * 5));
+      G.cam.y = lerp(G.cam.y, P.y, Math.min(1, raw * 5));
+      G.cam.zoom = lerp(G.cam.zoom, 1.35, Math.min(1, raw * 3));
+      if (D.opened) { P.frozen = false; P.vx = 40; }
+    // --- 0.92-1.00  hand over.
+    } else {
+      D.hx += raw * 220; D.hy += raw * 20;
+      if (D.shake > 0) D.shake -= raw * 2;
+    }
+    if (u >= 1 || Input.hit('Escape', 'Enter') || (Input.mouse.clicked && u > 0.15)) this.finish();
+  },
+  // rotor downwash: it presses the water down and drags the reeds flat
+  wash(raw, site, k) {
+    if (k <= 0) return;
+    Water.splash(site + rand(-40, 40), 30 * k * raw * 60, 60);
+    if (chance(raw * 40 * k)) G.fx.add({ type: 'drop', x: site + rand(-70, 70), y: World.surface(site) - rand(0, 26), vx: rand(-90, 90) * k, vy: rand(-30, 20), s: 1, color: '#cfe9e6', life: 0.9 });
+    if (chance(raw * 22 * k)) G.fx.smoke(site + rand(-90, 90), World.surface(site) - rand(0, 14), 1, '#dff4f8');
+    if (typeof Foliage !== 'undefined' && Foliage.disturb) Foliage.disturb(site + rand(-90, 90), 40 * k);
+  },
+  finish() {
+    const D = G.drop, P = G.player; if (!D) return;
+    P.frozen = false; P.hidden = false; P.invuln = 2.5;
+    G.drop = null; G.state = 'play';
+    G.banner = { text: D.name, sub: D.sub, t: 4, max: 4, color: '#8ce8a0' };
+  },
+
+  // ---------------------------------------------------------------------------
+  // painting. The helicopter and the crate live in world space above the site.
+  // ---------------------------------------------------------------------------
+  drawWorld(ctx) {
+    const D = G.drop, P = G.player; if (!D) return;
+    const site = P.x, u = D.t / D.dur;
+    const hx = site + D.hx, hy = -D.hy;
+    // --- sling line and crate
+    if (!D.landed || u < 0.8) {
+      const cy = -D.cy;
+      if (!D.released) { ctx.strokeStyle = '#2a2620'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(hx, hy + 8); ctx.lineTo(site, cy - 10); ctx.stroke(); }
+      this.crate(ctx, site, cy, D);
+    } else if (D.landed) {
+      this.crate(ctx, site, World.floorY(site) > World.surface(site) + 20 ? World.surface(site) + 6 : World.floorY(site) - 10, D);
+    }
+    // --- the helicopter
+    if (u < 0.99) this.heli(ctx, hx, hy, D);
+  },
+  // A transport helicopter in side elevation: boom, tail rotor, skids, glass,
+  // and a disc of motion-blurred main rotor.
+  heli(ctx, x, y, D) {
+    const f = D.hx > 0 ? 1 : 1;
+    ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(D.tilt);
+    const body = '#2c3630', bodyL = '#414d44', bodyD = '#1a221d', glass = '#7fb8c8';
+    // tail boom
+    ctx.fillStyle = body; ctx.fillRect(10, -3, 46, 7);
+    ctx.fillStyle = bodyL; ctx.fillRect(10, -3, 46, 2);
+    ctx.fillStyle = bodyD; ctx.fillRect(10, 3, 46, 1);
+    // tail fin and rotor
+    ctx.fillStyle = body; ctx.fillRect(52, -16, 7, 16);
+    ctx.fillStyle = bodyL; ctx.fillRect(52, -16, 7, 2);
+    ctx.fillStyle = '#8a9a90';
+    const tr = D.rotor * 2.2;
+    for (let i = 0; i < 3; i++) { const a = tr + i * (TAU / 3); ctx.globalAlpha = 0.5 + 0.4 * Math.abs(Math.cos(a)); ctx.fillRect(Math.round(56 + Math.cos(a) * 9) - 1, Math.round(-8 + Math.sin(a) * 9) - 1, 2, 2); }
+    ctx.globalAlpha = 1;
+    // cabin
+    ctx.fillStyle = body; Shape.blob(ctx, 0, 0, 15, body, 0.72);
+    ctx.fillStyle = bodyL; ctx.fillRect(-13, -9, 24, 3);
+    ctx.fillStyle = bodyD; ctx.fillRect(-12, 7, 24, 2);
+    // cockpit glass, with a lit interior and a pilot silhouette
+    ctx.fillStyle = glass; ctx.fillRect(-15, -6, 10, 9);
+    ctx.fillStyle = '#b8e4ee'; ctx.fillRect(-15, -6, 10, 2);
+    ctx.fillStyle = '#16221e'; ctx.fillRect(-11, -4, 3, 5);
+    // side door, open, with a crewman leaning out
+    ctx.fillStyle = '#101815'; ctx.fillRect(-2, -5, 9, 10);
+    ctx.fillStyle = '#c8a888'; ctx.fillRect(1, -4, 3, 4);
+    ctx.fillStyle = '#3a4a5a'; ctx.fillRect(1, 0, 3, 5);
+    // skids
+    ctx.fillStyle = '#8a9a90'; ctx.fillRect(-12, 9, 22, 1);
+    ctx.fillRect(-8, 5, 1, 5); ctx.fillRect(6, 5, 1, 5);
+    // markings
+    ctx.fillStyle = '#a8b020'; ctx.fillRect(-6, -2, 8, 1);
+    // main rotor: a blurred disc plus two crisp blades
+    const rr = 44;
+    ctx.globalAlpha = 0.16; ctx.fillStyle = '#c8d8d0';
+    ctx.fillRect(-rr, -13, rr * 2, 2);
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 4; i++) {
+      const a = D.rotor + i * (TAU / 4), c = Math.cos(a);
+      ctx.globalAlpha = 0.25 + 0.5 * Math.abs(c);
+      ctx.fillRect(Math.round(-rr * c), -13, Math.round(rr * c * 2) || 1, 2);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#8a9a90'; ctx.fillRect(-2, -14, 4, 4);
+    // strobe
+    if (Math.sin(D.rotor * 0.5) > 0.85) { ctx.fillStyle = '#ff4030'; ctx.fillRect(-1, 8, 2, 2); Shape.star(ctx, 0, 9, 8, '#ff4030', 0.5); }
+    ctx.restore();
+  },
+  // the containment crate: steel cage, hazard stripes, a hinged front
+  crate(ctx, x, y, D) {
+    const w = 30, h = 22;
+    ctx.save(); ctx.translate(Math.round(x), Math.round(y));
+    if (D.opened) ctx.rotate(0.25);
+    ctx.fillStyle = '#3a3a34'; ctx.fillRect(-w / 2, -h, w, h);
+    ctx.fillStyle = '#4d4d44'; ctx.fillRect(-w / 2, -h, w, 2);
+    ctx.fillStyle = '#22221e'; ctx.fillRect(-w / 2, -3, w, 3);
+    // bars
+    ctx.fillStyle = '#151512';
+    for (let i = 1; i < 6; i++) ctx.fillRect(-w / 2 + i * 5, -h + 3, 2, h - 6);
+    // hazard stripes along the top
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = i % 2 ? '#c8a020' : '#22221e'; ctx.fillRect(-w / 2 + i * 6, -h + 2, 6, 3); }
+    // the hinged front, swung open once it lands
+    ctx.save();
+    if (D.opened) ctx.rotate(-1.5);
+    ctx.fillStyle = '#44443c'; ctx.fillRect(w / 2 - 3, -h, 4, h);
+    ctx.fillStyle = '#56564c'; ctx.fillRect(w / 2 - 3, -h, 4, 2);
+    ctx.restore();
+    ctx.fillStyle = '#8a7420'; Font.draw(ctx, 'BIO-4', 0, -h / 2 - 3, { color: '#c8a020', align: 'center' });
+    ctx.restore();
+  },
+  // screen space: the site card, bars, and the pilot chatter
+  drawUI(ctx) {
+    const D = G.drop; if (!D) return;
+    const W = G.W, H = G.H, u = D.t / D.dur;
+    const band = Math.round(30 * clamp(Math.min(u / 0.06, (1 - u) / 0.08), 0, 1));
+    if (band > 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(0, 0, W, band); ctx.fillRect(0, H - band, W, band);
+      ctx.fillStyle = 'rgba(140,220,200,0.14)'; ctx.fillRect(0, band, W, 1); ctx.fillRect(0, H - band - 1, W, 1);
+    }
+    // the site card, typed on
+    if (u > 0.08 && u < 0.62) {
+      const k = clamp((u - 0.08) / 0.1, 0, 1), out = clamp((0.62 - u) / 0.08, 0, 1);
+      ctx.globalAlpha = Math.min(k, out);
+      const n = Math.round(D.name.length * k);
+      Font.draw(ctx, D.name.slice(0, n), 22, 48, { color: '#b8ffe8', scale: 3, outline: '#04120e' });
+      if (k > 0.9) Font.draw(ctx, D.sub, 22, 74, { color: '#7f9f96', outline: '#04120e' });
+      ctx.fillStyle = '#7affda'; ctx.fillRect(22, 42, Math.round(180 * k), 1);
+      ctx.globalAlpha = 1;
+    }
+    // pilot chatter, bottom left
+    const lines = [
+      [0.10, 'BIO-4 TRANSPORT, TWO MINUTES OUT.'],
+      [0.30, 'CRATE IS HOT. SUBJECT IS AWAKE.'],
+      [0.46, 'ON STATION. HOLDING AT FIFTY FEET.'],
+      [0.58, 'RELEASING.'],
+      [0.80, 'SUBJECT IS IN THE WATER. GOOD LUCK.'],
+    ];
+    let msg = null;
+    for (const [at, txt] of lines) if (u >= at) msg = [at, txt];
+    if (msg && u - msg[0] < 0.16) {
+      const k = clamp((u - msg[0]) / 0.03, 0, 1) * clamp((0.16 - (u - msg[0])) / 0.04, 0, 1);
+      ctx.globalAlpha = clamp(k, 0, 1);
+      ctx.fillStyle = 'rgba(4,10,12,0.75)'; ctx.fillRect(16, H - 52, Font.width(msg[1], 1) + 12, 14);
+      Font.draw(ctx, msg[1], 22, H - 48, { color: '#9ef0c8' });
+      ctx.globalAlpha = 1;
+    }
+    if (u > 0.2 && u < 0.95) Font.draw(ctx, 'ESC: SKIP', W - 8, H - 10, { color: 'rgba(150,190,180,0.5)', align: 'right' });
+  },
+};
+
+/* ===== src/lab.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// THE SCIENCE CENTER. The front end is not a title card over a screenshot any
+// more, it is a room: a working genetics lab drawn in side elevation, with
+// staff walking it, machines running, specimen tanks along the walls and the
+// embryo you are about to become suspended in the middle of it.
+//
+// Everything is procedural and animated. The menu is furniture — you walk the
+// camera along the room and the consoles are the buttons.
+// ---------------------------------------------------------------------------
+const LAB = {
+  FLOOR: 300,        // top of the walk surface
+  CEIL: 26,
+  W: 640, H: 360,
+};
+
+const Lab = {
+  t: 0, staff: [], sel: 0, ready: false, camX: 0, hint: 0,
+  // the room's interactive stations, laid out left to right
+  stations: [
+    { id: 'create', x: 320, label: 'CREATE SPECIMEN', sub: 'BUILD AN EMBRYO AND RELEASE IT' },
+    { id: 'archive', x: 92, label: 'GENOME ARCHIVE', sub: 'EVERYTHING YOU HAVE EATEN' },
+    { id: 'vials', x: 548, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
+  ],
+  init() {
+    this.t = 0; this.staff = []; this.ready = true;
+    // Four staff on their own beats: two pacing the floor, one at the left
+    // console, one at the right bench. Rigged humans, so they walk properly.
+    const rig = typeof SPECIES !== 'undefined' && SPECIES.scientist ? rigOf(SPECIES.scientist, 0) : null;
+    const spots = [
+      { x: 150, x0: 96, x1: 268, mode: 'walk', spd: 22, v: 1 },
+      { x: 470, x0: 386, x1: 566, mode: 'walk', spd: 17, v: 3 },
+      { x: 96, x0: 96, x1: 96, mode: 'type', spd: 0, v: 5, face: 1 },
+      { x: 566, x0: 566, x1: 566, mode: 'bench', spd: 0, v: 2, face: -1 },
+      { x: 250, x0: 210, x1: 300, mode: 'clip', spd: 11, v: 4, face: -1 },
+    ];
+    for (const s of spots) {
+      this.staff.push({
+        x: s.x, x0: s.x0, x1: s.x1, mode: s.mode, spd: s.spd, dir: chance(0.5) ? 1 : -1,
+        rig: typeof SPECIES !== 'undefined' && SPECIES.scientist ? rigOf(SPECIES.scientist, s.v) : rig,
+        phase: rand(TAU), face: s.face || 1, waitT: rand(0, 3), anim: { phase: rand(TAU), speed: 0, mode: 'stand' },
+      });
+    }
+  },
+  update(raw) {
+    if (!this.ready) this.init();
+    this.t += raw;
+    if (this.hint > 0) this.hint -= raw;
+    for (const s of this.staff) {
+      if (s.mode === 'walk' || s.mode === 'clip') {
+        if (s.waitT > 0) { s.waitT -= raw; s.anim.speed = 0; }
+        else {
+          s.x += s.dir * s.spd * raw;
+          if (s.x > s.x1) { s.x = s.x1; s.dir = -1; s.waitT = rand(1.4, 4); }
+          if (s.x < s.x0) { s.x = s.x0; s.dir = 1; s.waitT = rand(1.4, 4); }
+          s.face = s.dir;
+          s.anim.speed = 1;
+        }
+        s.anim.phase += raw * (s.anim.speed ? 7 : 1.2);
+        s.anim.mode = 'walk';
+      } else {
+        // stationary: small idle sway, hands up at the console
+        s.anim.speed = 0; s.anim.phase += raw * 2.2;
+        s.anim.mode = 'stand';
+        s.anim.aim = s.mode === 'type' ? (Math.sin(this.t * 3 + s.phase) > -0.3) : false;
+      }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // painting
+  // ---------------------------------------------------------------------------
+  draw(ctx) {
+    const W = LAB.W, H = LAB.H, F = LAB.FLOOR, t = this.t;
+    this.backWall(ctx, t);
+    this.pipes(ctx, t);
+    this.leftBank(ctx, t);
+    this.rightBank(ctx, t);
+    this.tank(ctx, W / 2, t);           // the centrepiece
+    this.floor(ctx, t);
+    // staff walk between the machines and the railing
+    for (const s of this.staff) this.drawStaff(ctx, s);
+    this.foreground(ctx, t);
+    this.lighting(ctx, t);
+  },
+
+  // --- back wall: panel tiles, seams, grime, signage
+  backWall(ctx, t) {
+    const W = LAB.W, F = LAB.FLOOR;
+    ctx.fillStyle = '#1b2b30'; ctx.fillRect(0, 0, W, F);
+    // panel grid, with a lit top edge on each tile
+    for (let y = LAB.CEIL; y < F; y += 24) {
+      for (let x = 0; x < W; x += 32) {
+        const n = ihash(x * 7 + y, 11);
+        ctx.fillStyle = n > 0.7 ? '#213338' : n > 0.35 ? '#1e2f35' : '#1a2a2f';
+        ctx.fillRect(x, y, 31, 23);
+        ctx.fillStyle = 'rgba(150,200,205,0.06)'; ctx.fillRect(x, y, 31, 1);
+        ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x, y + 22, 31, 1);
+        // bolt heads
+        if (n > 0.55) { ctx.fillStyle = '#2c4046'; ctx.fillRect(x + 2, y + 2, 2, 2); ctx.fillRect(x + 27, y + 2, 2, 2); }
+      }
+    }
+    // ceiling: cable tray, ducting, strip lights
+    ctx.fillStyle = '#141f23'; ctx.fillRect(0, 0, W, LAB.CEIL);
+    ctx.fillStyle = '#1c2b30'; ctx.fillRect(0, LAB.CEIL - 4, W, 4);
+    for (let x = 6; x < W; x += 18) { ctx.fillStyle = '#26383d'; ctx.fillRect(x, 4, 10, 3); ctx.fillRect(x + 2, 7, 6, 2); }
+    for (let x = 40; x < W; x += 128) {
+      // fluorescent strip, one of them failing
+      const bad = (x / 128) % 3 === 1;
+      const on = bad ? (Math.sin(t * 26 + x) > -0.55 ? 1 : 0.12) : 1;
+      ctx.fillStyle = '#2e4247'; ctx.fillRect(x - 3, LAB.CEIL - 1, 66, 5);
+      ctx.globalAlpha = on; ctx.fillStyle = '#e8fbff'; ctx.fillRect(x, LAB.CEIL + 1, 60, 3);
+      ctx.globalAlpha = on * 0.16;
+      for (let i = 0; i < 5; i++) { ctx.fillStyle = '#cfeef4'; ctx.fillRect(x - i * 3, LAB.CEIL + 4 + i * 5, 60 + i * 6, 5); }
+      ctx.globalAlpha = 1;
+    }
+    // signage: hazard stencils and a room number, painted on the wall
+    this.stencil(ctx, 58, 104, 'BIO-4', '#c8a020');
+    this.stencil(ctx, 420, 100, 'CONTAINMENT', '#b04030');
+    ctx.fillStyle = 'rgba(200,160,32,0.5)';
+    for (let i = 0; i < 6; i++) ctx.fillRect(180 + i * 7, 80, 4, 3);
+    // grime running down from the ceiling
+    ctx.globalAlpha = 0.14; ctx.fillStyle = '#0b1417';
+    for (let x = 0; x < W; x += 7) { const h = ihash(x, 3) * 46; ctx.fillRect(x, LAB.CEIL, 3, h); }
+    ctx.globalAlpha = 1;
+  },
+  stencil(ctx, x, y, txt, col) {
+    ctx.globalAlpha = 0.45;
+    Font.draw(ctx, txt, x, y, { color: col, scale: 2 });
+    ctx.globalAlpha = 0.18; ctx.fillStyle = col;
+    ctx.fillRect(x - 3, y - 4, Font.width(txt, 2) + 6, 1);
+    ctx.fillRect(x - 3, y + 15, Font.width(txt, 2) + 6, 1);
+    ctx.globalAlpha = 1;
+  },
+
+  // --- service pipes crossing the room, with valves and a steam vent
+  pipes(ctx, t) {
+    const W = LAB.W;
+    const run = (y, h, c1, c2) => {
+      ctx.fillStyle = c1; ctx.fillRect(0, y, W, h);
+      ctx.fillStyle = c2; ctx.fillRect(0, y, W, 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0, y + h - 1, W, 1);
+      for (let x = 20; x < W; x += 74) { ctx.fillStyle = c2; ctx.fillRect(x, y - 1, 5, h + 2); ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(x + 4, y - 1, 1, h + 2); }
+    };
+    run(34, 7, '#3e5257', '#546d73');
+    run(46, 5, '#4a3a2c', '#63503c');
+    // a valve wheel and a dripping joint
+    ctx.fillStyle = '#7a4a2a'; ctx.fillRect(150, 44, 4, 9);
+    Shape.ring(ctx, 152, 42, 6, 2, '#8a5a30');
+    if (Math.sin(t * 1.4) > 0.9) { ctx.fillStyle = '#8fd8d0'; ctx.fillRect(152, 54 + ((t * 60) % 40), 1, 3); }
+    // steam from a wall vent, drifting up
+    ctx.fillStyle = '#26383d'; ctx.fillRect(596, 56, 30, 16);
+    for (let i = 0; i < 5; i++) ctx.fillRect(598, 58 + i * 3, 26, 1);
+    ctx.globalAlpha = 0.10; ctx.fillStyle = '#dff4f8';
+    for (let i = 0; i < 9; i++) {
+      const p = (t * 0.5 + i * 0.11) % 1;
+      Shape.puff(ctx, 594 - p * 44, 62 - p * 34 + Math.sin(t + i) * 3, 4 + p * 9, '#dff4f8', i * 13);
+    }
+    ctx.globalAlpha = 1;
+  },
+
+  // --- left: server stack, DNA sequencer, wall of monitors
+  leftBank(ctx, t) {
+    const F = LAB.FLOOR;
+    // server racks
+    for (let r = 0; r < 2; r++) {
+      const x = 8 + r * 44, y = F - 96, w = 38, h = 96;
+      ctx.fillStyle = '#151f23'; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = '#203136'; ctx.fillRect(x, y, w, 3);
+      ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(x + w - 2, y, 2, h);
+      for (let b = 0; b < 11; b++) {
+        const by = y + 5 + b * 8;
+        ctx.fillStyle = '#1b282d'; ctx.fillRect(x + 3, by, w - 6, 6);
+        ctx.fillStyle = '#0e1518'; ctx.fillRect(x + 4, by + 1, w - 8, 4);
+        // activity lights, blinking on their own clocks
+        for (let l = 0; l < 4; l++) {
+          const on = Math.sin(t * (3 + l * 2.1 + b) + b * 1.7 + r) > 0.1;
+          ctx.fillStyle = on ? (l === 0 ? '#60ff90' : l === 3 ? '#ffb040' : '#40d0ff') : '#16232a';
+          ctx.fillRect(x + 6 + l * 4, by + 2, 2, 2);
+        }
+      }
+    }
+    // the sequencer: a lit readout with a scrolling base-pair trace
+    const sx = 8, sy = F - 150, sw = 82, sh = 46;
+    ctx.fillStyle = '#101a1e'; ctx.fillRect(sx, sy, sw, sh);
+    ctx.fillStyle = '#25383e'; ctx.fillRect(sx, sy, sw, 2); ctx.fillRect(sx, sy + sh - 2, sw, 2);
+    ctx.fillStyle = '#04120e'; ctx.fillRect(sx + 3, sy + 4, sw - 6, sh - 10);
+    // four base lanes scrolling right to left
+    const cols = ['#40f0a0', '#ff6060', '#50a0ff', '#ffd040'];
+    for (let lane = 0; lane < 4; lane++) {
+      const ly = sy + 7 + lane * 8;
+      ctx.fillStyle = 'rgba(120,200,180,0.12)'; ctx.fillRect(sx + 4, ly + 3, sw - 8, 1);
+      for (let i = 0; i < 26; i++) {
+        const px = sx + 5 + ((i * 3 - t * 22) % (sw - 10) + (sw - 10)) % (sw - 10);
+        if (ihash(i * 4 + lane, 91) > 0.62) { ctx.fillStyle = cols[lane]; ctx.fillRect(Math.round(px), ly, 2, 4); }
+      }
+    }
+    Font.draw(ctx, 'SEQ', sx + 4, sy + sh - 8, { color: '#3f7f74' });
+    // three wall monitors above, one showing a rotating helix
+    for (let m = 0; m < 3; m++) {
+      const mx = 100 + m * 0, my = 0;
+    }
+    this.monitor(ctx, 104, F - 176, 62, 42, t, m => {
+      // rotating double helix
+      const cx = 104 + 31, top = F - 176 + 6;
+      for (let i = 0; i < 16; i++) {
+        const a = t * 1.6 + i * 0.42, y = top + i * 1.9;
+        const x1 = cx + Math.sin(a) * 16, x2 = cx + Math.sin(a + Math.PI) * 16;
+        const d1 = (Math.cos(a) + 1) * 0.5;
+        ctx.globalAlpha = 0.35 + d1 * 0.6; ctx.fillStyle = '#7affda'; ctx.fillRect(Math.round(x1), Math.round(y), 2, 2);
+        ctx.globalAlpha = 0.35 + (1 - d1) * 0.6; ctx.fillStyle = '#40b0ff'; ctx.fillRect(Math.round(x2), Math.round(y), 2, 2);
+        if (i % 3 === 0) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#cfeef4'; ctx.fillRect(Math.round(Math.min(x1, x2)), Math.round(y), Math.abs(x2 - x1), 1); }
+      }
+      ctx.globalAlpha = 1;
+    });
+    this.monitor(ctx, 104, F - 130, 62, 30, t, () => {
+      // a growth curve creeping up
+      const bx = 108, by = LAB.FLOOR - 104;
+      ctx.fillStyle = '#1a4a3a';
+      for (let i = 0; i < 54; i++) {
+        const h = Math.round(2 + 18 * Math.pow(i / 54, 2.2) * (0.8 + 0.2 * Math.sin(t + i * 0.3)));
+        ctx.fillRect(bx + i, by - h, 1, h);
+      }
+      ctx.fillStyle = '#7affda';
+      for (let i = 0; i < 54; i++) {
+        const h = Math.round(2 + 18 * Math.pow(i / 54, 2.2) * (0.8 + 0.2 * Math.sin(t + i * 0.3)));
+        ctx.fillRect(bx + i, by - h, 1, 1);
+      }
+    });
+  },
+  monitor(ctx, x, y, w, h, t, inner) {
+    ctx.fillStyle = '#0a1114'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = '#25383e'; ctx.fillRect(x - 2, y - 2, w + 4, 2);
+    ctx.fillStyle = '#04100e'; ctx.fillRect(x, y, w, h);
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    inner(ctx);
+    // scanlines and a phosphor sheen
+    ctx.globalAlpha = 0.16; ctx.fillStyle = '#000000';
+    for (let sy2 = y; sy2 < y + h; sy2 += 2) ctx.fillRect(x, sy2, w, 1);
+    ctx.globalAlpha = 0.05; ctx.fillStyle = '#7affda'; ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    ctx.fillStyle = 'rgba(140,220,210,0.25)'; ctx.fillRect(x, y, w, 1);
+  },
+
+  // --- right: specimen tanks, centrifuge, fume hood, whiteboard
+  rightBank(ctx, t) {
+    const F = LAB.FLOOR;
+    // a run of small specimen jars on a shelf, each with something in it
+    const shx = 392, shy = F - 116;
+    ctx.fillStyle = '#3a2c20'; ctx.fillRect(shx, shy + 26, 130, 4);
+    ctx.fillStyle = '#4d3a2a'; ctx.fillRect(shx, shy + 26, 130, 1);
+    for (let j = 0; j < 6; j++) {
+      const jx = shx + 6 + j * 21, jw = 15, jh = 26;
+      // glass
+      ctx.fillStyle = 'rgba(120,200,200,0.13)'; ctx.fillRect(jx, shy, jw, jh);
+      ctx.fillStyle = 'rgba(40,80,80,0.5)'; ctx.fillRect(jx, shy + jh - 2, jw, 2);
+      // fluid
+      const fl = 6 + (j % 3) * 3;
+      ctx.fillStyle = ['rgba(90,190,150,0.4)', 'rgba(190,170,80,0.35)', 'rgba(180,90,90,0.35)'][j % 3];
+      ctx.fillRect(jx + 1, shy + fl, jw - 2, jh - fl - 2);
+      // specimen: a curled shape, a bone, an eye
+      ctx.fillStyle = '#c8bfa0';
+      if (j % 3 === 0) { Shape.blob(ctx, jx + jw / 2, shy + jh - 9, 4, '#d8c8a8'); ctx.fillStyle = '#2a2018'; ctx.fillRect(jx + jw / 2 - 2, shy + jh - 11, 2, 2); }
+      else if (j % 3 === 1) { ctx.fillRect(jx + 4, shy + jh - 12, 7, 2); ctx.fillRect(jx + 3, shy + jh - 13, 2, 4); ctx.fillRect(jx + 10, shy + jh - 13, 2, 4); }
+      else { Shape.blob(ctx, jx + jw / 2, shy + jh - 10, 3, '#e8e0d0'); Shape.blob(ctx, jx + jw / 2, shy + jh - 10, 1.6, '#2a5a7a'); }
+      // rim light and a lid
+      ctx.fillStyle = 'rgba(220,250,250,0.3)'; ctx.fillRect(jx, shy, 1, jh);
+      ctx.fillStyle = '#5a5248'; ctx.fillRect(jx - 1, shy - 3, jw + 2, 3);
+      // slow bubbles
+      if (ihash(j, 7) > 0.4) { const bp = (t * 0.4 + j * 0.3) % 1; ctx.fillStyle = 'rgba(230,255,255,0.5)'; ctx.fillRect(jx + 4 + (j % 4), shy + jh - 3 - bp * (jh - fl - 4), 1, 1); }
+    }
+    // centrifuge: a drum that spins, with a lit window
+    const cx = 392, cy = F - 44;
+    ctx.fillStyle = '#2a3a40'; ctx.fillRect(cx, cy, 40, 42);
+    ctx.fillStyle = '#3a4e55'; ctx.fillRect(cx, cy, 40, 3);
+    ctx.fillStyle = '#0d1518'; ctx.fillRect(cx + 5, cy + 7, 30, 22);
+    // spinning rotor: four arms, motion-blurred by drawing them faded
+    const sp = t * 15;
+    for (let k = 0; k < 4; k++) {
+      const a = sp + k * (TAU / 4);
+      ctx.globalAlpha = 0.85 - (k % 2) * 0.35;
+      ctx.fillStyle = '#8fa8b0';
+      ctx.fillRect(Math.round(cx + 20 + Math.cos(a) * 10) - 1, Math.round(cy + 18 + Math.sin(a) * 7) - 1, 3, 3);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = Math.sin(t * 8) > 0 ? '#ff6040' : '#3a1a14'; ctx.fillRect(cx + 32, cy + 33, 3, 3);
+    Font.draw(ctx, 'RPM', cx + 5, cy + 32, { color: '#4f7f74' });
+    // fume hood with a raised sash and a burner
+    const hx = 464, hy = F - 86, hw = 96, hh = 86;
+    ctx.fillStyle = '#1d2c31'; ctx.fillRect(hx, hy, hw, hh);
+    ctx.fillStyle = 'rgba(140,220,220,0.10)'; ctx.fillRect(hx + 4, hy + 4, hw - 8, 46);
+    ctx.fillStyle = '#33474d'; ctx.fillRect(hx + 2, hy + 46, hw - 4, 4);
+    ctx.fillStyle = '#2a3a40'; ctx.fillRect(hx, hy + hh - 12, hw, 12);
+    // glassware on the bench inside: flask over a flame
+    ctx.fillStyle = 'rgba(200,240,230,0.35)';
+    ctx.fillRect(hx + 20, hy + 36, 12, 10); ctx.fillRect(hx + 24, hy + 30, 4, 6);
+    ctx.fillStyle = 'rgba(120,240,170,0.5)'; ctx.fillRect(hx + 21, hy + 41, 10, 4);
+    const fl2 = 2 + Math.round(Math.abs(Math.sin(t * 9)) * 2);
+    ctx.fillStyle = '#40a0ff'; ctx.fillRect(hx + 25, hy + 46 - fl2, 2, fl2);
+    ctx.fillStyle = '#a0e0ff'; ctx.fillRect(hx + 25, hy + 46 - fl2, 1, 1);
+    // a rack of pipettes and a coiled tube
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = '#cfe8e4'; ctx.fillRect(hx + 54 + i * 4, hy + 30, 1, 16); }
+    ctx.fillStyle = '#8a5a4a';
+    for (let i = 0; i < 12; i++) ctx.fillRect(hx + 66 + Math.round(Math.sin(i * 0.9) * 5), hy + 6 + i * 2, 3, 1);
+    // whiteboard with dense scrawl
+    const bx = 536, by = F - 190, bw = 98, bh = 62;
+    ctx.fillStyle = '#cfd8d0'; ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = '#a8b2ac'; ctx.fillRect(bx, by + bh - 3, bw, 3);
+    ctx.globalAlpha = 0.75;
+    for (let l = 0; l < 9; l++) {
+      const ly = by + 5 + l * 6, len = 20 + ihash(l, 5) * 66;
+      ctx.fillStyle = l % 3 === 0 ? '#b03030' : '#28323a';
+      for (let i = 0; i < len; i += 2) if (ihash(i + l * 31, 17) > 0.25) ctx.fillRect(bx + 4 + i, ly, 2, 1);
+    }
+    // a sketched helix in the corner of the board
+    ctx.fillStyle = '#2a6a8a';
+    for (let i = 0; i < 14; i++) { const a = i * 0.5; ctx.fillRect(bx + 74 + Math.round(Math.sin(a) * 8), by + 34 + i * 2, 2, 1); ctx.fillRect(bx + 74 + Math.round(Math.sin(a + Math.PI) * 8), by + 34 + i * 2, 2, 1); }
+    ctx.globalAlpha = 1;
+  },
+
+  // --- the centrepiece: the embryo tank
+  tank(ctx, cx, t) {
+    const F = LAB.FLOOR, top = 96, bot = F - 6, w = 104;
+    const x0 = Math.round(cx - w / 2), x1 = Math.round(cx + w / 2);
+    // plinth and service block
+    ctx.fillStyle = '#22343a'; ctx.fillRect(x0 - 10, bot - 6, w + 20, 12);
+    ctx.fillStyle = '#2e454c'; ctx.fillRect(x0 - 10, bot - 6, w + 20, 2);
+    // cabling into the base
+    ctx.fillStyle = '#151f23';
+    for (let i = 0; i < 5; i++) ctx.fillRect(x0 - 26 - i * 5, bot - 2 - i, 24, 3);
+    // the fluid column
+    const g = ctx.createLinearGradient(0, top, 0, bot);
+    g.addColorStop(0, '#1e5e58'); g.addColorStop(0.5, '#18514f'); g.addColorStop(1, '#0e3a3c');
+    ctx.fillStyle = g; ctx.fillRect(x0, top, w, bot - top);
+    // suspended matter, drifting up
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 46; i++) {
+      const px = x0 + 3 + (ihash(i, 31) * (w - 6));
+      const py = bot - ((t * (6 + ihash(i, 32) * 12) + ihash(i, 33) * 400) % (bot - top - 8));
+      ctx.fillStyle = ihash(i, 34) > 0.6 ? '#8fe8d0' : '#5fa89c';
+      ctx.fillRect(Math.round(px), Math.round(py), 1, ihash(i, 35) > 0.8 ? 2 : 1);
+    }
+    ctx.globalAlpha = 1;
+    // caustic banding inside the glass
+    ctx.globalAlpha = 0.08; ctx.fillStyle = '#bfffee';
+    for (let i = 0; i < 7; i++) {
+      const yy = top + ((t * 14 + i * 30) % (bot - top));
+      ctx.fillRect(x0 + 2, Math.round(yy), w - 4, 2);
+    }
+    ctx.globalAlpha = 1;
+    // the embryo
+    this.embryo(ctx, cx, (top + bot) / 2 + 6, t);
+    // umbilical feed from the top cap
+    ctx.strokeStyle = '#8a6a5a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx + 2, top + 6);
+    for (let i = 1; i <= 6; i++) ctx.lineTo(cx + 2 + Math.sin(t * 0.8 + i) * (3 + i), top + 6 + i * 9);
+    ctx.stroke();
+    // glass: rim highlights, a vertical specular band, ring seams
+    ctx.globalAlpha = 0.30; ctx.fillStyle = '#dffdf4';
+    ctx.fillRect(x0 + 7, top + 4, 3, bot - top - 8);
+    ctx.globalAlpha = 0.13; ctx.fillRect(x0 + 13, top + 4, 1, bot - top - 8);
+    ctx.fillRect(x1 - 9, top + 10, 2, bot - top - 22);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(150,230,220,0.30)'; ctx.fillRect(x0, top, 2, bot - top); ctx.fillRect(x1 - 2, top, 2, bot - top);
+    for (let ry = top + 26; ry < bot - 10; ry += 44) { ctx.fillStyle = '#3a565c'; ctx.fillRect(x0 - 2, ry, w + 4, 4); ctx.fillStyle = '#4e7078'; ctx.fillRect(x0 - 2, ry, w + 4, 1); }
+    // top cap with valves and a pressure gauge
+    ctx.fillStyle = '#2b4149'; ctx.fillRect(x0 - 6, top - 14, w + 12, 16);
+    ctx.fillStyle = '#3d5c65'; ctx.fillRect(x0 - 6, top - 14, w + 12, 2);
+    for (let i = 0; i < 3; i++) { ctx.fillStyle = '#7a4a2a'; ctx.fillRect(x0 + 12 + i * 30, top - 22, 6, 9); Shape.ring(ctx, x0 + 15 + i * 30, top - 24, 5, 2, '#8a5a30'); }
+    Shape.blob(ctx, x1 - 4, top - 6, 5, '#cfe8e4');
+    ctx.fillStyle = '#20303a'; ctx.fillRect(x1 - 5, top - 7, 3, 1);
+    ctx.fillStyle = '#c03020'; ctx.fillRect(x1 - 4, top - 7, 1, Math.sin(t) > 0 ? -3 : -2);
+    // label plate
+    ctx.fillStyle = '#141e22'; ctx.fillRect(cx - 34, bot - 26, 68, 13);
+    Font.draw(ctx, 'SUBJECT 7', cx, bot - 23, { color: '#7affda', align: 'center' });
+  },
+
+  // A curled saurian embryo: heavy skull, closed lid, translucent limbs, a
+  // visible spine, and a heartbeat that drives the whole thing.
+  embryo(ctx, cx, cy, t, glowK = 1) {
+    const beat = Math.pow(Math.max(0, Math.sin(t * 1.9)), 6);
+    const s = 1 + beat * 0.05;
+    const glow = 0.35 + beat * 0.45;
+    // the light it throws into the fluid
+    ctx.globalCompositeOperation = 'lighter';
+    Shape.star(ctx, cx, cy, 40 * s, '#7affda', (0.14 + beat * 0.14) * glowK);
+    Shape.blob(ctx, cx, cy, 22 * s, 'rgba(60,200,170,0.04)');
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.save();
+    ctx.translate(cx, cy + Math.sin(t * 0.7) * 2);
+    ctx.rotate(Math.sin(t * 0.4) * 0.12 - 0.25);
+    ctx.scale(s, s);
+    const skin = '#c8907a', skinL = '#e8b9a2', skinD = '#8f5f52', vein = '#7a4a52';
+    // tail, curled around the body
+    for (let i = 0; i < 16; i++) {
+      const a = 1.1 + i * 0.30, r = 20 - i * 0.9;
+      const tx = Math.cos(a) * r, ty = Math.sin(a) * r * 0.8 + 6;
+      const w = Math.max(1, 6 - i * 0.35);
+      ctx.fillStyle = i % 2 ? skin : skinD;
+      ctx.fillRect(Math.round(tx - w / 2), Math.round(ty - w / 2), Math.round(w), Math.round(w));
+    }
+    // body, a comma shape
+    Shape.blob(ctx, -1, 5, 13, skin, 1.05);
+    Shape.blob(ctx, -3, 2, 10, skinL, 0.9);
+    ctx.globalAlpha = 0.5; Shape.blob(ctx, 2, 9, 8, skinD, 0.8); ctx.globalAlpha = 1;
+    // spine, showing through
+    ctx.fillStyle = '#e8dcc8';
+    for (let i = 0; i < 9; i++) ctx.fillRect(Math.round(-8 + i * 2), Math.round(-2 + i * 1.3), 2, 1);
+    // ribs
+    ctx.globalAlpha = 0.4; ctx.fillStyle = '#f0e4d0';
+    for (let i = 0; i < 4; i++) ctx.fillRect(-6 + i * 3, 4, 1, 5);
+    ctx.globalAlpha = 1;
+    // veins
+    ctx.globalAlpha = 0.35; ctx.fillStyle = vein;
+    for (let i = 0; i < 7; i++) ctx.fillRect(-9 + i * 3, 6 + Math.round(Math.sin(i * 1.7) * 3), 2, 1);
+    ctx.globalAlpha = 1;
+    // limbs: stubby, translucent, folded in
+    const limb = (lx, ly, a2) => {
+      ctx.save(); ctx.translate(lx, ly); ctx.rotate(a2);
+      ctx.fillStyle = skinD; ctx.fillRect(0, -2, 9, 4);
+      ctx.fillStyle = skin; ctx.fillRect(0, -2, 8, 3);
+      ctx.fillStyle = skinL; ctx.fillRect(0, -2, 6, 1);
+      for (let f = 0; f < 3; f++) { ctx.fillStyle = skinD; ctx.fillRect(8, -2 + f * 2, 3, 1); }
+      ctx.restore();
+    };
+    limb(-6, 10, 0.7 + Math.sin(t * 1.3) * 0.08);
+    limb(4, 8, 0.2 + Math.sin(t * 1.3 + 1) * 0.08);
+    limb(-9, 2, 2.5 + Math.sin(t * 1.1) * 0.06);
+    // head: broad snout, brow ridge, closed lid
+    ctx.save(); ctx.translate(-10, -6); ctx.rotate(-0.55 + Math.sin(t * 0.9) * 0.05);
+    Shape.blob(ctx, 0, 0, 10, skin, 0.85);
+    Shape.blob(ctx, -1, -2, 8, skinL, 0.8);
+    // snout
+    ctx.fillStyle = skin; ctx.fillRect(-16, -2, 12, 7);
+    ctx.fillStyle = skinL; ctx.fillRect(-16, -2, 12, 2);
+    ctx.fillStyle = skinD; ctx.fillRect(-16, 4, 12, 1);
+    ctx.fillStyle = '#5a3830'; ctx.fillRect(-16, 0, 2, 1);         // nostril
+    // brow and closed eye
+    ctx.fillStyle = skinD; ctx.fillRect(-6, -5, 7, 2);
+    ctx.fillStyle = '#6a4038'; ctx.fillRect(-5, -3, 6, 2);
+    ctx.fillStyle = '#2a1a18'; ctx.fillRect(-5, -2, 6, 1);
+    // the eye behind the lid catches the glow
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = glow * 0.5; ctx.fillStyle = '#7affda'; ctx.fillRect(-4, -2, 4, 1);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    // skull plate showing under the skin
+    ctx.globalAlpha = 0.28; ctx.fillStyle = '#f0e6d4'; ctx.fillRect(-7, -4, 9, 3); ctx.globalAlpha = 1;
+    ctx.restore();
+    // umbilical stump
+    ctx.fillStyle = '#8a6a5a'; ctx.fillRect(1, 12, 3, 4);
+    ctx.restore();
+    // a faint heartbeat ring in the fluid
+    if (beat > 0.25) { ctx.globalAlpha = (beat - 0.25) * 0.5; Shape.ring(ctx, cx, cy, 30 + (1 - beat) * 22, 1, '#8fffe4'); ctx.globalAlpha = 1; }
+  },
+
+  // --- floor: grating, a service pit, light spill from the tank
+  floor(ctx, t) {
+    const W = LAB.W, F = LAB.FLOOR, H = LAB.H;
+    ctx.fillStyle = '#16232a'; ctx.fillRect(0, F, W, H - F);
+    // epoxy floor with a sheen and a painted safety line
+    ctx.fillStyle = '#1d2f36'; ctx.fillRect(0, F, W, 26);
+    ctx.fillStyle = 'rgba(160,220,220,0.05)'; ctx.fillRect(0, F, W, 2);
+    ctx.fillStyle = '#8a7420'; ctx.fillRect(0, F + 22, W, 2);
+    ctx.globalAlpha = 0.5; ctx.fillStyle = '#c8a020';
+    for (let x = 0; x < W; x += 12) ctx.fillRect(x, F + 22, 6, 2);
+    ctx.globalAlpha = 1;
+    // grating over the service trench
+    ctx.fillStyle = '#101a1f'; ctx.fillRect(0, F + 26, W, H - F - 26);
+    for (let x = 0; x < W; x += 5) { ctx.fillStyle = '#243740'; ctx.fillRect(x, F + 26, 3, H - F - 26); }
+    for (let y = F + 28; y < H; y += 9) { ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(0, y, W, 2); }
+    // reflection of the tank light on the wet floor
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.10; ctx.fillStyle = '#5fe0c8';
+    for (let i = 0; i < 9; i++) ctx.fillRect(W / 2 - 52 + i * 12, F + 2 + (i % 3), 8, 18);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  },
+
+  drawStaff(ctx, s) {
+    if (!s.rig) return;
+    const F = LAB.FLOOR;
+    // long shadow under the strip lights
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#0a1114';
+    ctx.fillRect(Math.round(s.x - 9), F + 20, 18, 3);
+    ctx.globalAlpha = 1;
+    s.rig.draw(ctx, s.x, F + 22, s.face, 0, s.anim, { scale: s.rig.scale * 1.05 });
+    // what they are carrying: a clipboard, a tablet, a tray of vials
+    if (s.mode === 'clip') {
+      ctx.fillStyle = '#d8d0bc'; ctx.fillRect(Math.round(s.x + s.face * 6), F - 2, 6, 8);
+      ctx.fillStyle = '#8a8272'; ctx.fillRect(Math.round(s.x + s.face * 6), F - 2, 6, 1);
+    } else if (s.mode === 'bench') {
+      for (let i = 0; i < 3; i++) { ctx.fillStyle = ['#7affda', '#ffa040', '#ff6070'][i]; ctx.fillRect(Math.round(s.x + s.face * 8 + i * 3), F - 4, 2, 5); }
+    }
+  },
+
+  // --- foreground: a railing, cables underfoot, crates, dust in the beams
+  foreground(ctx, t) {
+    const W = LAB.W, H = LAB.H, F = LAB.FLOOR;
+    // cables snaking across the floor
+    ctx.strokeStyle = '#0e1518'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-4, F + 30);
+    for (let x = 0; x < W + 10; x += 40) ctx.lineTo(x, F + 30 + Math.sin(x * 0.05) * 5);
+    ctx.stroke();
+    ctx.strokeStyle = '#7a3a2a'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-4, F + 30);
+    for (let x = 0; x < W + 10; x += 40) ctx.lineTo(x, F + 29 + Math.sin(x * 0.05) * 5);
+    ctx.stroke();
+    // crates
+    const crate = (x, y, w, h) => {
+      ctx.fillStyle = '#4a3a26'; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = '#5d4a30'; ctx.fillRect(x, y, w, 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y + h - 2, w, 2);
+      ctx.fillStyle = '#3a2c1c'; ctx.fillRect(x + 3, y + 4, w - 6, 1); ctx.fillRect(x + 3, y + h - 6, w - 6, 1);
+      Font.draw(ctx, 'BIO', x + w / 2, y + h / 2 - 3, { color: '#8a7420', align: 'center' });
+    };
+    crate(24, F + 6, 26, 18);
+    crate(586, F + 4, 30, 20);
+    // dust hanging in the light
+    ctx.globalAlpha = 0.30; ctx.fillStyle = '#dff4f8';
+    for (let i = 0; i < 40; i++) {
+      const px = (ihash(i, 61) * W + t * (3 + ihash(i, 62) * 5)) % W;
+      const py = 30 + ((ihash(i, 63) * 260 + Math.sin(t * 0.5 + i) * 12) % 260);
+      ctx.fillRect(Math.round(px), Math.round(py), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+  },
+
+  // --- lighting pass: beams, vignette, cold grade
+  lighting(ctx, t) {
+    const W = LAB.W, H = LAB.H;
+    // light cones from the strips
+    ctx.globalCompositeOperation = 'lighter';
+    for (let x = 40; x < W; x += 128) {
+      const bad = (x / 128) % 3 === 1;
+      const on = bad ? (Math.sin(t * 26 + x) > -0.55 ? 1 : 0.1) : 1;
+      const gg = ctx.createLinearGradient(0, LAB.CEIL, 0, 250);
+      gg.addColorStop(0, `rgba(190,240,250,${(0.10 * on).toFixed(3)})`);
+      gg.addColorStop(1, 'rgba(190,240,250,0)');
+      ctx.fillStyle = gg;
+      ctx.beginPath();
+      ctx.moveTo(x, LAB.CEIL); ctx.lineTo(x + 60, LAB.CEIL);
+      ctx.lineTo(x + 108, 250); ctx.lineTo(x - 48, 250); ctx.closePath(); ctx.fill();
+    }
+    // the tank throws its own green light across the room
+    const tg = ctx.createRadialGradient(W / 2, 200, 20, W / 2, 200, 220);
+    tg.addColorStop(0, 'rgba(70,220,190,0.13)'); tg.addColorStop(1, 'rgba(70,220,190,0)');
+    ctx.fillStyle = tg; ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+    // cold grade and a vignette
+    ctx.fillStyle = 'rgba(20,50,60,0.10)'; ctx.fillRect(0, 0, W, H);
+    const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.36, W / 2, H / 2, H * 0.95);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  },
+};
+
 /* ===== src/ui.js ===== */
 'use strict';
 const UI = {
@@ -8603,60 +9502,232 @@ const UI = {
     ctx.fillStyle = '#f4f1e6';
     for (let i = 0; i < 12; i++) { const tx = Math.round(x - w / 2 + i * (w / 11)); ctx.beginPath(); ctx.moveTo(tx - 3, y - 2); ctx.lineTo(tx + 3, y - 2); ctx.lineTo(tx, y + 4); ctx.closePath(); ctx.fill(); }
   },
+  // ---------- the Science Center front end ----------
+  // The room does the talking. This is a hanging sign, a selection bracket
+  // around whichever piece of furniture you are pointed at, and a footer.
+  labStations() {
+    const F = LAB.FLOOR;
+    return [
+      { id: 'archive', x: 6, y: F - 180, w: 164, h: 180, lx: 88, label: 'GENOME ARCHIVE', sub: 'EVERY SPECIES YOU HAVE EATEN' },
+      { id: 'create', x: 258, y: 78, w: 124, h: 218, lx: 320, label: 'CREATE SPECIMEN', sub: 'BUILD AN EMBRYO AND RELEASE IT' },
+      { id: 'vials', x: 434, y: F - 126, w: 200, h: 126, lx: 534, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
+    ];
+  },
   drawTitle(ctx) {
     const W = G.W, H = G.H, t = G.titleT, touch = G.touchUI;
-    // darken the top and the bottom only, so the swamp behind stays bright in the middle
-    const top = ctx.createLinearGradient(0, 0, 0, 138);
-    top.addColorStop(0, 'rgba(4,10,10,0.58)'); top.addColorStop(1, 'rgba(4,10,10,0)');
-    ctx.fillStyle = top; ctx.fillRect(0, 0, W, 138);
-    const bot = ctx.createLinearGradient(0, H - 70, 0, H);
-    bot.addColorStop(0, 'rgba(4,10,10,0)'); bot.addColorStop(1, 'rgba(4,10,10,0.7)');
-    ctx.fillStyle = bot; ctx.fillRect(0, H - 70, W, 70);
-    // vignette
-    const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.34, W / 2, H / 2, H * 0.88);
-    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.22)');
-    ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+    const st = this.labStations(), sel = st[clamp(G.labSel === undefined ? 1 : G.labSel, 0, st.length - 1)];
 
-    this.drawLogo(ctx, W / 2, 22, 6, t);
-    Font.draw(ctx, 'AN EVERGLADES EATER ROGUELIKE', W / 2, 92, { color: '#7fd8b8', align: 'center', outline: '#04100c' });
-    Font.draw(ctx, 'THEY SPLICED EVERY ANIMAL INTO YOU. NOW USE THEM ALL.', W / 2, 104, { color: '#e6eede', align: 'center', outline: '#04100c' });
+    // --- hanging illuminated sign, slung from the ceiling pipes
+    const sw = 246, sx = Math.round(W / 2 - sw / 2), sy = 40, sh = 40;
+    ctx.fillStyle = '#2a3c42'; ctx.fillRect(sx + 26, 26, 3, 16); ctx.fillRect(sx + sw - 29, 26, 3, 16);
+    ctx.fillStyle = '#0c1417'; ctx.fillRect(sx - 3, sy - 3, sw + 6, sh + 6);
+    ctx.fillStyle = '#16242a'; ctx.fillRect(sx, sy, sw, sh);
+    ctx.fillStyle = '#20343a'; ctx.fillRect(sx, sy, sw, 2);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.10 + 0.03 * Math.sin(t * 3);
+    ctx.fillStyle = '#ff5030'; ctx.fillRect(sx + 4, sy + 4, sw - 8, sh - 8);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    this.drawLogo(ctx, W / 2, sy + 6, 3, t);
+    Font.draw(ctx, 'CHIMERA PROJECT   BIO-4 GENETICS', W / 2, sy + 30, { color: '#5f9f94', align: 'center' });
 
-    // start prompt: a chevron pair that breathes rather than a hard blink
-    const pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
-    const label = touch ? 'TAP TO HUNT' : 'PRESS ENTER TO HUNT';
-    const lw = Font.width(label, 2);
-    ctx.globalAlpha = 0.55 + 0.45 * pulse;
-    Font.draw(ctx, label, W / 2, 128, { color: '#ffe060', align: 'center', scale: 2, outline: '#3a1c00' });
-    ctx.globalAlpha = 0.3 + 0.7 * pulse;
-    const chev = 10 + Math.round(pulse * 4);
-    Font.draw(ctx, '>', W / 2 - lw / 2 - chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
-    Font.draw(ctx, '<', W / 2 + lw / 2 + chev, 128, { color: '#ffb020', align: 'center', scale: 2, outline: '#3a1c00' });
+    // --- selection bracket drawn around the chosen station, inside the room
+    const pulse = 0.55 + 0.45 * Math.sin(t * 4);
+    ctx.globalAlpha = 0.35 + pulse * 0.5;
+    this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 13);
     ctx.globalAlpha = 1;
+    ctx.fillStyle = '#7affda';
+    for (let i = 0; i < 4; i++) {
+      const px = sel.x + (i % 2 ? sel.w : 0), py = sel.y + (i > 1 ? sel.h : 0);
+      ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 2, 2);
+    }
 
-    // controls: two tidy columns, keyboard or touch depending on the device
-    const rows = touch
-      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['SPEED PAD', 'HOLD TO RUN'], ['BRACE PAD', 'PARRY AND COUNTER'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
-      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'HOLD: SPEED, UP: LEAP'], ['L / V', 'BRACE: PARRY'], ['G', 'GENE TREE'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
-    const _stageHint = 'PICK A STAGE AND A PRIME MUTATION BEFORE EACH RUN';
-    const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
-    const boxH = per * 11 + 10, boxY = H - 74 - boxH;
-    this.panel(ctx, 20, boxY, pw2, boxH, 'rgba(6,14,14,0.68)', 'rgba(120,180,160,0.35)');
-    rows.forEach((r, i) => {
-      const c = Math.floor(i / per), ry = boxY + 7 + (i % per) * 11, rx = x0 + c * colW;
-      Font.draw(ctx, r[0], rx, ry, { color: '#8fe8c8' });
-      Font.draw(ctx, r[1], rx + 96, ry, { color: '#d4e0d0' });
+    // --- the plate under the selected station
+    const plw = Math.max(158, Font.width(sel.sub, 1) + 22), plx = clamp(Math.round(sel.lx - plw / 2), 6, W - plw - 6);
+    const ply = H - 56;
+    ctx.fillStyle = 'rgba(4,10,12,0.88)'; ctx.fillRect(plx, ply, plw, 30);
+    this.bracket(ctx, plx, ply, plw, 30, 'rgba(120,255,215,0.5)', 7);
+    Font.draw(ctx, sel.label, plx + plw / 2, ply + 5, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, sel.sub, plx + plw / 2, ply + 21, { color: '#5f9f94', align: 'center' });
+
+    // --- three tabs, so the whole room's options are visible at once
+    const tw = 56, ty = H - 20;
+    st.forEach((s2, i) => {
+      const tx = Math.round(W / 2 - (st.length * tw) / 2 + i * tw);
+      const on = i === (G.labSel === undefined ? 1 : G.labSel);
+      ctx.fillStyle = on ? '#1d4a42' : '#101c1b'; ctx.fillRect(tx + 2, ty, tw - 4, 13);
+      ctx.fillStyle = on ? '#7affda' : '#2e4a46'; ctx.fillRect(tx + 2, ty, tw - 4, 1);
+      Font.draw(ctx, ['ARCHIVE', 'CREATE', 'VIALS'][i], tx + tw / 2, ty + 4, { color: on ? '#e8fff8' : '#4f7f74', align: 'center' });
     });
 
-    Font.draw(ctx, _stageHint, W / 2, boxY - 10, { color: '#7fd8b8', align: 'center', outline: '#04140f' });
-    Font.draw(ctx, 'EAT WHAT IS SMALLER. FLEE WHAT IS BIGGER. KEEP EATING OR STARVE.', W / 2, boxY + boxH + 8, { color: '#ffb060', align: 'center', outline: '#2a1200' });
-
-    const s = G.save;
-    const have = ANIMAL_TRAITS.filter(t2 => !t2.unlock || Meta.isUnlocked(t2.id)).length;
-    Font.draw(ctx, 'BEST ' + fmt(s.best) + '     LONGEST ' + s.bestLen.toFixed(1) + ' FT     TRAITS ' + have + '/' + ANIMAL_TRAITS.length, W / 2, H - 20, { color: '#90a898', align: 'center', shadow: true });
-    Font.draw(ctx, 'SOUND: ' + (SFX.muted ? 'OFF' : 'ON') + '  (M)', W - 8, H - 10, { color: '#708878', align: 'right' });
-    if (!touch) Font.draw(ctx, 'H: HELP', 8, H - 10, { color: '#708878' });
+    // --- prompt and footer
+    ctx.globalAlpha = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 3.2));
+    Font.draw(ctx, touch ? 'TAP A STATION' : 'ARROWS: WALK      ENTER: USE', W / 2, ply - 16, { color: '#ffe060', align: 'center', outline: '#3a1c00' });
+    ctx.globalAlpha = 1;
+    const sv = G.save;
+    Font.draw(ctx, 'BEST ' + fmt(sv.best || 0) + '   LONGEST ' + (sv.bestLen || 0).toFixed(1) + 'FT   RELICS ' + Missions.owned().length + '/' + ARTIFACTS.length, 8, H - 8, { color: '#3f6f66' });
+    Font.draw(ctx, 'SOUND ' + (SFX.muted ? 'OFF' : 'ON') + ' (M)   HELP (H)', W - 8, H - 8, { color: '#3f6f66', align: 'right' });
   },
-  // a small landmark icon standing in for the paragraph a site used to need
+  // ---------- the creation bay ----------
+  createCells() {
+    const W = G.W, out = [];
+    const px0 = 214, cw = Math.floor((W - px0 - 12) / 3);
+    BASE_SPECIES.forEach((sp, i) => out.push({ row: 0, i, x: px0 + (i % 3) * cw, y: 44 + Math.floor(i / 3) * 20, w: cw - 3, h: 18, item: sp }));
+    SIZE_GRADES.forEach((gr, i) => out.push({ row: 1, i, x: px0 + i * Math.floor((W - px0 - 12) / 4), y: 106, w: Math.floor((W - px0 - 12) / 4) - 3, h: 18, item: gr }));
+    const vw = Math.floor((W - px0 - 12) / 4);
+    VIALS.forEach((v, i) => out.push({ row: 2, i, x: px0 + (i % 4) * vw, y: 160 + Math.floor(i / 4) * 20, w: vw - 3, h: 18, item: v }));
+    return out;
+  },
+  createGoRect() { return { x: G.W - 152, y: G.H - 40, w: 134, h: 26 }; },
+  drawCreate(ctx) {
+    const W = G.W, H = G.H, t = G.menuT, E = G.embryo, b = Create.spec();
+    // the room stays behind, dimmed: you are still standing in the lab
+    ctx.fillStyle = 'rgba(3,10,12,0.82)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'CREATION BAY', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, 'GROW A SPECIMEN', 128, 12, { color: '#4f7f74' });
+
+    // --- live embryo preview, in its own tank on the left
+    const tx = 16, ty = 44, tw = 186, th = 250;
+    ctx.fillStyle = '#0a1416'; ctx.fillRect(tx - 3, ty - 3, tw + 6, th + 6);
+    const fg = ctx.createLinearGradient(0, ty, 0, ty + th);
+    fg.addColorStop(0, '#1e5e58'); fg.addColorStop(1, '#0d3336');
+    ctx.fillStyle = fg; ctx.fillRect(tx, ty, tw, th);
+    ctx.save(); ctx.beginPath(); ctx.rect(tx, ty, tw, th); ctx.clip();
+    // drifting matter
+    ctx.globalAlpha = 0.45;
+    for (let i = 0; i < 40; i++) {
+      const px = tx + 3 + ihash(i, 41) * (tw - 6);
+      const py = ty + th - ((t * (7 + ihash(i, 42) * 13) + ihash(i, 43) * 500) % (th - 6));
+      ctx.fillStyle = ihash(i, 44) > 0.6 ? '#8fe8d0' : '#5fa89c';
+      ctx.fillRect(Math.round(px), Math.round(py), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+    // the embryo, scaled by the chosen grade
+    const scale = clamp(0.8 + b.size * 0.42, 0.8, 1.55);
+    ctx.save();
+    ctx.translate(tx + tw / 2, ty + th / 2 + 10);
+    ctx.scale(scale, scale);
+    ctx.translate(-(tx + tw / 2), -(ty + th / 2 + 10));
+    Lab.embryo(ctx, tx + tw / 2, ty + th / 2 + 10, t, 0.55);
+    ctx.restore();
+    // the vial's colour bleeds into the fluid
+    if (b.vial && b.vial.id !== 'none') {
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.10 + 0.04 * Math.sin(t * 2.4);
+      ctx.fillStyle = b.vial.col; ctx.fillRect(tx, ty, tw, th);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
+    // glass furniture
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#dffdf4'; ctx.fillRect(tx + 8, ty + 4, 3, th - 8); ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(150,230,220,0.3)'; ctx.fillRect(tx, ty, 2, th); ctx.fillRect(tx + tw - 2, ty, 2, th);
+    ctx.fillStyle = '#2b4149'; ctx.fillRect(tx - 5, ty - 12, tw + 10, 13);
+    Font.draw(ctx, b.sp.name, tx + tw / 2, ty - 9, { color: '#b8ffe8', align: 'center' });
+    // vitals readout under the tank
+    const st2 = [['LENGTH', (b.size * 1.5).toFixed(1) + ' FT'], ['HEALTH', Math.round(b.hp * 100) + '%'], ['SPEED', Math.round(b.spd * 100) + '%'], ['BITE', Math.round(b.bite * 100) + '%'], ['HUNGER', Math.round(b.hunger * 100) + '%']];
+    st2.forEach((r, i) => {
+      const ry = ty + th + 6 + i * 10;
+      Font.draw(ctx, r[0], tx + 2, ry, { color: '#4f7f74' });
+      Font.draw(ctx, r[1], tx + tw - 2, ry, { color: '#d8e8de', align: 'right' });
+    });
+
+    // --- the three choice banks
+    const cells = this.createCells();
+    const label = (txt, y) => { Font.draw(ctx, txt, 214, y, { color: '#7affda' }); ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(214, y + 9, W - 226, 1); };
+    label('BASE SPECIES', 32);
+    label('GROWTH GRADE', 94);
+    label('SUBSTANCE', 148);
+    for (const c of cells) {
+      const item = c.item;
+      const open = c.row === 0 ? Create.speciesUnlocked(item) : c.row === 2 ? Create.vialUnlocked(item) : true;
+      const cur = c.row === 0 ? E.species === item.id : c.row === 1 ? E.size === c.i : E.vial === item.id;
+      const on = (G.createRow || 0) === c.row && ((c.row === 0 && E.species === item.id) || (c.row === 1 && E.size === c.i) || (c.row === 2 && E.vial === item.id));
+      const col = c.row === 2 ? item.col : '#7affda';
+      ctx.fillStyle = cur ? 'rgba(30,80,70,0.9)' : 'rgba(10,22,24,0.85)'; ctx.fillRect(c.x, c.y, c.w, c.h);
+      ctx.fillStyle = !open ? '#2a2420' : cur ? col : '#2e4a46'; ctx.fillRect(c.x, c.y, c.w, 1);
+      if (on) this.bracket(ctx, c.x - 1, c.y - 1, c.w + 2, c.h + 2, '#ffffff', 5);
+      // vial swatch
+      if (c.row === 2) { ctx.fillStyle = open ? item.col : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 4, 4, 10); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(c.x + 3, c.y + 4, 1, 10); }
+      // a locked cell shows what it wants, not the word LOCKED over the top of it
+      let nm = item.name;
+      if (!open) nm = (c.row === 0 && item.need ? (item.need.best !== undefined ? 'SCORE ' + fmt(item.need.best) : Stages.hint(item.need)) : '') || 'LOCKED';
+      const maxc = Math.floor((c.w - (c.row === 2 ? 12 : 6)) / 6);
+      Font.draw(ctx, nm.length > maxc ? nm.slice(0, maxc) : nm, c.x + (c.row === 2 ? 10 : 4), c.y + 6, { color: !open ? '#6a5a4a' : cur ? '#e8fff8' : '#8fbfb6' });
+    }
+
+    // --- artifacts spliced into the embryo
+    Font.draw(ctx, 'SPLICED ARTIFACTS', 214, 204, { color: '#7affda' });
+    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(214, 213, W - 226, 1);
+    const owned = Missions.owned();
+    const slots = 5, sw2 = 26;
+    for (let i = 0; i < slots; i++) {
+      const sx2 = 216 + i * (sw2 + 4), sy2 = 220;
+      ctx.fillStyle = 'rgba(10,22,24,0.85)'; ctx.fillRect(sx2, sy2, sw2, 24);
+      const a = owned[i] ? ARTIFACT_BY_ID[owned[i]] : null;
+      if (a) { drawRelicGlyph(ctx, a, sx2 + sw2 / 2, sy2 + 12, t * 0.5, 0.85); ctx.fillStyle = a.col; ctx.fillRect(sx2, sy2, sw2, 1); }
+      else { ctx.fillStyle = '#2a3230'; ctx.fillRect(sx2 + sw2 / 2 - 4, sy2 + 10, 8, 3); ctx.fillRect(sx2 + sw2 / 2 - 1, sy2 + 7, 2, 9); }
+    }
+    Font.draw(ctx, owned.length ? owned.length + ' OF ' + ARTIFACTS.length + ' RECOVERED — ALL ACTIVE' : 'NONE RECOVERED. THEY ARE OUT THERE.', 216 + slots * (sw2 + 4) + 6, 228, { color: owned.length ? '#c8b070' : '#5f7f78' });
+
+    // --- the flavour line for whatever is highlighted
+    const row = G.createRow || 0;
+    const cur2 = row === 0 ? b.sp : row === 1 ? b.gr : row === 2 ? b.vial : null;
+    if (cur2) {
+      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(214, 254, W - 226, 32);
+      Font.draw(ctx, cur2.latin || cur2.eff || '', 218, 258, { color: '#5f9f94' });
+      Font.drawWrapped(ctx, cur2.line || '', 218, 269, W - 236, { color: '#c8d8d0', lineHeight: 9 });
+    }
+
+    // --- release
+    const go = this.createGoRect();
+    const p2 = 0.5 + 0.5 * Math.sin(t * 4);
+    ctx.fillStyle = 'rgba(60,20,10,0.9)'; ctx.fillRect(go.x, go.y, go.w, go.h);
+    ctx.fillStyle = mixColor('#8a2a10', '#ff6030', p2); ctx.fillRect(go.x, go.y, go.w, 2);
+    this.bracket(ctx, go.x, go.y, go.w, go.h, '#ff8050', 8);
+    Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 7, { color: '#ffd0a0', align: 'center', scale: 2, outline: '#2a0c00' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK' : 'ARROWS PICK    ENTER: RELEASE    ESC: BACK', 12, H - 10, { color: '#4f7f74' });
+  },
+
+  // ---------- the substance store ----------
+  drawVialStore(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    ctx.fillStyle = 'rgba(3,10,12,0.9)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'SUBSTANCE STORE', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    const owned = (G.save && G.save.vials) || [];
+    Font.draw(ctx, owned.length + ' OF ' + (VIALS.length - 1) + ' RECOVERED', W - 12, 14, { color: '#5f9f94', align: 'right' });
+    // a rack of vials, drawn as glass
+    const list = VIALS.slice(1);
+    const cw = Math.floor((W - 24) / list.length);
+    list.forEach((v, i) => {
+      const x = 12 + i * cw, y = 44, have = owned.indexOf(v.id) >= 0;
+      const sel = i === (G.vialSel || 0);
+      // stopper, glass body, fluid
+      ctx.fillStyle = '#5a5248'; ctx.fillRect(x + cw / 2 - 5, y, 10, 4);
+      ctx.fillStyle = 'rgba(150,220,215,0.14)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 14, 54);
+      if (have) {
+        ctx.fillStyle = v.col; ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 37);
+        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.45); ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 2);
+        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.7); ctx.fillRect(x + cw / 2 - 5, y + 24, 2, 28);
+        // it bubbles
+        if (chance(0.4)) { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(x + cw / 2 + ((i * 3) % 4) - 2, y + 24 + ((t * 22 + i * 9) % 30), 1, 1); }
+        ctx.globalCompositeOperation = 'lighter'; Shape.star(ctx, x + cw / 2, y + 38, 12, v.col, 0.22); ctx.globalCompositeOperation = 'source-over';
+      } else {
+        ctx.fillStyle = 'rgba(40,52,52,0.5)'; ctx.fillRect(x + cw / 2 - 6, y + 40, 12, 17);
+      }
+      ctx.fillStyle = 'rgba(220,250,250,0.28)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 1, 54);
+      if (sel) this.bracket(ctx, x + 2, y - 4, cw - 4, 70, '#ffffff', 7);
+      Font.draw(ctx, have ? String(i + 1) : '?', x + cw / 2, y + 62, { color: have ? '#d8e8de' : '#4a5a56', align: 'center' });
+    });
+    const v = list[clamp(G.vialSel || 0, 0, list.length - 1)];
+    const have = owned.indexOf(v.id) >= 0;
+    ctx.fillStyle = 'rgba(6,14,16,0.9)'; ctx.fillRect(12, 130, W - 24, 78);
+    this.bracket(ctx, 12, 130, W - 24, 78, have ? v.col : '#3a4a48', 9);
+    Font.draw(ctx, have ? v.name : 'UNIDENTIFIED SUBSTANCE', 20, 138, { color: have ? v.col : '#5f7f78', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, have ? v.eff : 'RECOVER IT IN THE FIELD TO READ THE LABEL', 20, 158, { color: have ? '#d8e8de' : '#4f6f6a' });
+    if (have) Font.drawWrapped(ctx, v.line, 20, 172, W - 40, { color: '#8fbfb6', lineHeight: 9 });
+    Font.draw(ctx, 'ONE SUBSTANCE MAY BE LOADED PER RUN, IN THE CREATION BAY.', 12, 226, { color: '#4f7f74' });
+    Font.draw(ctx, 'VIALS DROP FROM BOSSES AND HIDE IN SECRET AREAS. THEY ARE KEPT FOREVER.', 12, 238, { color: '#3f6f66' });
+    Font.draw(ctx, 'ARROWS: BROWSE      ESC: BACK', W / 2, H - 14, { color: '#4f7f74', align: 'center' });
+  },
+
   drawLandmark(ctx, kind, x, y, on) {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
     const dim = c => (on ? c : mixColor(c, '#20302c', 0.62));
@@ -9437,7 +10508,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, drop: null, embryo: null, labSel: undefined, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -9475,11 +10546,11 @@ const G = {
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, s = this.scale || 1;
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
-  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
+  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], vials: [] }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], vials: [] }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
-    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null;
+    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null; this.drop = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
@@ -9510,6 +10581,7 @@ const G = {
         else P.genePoints += 1;                       // unspliced trades the gene for a point
         P.rebuildLook();
       }
+      if (typeof Create !== 'undefined') Create.applyTo(P);   // species, growth grade and substance
       Missions.applyAll(P);                           // relics you have already carried out
       P.recomputeStats();
       this.stage = stage || STAGES[0];
@@ -9522,7 +10594,8 @@ const G = {
   // drop straight into a stretch of the swamp, already grown, already hunted
   beginAtStage(st) {
     const P = this.player, x = st.x;
-    P.size = st.size; P.sizeTarget = st.size; P.mass = sizeToMass(st.size); P.tier = tierFor(st.size);
+    const sz = st.size * (P.startSize || 1);
+    P.size = sz; P.sizeTarget = sz; P.mass = sizeToMass(sz); P.tier = tierFor(sz);
     P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90; P.sheds = P.tier;
     P.x = x; P.y = Math.max(24, World.floorY(x) * 0.4); P.chain.reset(P.x, P.y, 0);
     this.cam.x = x; this.cam.y = P.y;
@@ -9531,9 +10604,8 @@ const G = {
     this.state = 'play'; this.intro = null;
     this.seedNursery(x, 1); this.seedNursery(x, -1);
     for (let i = 0; i < 16; i++) { this.director.spawnT = 0; this.populate(1 + (st.diff || 0)); }
-    this.banner = st.kaiju
-      ? { text: 'KAIJU PROTOCOL', sub: 'THE CITY IS AWAKE AND IT IS AFRAID OF YOU', t: 5, max: 5, color: '#ff6a40' }
-      : { text: st.name, sub: st.sub, t: 4, max: 4, color: '#8ce8a0' };
+    this.banner = null;
+    Drop.begin(st);
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -9621,6 +10693,9 @@ const G = {
       else if (SPECIES[kind]) { const d = SPECIES[kind], band = d.band || [10, 200]; Spawn.school(x, d.nearFloor ? fy - 30 : clamp(rand(band[0], band[1]), 10, fy - 15), kind); }
     }
   },
+  // the creation bay and the vial store, both reached from the lab floor
+  openCreate() { this.state = 'create'; this.menuT = 0; if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, artifacts: [] }; this.createRow = 0; SFX.ui(); },
+  openVials() { this.state = 'vialstore'; this.menuT = 0; this.vialSel = 0; SFX.ui(); },
   openStages() {
     this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
     if (this.stageSel === undefined) {
@@ -9844,12 +10919,78 @@ const G = {
     // global keys
     if (Input.hit('KeyM')) { const m = SFX.toggleMute(); if (!SFX.ctx) { SFX.init(); if (m) SFX.master && (SFX.master.gain.value = 0); } }
     switch (this.state) {
-      case 'title':
-        this.titleT += raw; this.updateWorld(dt, true);
-        if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; }
-        else if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
-        else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.openStages(); }
+      case 'title': {
+        this.titleT += raw; Lab.update(raw);
+        const stn = UI.labStations();
+        if (this.labSel === undefined) this.labSel = 1;      // start on CREATE
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.labSel = (this.labSel + stn.length - 1) % stn.length; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.labSel = (this.labSel + 1) % stn.length; SFX.ui(); }
+        // clicking or tapping a station selects it; a second hit uses it
+        let hit = -1;
+        if (Input.mouse.clicked) {
+          for (let i = 0; i < stn.length; i++) { const s2 = stn[i]; if (Input.mouse.x > s2.x && Input.mouse.x < s2.x + s2.w && Input.mouse.y > s2.y && Input.mouse.y < s2.y + s2.h) hit = i; }
+          if (hit < 0) { const ty = this.H - 18, tw = 54; for (let i = 0; i < stn.length; i++) { const tx = this.W / 2 - (stn.length * tw) / 2 + i * tw; if (Input.mouse.x > tx && Input.mouse.x < tx + tw && Input.mouse.y > ty && Input.mouse.y < ty + 12) hit = i; } }
+        }
+        if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; break; }
+        if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; break; }
+        const use = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || (hit >= 0 && hit === this.labSel);
+        if (hit >= 0 && hit !== this.labSel) { this.labSel = hit; SFX.ui(); break; }
+        if (use) {
+          SFX.init(); SFX.resume(); SFX.ui();
+          const id = stn[this.labSel].id;
+          if (id === 'create') this.openCreate();
+          else if (id === 'archive') { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
+          else this.openVials();
+        }
         break;
+      }
+      case 'create': {
+        this.menuT += raw; Lab.update(raw);
+        const E = this.embryo, cells = UI.createCells();
+        if (Input.hit('Escape')) { this.state = 'title'; SFX.ui(); break; }
+        if (Input.hit('ArrowUp', 'KeyW')) { this.createRow = (this.createRow + 3) % 4; SFX.ui(); }
+        if (Input.hit('ArrowDown', 'KeyS')) { this.createRow = (this.createRow + 1) % 4; SFX.ui(); }
+        const row = this.createRow || 0;
+        const step = d => {
+          if (row === 0) {
+            const n2 = BASE_SPECIES.length; let i = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
+            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.speciesUnlocked(BASE_SPECIES[i])) break; }
+            E.species = BASE_SPECIES[i].id;
+          } else if (row === 1) E.size = clamp(E.size + d, 0, SIZE_GRADES.length - 1);
+          else if (row === 2) {
+            const n2 = VIALS.length; let i = VIALS.findIndex(x2 => x2.id === E.vial);
+            if (i < 0) i = 0;
+            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.vialUnlocked(VIALS[i])) break; }
+            E.vial = VIALS[i].id;
+          }
+          SFX.ui();
+        };
+        if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
+        if (Input.hit('ArrowRight', 'KeyD')) step(1);
+        if (Input.mouse.clicked || Input.mouse.moved) {
+          for (const c of cells) {
+            if (Input.mouse.x < c.x || Input.mouse.x > c.x + c.w || Input.mouse.y < c.y || Input.mouse.y > c.y + c.h) continue;
+            this.createRow = c.row;
+            if (!Input.mouse.clicked) continue;
+            if (c.row === 0 && Create.speciesUnlocked(c.item)) { E.species = c.item.id; SFX.ui(); }
+            if (c.row === 1) { E.size = c.i; SFX.ui(); }
+            if (c.row === 2 && Create.vialUnlocked(c.item)) { E.vial = c.item.id; SFX.ui(); }
+          }
+        }
+        const go = UI.createGoRect();
+        const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) { SFX.ui(); this.openStages(); }
+        break;
+      }
+      case 'vialstore': {
+        this.menuT += raw; Lab.update(raw);
+        const n2 = VIALS.length - 1;
+        if (Input.hit('Escape', 'Enter')) { this.state = 'title'; SFX.ui(); break; }
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.vialSel = (this.vialSel + n2 - 1) % n2; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.vialSel = (this.vialSel + 1) % n2; SFX.ui(); }
+        if (Input.mouse.clicked) { const cw = Math.floor((this.W - 24) / n2); const i = Math.floor((Input.mouse.x - 12) / cw); if (i >= 0 && i < n2) { this.vialSel = i; SFX.ui(); } }
+        break;
+      }
       case 'stages': {
         this.menuT += raw; this.updateWorld(dt, true);
         const list = STAGES;
@@ -9938,6 +11079,10 @@ const G = {
           if (this.boss && Boss.canFinish(this.boss) && Input.bitePressed()) Finisher.begin(this.boss);
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
+        break;
+      case 'drop':
+        this.updateWorld(dt, false);
+        Drop.update(raw);
         break;
       case 'morph':
         this.updateWorld(dt * 0.5, false);
@@ -10138,6 +11283,10 @@ const G = {
   render() {
     const ctx = this.ctx, cam = this.cam, day = this.day, P = this.player;
     ctx.imageSmoothingEnabled = false;
+    // the front end is a room, not a camera on the swamp
+    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); return; }
+    if (this.state === 'create') { Lab.draw(ctx); UI.drawCreate(ctx); return; }
+    if (this.state === 'vialstore') { Lab.draw(ctx); UI.drawVialStore(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) World.drawIndoor(ctx, cam, day);
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }
@@ -10178,6 +11327,7 @@ const G = {
     if (!drewPlayer) P.draw(ctx);
     if (this.state === 'egg') this.drawEgg(ctx);
     if (this.morph) Morph.drawWorld(ctx);
+    if (this.drop) Drop.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
@@ -10191,12 +11341,13 @@ const G = {
     Cine.draw(ctx);
     UI.drawScreenFx(ctx);
     switch (this.state) {
-      case 'title': UI.drawTitle(ctx); break;
+      case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
       case 'stages': UI.drawStages(ctx); break;
       case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
       case 'morph': Morph.drawUI(ctx); break;
+      case 'drop': Drop.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;
       case 'shed': UI.drawShed(ctx); break;
       case 'dead': UI.drawDeath(ctx); break;

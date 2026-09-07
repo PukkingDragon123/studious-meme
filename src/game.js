@@ -119,7 +119,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, drop: null, embryo: null, labSel: undefined, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -157,11 +157,11 @@ const G = {
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, s = this.scale || 1;
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
-  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [] }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
+  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], vials: [] }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], vials: [] }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
-    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null;
+    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null; this.drop = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
@@ -192,6 +192,7 @@ const G = {
         else P.genePoints += 1;                       // unspliced trades the gene for a point
         P.rebuildLook();
       }
+      if (typeof Create !== 'undefined') Create.applyTo(P);   // species, growth grade and substance
       Missions.applyAll(P);                           // relics you have already carried out
       P.recomputeStats();
       this.stage = stage || STAGES[0];
@@ -204,7 +205,8 @@ const G = {
   // drop straight into a stretch of the swamp, already grown, already hunted
   beginAtStage(st) {
     const P = this.player, x = st.x;
-    P.size = st.size; P.sizeTarget = st.size; P.mass = sizeToMass(st.size); P.tier = tierFor(st.size);
+    const sz = st.size * (P.startSize || 1);
+    P.size = sz; P.sizeTarget = sz; P.mass = sizeToMass(sz); P.tier = tierFor(sz);
     P.recomputeStats(); P.hp = P.maxHp; P.hunger = 90; P.sheds = P.tier;
     P.x = x; P.y = Math.max(24, World.floorY(x) * 0.4); P.chain.reset(P.x, P.y, 0);
     this.cam.x = x; this.cam.y = P.y;
@@ -213,9 +215,8 @@ const G = {
     this.state = 'play'; this.intro = null;
     this.seedNursery(x, 1); this.seedNursery(x, -1);
     for (let i = 0; i < 16; i++) { this.director.spawnT = 0; this.populate(1 + (st.diff || 0)); }
-    this.banner = st.kaiju
-      ? { text: 'KAIJU PROTOCOL', sub: 'THE CITY IS AWAKE AND IT IS AFRAID OF YOU', t: 5, max: 5, color: '#ff6a40' }
-      : { text: st.name, sub: st.sub, t: 4, max: 4, color: '#8ce8a0' };
+    this.banner = null;
+    Drop.begin(st);
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -303,6 +304,9 @@ const G = {
       else if (SPECIES[kind]) { const d = SPECIES[kind], band = d.band || [10, 200]; Spawn.school(x, d.nearFloor ? fy - 30 : clamp(rand(band[0], band[1]), 10, fy - 15), kind); }
     }
   },
+  // the creation bay and the vial store, both reached from the lab floor
+  openCreate() { this.state = 'create'; this.menuT = 0; if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, artifacts: [] }; this.createRow = 0; SFX.ui(); },
+  openVials() { this.state = 'vialstore'; this.menuT = 0; this.vialSel = 0; SFX.ui(); },
   openStages() {
     this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
     if (this.stageSel === undefined) {
@@ -526,12 +530,78 @@ const G = {
     // global keys
     if (Input.hit('KeyM')) { const m = SFX.toggleMute(); if (!SFX.ctx) { SFX.init(); if (m) SFX.master && (SFX.master.gain.value = 0); } }
     switch (this.state) {
-      case 'title':
-        this.titleT += raw; this.updateWorld(dt, true);
-        if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; }
-        else if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
-        else if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || Input.mouse.clicked) { SFX.init(); SFX.resume(); SFX.ui(); this.openStages(); }
+      case 'title': {
+        this.titleT += raw; Lab.update(raw);
+        const stn = UI.labStations();
+        if (this.labSel === undefined) this.labSel = 1;      // start on CREATE
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.labSel = (this.labSel + stn.length - 1) % stn.length; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.labSel = (this.labSel + 1) % stn.length; SFX.ui(); }
+        // clicking or tapping a station selects it; a second hit uses it
+        let hit = -1;
+        if (Input.mouse.clicked) {
+          for (let i = 0; i < stn.length; i++) { const s2 = stn[i]; if (Input.mouse.x > s2.x && Input.mouse.x < s2.x + s2.w && Input.mouse.y > s2.y && Input.mouse.y < s2.y + s2.h) hit = i; }
+          if (hit < 0) { const ty = this.H - 18, tw = 54; for (let i = 0; i < stn.length; i++) { const tx = this.W / 2 - (stn.length * tw) / 2 + i * tw; if (Input.mouse.x > tx && Input.mouse.x < tx + tw && Input.mouse.y > ty && Input.mouse.y < ty + 12) hit = i; } }
+        }
+        if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; break; }
+        if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; break; }
+        const use = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || (hit >= 0 && hit === this.labSel);
+        if (hit >= 0 && hit !== this.labSel) { this.labSel = hit; SFX.ui(); break; }
+        if (use) {
+          SFX.init(); SFX.resume(); SFX.ui();
+          const id = stn[this.labSel].id;
+          if (id === 'create') this.openCreate();
+          else if (id === 'archive') { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
+          else this.openVials();
+        }
         break;
+      }
+      case 'create': {
+        this.menuT += raw; Lab.update(raw);
+        const E = this.embryo, cells = UI.createCells();
+        if (Input.hit('Escape')) { this.state = 'title'; SFX.ui(); break; }
+        if (Input.hit('ArrowUp', 'KeyW')) { this.createRow = (this.createRow + 3) % 4; SFX.ui(); }
+        if (Input.hit('ArrowDown', 'KeyS')) { this.createRow = (this.createRow + 1) % 4; SFX.ui(); }
+        const row = this.createRow || 0;
+        const step = d => {
+          if (row === 0) {
+            const n2 = BASE_SPECIES.length; let i = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
+            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.speciesUnlocked(BASE_SPECIES[i])) break; }
+            E.species = BASE_SPECIES[i].id;
+          } else if (row === 1) E.size = clamp(E.size + d, 0, SIZE_GRADES.length - 1);
+          else if (row === 2) {
+            const n2 = VIALS.length; let i = VIALS.findIndex(x2 => x2.id === E.vial);
+            if (i < 0) i = 0;
+            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.vialUnlocked(VIALS[i])) break; }
+            E.vial = VIALS[i].id;
+          }
+          SFX.ui();
+        };
+        if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
+        if (Input.hit('ArrowRight', 'KeyD')) step(1);
+        if (Input.mouse.clicked || Input.mouse.moved) {
+          for (const c of cells) {
+            if (Input.mouse.x < c.x || Input.mouse.x > c.x + c.w || Input.mouse.y < c.y || Input.mouse.y > c.y + c.h) continue;
+            this.createRow = c.row;
+            if (!Input.mouse.clicked) continue;
+            if (c.row === 0 && Create.speciesUnlocked(c.item)) { E.species = c.item.id; SFX.ui(); }
+            if (c.row === 1) { E.size = c.i; SFX.ui(); }
+            if (c.row === 2 && Create.vialUnlocked(c.item)) { E.vial = c.item.id; SFX.ui(); }
+          }
+        }
+        const go = UI.createGoRect();
+        const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) { SFX.ui(); this.openStages(); }
+        break;
+      }
+      case 'vialstore': {
+        this.menuT += raw; Lab.update(raw);
+        const n2 = VIALS.length - 1;
+        if (Input.hit('Escape', 'Enter')) { this.state = 'title'; SFX.ui(); break; }
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.vialSel = (this.vialSel + n2 - 1) % n2; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.vialSel = (this.vialSel + 1) % n2; SFX.ui(); }
+        if (Input.mouse.clicked) { const cw = Math.floor((this.W - 24) / n2); const i = Math.floor((Input.mouse.x - 12) / cw); if (i >= 0 && i < n2) { this.vialSel = i; SFX.ui(); } }
+        break;
+      }
       case 'stages': {
         this.menuT += raw; this.updateWorld(dt, true);
         const list = STAGES;
@@ -620,6 +690,10 @@ const G = {
           if (this.boss && Boss.canFinish(this.boss) && Input.bitePressed()) Finisher.begin(this.boss);
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
+        break;
+      case 'drop':
+        this.updateWorld(dt, false);
+        Drop.update(raw);
         break;
       case 'morph':
         this.updateWorld(dt * 0.5, false);
@@ -820,6 +894,10 @@ const G = {
   render() {
     const ctx = this.ctx, cam = this.cam, day = this.day, P = this.player;
     ctx.imageSmoothingEnabled = false;
+    // the front end is a room, not a camera on the swamp
+    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); return; }
+    if (this.state === 'create') { Lab.draw(ctx); UI.drawCreate(ctx); return; }
+    if (this.state === 'vialstore') { Lab.draw(ctx); UI.drawVialStore(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) World.drawIndoor(ctx, cam, day);
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }
@@ -860,6 +938,7 @@ const G = {
     if (!drewPlayer) P.draw(ctx);
     if (this.state === 'egg') this.drawEgg(ctx);
     if (this.morph) Morph.drawWorld(ctx);
+    if (this.drop) Drop.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
@@ -873,12 +952,13 @@ const G = {
     Cine.draw(ctx);
     UI.drawScreenFx(ctx);
     switch (this.state) {
-      case 'title': UI.drawTitle(ctx); break;
+      case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
       case 'stages': UI.drawStages(ctx); break;
       case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
       case 'morph': Morph.drawUI(ctx); break;
+      case 'drop': Drop.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;
       case 'shed': UI.drawShed(ctx); break;
       case 'dead': UI.drawDeath(ctx); break;

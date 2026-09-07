@@ -10,6 +10,55 @@ matches your style keeps getting cheaper, and specialising far enough down one b
 gene. Inspired by the *Hungry Shark* games, with roguelike runs, a hand-authored map of named biomes,
 simulated water, mud and weather, and a cartoon cast of ninety animals that come apart when bitten.
 
+## The Science Center
+
+The front end is a room, not a title card. A working genetics lab in side
+elevation: server racks with live activity lights, a DNA sequencer running four
+base lanes, monitors with a rotating helix and a growth curve, a shelf of
+specimen jars, a centrifuge spinning behind glass, a fume hood with a flask
+over a burner, a whiteboard covered in scrawl, service pipes, a steam vent, and
+five staff walking the floor on their own beats — two pacing, one at the
+console, one at the bench, one carrying a clipboard. Ceiling strips throw
+visible cones and one of them is failing. In the middle of it, a containment
+column with a glowing saurian embryo in it: curled, umbilical attached, spine
+and ribs showing through the skin, and a heartbeat that drives its own light.
+
+The menu is the furniture. Walk the selection along the room and the station
+you are pointed at gets a targeting bracket:
+
+- **CREATE SPECIMEN** — the embryo column
+- **GENOME ARCHIVE** — the sequencer and monitor bank
+- **SUBSTANCE STORE** — the vial rack and fume hood
+
+## Creating a specimen
+
+Three decisions, previewed live in a tank as you make them.
+
+**Base species** — you start with the **Dwarf Alligator** and nothing else.
+Spectacled caiman, Nile crocodile, gharial, saltwater crocodile and a
+reconstructed *Deinosuchus* embryo unlock against real save milestones; each
+has its own hide, length, health, speed and bite.
+
+**Growth grade** — Runt, Standard, Overgrown or Hypertrophic. A real trade:
+bigger starts you higher up the food chain and eats hunger, smaller is fast and
+cheap to feed and dies to anything.
+
+**Substance** — one vial, loaded before the run. Adrenal concentrate, clotting
+factor, a myostatin blocker, chitin graft serum, luminous plasma, a neural
+accelerant, digestive bile. Every one has a stated cost as well as an upside,
+and they are only readable once you have recovered them in the field. Vials
+drop from bosses and hide in secret areas, and they are kept forever.
+
+Recovered artifacts are shown spliced into the embryo and all of them apply.
+
+## The drop
+
+Releasing plays it. A transport helicopter crosses the site with a containment
+crate slung under it, holds at fifty feet while the rotor wash flattens the
+water and the reeds, drops the crate, and the crate breaks open. The site card
+types itself on, the pilot talks, and the camera hands over to gameplay when
+the animal swims out. `ESC` skips it.
+
 ## Play
 
 No build step, no dependencies, no assets. Open `index.html` in a browser, or serve the folder:
