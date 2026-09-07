@@ -17,7 +17,7 @@ const PATHS = {
       { name: 'THICK HIDE', desc: '-25% damage taken. +30% max HP.', apply: p => { p.st.armor += 0.25; p.st.hpMul *= 1.3; } },
       { name: 'OSTEODERM PLATES', desc: 'Bullets and bites deal -35% more. Immune to knockback and constriction.', apply: p => { p.st.armor += 0.2; p.st.bulletArmor += 0.35; p.st.knockImmune = true; } },
       { name: 'IRON STOMACH', desc: 'Everything is food: shells, hulls, bones. Hunger drains 35% slower.', apply: p => { p.st.ironStomach = true; p.st.hungerRate *= 0.65; } },
-      { name: 'BULL RUSH', desc: 'Dash becomes a ramming charge that crushes and scatters everything in your path. -30% dash cooldown.', apply: p => { p.st.bullRush = true; p.st.dashCd *= 0.7; } },
+      { name: 'BULL RUSH', desc: 'Leaps and charges become a ram that crushes and scatters everything in your path. Faster stamina recovery.', apply: p => { p.st.bullRush = true; p.st.dashCd *= 0.7; } },
       { name: 'TITAN', evo: true, desc: 'EVOLUTION: meals grow you 40% more. Max HP x1.5. Anything under 60% of your size flees in terror.', apply: p => { p.st.growth *= 1.4; p.st.hpMul *= 1.5; p.st.fearAura = true; p.evo.behemoth = true; } },
     ],
   },
@@ -27,7 +27,7 @@ const PATHS = {
       { name: 'SLEEK BODY', desc: '+25% swim speed, +25% acceleration.', apply: p => { p.st.speed *= 1.25; p.st.accel *= 1.25; } },
       { name: 'AMBUSH', desc: 'Unaware prey take 2.5x damage. Striking from stillness always crits.', apply: p => { p.st.ambush = true; } },
       { name: 'SILENT WAKE', desc: 'Prey detect you at half range. Birds barely notice you.', apply: p => { p.st.stealth *= 0.5; } },
-      { name: 'SHADOW DASH', desc: 'Two dash charges, +60% dash distance. Dashing through prey bites them.', apply: p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; } },
+      { name: 'SHADOW DASH', desc: '+50% stamina, +60% leap distance. Leaping through prey bites them.', apply: p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; } },
       { name: 'WRAITH', evo: true, desc: 'EVOLUTION: leaps go 60% higher and time slows when you breach. You leave afterimages.', apply: p => { p.st.leapMul *= 1.6; p.st.wraith = true; p.evo.phantom = true; } },
     ],
   },
@@ -51,7 +51,7 @@ const MUTATIONS = [
   { name: 'SLOW METABOLISM', desc: 'Hunger drains 20% slower.', apply: p => { p.st.hungerRate *= 0.8; } },
   { name: 'GORGE', desc: 'Meals grow you 15% more.', apply: p => { p.st.growth *= 1.15; } },
   { name: 'SCAR TISSUE', desc: '-10% damage taken.', apply: p => { p.st.armor += 0.1; } },
-  { name: 'QUICK RECOVERY', desc: '-25% dash cooldown.', apply: p => { p.st.dashCd *= 0.75; } },
+  { name: 'QUICK RECOVERY', desc: '+33% stamina recovery.', apply: p => { p.st.dashCd *= 0.75; } },
 ];
 // pick n cards for the shed screen: a mix of path nodes and animal traits
 function rollCards(player, n = 3) {

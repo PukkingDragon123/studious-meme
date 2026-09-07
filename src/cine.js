@@ -85,9 +85,8 @@ const Cine = {
     // impact: a fat ring plus a one-frame wash, the comic-book hit
     if (this.shockT > 0) {
       const s = 1 - this.shockT, r = 26 + s * 170;
-      ctx.globalAlpha = clamp(this.shockT, 0, 1) * 0.34;
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, Math.round(4 * this.shockT));
-      ctx.beginPath(); ctx.ellipse(W / 2, H / 2, r, r * 0.66, 0, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = clamp(this.shockT, 0, 1) * 0.5;
+      Shape.burst(ctx, W / 2, H / 2, r, '#ffffff', 22, 91, 0.6, 0.16 + this.shockT * 0.2);
       ctx.globalAlpha = 1;
     }
     if (this.flash > 0) { ctx.globalAlpha = clamp(this.flash, 0, 1) * 0.3; ctx.fillStyle = this.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }

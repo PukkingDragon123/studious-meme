@@ -29,6 +29,7 @@ class Player {
     this.latched = null; this.latchT = 0; this.rollT = 0; this.roll = 0; this.rollCount = 0;
     this.grabbed = null; this.tether = null; this.breakFree = 0;
     this.dashCd = 0; this.dashCharges = 1; this.dashT = 0; this.ramHit = new Set();
+    this.stam = 1; this.boosting = false; this.boostT = 0; this.noStamT = 0;
     this.braceT = 0; this.braceCd = 0; this.braceFlash = 0; this.parries = 0; this.strainBonus = 0;
     this.spliceGlow = 0; this.spliceCol = '#40f0c8';
     this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
@@ -36,6 +37,8 @@ class Player {
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
+    this.wet = 1; this.dripT = 0;
+    Trials.reset(this);
   }
   // visual/geometric scale: the same compression every other creature uses, so a 27 ft croc is drawn 27 ft long
   get vis() { return Math.pow(this.size, 0.58); }
@@ -45,7 +48,9 @@ class Player {
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
   get strainMul() { return 1 / (1 + (this.strain || 0) * 0.6); }
-  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * (this.frenzyT > 0 ? 1.4 : 1); }
+  get maxStam() { return 1 + 0.5 * Math.max(0, this.st.dashCharges - 1); }
+  get boostMul() { return this.boosting ? 1.75 : 1; }
+  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1); }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -57,7 +62,18 @@ class Player {
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
-    if (this.dashCharges < this.st.dashCharges) { this.dashCd -= dt; if (this.dashCd <= 0) { this.dashCharges++; this.dashCd = 1.6 * this.st.dashCd; } }
+    // Stamina drives both halves of the speed button: hold it to run, flick it
+    // upward to leap. One pool, so pushing the throttle costs you the jump.
+    if (this.noStamT > 0) this.noStamT -= dt;
+    if (this.boostT > 0) this.boostT -= dt;
+    this.boosting = false;
+    if (inp.boost && this.stam > 0.02 && this.noStamT <= 0 && !this.grabbed && this.dashT <= 0) {
+      this.boosting = true;
+      this.stam = Math.max(0, this.stam - dt * 0.42);
+      if (this.stam <= 0) { this.noStamT = 1.1; SFX.hurt && SFX.hurt(); }
+    } else {
+      this.stam = Math.min(this.maxStam, this.stam + dt * (this.noStamT > 0 ? 0.18 : 0.34) / Math.max(0.4, this.st.dashCd));
+    }
     // growth
     this.sizeTarget = massToSize(this.mass); this.size += (this.sizeTarget - this.size) * Math.min(1, 4 * dt);
     // hunger
@@ -91,6 +107,33 @@ class Player {
     if (this.braceCd > 0) this.braceCd -= dt;
     if (this.braceT > 0) this.braceT -= dt;
     if (this.braceFlash > 0) this.braceFlash -= dt;
+    // Wet. A crocodile that has just come out of the water is soaked, and stays
+    // soaked: the hide darkens, it beads, it drips, and it leaves wet ground
+    // behind it until it has been out for the best part of a minute.
+    {
+      const sub = this.y > World.surface(this.x) + 2 * this.vis;
+      if (sub) this.wet = 1;
+      else if (this.y > World.surface(this.x) - 6 * this.vis) this.wet = Math.min(1, this.wet + dt * 0.9);
+      else this.wet = Math.max(0, this.wet - dt * (0.028 + (Weather.rain > 0.2 ? -0.05 : 0)));
+      if (Weather.rain > 0.25 && !World.isIndoor(this.x)) this.wet = Math.min(1, this.wet + dt * 0.35 * Weather.rain);
+      if (!sub && this.wet > 0.08) {
+        // drips: more of them the wetter you are and the more you are moving
+        this.dripT -= dt * (0.6 + this.wet * 2.4 + Math.min(2, Math.abs(this.vx) / 90));
+        if (this.dripT <= 0) {
+          this.dripT = 0.05 + rand(0, 0.08);
+          const n = this.chain.nodes, k = n[randi(0, n.length - 1)];
+          G.fx.add({ type: 'drop', x: k.x + rand(-3, 3) * this.vis, y: k.y + 3 * this.vis, vx: this.vx * 0.1 + rand(-8, 8), vy: rand(6, 30), s: 1, color: chance(0.4) ? '#cfe9e6' : '#9fd0cb', life: 1.4 });
+        }
+        // and a wet patch where a soaked animal stands on dry ground
+        if (this.onLand && this.wet > 0.4 && chance(dt * 5 * this.wet)) {
+          const fy = World.floorY(this.x + rand(-8, 8) * this.vis);
+          G.fx.add({ type: 'wetmark', x: this.x + rand(-10, 10) * this.vis, y: fy - 1, r: rand(3, 7) * this.vis, seed: randi(0, 900), life: rand(4, 9) });
+        }
+      }
+    }
+    if (this.onLand) Trials.bump(this, 'land', Math.abs(this.vx) * dt * 0.5);
+    if (World.light(G.day) < 0.3 && !World.isIndoor(this.x)) Trials.bump(this, 'night', dt);
+    Trials.best(this, 'deep', Math.max(0, this.y - World.surface(this.x)));
     if (this.qteLastT > 0) this.qteLastT -= dt;
     if (this.perfectT > 0) this.perfectT -= dt;
     if (this.spliceGlow > 0) { this.spliceGlow -= dt * 0.8; if (chance(dt * 20)) G.fx.sparks(this.x + rand(-16, 16) * this.vis, this.y + rand(-8, 8) * this.vis, 2); }
@@ -120,7 +163,7 @@ class Player {
         const ahead = World.floorY(this.x + 8 * this.vis * sign(this.vx || ix || 1));
         const rise = fy - ahead;
         if (rise > 1 && Math.abs(this.vx) > 6) this.vx *= 1 - Math.min(0.45, rise / (26 * this.vis));
-        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); SFX.thud && SFX.thud(); }
+        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; Trials.bump(this, 'jumps'); G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); SFX.thud && SFX.thud(); }
         // one puff of grit per footfall rather than a random dribble
         if (Math.abs(this.vx) > 14) {
           this.stepT = (this.stepT || 0) + Math.abs(this.vx) * dt;
@@ -170,6 +213,18 @@ class Player {
       if (this.st.bullRush || this.st.dashBite) this.ramCheck();
       this.ghostT -= dt; if (this.ghostT <= 0) { this.ghostT = 0.04; this.pushGhost(0.35); }
     } else this.ramHit.clear();
+    if (this.boosting) {
+      const sp2 = Math.hypot(this.vx, this.vy);
+      if (under) {
+        if (chance(dt * 34)) G.fx.bubbles(this.x - Math.cos(this.angle) * 12 * this.vis, this.y, 1, 5 * this.vis, -10);
+        if (chance(dt * 14)) G.fx.add({ type: 'spark', x: this.x - Math.cos(this.angle) * 14 * this.vis + rand(-6, 6), y: this.y + rand(-5, 5) * this.vis, vx: -this.vx * 0.2, vy: rand(-8, 8), s: 1, color: '#bfe8ff', life: 0.3 });
+        if (sp2 > 60) Water.splash(this.x, 6 * dt * 60 * this.vis, 12 * this.vis);
+      } else if (this.onLand && Math.abs(this.vx) > 30) {
+        if (chance(dt * 22)) G.fx.smoke(this.x - sign(this.vx) * 10 * this.vis, this.y + 4 * this.vis, 1, '#8a7a5a');
+        if (chance(dt * 16)) G.fx.silt(this.x - sign(this.vx) * 8 * this.vis, this.y + 5 * this.vis, 1, 26);
+      }
+      if (this.pushGhost && chance(dt * 24)) this.pushGhost(0.18);
+    }
     if (this.st.wraith && Math.hypot(this.vx, this.vy) > this.speedMax * 0.7) { this.ghostT -= dt; if (this.ghostT <= 0) { this.ghostT = 0.08; this.pushGhost(0.3); } }
     for (let i = this.ghosts.length - 1; i >= 0; i--) { this.ghosts[i].life -= dt; if (this.ghosts[i].life <= 0) this.ghosts.splice(i, 1); }
     // integrate
@@ -291,11 +346,11 @@ class Player {
       let off = Math.abs(ph - QTE_AT); if (off > 0.5) off = 1 - off;   // the window wraps
       const e = this.latched;
       if (off < QTE_PERFECT) {
-        this.qteHits = (this.qteHits || 0) + 2;
+        this.qteHits = (this.qteHits || 0) + 2; Trials.bump(this, 'rollHits', 2);
         G.shake(8); SFX.crunch(1.4, this.pan); Cine.hit(1, '#fff0a0');
         if (e) { G.fx.gore(e.x, e.y, 70, 0, 0, false); G.fx.sparks(e.x, e.y, 8); }
       } else if (off < QTE_GOOD) {
-        this.qteHits = (this.qteHits || 0) + 1;
+        this.qteHits = (this.qteHits || 0) + 1; Trials.bump(this, 'rollHits');
         G.shake(5); SFX.chomp(this.size, this.pan); Cine.hit(0.45, '#9ef0c8');
         if (e) G.fx.blood(e.x, e.y, 6, 0, 0, 50, e.bloodColors);
       } else { this.qteMissed = true; SFX.chomp(this.size, this.pan); }
@@ -332,7 +387,7 @@ class Player {
     if (e.onBite) { e.onBite(this, sx, sy, dx, dy); return; }
     if (e.sizeClass <= this.size * 0.5 * this.st.swallow && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach)) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
-    if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= 2.5; crit = true; this.lastKillHow = 'ambush'; }
+    if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= 2.5; crit = true; this.lastKillHow = 'ambush'; Trials.bump(this, 'ambush'); }
     if (chance(this.st.crit)) { dmg *= 3; crit = true; }
     if (this.st.woundMul > 1 && e.hp < e.maxHp * 0.6) { dmg *= this.st.woundMul; crit = true; }
     const applied = e.takeDamage(dmg, this, { dx, dy, pierce: this.st.pierce, crit });
@@ -419,7 +474,7 @@ class Player {
   // returns true when the hit was turned
   tryParry(dmg, src, kind) {
     if (this.braceT <= 0.12) return false;          // late in the window it is only armour
-    this.braceT = 0; this.braceCd = 0.4; this.braceFlash = 0.25; this.invuln = 0.45; this.parries++;
+    this.braceT = 0; this.braceCd = 0.4; this.braceFlash = 0.25; this.invuln = 0.45; this.parries++; Trials.bump(this, 'parries');
     G.hitstop(0.1); G.whiteFlash(0.35); G.shake(7); G.slowmo(0.35, 0.22);
     SFX.clank(this.pan); SFX.crunch(this.size, this.pan);
     G.fx.sparks(this.x, this.y, 14); G.fx.shock(this.x, this.y, 34 * this.vis, '#bfe8ff', 0.45);
@@ -433,15 +488,25 @@ class Player {
     }
     return true;
   }
+  // The speed button is a throttle. Aim UP and press it and the throttle
+  // becomes a leap instead: same burst it always was, paid for out of the same
+  // stamina the run drinks from.
   dash(ix, iy) {
-    if (this.dashCharges <= 0 || this.grabbed) return;
-    this.dashCharges--; if (this.dashCd <= 0) this.dashCd = 1.6 * this.st.dashCd;
+    if (this.grabbed) return;
+    const up = iy < -0.4;
+    if (!up || this.stam < 0.3 || this.noStamT > 0) return;
+    this.stam -= 0.3;
+    Trials.bump(this, 'jumps');
     let dx = ix, dy = iy; if (Math.hypot(dx, dy) < 0.2) { dx = Math.cos(this.angle); dy = Math.sin(this.angle); }
     const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
-    const p = this.speedMax * 2.4 * this.st.dashDist; this.vx = dx * p; this.vy = dy * p; this.dashT = 0.22 * this.st.dashDist;
+    const p = (150 + 30 * Math.sqrt(this.size)) * this.st.speed * 2.6 * this.st.dashDist;
+    this.vx = dx * p; this.vy = dy * p; this.dashT = 0.22 * this.st.dashDist;
     if (this.latched) { this.latched.vx = -dx * 100; this.latched = null; }
-    SFX.dash(); if (this.inWater) G.fx.bubbles(this.x, this.y, 12, 8 * this.vis, 0);
-    if (this.st.bullRush) { G.fx.text(this.x, this.y - 20 * this.vis, 'BULL RUSH!', { color: '#e0b050' }); G.shake(3); }
+    SFX.dash();
+    if (this.inWater) { G.fx.bubbles(this.x, this.y, 14, 8 * this.vis, 0); G.fx.silt(this.x, this.y, 3, 20); }
+    else G.fx.smoke(this.x, this.y + 4 * this.vis, 4, '#8a7a5a');
+    for (let i = 0; i < 6; i++) G.fx.add({ type: 'spark', x: this.x - dx * i * 4, y: this.y - dy * i * 4, vx: -dx * 40, vy: -dy * 40, s: 1, color: '#cfeef4', life: 0.25 });
+    if (this.st.bullRush) G.shake(3);
     this.ramHit.clear();
   }
   eat(e) {
@@ -452,8 +517,14 @@ class Player {
     this.combo++; this.comboT = 2.4;
     const pan = G.panOf(e.x);
     if (this.combo > 1) { G.fx.text(this.x, this.y - 20 * this.vis, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
-    G.addScore(Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1)));
-    if (e.type !== 'gib') G.fx.text(e.x, e.y + 6, '+' + Math.round(gain), { color: '#ffd860', vy: -18 });
+    const pts = Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1));
+    G.addScore(pts);
+    if (e.type !== 'gib') {
+      // the score for the meal, thrown off the meal
+      const big = e.mass >= 60 || e.threat || e.human;
+      G.fx.pop(e.x, e.y - 6 * e.size, pts, this.combo >= 10 ? '#ff70d0' : this.combo >= 5 ? '#ffa030' : big ? '#ffe060' : '#e8f0c0', big ? 3 : this.combo >= 5 ? 2 : 1);
+      if (this.combo > 1) G.fx.pop(e.x + rand(-10, 10), e.y - 20 * e.size, 0, this.combo >= 10 ? '#ff70d0' : '#ffffff', this.combo >= 8 ? 2 : 1, 'X' + this.combo);
+    }
     if (e.mass >= 60) { G.slowmo(0.3, 0.55); G.zoomPunch(1.07); G.fx.text(e.x, e.y - 30, e.threat ? 'PREDATOR SLAIN!' : 'DEVOURED!', { scale: 2, color: '#ff6040', life: 1.5 }); SFX.roar(this.size, pan); }
     if (this.st.frenzy) this.frenzyT = 4;
     if (this.st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.lifesteal);
@@ -462,6 +533,9 @@ class Player {
     const gp = Genome.pointsFor(e, this); this.genePoints += gp; this.newPoints += gp;
     Affinity.onEat(this, e); Affinity.onKill(this, e, this.lastKillHow || 'bite'); this.lastKillHow = null;
     G.stats.eaten++; G.stats.genePoints = (G.stats.genePoints || 0) + gp;
+    Trials.bump(this, 'eaten');
+    if (e.type === 'bird' || (e.species && e.species.cat === 'bird')) Trials.bump(this, 'birds');
+    if (e.threat) Trials.bump(this, 'threats');
     if (e.mass > G.stats.biggestMass) { G.stats.biggestMass = e.mass; G.stats.biggest = e.name; }
     if (e.type !== 'gib') G.stats.kinds[e.name] = (G.stats.kinds[e.name] || 0) + 1;
   }
@@ -513,8 +587,34 @@ class Player {
     if (this.hidden) return;
     for (const g of this.ghosts) drawCroc(ctx, { nodes: g.nodes }, this.parts, this.vis, { flipY: g.flip, alpha: g.life * 0.7 });
     const blink = this.invuln > 0 && !this.dead && Math.floor(G.t * 30) % 2 === 0 && this.hurtFlash <= 0;
-    if (this.st.lure) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(64,240,200,0.08)'; ctx.beginPath(); ctx.arc(this.x, this.y, 30 * this.vis, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+    if (this.st.lure) { ctx.globalCompositeOperation = 'lighter'; Shape.burst(ctx, this.x, this.y, 26 * this.vis, '#40f0c8', 12, 17, 0.8, 0.16); ctx.globalCompositeOperation = 'source-over'; }
     drawCroc(ctx, this.chain, this.parts, this.vis, { jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll, alpha: blink ? 0.5 : 1 });
+    if (this.wet > 0.06 && !this.hidden) {
+      const n = this.chain.nodes, w = this.wet;
+      // Darken: water on a hide sinks its value. Drawn as one non-overlapping
+      // column per segment — stamping a rect per vertebra double-darkens where
+      // they overlap and stripes the animal.
+      ctx.globalAlpha = 0.22 * w;
+      ctx.fillStyle = '#0d2026';
+      for (let i = 0; i < n.length - 1; i++) {
+        const a2 = n[i], b2 = n[i + 1];
+        const x0 = Math.round(Math.min(a2.x, b2.x)), x1 = Math.round(Math.max(a2.x, b2.x));
+        const cy2 = Math.round((a2.y + b2.y) * 0.5), hh = Math.round(4.2 * this.vis * (1 - i / n.length * 0.5));
+        ctx.fillRect(x0, cy2 - hh, Math.max(1, x1 - x0), hh * 2);
+      }
+      ctx.globalAlpha = 1;
+      // specular: a broken line of highlights riding the back
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.5 * w;
+      ctx.fillStyle = '#d8f4ff';
+      for (let i = 0; i < n.length; i++) {
+        if (ihash(i, 21 + Math.floor(G.t * 1.5)) > 0.55) continue;
+        const k = n[i], px2 = Math.round(k.x + Math.cos(k.a - Math.PI / 2) * 3 * this.vis);
+        const py2 = Math.round(k.y + Math.sin(k.a - Math.PI / 2) * 3 * this.vis);
+        ctx.fillRect(px2, py2, Math.max(1, Math.round(this.vis)), Math.max(1, Math.round(this.vis)));
+      }
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
     if (this.mudT > 0.05) { ctx.globalAlpha = 0.35 * Math.min(1, this.mudT); ctx.fillStyle = '#4a3a24'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 4 * this.vis, n.y - 1 * this.vis, 8 * this.vis, 5 * this.vis); ctx.globalAlpha = 1; }
     if (this.poisonT > 0) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#40ff60'; for (const n of this.chain.nodes) ctx.fillRect(n.x - 3 * this.vis, n.y - 3 * this.vis, 6 * this.vis, 6 * this.vis); ctx.globalAlpha = 1; }
     if (this.spliceGlow > 0) {
@@ -525,6 +625,6 @@ class Player {
       for (const n of this.chain.nodes) ctx.fillRect(n.x - 4 * this.vis, n.y - 3 * this.vis, 8 * this.vis, 6 * this.vis);
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     }
-    if (this.frenzyT > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,60,30,${(0.06 + 0.04 * Math.sin(G.t * 20)).toFixed(3)})`; ctx.beginPath(); ctx.arc(this.x, this.y, 26 * this.vis, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+    if (this.frenzyT > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5 + 0.3 * Math.sin(G.t * 20); Shape.burst(ctx, this.x, this.y, 22 * this.vis, '#ff3c1e', 14, 29, 0.75, 0.2); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
   }
 }

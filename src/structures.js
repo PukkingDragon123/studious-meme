@@ -202,7 +202,7 @@ class Structure extends Entity {
         // window + door
         ctx.fillStyle = this.lightOn ? '#ffd070' : '#2a2a2a'; ctx.fillRect(-W / 2 + 8, dY - 17, 7, 6); ctx.fillRect(W / 2 - 15, dY - 17, 7, 6);
         ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-4, dY - 12, 8, 12);
-        if (this.lightOn) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,90,0.10)'; ctx.beginPath(); ctx.arc(0, dY - 14, 40, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+        if (this.lightOn) { ctx.globalCompositeOperation = 'lighter'; Shape.star(ctx, 0, dY - 14, 30, '#ffc85a', 0.3); ctx.globalCompositeOperation = 'source-over'; }
         // ladder to the water
         ctx.fillStyle = wood; ctx.fillRect(W / 2 + 1, dY, 2, Math.max(0, -dY + 8)); for (let i = 4; i < -dY + 8; i += 5) ctx.fillRect(W / 2 - 1, dY + i, 6, 1);
         break;
@@ -323,7 +323,7 @@ class Structure extends Entity {
         px(-W2 / 2 + 6, dY - 9, 13, 9, '#d8d8d0'); px(-W2 / 2 + 6, dY - 9, 13, 2, '#f0f0e8');
         px(W2 / 2 - 44, dY - 8, 10, 8, '#e04040'); px(W2 / 2 - 44, dY - 8, 10, 2, '#f0f0e8');
         for (let i = 0; i < 3; i++) px(W2 / 2 - 20 + i * 6, dY - 7, 5, 7, i % 2 ? '#3a6ab0' : '#e0c040');
-        if (this.lightOn) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,90,0.12)'; ctx.beginPath(); ctx.arc(0, dY - 24, 70, 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; px(-4, dY - 44, 8, 3, '#ffe090'); }
+        if (this.lightOn) { ctx.globalCompositeOperation = 'lighter'; Shape.star(ctx, 0, dY - 24, 46, '#ffc85a', 0.34); ctx.globalCompositeOperation = 'source-over'; px(-4, dY - 44, 8, 3, '#ffe090'); }
         break;
       }
       case 'campsite': {

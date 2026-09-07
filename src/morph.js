@@ -142,10 +142,8 @@ const Morph = {
     // that the animal is never hidden behind it
     const bl = clamp(1 - Math.abs(u - this.BURST) * 16, 0, 1);
     if (bl > 0.01) {
-      ctx.fillStyle = rgba(col, bl * 0.20);
-      ctx.beginPath(); ctx.arc(P.x, P.y, 30 * P.vis * bl, 0, TAU); ctx.fill();
-      ctx.fillStyle = rgba('#ffffff', bl * 0.34);
-      ctx.beginPath(); ctx.arc(P.x, P.y, 15 * P.vis * bl, 0, TAU); ctx.fill();
+      Shape.star(ctx, P.x, P.y, 34 * P.vis * bl, col, bl * 0.55);
+      Shape.star(ctx, P.x, P.y, 15 * P.vis * bl, '#ffffff', bl * 0.7);
     }
     ctx.globalCompositeOperation = 'source-over';
   },

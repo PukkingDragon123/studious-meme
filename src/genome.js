@@ -40,7 +40,7 @@ function gene(o) { GENES.push(o); return o; }
       ['sleek', 'SLEEK BODY', '+25% swim speed and acceleration.', p => { p.st.speed *= 1.25; p.st.accel *= 1.25; }, L => { L.stripes = true; }, 'Nothing spare on the frame: -20% max HP.', p => { p.st.hpMul *= 0.8; }, 2],
       ['ambush', 'AMBUSH', 'Unaware prey take 2.5x. Striking from stillness always crits.', p => { p.st.ambush = true; }, L => { L.pupil = '#3060a0'; }, 'Built for one strike: -20% armour.', p => { p.st.armor -= 0.2; }, 3],
       ['silent', 'SILENT WAKE', 'Prey notice you at half range, and you leave no wake.', p => { p.st.stealth *= 0.5; }, L => { L.spots = '#5a7a9a'; }, 'Soft mouth: -15% bite.', p => { p.st.bite *= 0.85; }, 4],
-      ['wraith', 'WRAITH', 'APEX: two dashes, +60% leap, time slows when you breach, afterimages.', p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; p.st.leapMul *= 1.6; p.st.wraith = true; p.evo.phantom = true; }, L => { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }, 'Barely there: -30% max HP.', p => { p.st.hpMul *= 0.7; }, 6],
+      ['wraith', 'WRAITH', 'APEX: +50% stamina, +60% leap, time slows when you breach, afterimages.', p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; p.st.leapMul *= 1.6; p.st.wraith = true; p.evo.phantom = true; }, L => { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }, 'Barely there: -30% max HP.', p => { p.st.hpMul *= 0.7; }, 6],
     ],
     abyssal: [
       ['venom', 'VENOM GLANDS', 'Bites poison: 40% extra damage over 3s, and poisoned prey crawls.', p => { p.st.venom += 0.4; }, L => { L.spots = '#40f0c8'; }, 'Glands where muscle was: -15% bite.', p => { p.st.bite *= 0.85; }, 2],
@@ -141,6 +141,48 @@ function gene(o) { GENES.push(o); return o; }
     gene({ id: 'ch:' + d[0], lin: segA(i), lin2: segB(i), ring: 4, q, r, name: d[1], desc: d[2], apply: d[3], look: d[4], down: d[5], downApply: d[6], load: 7, cost: 11, hybrid: true, chimera: true });
   }
 })();
+// ---------------------------------------------------------------------------
+// Trials. The tree is not just a shop: the genes at the ends of it have to be
+// earned by playing a particular way. A trial is counted live, per run, and
+// resets with the run — the gene is a reward for what you did this time out,
+// not a permanent unlock you can bank and forget.
+// ---------------------------------------------------------------------------
+const TRIALS = {
+  leaper:   { name: 'LEAP 20 TIMES', key: 'jumps', need: 20 },
+  fowler:   { name: 'EAT 20 BIRDS', key: 'birds', need: 20 },
+  butcher:  { name: 'TEAR 12 LIMBS OFF', key: 'limbs', need: 12 },
+  hunter:   { name: 'KILL 8 PREDATORS', key: 'threats', need: 8 },
+  ghost:    { name: 'AMBUSH 15 TIMES', key: 'ambush', need: 15 },
+  duelist:  { name: 'PARRY 12 BLOWS', key: 'parries', need: 12 },
+  wrecker:  { name: 'WRECK 5 BOATS OR BUILDS', key: 'wrecks', need: 5 },
+  glutton:  { name: 'EAT 60 THINGS', key: 'eaten', need: 60 },
+  strider:  { name: 'WALK 900M ON LAND', key: 'land', need: 900 },
+  nocturne: { name: 'HUNT 60S AFTER DARK', key: 'night', need: 60 },
+  roller:   { name: 'LAND 25 ROLL BEATS', key: 'rollHits', need: 25 },
+  diver:    { name: 'DIVE BELOW 400M DEEP', key: 'deep', need: 400 },
+};
+// which gene each trial gates. Apexes and chimeras are the prize; two of the
+// deeper spine genes are gated too so the mid game has something to chase.
+const GENE_TRIAL = {
+  'ripper:apex': 'butcher', 'bulwark:fortress': 'duelist', 'phantom:wraith': 'ghost',
+  'abyssal:leviathan': 'diver', 'colossus:titan': 'glutton', 'savage:manhunter': 'wrecker',
+  'ch:siegejaw': 'hunter', 'ch:mirror': 'duelist', 'ch:ghostvenom': 'ghost',
+  'ch:deepgorge': 'glutton', 'ch:stampede': 'strider', 'ch:bloodhunt': 'roller',
+  'savage:claws': 'leaper', 'phantom:silent': 'fowler', 'abyssal:lure': 'nocturne',
+};
+const Trials = {
+  reset(P) { P.trial = { jumps: 0, birds: 0, limbs: 0, threats: 0, ambush: 0, parries: 0, wrecks: 0, eaten: 0, land: 0, night: 0, rollHits: 0, deep: 0 }; },
+  bump(P, key, n = 1) { if (!P.trial) this.reset(P); P.trial[key] = (P.trial[key] || 0) + n; },
+  best(P, key, v) { if (!P.trial) this.reset(P); if (v > (P.trial[key] || 0)) P.trial[key] = v; },
+  of(g) { return g && GENE_TRIAL[g.id] ? TRIALS[GENE_TRIAL[g.id]] : null; },
+  progress(P, g) {
+    const t = this.of(g); if (!t) return null;
+    const have = (P.trial && P.trial[t.key]) || 0;
+    return { t, have: Math.min(have, t.need), need: t.need, done: have >= t.need };
+  },
+  met(P, g) { const p = this.progress(P, g); return !p || p.done; },
+};
+
 const GENE_BY_ID = {};
 for (const g of GENES) GENE_BY_ID[g.id] = g;
 // hex neighbours, for the "must be adjacent to something you own" rule
@@ -149,6 +191,12 @@ const Genome = {
   // pixel position of a hex cell
   pos(g, cx, cy, R) { return [cx + R * 1.5 * g.q, cy + R * 1.732 * (g.r + g.q / 2)]; },
   owned(P) { return P.genes; },
+  // adjacency and points are fine, only the trial is missing
+  trialBlocked(P, g) {
+    if (g.root || this.has(P, g.id) || (g.apex && P.apex)) return false;
+    if (Trials.met(P, g)) return false;
+    return hexNbrs(g).some(n => this.has(P, n.id));
+  },
   has(P, id) { return P.genes.indexOf(id) >= 0; },
   // a gene can be taken when it touches one you already have
   unlocked(P, g) {
@@ -157,6 +205,8 @@ const Genome = {
     if (this.has(P, 'core') === false) return false;
     // one apex per crocodile: the four ends of the tree are exclusive
     if (g.apex && P.apex) return false;
+    // and some genes have to be earned by playing, not bought
+    if (!Trials.met(P, g)) return false;
     return hexNbrs(g).some(n => this.has(P, n.id));
   },
   // how many separate lineages the build has already opened

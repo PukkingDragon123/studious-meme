@@ -1,7 +1,7 @@
 'use strict';
 const Input = {
   keys: {}, pressed: {}, mouse: { x: 0, y: 0, down: false, rdown: false, clicked: false, rclicked: false, moved: false },
-  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, brace: false, biteHeld: false, biteId: null, dashId: null, braceId: null, holdT: 0, autoBite: false },
+  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, brace: false, biteHeld: false, dashHeld: false, biteId: null, dashId: null, braceId: null, holdT: 0, autoBite: false },
   init(canvas) {
     window.addEventListener('keydown', e => {
       if (!this.keys[e.code]) this.pressed[e.code] = true; this.keys[e.code] = true;
@@ -44,7 +44,7 @@ const Input = {
         // curled in the tank there is nothing to steer: every tap is a chomp
         if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; continue; }
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
-        else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashId = t.identifier; }
+        else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashHeld = true; T.dashId = t.identifier; }
         else if (this.inPad(P.brace, x, y)) { T.brace = true; T.braceId = t.identifier; }
         else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
         else if (G.state === 'play' && this.inPad(P.genes, x, y)) this.pressed.KeyG = true;
@@ -67,7 +67,7 @@ const Input = {
       for (const t of e.changedTouches) {
         if (t.identifier === T.jid) { T.joy = false; T.jid = null; T.jx = 0; T.jy = 0; }
         if (t.identifier === T.biteId) { T.biteHeld = false; T.biteId = null; }
-        if (t.identifier === T.dashId) T.dashId = null;
+        if (t.identifier === T.dashId) { T.dashId = null; T.dashHeld = false; }
         if (t.identifier === T.braceId) T.braceId = null;
       }
     };
@@ -91,6 +91,9 @@ const Input = {
   },
   bitePressed() { return this.hit('Space', 'KeyJ', 'KeyZ') || this.mouse.rclicked || this.touch.bite || this.touch.autoBite; },
   dashPressed() { return this.hit('ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX') || this.touch.dash; },
+  // held, not tapped: the button is a throttle now, and only becomes a leap
+  // when you are pointing up out of the water
+  dashHeld() { return this.down('ShiftLeft', 'ShiftRight', 'KeyK', 'KeyX') || this.touch.dashHeld; },
   // third action: a short brace that turns an incoming hit into a counter
   bracePressed() { return this.hit('KeyL', 'KeyV', 'ControlLeft') || this.touch.brace; },
 };
@@ -732,21 +735,29 @@ const G = {
     if (P.x > 500) x = -1; if (P.x < -500) x = 1;
     let bite = false;
     for (const e of this.ents) if (e.type === 'fish' && !e.dead && dist(e.x, e.y, P.x, P.y) < 60) { const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1; x = dx / d; y = dy / d; if (d < 26 && P.biteCd <= 0) bite = true; break; }
-    return { x, y, bite, dash: false, brace: false };
+    return { x, y, bite, dash: false, boost: false, brace: false };
   },
   updateWorld(dt, demo) {
     this.t += dt; World.t += dt;
     // ambience: the swamp is never completely still
     this.ambT = (this.ambT || 0) - dt;
     if (this.ambT <= 0) {
-      this.ambT = 0.13;
+      this.ambT = 0.085;
       const halfW = this.W / this.cam.zoom / 2 + 70, wx = this.cam.x + rand(-halfW, halfW);
       const fy = World.floorY(wx), su = World.surface(wx);
       if (fy > su + 24) {
         if (chance(0.45)) this.fx.bubbles(wx, fy - rand(1, 6), 1, 3, 8);        // marsh gas off the bed
         else if (chance(0.2)) this.fx.ripple(wx, 2, 0.22);                       // something rising
+        else if (chance(0.35)) this.fx.add({ type: 'mote', x: wx, y: su + rand(10, Math.max(20, fy - su - 10)), vx: rand(-5, 5), vy: rand(-6, 3), s: 1, color: choice(['#8fb8ae', '#6d9a92', '#b6d8cf']), seed: rand(TAU), life: rand(3, 7) });
       } else if (fy < -6 && !World.isIndoor(wx) && chance(0.4)) {
         this.fx.leaf(wx, fy - rand(24, 140), choice(['#7a8a4a', '#9aa860', '#c8b070', '#8a9a58']));
+      }
+      // dust in the air over dry ground, and grit lifting off the banks
+      if (fy < -3 && !World.isIndoor(wx)) {
+        const wind = 12 + Weather.rain * 20;
+        const nd = chance(0.5) ? 2 : 1;
+        for (let m = 0; m < nd; m++) this.fx.add({ type: 'mote', x: wx + rand(-30, 30), y: fy - rand(4, 130), vx: rand(-1, 2) + wind * rand(0.2, 0.8), vy: rand(-7, 2), s: 1, color: choice(['#cbb98e', '#a9986f', '#e0d3ae', '#8f8060']), seed: rand(TAU), life: rand(2.5, 6) });
+        if (chance(0.14)) this.fx.silt(wx, fy - 1, 1, 16);
       }
     }
     const prevDay = this.day; this.day = (this.day + dt / 420) % 1;
@@ -760,7 +771,7 @@ const G = {
     const act = this.state === 'play' || (this.state === 'intro' && this.intro && this.intro.phase !== 'tank');
     const fin = !!this.finisher;
     const inp = demo ? this.demoInput()
-      : { x: fin ? 0 : ax, y: fin ? 0 : ay, bite: act && !fin && Input.bitePressed(), dash: act && !fin && Input.dashPressed(), brace: act && !fin && Input.bracePressed() };
+      : { x: fin ? 0 : ax, y: fin ? 0 : ay, bite: act && !fin && Input.bitePressed(), dash: act && !fin && Input.dashPressed(), boost: act && !fin && Input.dashHeld(), brace: act && !fin && Input.bracePressed() };
     this.engineNear = 0;
     P.update(dt, inp);
     World.ensure(P.x, this.W / this.cam.zoom + 900);
@@ -853,6 +864,7 @@ const G = {
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
     this.fx.draw(ctx, cam);
+    this.fx.drawPops(ctx, cam);
     World.drawDecor(ctx, cam, 1, day);
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);

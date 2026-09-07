@@ -53,10 +53,20 @@ class Entity {
     // out to the last wet spot instead of trying to place the body somewhere in
     // the mud or the air, neither of which is a position a fish should hold.
     if (fy < surf + 6) {
-      if (this._wetX !== undefined) this.x = this._wetX;
+      // Back out to the last wet spot. If there is no last wet spot the body was
+      // put here by a spawn that should not have happened, so go and find water;
+      // if there is none within reach, it simply does not belong in the scene.
+      // Find a column that actually holds water: the remembered one if it still
+      // does, otherwise the nearest. A dry column has its floor ABOVE the
+      // surface, which inverts the clamp bounds and parks the body inside the
+      // hill, so the destination has to be checked rather than assumed.
+      const isWet = xx => World.floorY(xx) > World.surface(xx) + 24;
+      let wx = (this._wetX !== undefined && isWet(this._wetX)) ? this._wetX : World.findX(this.x, isWet, 900, 24);
+      if (wx === null) { this.remove = true; return; }
+      this.x = wx; this._wetX = wx;
       this.vx *= -0.5;
-      const f2 = World.floorY(this.x), s2 = World.surface(this.x);
-      this.y = clamp(this.y, s2 + Math.min(margin, (f2 - s2) * 0.3), f2 - Math.min(margin, (f2 - s2) * 0.3));
+      const f2 = World.floorY(wx), s2 = World.surface(wx), m2 = Math.min(margin, (f2 - s2) * 0.3);
+      this.y = clamp(this.y, s2 + m2, f2 - m2);
       return;
     }
     this._wetX = this.x;
@@ -812,9 +822,9 @@ class Boat extends Entity {
       // engine block + prop cage
       const cx = -L + 12, cy = -18, Rr = 15;
       px(cx - 6, cy + 10, 12, 8, '#2a2a2a'); px(cx - 4, cy + 12, 8, 2, '#5a5a5a');
-      ctx.strokeStyle = '#222'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, Rr, 0, TAU); ctx.stroke();
+      Shape.ring(ctx, cx, cy, Rr, Math.max(1, Rr * 0.16), '#222');
       ctx.strokeStyle = '#444'; for (let k = 0; k < 8; k++) { const a = k * TAU / 8; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * Rr, cy + Math.sin(a) * Rr); ctx.stroke(); }
-      ctx.fillStyle = 'rgba(40,40,40,0.3)'; ctx.beginPath(); ctx.arc(cx, cy, Rr - 1, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 0.3; Shape.blob(ctx, cx, cy, Rr - 1, '#282828'); ctx.globalAlpha = 1;
       ctx.strokeStyle = '#d0d0c0'; ctx.lineWidth = 2;
       for (let i = 0; i < 3; i++) { const a = this.fan + i * TAU / 3; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (Rr - 3), cy + Math.sin(a) * (Rr - 3)); ctx.stroke(); }
       px(cx - 2, cy - 2, 4, 4, '#333');

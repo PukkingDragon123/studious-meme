@@ -24,7 +24,7 @@ const ARTIFACTS = [
   { id: 'tooth', stage: 'bay', name: 'MEGALODON TOOTH', line: 'DREDGED UP FROM UNDER THE BAY. NOTHING THAT SIZE SWIMS NOW.',
     boon: '+15% DEATH ROLL DAMAGE', col: '#cfc0a8', glyph: 'tooth', apply: P => { P.st.rollDmg *= 1.15; } },
   { id: 'core', stage: 'seawall', name: 'CONTAINMENT CORE', line: 'THE THING THEY GREW YOU AROUND. IT STILL HUMS.',
-    boon: '+1 DASH CHARGE', col: '#40f0c8', glyph: 'core', apply: P => { P.st.dashCharges += 1; } },
+    boon: '+50% STAMINA', col: '#40f0c8', glyph: 'core', apply: P => { P.st.dashCharges += 1; } },
 ];
 const ARTIFACT_BY_ID = {};
 for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
@@ -76,7 +76,7 @@ const Missions = {
     if (e.type === 'fish') this.bump('fish');
     if (e.kind === 'shark' || e.name === 'BIG BULL') this.bump('shark');
   },
-  onWreck() { this.bump('wreck'); },
+  onWreck() { this.bump('wreck'); if (G.player && !G.player.dead) Trials.bump(G.player, 'wrecks'); },
   tick(dt) {
     const m = G.mission; if (!m) return;
     if (m.flashT > 0) m.flashT -= dt;
@@ -160,8 +160,7 @@ class Relic extends Entity {
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = a.col; ctx.globalAlpha = 0.05 + k * 0.05;
     ctx.fillRect(x - 4, y - 260, 8, 260);
-    ctx.globalAlpha = 0.10 + k * 0.10;
-    ctx.beginPath(); ctx.arc(x, y, 14 + k * 5, 0, TAU); ctx.fill();
+    Shape.star(ctx, x, y, 13 + k * 6, a.col, 0.28 + k * 0.3);
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
     drawRelicGlyph(ctx, a, x, y, this.bob * 0.4);
   }

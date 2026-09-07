@@ -68,7 +68,7 @@ const UI = {
     this.hex(ctx, gx, gy, 14, canBuy ? mixColor('#1a3a34', '#40f0c8', pulse * 0.45) : '#16241f', canBuy ? '#40f0c8' : '#31463f', 2);
     Font.draw(ctx, String(gp), gx, gy - 4, { color: canBuy ? '#b8ffe8' : '#8aa89c', align: 'center', scale: gp > 99 ? 1 : 2, outline: '#06110e' });
     const touchUI = G.touchUI || Input.touch.active;
-    if (touchUI) { ctx.globalAlpha = canBuy ? 0.8 : 0.35; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(gx, gy, 17, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+    if (touchUI) { ctx.globalAlpha = canBuy ? 0.8 : 0.35; this.hex(ctx, gx, gy, 17, null, '#ffffff', 1); ctx.globalAlpha = 1; }
     if (canBuy) { ctx.fillStyle = Math.floor(t * 4) % 2 ? '#40f0c8' : '#1a3a34'; for (let i = 0; i < 3; i++) ctx.fillRect(gx - 4 + i * 4, gy + 16, 2, 2); }
     if (P.newPoints > 0 && G.state === 'play') Font.draw(ctx, '+' + P.newPoints, gx - 20, gy - 3, { color: '#b8ffe8', align: 'right', shadow: true });
     // score
@@ -88,15 +88,22 @@ const UI = {
       px2 += 8;
     }
     if (P.apex) { const AC = LINEAGES[P.apex].color; this.hex(ctx, 16, H - 26, 7, AC, '#04120e', 1); ctx.fillStyle = '#04120e'; ctx.fillRect(15, H - 28, 3, 5); }
-    // dash pips
-    for (let i = 0; i < P.st.dashCharges; i++) {
-      const full = i < P.dashCharges; ctx.fillStyle = '#0d1210'; ctx.fillRect(10 + i * 10, H - 15, 8, 8);
-      ctx.fillStyle = full ? '#60c0ff' : '#203040'; ctx.fillRect(11 + i * 10, H - 14, 6, 6);
-      if (!full && i === P.dashCharges) { const f = 1 - clamp(P.dashCd / (1.6 * P.st.dashCd), 0, 1); ctx.fillStyle = '#60c0ff'; ctx.fillRect(11 + i * 10, H - 14 + 6 - Math.round(6 * f), 6, Math.round(6 * f)); }
+    // stamina: the speed button drinks from this, and so does the leap
+    {
+      const sw = 46, sx2 = 10, sy2 = H - 14, f = clamp(P.stam / P.maxStam, 0, 1);
+      const spent = P.noStamT > 0;
+      ctx.fillStyle = '#0d1210'; ctx.fillRect(sx2 - 1, sy2 - 1, sw + 2, 8);
+      const col2 = spent ? (Math.floor(t * 8) % 2 ? '#ff7060' : '#7a3028') : P.boosting ? '#bfe8ff' : '#60c0ff';
+      ctx.fillStyle = '#1a2830'; ctx.fillRect(sx2, sy2, sw, 6);
+      ctx.fillStyle = col2; ctx.fillRect(sx2, sy2, Math.round(sw * f), 6);
+      ctx.fillStyle = mixColor(col2, '#ffffff', 0.5); ctx.fillRect(sx2, sy2, Math.round(sw * f), 2);
+      // the leap threshold, so you can see when an upward flick is affordable
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(sx2 + Math.round(sw * 0.3 / P.maxStam), sy2, 1, 6);
+      if (P.boosting) { ctx.fillStyle = '#ffffff'; for (let i = 0; i < 3; i++) ctx.fillRect(sx2 + sw + 3 + i * 3, sy2 + 1 + (i % 2), 2, 2); }
     }
     // brace: one bar that empties when you use it, so timing it is visible
     {
-      const bw = 26, bx = 10 + P.st.dashCharges * 10 + 4, by = H - 13, f = 1 - clamp(P.braceCd / 1.5, 0, 1);
+      const bw = 26, bx = 62, by = H - 13, f = 1 - clamp(P.braceCd / 1.5, 0, 1);
       ctx.fillStyle = '#0d1210'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6);
       ctx.fillStyle = P.braceT > 0 ? '#bfe8ff' : f >= 1 ? '#5f9fbf' : '#233440';
       ctx.fillRect(bx, by, Math.round(bw * (P.braceT > 0 ? 1 : f)), 4);
@@ -177,8 +184,8 @@ const UI = {
     if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher && P.rollT <= 0) {
       const touch = G.touchUI || Input.touch.active;
       const msgs = touch
-        ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   DASH PAD LUNGES', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
-        : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   SHIFT: DASH', 'EAT TO EARN GENES.  G: SPLICE THEM'];
+        ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   HOLD SPEED TO RUN', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
+        : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   HOLD SHIFT: SPEED   UP+SHIFT: LEAP', 'EAT TO EARN GENES.  G: SPLICE THEM'];
       Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
     }
   },
@@ -356,7 +363,23 @@ const UI = {
       if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
       // a chimera gets a second ring: it is the far end of two lineages at once
       if (g.chimera && g.lin2) this.hex(ctx, c.sx, c.sy, r * 0.62, null, own ? LINEAGES[g.lin2].color : shade(LINEAGES[g.lin2].color, 0.5), 1);
+      const tp = Genome.trialBlocked(P, g) ? Trials.progress(P, g) : null;
       if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
+      if (tp) {
+        // a trial gate: the node is reachable, you just have not earned it yet
+        this.hex(ctx, c.sx, c.sy, r, null, '#ffa030', 1);
+        const f = tp.have / tp.need, n2 = 8, lit = Math.round(f * n2);
+        for (let i = 0; i < n2; i++) {
+          const a2 = -Math.PI / 2 + (i / n2) * TAU;
+          ctx.fillStyle = i < lit ? '#ffd060' : '#4a3418';
+          ctx.fillRect(Math.round(c.sx + Math.cos(a2) * (r + 4)) - 1, Math.round(c.sy + Math.sin(a2) * (r + 4)) - 1, 2, 2);
+        }
+        // a padlock, drawn small
+        ctx.fillStyle = Math.floor(t * 3) % 2 ? '#ffd060' : '#c08020';
+        ctx.fillRect(Math.round(c.sx) - 3, Math.round(c.sy) - 1, 6, 5);
+        ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 4, 4, 2);
+        ctx.fillStyle = '#2a1c08'; ctx.fillRect(Math.round(c.sx), Math.round(c.sy) + 1, 1, 2);
+      }
       // cost pip
       if (!own && g.cost && (open || sel)) { const cy2 = c.sy + r + 1; ctx.fillStyle = afford ? '#0d2a24' : '#141a1c'; ctx.fillRect(c.sx - 7, cy2 - 4, 14, 9); Font.draw(ctx, String(cost), c.sx, cy2 - 3, { color: afford ? '#7affda' : '#8a6a6a', align: 'center' }); }
       if (own && !g.minor) { ctx.fillStyle = col; ctx.fillRect(c.sx - 2, c.sy + r - 5, 4, 4); }
@@ -392,23 +415,42 @@ const UI = {
     // detail panel for the selected gene
     const g = GENE_BY_ID[G.geneSel] || GENES[0], own = Genome.has(P, g.id), open = Genome.unlocked(P, g);
     const L = g.lin ? LINEAGES[g.lin] : null, col = L ? L.color : '#9ad8c0';
-    const pw = 214, px3 = W - pw - 8, py3 = 8, phh = 96;
-    this.panel(ctx, px3, py3, pw, phh, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
+    const pw = 214, px3 = W - pw - 8, py3 = 8;
+    // measure first, then paint the frame at the height the content needs
+    const descL = Math.ceil(Font.width(g.desc, 1) / (pw - 16)) + 1, downL = g.down ? Math.ceil(Font.width(g.down, 1) / (pw - 16)) + 1 : 0;
+    let phh2 = 30 + descL * 9 + 3 + (downL ? downL * 9 + 3 : 0) + 8;
+    if (Trials.of(g) && !Genome.has(P, g.id)) phh2 += 22;
+    phh2 = clamp(phh2, 62, 132);
+    this.panel(ctx, px3, py3, pw, phh2, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
     const kind = !L ? 'ORIGIN' : g.chimera ? LINEAGES[g.lin2].name + ' CHIMERA' : g.hybrid ? LINEAGES[g.lin2].name + ' HYBRID' : g.minor ? 'MINOR ADAPTATION' : g.apex ? 'APEX' : 'TIER ' + g.ring;
     Font.draw(ctx, (L ? L.name + '  ' : '') + kind, px3 + 8, py3 + 18, { color: g.chimera ? mixColor(col, LINEAGES[g.lin2].color, 0.5) : '#8aa89c' });
-    Font.drawWrapped(ctx, g.desc, px3 + 8, py3 + 30, pw - 16, { color: '#9ef0c8', lineHeight: 9 });
-    if (g.down) Font.drawWrapped(ctx, g.down, px3 + 8, py3 + 52, pw - 16, { color: '#ff8a7a', lineHeight: 9 });
+    // stack the panel: the downside starts wherever the description ended, and
+    // the trial line after that, so a three-line gene never overprints itself
+    let panY = py3 + 30;
+    panY += Font.drawWrapped(ctx, g.desc, px3 + 8, panY, pw - 16, { color: '#9ef0c8', lineHeight: 9 }) * 9 + 3;
+    if (g.down) panY += Font.drawWrapped(ctx, g.down, px3 + 8, panY, pw - 16, { color: '#ff8a7a', lineHeight: 9 }) * 9 + 3;
     if (g.load) Font.draw(ctx, '+' + g.load + ' STRAIN', px3 + pw - 8, py3 + 18, { color: '#ffb060', align: 'right' });
     const cost = Genome.cost(P, g);
+    const tprog = Trials.progress(P, g);
+    if (tprog && !own) {
+      const done = tprog.done;
+      const ty2 = Math.max(panY + 2, py3 + 66);
+      Font.draw(ctx, 'TRIAL: ' + tprog.t.name, px3 + 8, ty2, { color: done ? '#6ad040' : '#ffa030' });
+      const bw2 = pw - 60, bx2 = px3 + 8, by2 = ty2 + 11;
+      ctx.fillStyle = '#1a1408'; ctx.fillRect(bx2 - 1, by2 - 1, bw2 + 2, 6);
+      ctx.fillStyle = done ? '#6ad040' : '#ffa030'; ctx.fillRect(bx2, by2, Math.round(bw2 * (tprog.have / tprog.need)), 4);
+      Font.draw(ctx, Math.floor(tprog.have) + '/' + tprog.need, px3 + pw - 8, by2 - 2, { color: done ? '#6ad040' : '#c08a4a', align: 'right' });
+      phh2 = Math.max(phh2, by2 + 10 - py3);
+    }
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
-    else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: '#7a6a6a', align: 'right' });
+    else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : tprog && !tprog.done ? 'TRIAL LOCKED' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: tprog && !tprog.done ? '#ffa030' : '#7a6a6a', align: 'right' });
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
     if (G.touchUI || Input.touch.active) {
       Font.draw(ctx, 'TAP A GENE TO SPLICE IT', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
       const bx = W - 22, by = 16;
       ctx.globalAlpha = 0.8; ctx.strokeStyle = '#8fe8c8'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(bx, by, 13, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+      Shape.oct(ctx, bx, by, 13, null, '#8fe8c8', 1); ctx.globalAlpha = 1;
       Font.draw(ctx, 'X', bx, by - 3, { color: '#8fe8c8', align: 'center', scale: 2, outline: '#04120e' });
     } else Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
   },
@@ -462,8 +504,8 @@ const UI = {
 
     // controls: two tidy columns, keyboard or touch depending on the device
     const rows = touch
-      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['DASH PAD', 'LUNGE'], ['BRACE PAD', 'PARRY AND COUNTER'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
-      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'LUNGE'], ['L / V', 'BRACE: PARRY'], ['G', 'GENE TREE'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
+      ? [['LEFT THUMB', 'SWIM AND WALK'], ['BITE PAD', 'CHOMP, DEATH ROLL'], ['SPEED PAD', 'HOLD TO RUN'], ['BRACE PAD', 'PARRY AND COUNTER'], ['GENE CHIP', 'SPEND WHAT YOU ATE']]
+      : [['WASD / ARROWS', 'SWIM AND WALK'], ['SPACE / J', 'CHOMP, DEATH ROLL'], ['SHIFT / K', 'HOLD: SPEED, UP: LEAP'], ['L / V', 'BRACE: PARRY'], ['G', 'GENE TREE'], ['P H C M', 'PAUSE HELP CODEX MUTE']];
     const _stageHint = 'PICK A STAGE AND A PRIME MUTATION BEFORE EACH RUN';
     const cols = 2, per = Math.ceil(rows.length / cols), pw2 = W - 40, colW = pw2 / cols, x0 = 20 + 12;
     const boxH = per * 11 + 10, boxY = H - 74 - boxH;
@@ -571,7 +613,7 @@ const UI = {
     Globe.draw(ctx, gg.cx, gg.cy, gg.r, spin, tilt, t);
     // targeting reticle around the sphere
     ctx.strokeStyle = 'rgba(120,220,200,0.35)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(gg.cx, gg.cy, gg.r + 7, 0, TAU); ctx.stroke();
+    Shape.ring(ctx, gg.cx, gg.cy, gg.r + 7, 1, 'rgba(120,220,200,0.35)');
     ctx.fillStyle = 'rgba(120,220,200,0.5)';
     for (let a = 0; a < 4; a++) { const an = a * Math.PI / 2 + t * 0.25; ctx.fillRect(Math.round(gg.cx + Math.cos(an) * (gg.r + 7) - 1), Math.round(gg.cy + Math.sin(an) * (gg.r + 7) - 1), 3, 3); }
 
@@ -585,8 +627,7 @@ const UI = {
       ctx.globalAlpha = fade;
       if (sel) {
         const pr = 7 + Math.sin(t * 5) * 1.6;
-        ctx.strokeStyle = col; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(r.px, r.py, pr, 0, TAU); ctx.stroke();
+        Shape.ring(ctx, r.px, r.py, pr, 1, col);
         ctx.fillStyle = col;
         ctx.fillRect(Math.round(r.px - pr - 4), Math.round(r.py), 3, 1);
         ctx.fillRect(Math.round(r.px + pr + 2), Math.round(r.py), 3, 1);
@@ -829,7 +870,7 @@ const UI = {
     const icon = iconFor(sel);
     if (icon) {
       ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = rgba(selCol, 0.16); ctx.beginPath(); ctx.arc(W / 2, 96, 30 + Math.sin(G.t * 3) * 2, 0, TAU); ctx.fill();
+      Shape.star(ctx, W / 2, 96, 30 + Math.sin(G.t * 3) * 2, selCol, 0.3);
       ctx.globalCompositeOperation = 'source-over';
       drawIcon(ctx, icon, W / 2, 96, 46, G.t, { shadow: true });
     }
@@ -918,7 +959,7 @@ const UI = {
   drawHelpBody(ctx, y) {
     const W = G.W;
     const lines = [
-      'SWIM WITH WASD. BITE WITH SPACE. DASH WITH SHIFT. BRACE WITH L.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY COMES APART.',
+      'SWIM WITH WASD. BITE WITH SPACE. HOLD SHIFT TO SPEED UP. BRACE WITH L.', 'TINY PREY IS SWALLOWED WHOLE. BIGGER PREY COMES APART.',
       'BITE MEDIUM PREY TO LATCH ON, THEN BITE ON THE GOLD TO TEAR IT APART.', 'BRACE JUST BEFORE A HIT LANDS TO PARRY IT AND COUNTER.',
       'EVERY GENE CARRIES A COST. TOO MANY AND YOUR BODY REJECTS THEM.', 'BOSSES BREAK INTO PHASES. STAGGER ONE AND BITE TO EXECUTE IT.',
       'EACH SITE HAS ONE ORDER. FINISH IT AND A RELIC SURFACES. RELICS ARE FOREVER.', 'HUNGER DRAINS. ALWAYS BE EATING.',
@@ -1055,12 +1096,12 @@ const UI = {
       if (i === e.taps) { ctx.fillStyle = `rgba(255,224,160,${(pulse * 0.5).toFixed(2)})`; ctx.fillRect(sx, by, seg, 6); }
     }
     Font.draw(ctx, 'SHELL', W / 2, by + 12, { color: '#90a898', align: 'center' });
-    if (touch) { const p = Input.pads(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.bite.x, p.bite.y, p.bite.r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; Font.draw(ctx, 'TAP', p.bite.x, p.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' }); }
+    if (touch) { const p = Input.pads(); ctx.globalAlpha = 0.5; Shape.oct(ctx, p.bite.x, p.bite.y, p.bite.r, null, '#ffffff', 2); ctx.globalAlpha = 1; Font.draw(ctx, 'TAP', p.bite.x, p.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' }); }
   },
   drawTouch(ctx) {
     const P = Input.pads(), T = Input.touch, pl = G.player;
-    const ring = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; };
-    const disc = (x, y, r, a, col) => { ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; };
+    const ring = (x, y, r, a, col) => { ctx.globalAlpha = a; Shape.oct(ctx, x, y, r, null, col, 2); ctx.globalAlpha = 1; };
+    const disc = (x, y, r, a, col) => { ctx.globalAlpha = a; Shape.oct(ctx, x, y, r, col, null); ctx.globalAlpha = 1; };
     // curled in the tank there is nothing to steer, and drawIntro already
     // shows the chomp prompt: pads here would only clutter the glass meter
     if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') return;
@@ -1080,11 +1121,13 @@ const UI = {
     disc(P.bite.x, P.bite.y, P.bite.r, T.biteHeld ? 0.55 : 0.3, biteCol);
     ring(P.bite.x, P.bite.y, P.bite.r, 0.75, '#ffffff');
     Font.draw(ctx, latched ? 'ROLL' : 'BITE', P.bite.x, P.bite.y - 4, { color: '#ffffff', align: 'center', outline: '#000' });
-    // dash pad, dimmed while recharging
-    const ready = pl && pl.dashCharges > 0;
-    disc(P.dash.x, P.dash.y, P.dash.r, ready ? 0.3 : 0.12, '#40a0ff');
+    // speed pad: hold to run, flick the stick up and press to leap
+    const ready = pl && pl.stam > 0.05 && pl.noStamT <= 0;
+    const upNow = Input.axis()[1] < -0.4;
+    disc(P.dash.x, P.dash.y, P.dash.r, T.dashHeld ? 0.55 : ready ? 0.3 : 0.12, upNow ? '#8fe8d0' : '#40a0ff');
     ring(P.dash.x, P.dash.y, P.dash.r, ready ? 0.7 : 0.3, '#ffffff');
-    Font.draw(ctx, 'DASH', P.dash.x, P.dash.y - 3, { color: ready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
+    if (pl) { ctx.globalAlpha = 0.75; Shape.arcSteps(ctx, P.dash.x, P.dash.y, P.dash.r - 4, clamp(pl.stam / pl.maxStam, 0, 1), '#bfe8ff', 12, 3); ctx.globalAlpha = 1; }
+    Font.draw(ctx, upNow ? 'LEAP' : 'SPEED', P.dash.x, P.dash.y - 3, { color: ready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
     // brace pad, with the cooldown drawn as a wedge so the timing is readable
     {
       const bready = pl && pl.braceCd <= 0, guard = pl && pl.braceT > 0;
@@ -1092,8 +1135,7 @@ const UI = {
       ring(P.brace.x, P.brace.y, P.brace.r, bready ? 0.7 : 0.3, '#ffffff');
       if (pl && pl.braceCd > 0) {
         const f = 1 - clamp(pl.braceCd / 1.5, 0, 1);
-        ctx.globalAlpha = 0.5; ctx.strokeStyle = '#7fd0ff'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(P.brace.x, P.brace.y, P.brace.r - 3, -Math.PI / 2, -Math.PI / 2 + f * TAU); ctx.stroke(); ctx.globalAlpha = 1;
+        ctx.globalAlpha = 0.65; Shape.arcSteps(ctx, P.brace.x, P.brace.y, P.brace.r - 4, f, '#7fd0ff', 14, 3); ctx.globalAlpha = 1;
       }
       Font.draw(ctx, 'BRACE', P.brace.x, P.brace.y - 3, { color: bready ? '#ffffff' : '#88aabb', align: 'center', outline: '#000' });
     }

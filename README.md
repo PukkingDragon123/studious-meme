@@ -30,7 +30,8 @@ as a fragment for hosts that supply their own document shell).
 | Swim | `WASD` / arrows (on land: `UP` hops) | left thumb anywhere on the left half |
 | Bite | `SPACE` / `J` / right mouse | `BITE` pad (hold to keep chomping) |
 | Death roll (while latched) | `SPACE` again | `BITE` pad again |
-| Dash / ram | `SHIFT` / `K` | `DASH` pad |
+| Speed up (hold) | `SHIFT` / `K` | `SPEED` pad |
+| Leap (aim up, then press) | `W`/`UP` + `SHIFT` | flick up + `SPEED` pad |
 | Brace (parry) | `L` / `V` | `BRACE` pad |
 | Steer with the mouse | hold left mouse | - |
 | Pause / settings | `P` / `ESC` | `II` button |
@@ -53,6 +54,7 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 - **Gene points** drop from every meal. Press `G` at any moment, in the middle of a fight if you want, and spend them.
 - **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God. Each one plays a **transformation**: the body seizes, a seam of light runs head to tail splitting the old hide off plate by plate, and the animal bursts out a third bigger than it settles at. Two free gene points at the far end. `ESC` skips it.
 - **Predators** hunt you while you are small and flee when you are big.
+- **Speed up** by holding the speed button: a sustained run that drinks stamina. Aim **up** and press it instead and it becomes a leap — same pool, so opening the throttle costs you the jump.
 - **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
 - **Bosses** arrive after certain sheds: Old Scar, the Poacher Warboat, Mother Python, the Skunk Ape, and Big Bull. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
 - **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight cuts to an **execution**: bars close in, the camera frames the pair, and three to five prompts come up on big key caps with a bar draining under each. You get three whole misses, and landing one prompt is enough. Every hit is a held impact frame with a blood wash over the lens.
@@ -76,6 +78,13 @@ touches four others, so almost every gene has more than one way in.
 
 Everything you splice shows on the animal: tusks, plates, keeled scutes, stripes, a glow behind the
 eyes. Taking an apex or a chimera plays a full transformation.
+
+Fifteen of the nodes cannot be bought at all. They are **trial-locked**: every apex, every chimera and
+three of the spine genes want you to have played a particular way this run — tear twelve limbs off,
+land twenty leaps, eat twenty birds, parry twelve blows, walk 900m on land, hunt a minute after dark,
+dive 400m down. Trials count live and reset with the run, so a gene at the end of the tree is a record
+of what you did, not something you saved up for. Locked nodes wear a padlock and a ring of progress
+pips; the detail panel names the trial and how far along you are.
 
 | Lineage | Theme | Apex |
 | --- | --- | --- |
@@ -192,6 +201,29 @@ the vault on the globe screen and apply to every run afterwards.
 | Paradise Campground | take 10 people | Camp Lantern | prey lured from further off |
 | Florida Bay | kill 4 sharks | Megalodon Tooth | +15% death roll damage |
 | The Seawall | wreck 8 boats or builds | Containment Core | +1 dash charge |
+
+## Wet, dust and bone
+
+A crocodile that has been in the water stays wet. Wetness fills instantly under the surface and takes
+most of a minute to leave you: the hide darkens, a broken line of highlights rides the spine, drops
+fall off the body wherever it is, and a soaked animal leaves wet patches on dry ground behind it. Rain
+soaks you too.
+
+The air carries dust over dry ground and silt through the water column, both drifting on their own
+wander. Running kicks up grit; a leap throws a puff.
+
+Kills shed bone. Bodies coming apart throw ribs, shards and chunks that tumble, settle on the bed and
+stay there long after the blood has soaked away — so a stretch of swamp keeps a record of what you
+have done in it. Every meal throws its score off it as pixel digits, scaled and coloured by the combo.
+
+## No circles
+
+Nothing in the game paints a smooth vector circle any more. A canvas `arc` antialiases its edge, which
+reads as a soft blob pasted over hard pixel art, and the game was full of them: glows, shockwaves,
+blood pools, ripples, smoke, lamp halos, the sun, touch pads, menu reticles. They are all pixel
+primitives now — stepped spans, radial dashes, cross flares, octagons, ragged puddles — in `shape.js`.
+Shockwaves are bursts of radial dashes; glows are four-point pixel flares; ripples are ticks
+travelling apart.
 
 ## Water
 

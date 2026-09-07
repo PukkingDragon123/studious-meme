@@ -31,9 +31,12 @@ const Gore = {
   burst(e, power = 1, dx = 0, dy = 0) {
     const big = e.mass >= 60, n = clamp(Math.round(2 + Math.log2(1 + e.mass) * (G.settings.gore ? 1 : 0.4)), 2, big ? 9 : 5);
     G.fx.gore(e.x, e.y, 110 * Math.sqrt(power), dx, dy, big);
-    const pool = ['gut', 'gut', 'heart', 'liver', 'rope', 'meat', 'bone', 'eye'];
+    const pool = ['gut', 'gut', 'heart', 'liver', 'rope', 'meat', 'bone', 'bone', 'eye'];
     for (let i = 0; i < n; i++) Gore.organ(e.x + rand(-4, 4), e.y + rand(-4, 4), choice(pool), power, e.bloodColors);
-    if (big) Gore.organ(e.x, e.y, 'skull', power, e.bloodColors);
+    if (big) { Gore.organ(e.x, e.y, 'skull', power, e.bloodColors); Gore.organ(e.x + rand(-6, 6), e.y, 'bone', power, e.bloodColors); }
+    // bone shards: the part of a kill that outlives the blood, and settles on
+    // the bed so the swamp keeps a record of what you have done in it
+    G.fx.bones(e.x, e.y, clamp(Math.round(3 + Math.log2(1 + e.mass) * 1.6), 3, big ? 16 : 8), 70 + Math.min(140, e.mass));
     const bc3 = (e.bloodColors || BLOOD_COLORS)[0];
     for (let k = 0; k < (big ? 5 : 3); k++) G.fx.cloud(e.x + rand(-7, 7), e.y + rand(-5, 5), rand(7, 16) * Math.sqrt(power), bc3, rand(2.6, 5));
     Gore.slick(e.x, e.y, 6 + Math.min(26, e.mass * 0.25));
@@ -47,12 +50,14 @@ const Gore = {
     const pl = e.rig.world(e.x, e.y, e.facing, e.angle, e.anim, e.size * e.rig.scale).find(q => q.id === id);
     if (!pl) return false;
     e.missing.add(id);
+    if (G.player && !G.player.dead) Trials.bump(G.player, 'limbs');
     const g = new Gib(pl.wx, pl.wy, pl.p, { sx: 0, sy: 0, sw: pl.p.w, sh: pl.p.h }, pl.k, pl.facing, true, e.bloodColors);
     g.rot = pl.wa; g.mass = e.edible ? Math.max(2, e.mass * 0.14) : 0; g.edible = g.mass > 0; g.bleedFx = rand(3, 6); g.name = 'LIMB';
     g.vx = e.vx * 0.3 + (dx || rand(-1, 1)) * rand(60, 160); g.vy = e.vy * 0.3 + (dy || 0) * 90 - rand(20, 90); g.vr = rand(-10, 10);
     G.add(g);
     G.fx.blood(pl.wx, pl.wy, 22, dx, dy, 130, e.bloodColors);
     Gore.organ(pl.wx, pl.wy, chance(0.5) ? 'rope' : 'meat', 0.7, e.bloodColors);
+    G.fx.bones(pl.wx, pl.wy, randi(2, 5), 90);
     Gore.slick(pl.wx, pl.wy, 8);
     // a mist of fine droplets and a lingering plume at the wound
     const bc = (e.bloodColors || BLOOD_COLORS)[0];
@@ -109,7 +114,7 @@ const Gore = {
     if (!G.settings.gore) return;
     const surf = World.surface(x), fy = World.floorY(x);
     if (y > surf + 4 && y < fy - 6) { G.fx.cloud(x, y, r * 1.2, '#6a0a0a', 4); return; }
-    if (y <= surf + 4) G.fx.add({ type: 'slick', x, y: surf, r: r * 0.4, r1: r, life: rand(14, 24), vx: rand(-4, 4) });
-    else G.fx.add({ type: 'pool', x, y: fy, r: r * 0.3, r1: r, life: rand(20, 40) });
+    if (y <= surf + 4) G.fx.add({ type: 'slick', x, y: surf, r: r * 0.4, r1: r, seed: randi(0, 900), life: rand(14, 24), vx: rand(-4, 4) });
+    else G.fx.add({ type: 'pool', x, y: fy, r: r * 0.3, r1: r, seed: randi(0, 900), life: rand(24, 48) });
   },
 };

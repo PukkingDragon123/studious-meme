@@ -2,8 +2,8 @@
 // Particle + popup system. Particles live in world space, are drawn in screen space (crisp pixels at any zoom).
 const BLOOD_COLORS = ['#8a0b0b', '#b31212', '#d42020', '#5c0606', '#a51a1a'];
 class FXSystem {
-  constructor() { this.list = []; this.clouds = []; this.texts = []; this.max = 2400; }
-  clear() { this.list.length = 0; this.clouds.length = 0; this.texts.length = 0; }
+  constructor() { this.list = []; this.clouds = []; this.texts = []; this.pops = []; this.max = 3400; }   // dust and bone raised the standing population
+  clear() { this.list.length = 0; this.clouds.length = 0; this.texts.length = 0; this.pops.length = 0; }
   add(p) { if (this.list.length >= this.max) this.list.splice(0, 300); p.t = 0; p.maxLife = p.life; this.list.push(p); return p; }
   // ---------- emitters ----------
   blood(x, y, n, dx = 0, dy = 0, power = 60, colors = BLOOD_COLORS) {
@@ -39,21 +39,58 @@ class FXSystem {
   }
   ripple(x, r = 6, power = 1) { Water.splash(x, power * 12, 6); this.add({ type: 'ripple', x, y: World.surface(x), r, gr: 40 * power, life: 0.9 + power * 0.3, alpha: 0.7 }); }
   // silt kicked up off the bottom
-  silt(x, y, n = 6, power = 30) { for (let i = 0; i < n; i++) this.add({ type: 'silt', x: x + rand(-4, 4), y: y - 2, vx: rand(-1, 1) * power, vy: -rand(0.2, 1) * power, s: rand(2, 5), color: choice(['#5a4a34', '#6b5a44', '#4a3c2a']), life: rand(1.5, 3.2) }); }
+  silt(x, y, n = 6, power = 30) { for (let i = 0; i < n; i++) this.add({ type: 'silt', x: x + rand(-4, 4), y: y - 2, vx: rand(-1, 1) * power, vy: -rand(0.2, 1) * power, s: rand(2, 5), color: choice(['#5a4a34', '#6b5a44', '#4a3c2a']), seed: randi(0, 900), life: rand(1.5, 3.2) }); }
   leaf(x, y, color = '#4f7a2a') { this.add({ type: 'leaf', x, y, vx: rand(-20, 20), vy: rand(-10, 10), s: 2, color, seed: rand(TAU), life: rand(3, 6) }); }
   // a footprint or drag mark pressed into the shore mud
   print(x, y, w, dir) { this.add({ type: 'print', x, y, w, dir, life: 40 }); }
   feathers(x, y, n, color = '#f0f0e8') { for (let i = 0; i < n; i++) this.add({ type: 'feather', x, y, vx: rand(-60, 60), vy: rand(-90, 10), s: 1, color: chance(0.7) ? color : '#b8b8b0', seed: rand(TAU), life: rand(2.5, 5) }); }
   sparks(x, y, n, dx = 0, dy = 0) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(40, 180); this.add({ type: 'spark', x, y, vx: Math.cos(a) * sp + dx * 80, vy: Math.sin(a) * sp + dy * 80, s: 1, color: choice(['#fff8c0', '#ffd060', '#ff9030']), life: rand(0.15, 0.4) }); } }
+  bones(x, y, n, power = 90) {
+    for (let i = 0; i < n; i++) {
+      const a = rand(TAU), sp = rand(0.35, 1) * power;
+      this.add({ type: 'bone', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, s: randi(1, 2), w: randi(3, 7),
+        kind: chance(0.24) ? 'rib' : chance(0.3) ? 'chunk' : 'shard',
+        color: choice(['#e8e2cc', '#d4ccb2', '#f2eee0', '#c0b89c']), rot: rand(TAU), vr: rand(-9, 9), life: rand(5, 10), settled: false });
+    }
+  }
   splinters(x, y, n, power = 100) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(0.3, 1) * power; this.add({ type: 'splinter', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, s: randi(1, 3), w: randi(2, 6), color: choice(['#6b4a2e', '#8a6a44', '#4a3524', '#a0a0a0']), rot: rand(TAU), vr: rand(-6, 6), life: rand(5, 9) }); } }
-  smoke(x, y, n = 1, color = '#888') { for (let i = 0; i < n; i++) this.add({ type: 'smoke', x: x + rand(-3, 3), y: y + rand(-3, 3), vx: rand(-10, 10), vy: rand(-30, -10), s: rand(2, 4), color, life: rand(0.6, 1.4) }); }
+  smoke(x, y, n = 1, color = '#888') { for (let i = 0; i < n; i++) this.add({ type: 'smoke', x: x + rand(-3, 3), y: y + rand(-3, 3), vx: rand(-10, 10), vy: rand(-30, -10), s: rand(2, 4), color, seed: randi(0, 900), life: rand(0.6, 1.4) }); }
   husk(img, sx, sy, sw, sh, x, y, angle, size, flipY, vel) { this.add({ type: 'husk', img, sx, sy, sw, sh, x, y, angle, size, flipY, vx: vel ? vel.vx : rand(-15, 15), vy: vel ? vel.vy : rand(-25, 5), vr: vel ? vel.vr : rand(-1.2, 1.2), life: vel && vel.life ? vel.life : rand(2.2, 3.4) }); }
   glow(x, y, r, color, life = 0.5) { this.add({ type: 'glow', x, y, r, color, life }); }
-  shock(x, y, r, color = '#ffffff', life = 0.5) { this.add({ type: 'shock', x, y, r0: 4, r, color, life }); }
+  shock(x, y, r, color = '#ffffff', life = 0.5) { this.add({ type: 'shock', x, y, r0: 4, r, color, seed: randi(0, 900), life }); }
   flesh(x, y, n, power = 90) { // meat flecks used for boss/large gore
     for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(0.3, 1) * power; this.add({ type: 'gristle', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: randi(1, 3), color: choice(['#9a1a1a', '#c04040', '#e8a090', '#f0e8d8']), life: rand(3, 7), rot: rand(TAU), settled: false }); }
   }
-  text() { /* floating text was retired: feedback is visual now */ }
+  text() { /* floating word text stays retired: feedback is visual */ }
+  // A number, in the HUD's own digits, thrown off whatever you just ate. This
+  // is the one piece of type allowed back into the world: a score reads as a
+  // number or it does not read at all.
+  pop(x, y, value, color = '#ffe060', scale = 1, label = null) {
+    if (this.pops.length > 26) this.pops.shift();
+    this.pops.push({ x, y, str: label || ((value > 0 ? '+' : '') + fmt(Math.round(value))), color, scale, vy: -34 - scale * 6, vx: rand(-14, 14), life: 1.1 + scale * 0.2, maxLife: 1.1 + scale * 0.2, t: 0 });
+  }
+  updatePops(dt) {
+    for (let i = this.pops.length - 1; i >= 0; i--) {
+      const p = this.pops[i];
+      p.life -= dt; p.t += dt;
+      if (p.life <= 0) { this.pops.splice(i, 1); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vy += 34 * dt; p.vx *= 0.94;
+    }
+  }
+  drawPops(ctx, cam) {
+    for (const p of this.pops) {
+      const [sx, sy] = cam.toScreen(p.x, p.y);
+      if (sx < -40 || sx > G.W + 40 || sy < -20 || sy > G.H + 20) continue;
+      const k = p.life / p.maxLife;
+      // a short pop-in, then a fade
+      const grow = p.t < 0.09 ? 0.55 + (p.t / 0.09) * 0.45 : 1;
+      const sc = Math.max(1, Math.round(p.scale * grow));
+      ctx.globalAlpha = k < 0.35 ? k / 0.35 : 1;
+      Font.draw(ctx, p.str, Math.round(sx), Math.round(sy), { color: p.color, align: 'center', scale: sc, outline: '#0a0a06' });
+      ctx.globalAlpha = 1;
+    }
+  }
   _textUnused(x, y, str, opts = {}) {
     if (G.state === 'title' || G.state === 'shed' || G.state === 'codex' || G.state === 'help') return;
     if (this.texts.length > 40) this.texts.shift();
@@ -61,21 +98,23 @@ class FXSystem {
   }
   // ---------- simulation ----------
   update(dt) {
+    this.updatePops(dt);
     const L = this.list;
     for (let i = L.length - 1; i >= 0; i--) {
       const p = L[i]; p.life -= dt; p.t += dt;
       if (p.life <= 0) { L[i] = L[L.length - 1]; L.pop(); continue; }
       const surf = World.surface(p.x), under = p.y > surf;
       switch (p.type) {
-        case 'blood': case 'gristle': {
+        case 'blood': case 'gristle': case 'bone': {
           if (p.settled) break;
           if (under) {
-            const k = Math.exp(-3.2 * dt); p.vx *= k; p.vy *= k; p.vy += (p.type === 'gristle' ? 40 : 14) * dt;
+            const k = Math.exp(-3.2 * dt); p.vx *= k; p.vy *= k; p.vy += (p.type === 'blood' ? 14 : 46) * dt;
             if (p.wasAir) { p.wasAir = false; p.vx *= 0.35; p.vy *= 0.3; if (chance(0.25)) this.ripple(p.x, 2, 0.3); }
           } else { p.vy += 720 * dt; p.wasAir = true; }
           p.x += p.vx * dt; p.y += p.vy * dt;
+          if (p.type === 'bone') p.rot += (p.vr || 0) * dt;
           const fy = World.floorY(p.x);
-          if (p.y >= fy - 1) { p.y = fy - 1; p.settled = true; p.life = Math.min(p.life + 3, 6); }
+          if (p.y >= fy - 1) { p.y = fy - 1; p.settled = true; p.vr = 0; p.life = Math.min(p.life + 5, 12); }
           break;
         }
         case 'bubble': {
@@ -89,6 +128,15 @@ class FXSystem {
           break;
         }
         case 'foam': { p.x += p.vx * dt; p.y = World.surface(p.x); p.vx *= 0.96; break; }
+        case 'wetmark': break;
+        case 'mote': {
+          // wanders; slower and heavier once it is in the water
+          const wet = p.y > surf;
+          p.x += (p.vx * (wet ? 0.35 : 1) + Math.sin(p.t * 1.6 + p.seed) * (wet ? 3 : 7)) * dt;
+          p.y += (p.vy * (wet ? 0.4 : 1) + Math.cos(p.t * 1.1 + p.seed) * 4) * dt;
+          if (!wet) p.vy += 3 * dt;
+          break;
+        }
         case 'slick': { p.r = lerp(p.r, p.r1, 1 - Math.exp(-0.7 * dt)); p.x += p.vx * dt; p.y = World.surface(p.x); p.vx *= 0.98; break; }
         case 'pool': { p.r = lerp(p.r, p.r1, 1 - Math.exp(-1.2 * dt)); p.y = World.floorY(p.x); break; }
         case 'ripple': { p.r += p.gr * dt; break; }
@@ -137,8 +185,8 @@ class FXSystem {
       const [sx, sy] = cam.toScreen(c.x, c.y); const r = c.r * cam.zoom;
       if (sx < -r || sx > G.W + r || sy < -r || sy > G.H + r) continue;
       ctx.globalAlpha = c.a0 * (c.life / c.maxLife);
-      ctx.fillStyle = c.color; ctx.beginPath(); ctx.ellipse(sx, sy, r, r * 0.75, 0, 0, TAU); ctx.fill();
-      ctx.globalAlpha = c.a0 * 0.6 * (c.life / c.maxLife); ctx.beginPath(); ctx.ellipse(sx + r * 0.3, sy - r * 0.2, r * 0.6, r * 0.5, 0, 0, TAU); ctx.fill();
+      Shape.blob(ctx, sx, sy, r, c.color, 0.75);
+      ctx.globalAlpha = c.a0 * 0.6 * (c.life / c.maxLife); Shape.blob(ctx, sx + r * 0.3, sy - r * 0.2, r * 0.6, c.color, 0.8);
     }
     ctx.globalAlpha = 1;
   }
@@ -153,21 +201,45 @@ class FXSystem {
         case 'gristle': { const s = Math.max(1, Math.round(p.s * z)); ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; ctx.fillRect(Math.round(sx), Math.round(sy), s, s); if (s > 1) { ctx.fillStyle = '#5a0808'; ctx.fillRect(Math.round(sx), Math.round(sy) + s - 1, Math.max(1, s >> 1), 1); } break; }
         case 'bubble': { const s = Math.max(1, Math.round(p.s * z)); ctx.globalAlpha = 0.7; ctx.fillStyle = '#cfeae8'; ctx.fillRect(Math.round(sx), Math.round(sy), s, s); if (s > 1) { ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(sx), Math.round(sy), 1, 1); } break; }
         case 'drop': case 'foam': { const s = Math.max(1, Math.round(p.s * z)); ctx.globalAlpha = p.type === 'foam' ? lf : 0.9; ctx.fillStyle = p.color || '#e8f4f2'; ctx.fillRect(Math.round(sx), Math.round(sy), s, s); break; }
-        case 'slick': { const r = p.r * z; ctx.globalAlpha = clamp(lf, 0, 1) * 0.6; ctx.fillStyle = '#6a0c0c'; ctx.beginPath(); ctx.ellipse(sx, sy, r, Math.max(1, r * 0.22), 0, 0, TAU); ctx.fill(); ctx.globalAlpha = clamp(lf, 0, 1) * 0.45; ctx.fillStyle = '#a01a1a'; ctx.beginPath(); ctx.ellipse(sx - r * 0.2, sy, r * 0.55, Math.max(1, r * 0.14), 0, 0, TAU); ctx.fill(); break; }
-        case 'pool': { const r = p.r * z; ctx.globalAlpha = clamp(lf, 0, 1) * 0.75; ctx.fillStyle = '#5a0a0a'; ctx.beginPath(); ctx.ellipse(sx, sy, r, Math.max(1, r * 0.3), 0, 0, TAU); ctx.fill(); ctx.globalAlpha = clamp(lf, 0, 1) * 0.5; ctx.fillStyle = '#8a1414'; ctx.beginPath(); ctx.ellipse(sx - r * 0.15, sy - r * 0.06, r * 0.6, Math.max(1, r * 0.18), 0, 0, TAU); ctx.fill(); break; }
-        case 'ripple': { ctx.globalAlpha = p.alpha * lf; ctx.strokeStyle = '#d8f0ee'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(sx, sy, p.r * z, Math.max(1, p.r * z * 0.22), 0, 0, TAU); ctx.stroke(); break; }
+        case 'slick': { const r = p.r * z; ctx.globalAlpha = clamp(lf, 0, 1) * 0.6; Shape.pool(ctx, sx, sy, r, '#6a0c0c', p.seed || 3, 0.22); ctx.globalAlpha = clamp(lf, 0, 1) * 0.45; Shape.pool(ctx, sx - r * 0.2, sy, r * 0.55, '#a01a1a', (p.seed || 3) + 5, 0.2); break; }
+        case 'pool': { const r = p.r * z; ctx.globalAlpha = clamp(lf, 0, 1) * 0.78; Shape.pool(ctx, sx, sy, r, '#5a0a0a', p.seed || 7, 0.3); ctx.globalAlpha = clamp(lf, 0, 1) * 0.5; Shape.pool(ctx, sx - r * 0.15, sy - r * 0.06, r * 0.6, '#8a1414', (p.seed || 7) + 11, 0.24); break; }
+        case 'ripple': { Shape.ripple(ctx, sx, sy, p.r * z, '#d8f0ee', p.alpha * lf); break; }
         case 'feather': { const s = Math.max(1, Math.round(2 * z)); ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; ctx.fillRect(Math.round(sx), Math.round(sy), s, Math.max(1, s >> 1)); break; }
+        case 'mote': {
+          const k = lf < 0.3 ? lf / 0.3 : lf > 0.85 ? (1 - lf) / 0.15 : 1;
+          ctx.globalAlpha = 0.42 * k; ctx.fillStyle = p.color;
+          ctx.fillRect(Math.round(sx), Math.round(sy), Math.max(1, Math.round(z * 0.8)), Math.max(1, Math.round(z * 0.8)));
+          break;
+        }
         case 'spark': { ctx.globalAlpha = lf; ctx.fillStyle = p.color; const s = Math.max(1, Math.round(z)); ctx.fillRect(Math.round(sx), Math.round(sy), s, s); break; }
         case 'splinter': { ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; ctx.save(); ctx.translate(sx, sy); ctx.rotate(p.rot); ctx.fillRect(0, 0, Math.max(1, p.w * z), Math.max(1, p.s * z)); ctx.restore(); break; }
-        case 'smoke': { ctx.globalAlpha = 0.35 * lf; ctx.fillStyle = p.color; const r = p.s * z; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill(); break; }
-        case 'silt': { ctx.globalAlpha = 0.28 * lf; ctx.fillStyle = p.color; const r = p.s * z; ctx.beginPath(); ctx.ellipse(sx, sy, r, r * 0.7, 0, 0, TAU); ctx.fill(); break; }
+        case 'bone': {
+          ctx.globalAlpha = lf < 0.25 ? lf / 0.25 : 1;
+          ctx.save(); ctx.translate(Math.round(sx), Math.round(sy)); ctx.rotate(p.rot);
+          const w = Math.max(2, Math.round(p.w * z)), h = Math.max(1, Math.round(p.s * z));
+          ctx.fillStyle = p.color;
+          if (p.kind === 'rib') { for (let i = 0; i < w; i++) ctx.fillRect(i, Math.round(Math.sin(i / w * 2.4) * h * 1.6), 1, h); }
+          else if (p.kind === 'chunk') { ctx.fillRect(0, 0, w, h + 1); ctx.fillRect(-1, -1, 2, 2); ctx.fillRect(w - 1, h - 1, 2, 2); }
+          else { ctx.fillRect(0, 0, w, h); ctx.fillRect(-1, -1, 2, h + 2); ctx.fillRect(w - 1, -1, 2, h + 2); }
+          ctx.fillStyle = 'rgba(80,70,55,0.55)'; ctx.fillRect(0, h, w, 1);
+          ctx.restore(); break;
+        }
+        case 'smoke': { ctx.globalAlpha = 0.4 * lf; Shape.puff(ctx, sx, sy, p.s * z * (1.6 - lf * 0.6), p.color, p.seed || 1); break; }
+        case 'silt': { ctx.globalAlpha = 0.3 * lf; Shape.puff(ctx, sx, sy, p.s * z, p.color, p.seed || 2); break; }
         case 'leaf': { ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; const s = Math.max(1, Math.round(2 * z)); ctx.fillRect(Math.round(sx), Math.round(sy), s, Math.max(1, s >> 1)); break; }
         case 'rain': { ctx.globalAlpha = 0.45; ctx.strokeStyle = '#c8e0e8'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - p.vx * 0.02 * z, sy - p.vy * 0.02 * z); ctx.stroke(); break; }
+        case 'wetmark': {
+          ctx.globalAlpha = 0.32 * Math.min(1, lf * 2);
+          Shape.pool(ctx, sx, sy, p.r * z, '#2c3a3a', p.seed, 0.3);
+          ctx.globalAlpha = 0.16 * Math.min(1, lf * 2);
+          Shape.pool(ctx, sx - p.r * z * 0.2, sy - 1, p.r * z * 0.5, '#7fb8b2', p.seed + 4, 0.26);
+          break;
+        }
         case 'print': { ctx.globalAlpha = 0.5 * Math.min(1, lf * 3); ctx.fillStyle = '#2a1f14'; const w = Math.max(2, Math.round(p.w * z)); ctx.fillRect(Math.round(sx - w / 2), Math.round(sy), w, Math.max(1, Math.round(1.5 * z))); ctx.fillStyle = '#4a3a26'; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy) - 1, w, 1); break; }
         case 'suck': { const k = Math.max(0.05, lf); ctx.save(); ctx.translate(sx, sy); ctx.scale(p.size * z * k * p.facing, p.size * z * k); ctx.drawImage(p.img, -p.w / 2, -p.h / 2); ctx.restore(); break; }
         case 'husk': { ctx.globalAlpha = 0.75 * lf; ctx.save(); ctx.translate(sx, sy); ctx.rotate(p.angle); ctx.scale(p.size * z, p.size * z * p.flipY); ctx.drawImage(p.img, p.sx, p.sy, p.sw, p.sh, -p.sw / 2, -p.sh / 2, p.sw, p.sh); ctx.restore(); break; }
-        case 'glow': { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.5 * lf; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(sx, sy, p.r * z * (1.3 - lf * 0.3), 0, TAU); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; break; }
-        case 'shock': { ctx.globalAlpha = lf; ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(1, 3 * lf * z); ctx.beginPath(); ctx.arc(sx, sy, lerp(p.r0, p.r, easeOut(1 - lf)) * z, 0, TAU); ctx.stroke(); break; }
+        case 'glow': { ctx.globalCompositeOperation = 'lighter'; Shape.star(ctx, sx, sy, p.r * z * (1.25 - lf * 0.25), p.color, 0.75 * lf); ctx.globalCompositeOperation = 'source-over'; break; }
+        case 'shock': { ctx.globalAlpha = lf; Shape.burst(ctx, sx, sy, lerp(p.r0, p.r, easeOut(1 - lf)) * z, p.color, 18, p.seed || 5, 0.66, 0.2 + lf * 0.2); break; }
       }
     }
     ctx.globalAlpha = 1;

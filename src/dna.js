@@ -80,16 +80,16 @@ const DNA = {
     const rungs = opts.rungs || 22, spin = t * (opts.speed || 0.9), tilt = opts.tilt ?? 0.34;
     const glow = opts.glow || '#40f0c8';
     // --- sphere body ---
-    const g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.1, cx, cy, R * 1.05);
-    g.addColorStop(0, rgba(glow, 0.20)); g.addColorStop(0.55, rgba(glow, 0.07)); g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.05, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 0.12; Shape.blob(ctx, cx, cy, R * 1.02, glow);
+    ctx.globalAlpha = 0.10; Shape.blob(ctx, cx - R * 0.22, cy - R * 0.26, R * 0.66, glow);
+    ctx.globalAlpha = 1;
     // latitude rings, for volume
     ctx.strokeStyle = rgba(glow, 0.13); ctx.lineWidth = 1;
     for (let i = 1; i < 5; i++) {
       const yy = cy - R + (2 * R) * i / 5, rr = Math.sqrt(Math.max(0, R * R - (yy - cy) * (yy - cy)));
-      ctx.beginPath(); ctx.ellipse(cx, yy, rr, rr * tilt, 0, 0, TAU); ctx.stroke();
+      Shape.ring(ctx, cx, yy, rr, 1, rgba(glow, 0.13), tilt);
     }
-    ctx.strokeStyle = rgba(glow, 0.22); ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+    Shape.ring(ctx, cx, cy, R, 1, rgba(glow, 0.22));
     // --- helix ---
     const pts = [];
     for (let i = 0; i <= rungs; i++) {
@@ -129,10 +129,10 @@ const DNA = {
     for (const d of drawn) {
       const dp = dep(d.z), r = (opts.beadR || 7) * dp;
       ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = rgba(d.b.color, 0.30 * dp); ctx.beginPath(); ctx.arc(d.x, d.y, r * 1.9, 0, TAU); ctx.fill();
+      Shape.star(ctx, d.x, d.y, r * 1.9, d.b.color, 0.32 * dp);
       ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = rgba('#04100e', 0.85); ctx.beginPath(); ctx.arc(d.x, d.y, r, 0, TAU); ctx.fill();
-      ctx.strokeStyle = rgba(d.b.color, 0.4 + 0.6 * dp); ctx.lineWidth = 1.5; ctx.stroke();
+      Shape.blob(ctx, d.x, d.y, r, rgba('#04100e', 0.9));
+      Shape.ring(ctx, d.x, d.y, r, Math.max(1, r * 0.22), rgba(d.b.color, 0.4 + 0.6 * dp));
       if (d.b.icon && dp > 0.55) drawIcon(ctx, d.b.icon, d.x, d.y, r * 1.9, t + d.y * 0.03, { alpha: dp });
     }
     // --- orbiting motes ---

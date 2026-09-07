@@ -100,8 +100,8 @@ const World = {
     // sun / moon
     const drawOrb = (phase, r, col, halo) => {
       const px = W * (0.08 + 0.84 * phase), py = hy - Math.sin(phase * Math.PI) * (hy * 0.85 + 30) + 10;
-      ctx.fillStyle = halo; ctx.globalAlpha = 0.25; ctx.beginPath(); ctx.arc(px, py, r * 2.2, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, py, r, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 0.25; Shape.blob(ctx, px, py, r * 1.9, halo); ctx.globalAlpha = 1;
+      Shape.blob(ctx, px, py, r, col);
       // pixelate edge a touch
       ctx.fillRect(Math.round(px - r), Math.round(py - 1), 1, 2); ctx.fillRect(Math.round(px + r - 1), Math.round(py - 1), 1, 2);
       return [px, py];
@@ -666,7 +666,7 @@ const World = {
           if (d.v === 0) { ctx.fillStyle = '#3a5a8a'; ctx.fillRect(Math.round(sx - 3 * s2), Math.round(sy - 6 * s2), Math.round(6 * s2), Math.round(6 * s2)); ctx.fillStyle = '#6a8ac0'; ctx.fillRect(Math.round(sx - 3 * s2), Math.round(sy - 6 * s2), Math.round(2 * s2), Math.round(4 * s2)); }
           else if (d.v === 1) { ctx.fillStyle = '#8a3a2a'; ctx.fillRect(Math.round(sx - 5 * s2), Math.round(sy - 4 * s2), Math.round(10 * s2), Math.round(4 * s2)); ctx.fillStyle = '#b05a44'; ctx.fillRect(Math.round(sx - 5 * s2), Math.round(sy - 4 * s2), Math.round(10 * s2), Math.max(1, Math.round(s2))); }
           else if (d.v === 2) { ctx.fillStyle = '#c0c8c8'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(sx - 4 * s2 + i * 2.5 * s2), Math.round(sy - 3 * s2 - ihash(i, 9) * 2 * s2), Math.max(1, Math.round(2 * s2)), Math.max(1, Math.round(3 * s2))); }
-          else { ctx.fillStyle = '#4a4a4a'; ctx.beginPath(); ctx.arc(sx, sy - 4 * s2, 4 * s2, 0, TAU); ctx.fill(); ctx.fillStyle = '#6a6a6a'; ctx.beginPath(); ctx.arc(sx, sy - 4 * s2, 2 * s2, 0, TAU); ctx.fill(); }
+          else { Shape.blob(ctx, sx, sy - 4 * s2, 4 * s2, '#4a4a4a'); Shape.blob(ctx, sx, sy - 4 * s2, 2 * s2, '#6a6a6a'); }
           break; }
         case 'rubble': if (layer !== 0) break; {
           for (let i = 0; i < d.n; i++) { const ox = (ihash(i, Math.floor(d.x)) - 0.5) * 26 * z * d.s, hh = (3 + ihash(i, 71) * 5) * d.s * z;
@@ -677,7 +677,7 @@ const World = {
           const s2 = d.s * z, w = 16 * s2, h = 11 * s2;
           ctx.fillStyle = '#5a5a54'; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.round(w), Math.round(h + z));
           ctx.fillStyle = '#74746c'; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.round(w), Math.max(1, Math.round(2 * z)));
-          ctx.fillStyle = '#23231f'; ctx.beginPath(); ctx.ellipse(sx + w / 2 - 2 * s2, sy - h / 2, 3 * s2, h * 0.42, 0, 0, TAU); ctx.fill();
+          Shape.blob(ctx, sx + w / 2 - 2 * s2, sy - h / 2, 3 * s2, '#23231f', h * 0.42 / Math.max(0.5, 3 * s2));
           ctx.fillStyle = '#3a5a3a'; ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h * 0.35), Math.round(w), Math.max(1, Math.round(2 * z)));
           break; }
         case 'knee': if (layer !== 0) break; {
