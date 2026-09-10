@@ -228,13 +228,14 @@ function buildCrocParts(L) {
   // every pair of segments and turn the animal into a stack of crates
   const edgeV = o => { R.outlineTB(o, OL); R.outlineTB(o, OL); };
   const spikes = L.spikes || 0;
+  const girth = clamp(L.girth || 1, 0.72, 1.34);   // body depth, set in the creation bay
   const crest = Math.max(spikes ? 7 : 0, L.fin ? 13 : 0, L.shell ? 6 : 0, L.mane ? 7 : 0);
   // ------------------------------------------------ HEAD: rounded skull, long snout, big eye
   {
-    const w = 44, h = 22 + crest, o = mk(w, h), y0 = crest, cy = y0 + 10;
+    const w = 44, h = Math.ceil(22 * Math.max(1, girth)) + crest, o = mk(w, h), y0 = crest, cy = y0 + Math.round(10 * Math.max(1, girth));
     // snout: a tapering rounded slab
     for (let i = 0; i < 26; i++) {
-      const u = i / 25, hh = 4.6 - u * 1.5, x = 17 + i;
+      const u = i / 25, hh = (4.6 - u * 1.5) * (0.55 + girth * 0.45), x = 17 + i;
       for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.3 ? L.back : f < 0.4 ? L.mid : L.belly); }
       if (i % 3 === 0) px(o, x, cy - hh, hi(L.back));
     }
@@ -242,7 +243,7 @@ function buildCrocParts(L) {
     R.disc({ c: o.c, x: o.x, w, h }, 42, cy - 1, 3.1, L.mid);
     px(o, 40, cy - 4, L.back, 4, 3); px(o, 41, cy - 4, lo2(L.dark), 1, 1); px(o, 43, cy - 4, lo2(L.dark), 1, 1);
     // skull: a fat rounded blob
-    R.blob({ c: o.c, x: o.x, w, h }, 9, cy - 1, 10, 7.5, L.mid, { light: hi(L.back), shade: lo(L.mid), hx: 0.1,
+    R.blob({ c: o.c, x: o.x, w, h }, 9, cy - 1, 10, 7.5 * girth, L.mid, { light: hi(L.back), shade: lo(L.mid), hx: 0.1,
       pat: (i, j, u, v) => (v < -0.15 ? (v < -0.55 ? lo2(L.back) : L.back) : v > 0.45 ? L.belly : null) });
     // cheek line and jowl
     px(o, 4, cy + 4, lo(L.belly), 12, 1);
@@ -279,7 +280,8 @@ function buildCrocParts(L) {
   // ------------------------------------------------ BODY x5: rounded barrels
   parts.body = [];
   for (let i = 0; i < 5; i++) {
-    const w = 22, h = 24 + crest, o = mk(w, h), y0 = crest, cy = y0 + 11, half = 8.4 - Math.abs(i - 1.4) * 0.35;
+    const half = (8.4 - Math.abs(i - 1.4) * 0.35) * girth;
+    const w = 22, h = Math.ceil(half * 2 + 8) + crest, o = mk(w, h), y0 = crest, cy = y0 + Math.ceil(half) + 2;
     for (let x = 1; x < w - 1; x++) {
       const hh = half * (1 - Math.pow(Math.abs(x - w / 2) / (w / 1.7), 4));
       for (let j = -hh; j <= hh; j++) {
@@ -321,7 +323,7 @@ function buildCrocParts(L) {
   // ------------------------------------------------ TAIL x6: tapering with a crest
   parts.tail = [];
   for (let k = 0; k < 6; k++) {
-    const w = 18, bh = 15 - k * 2.1, h = bh * 2 + 10 + crest, o = mk(w, h), cy = crest + bh + 4;
+    const w = 18, bh = (15 - k * 2.1) * girth, h = bh * 2 + 10 + crest, o = mk(w, h), cy = crest + bh + 4;
     for (let x = 1; x < w - 1; x++) {
       const hh = Math.max(1.2, bh * 0.5 * (1 - (x - 1) / (w * 2.6)));
       for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.34 ? L.back : f < 0.36 ? L.mid : L.belly); }

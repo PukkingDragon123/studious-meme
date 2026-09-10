@@ -305,7 +305,9 @@ const G = {
     }
   },
   // the creation bay and the vial store, both reached from the lab floor
-  openCreate() { this.state = 'create'; this.menuT = 0; if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, artifacts: [] }; this.createRow = 0; SFX.ui(); },
+  openCreate() { this.state = 'create'; this.menuT = 0; this.createPhase = 0; this.createRow = 0;
+    if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, girth: 1, paint: 'wild', vial: 'none' };
+    SFX.ui(); },
   openVials() { this.state = 'vialstore'; this.menuT = 0; this.vialSel = 0; SFX.ui(); },
   openStages() {
     this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
@@ -557,40 +559,69 @@ const G = {
       }
       case 'create': {
         this.menuT += raw; Lab.update(raw);
-        const E = this.embryo, cells = UI.createCells();
-        if (Input.hit('Escape')) { this.state = 'title'; SFX.ui(); break; }
+        const E = this.embryo;
+        // both stages animate a live specimen
+        CrocView.update(UI.cvSpecies(), raw);
+        CrocView.update(UI.cvCustom(), raw, 3.4);
+        if (!this.createPhase) {
+          // ---- stage one: browse the species roster
+          if (Input.hit('Escape')) { this.state = 'title'; SFX.ui(); break; }
+          const n2 = BASE_SPECIES.length;
+          const step = d => {
+            let i = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
+            i = (i + d + n2) % n2;
+            E.species = BASE_SPECIES[i].id; SFX.ui();
+          };
+          if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
+          if (Input.hit('ArrowRight', 'KeyD')) step(1);
+          let clicked = null;
+          if (Input.mouse.clicked) {
+            for (const a of UI.createArrows()) if (Input.mouse.x > a.x && Input.mouse.x < a.x + a.w && Input.mouse.y > a.y && Input.mouse.y < a.y + a.h) clicked = a.id;
+          }
+          if (clicked) step(clicked);
+          const go = UI.createGoRect();
+          const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
+          if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) {
+            if (Create.speciesUnlocked(Create.spec().sp)) {
+              this.createPhase = 1; this.createRow = 0;
+              if (E.girth === undefined) E.girth = 1;
+              if (!E.paint) E.paint = 'wild';
+              SFX.pick(); SFX.levelup();
+            } else SFX.clank();
+          }
+          break;
+        }
+        // ---- stage two: set it up
+        const cells = UI.createCells();
+        if (Input.hit('Escape')) { this.createPhase = 0; SFX.ui(); break; }
         if (Input.hit('ArrowUp', 'KeyW')) { this.createRow = (this.createRow + 3) % 4; SFX.ui(); }
         if (Input.hit('ArrowDown', 'KeyS')) { this.createRow = (this.createRow + 1) % 4; SFX.ui(); }
         const row = this.createRow || 0;
-        const step = d => {
-          if (row === 0) {
-            const n2 = BASE_SPECIES.length; let i = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
-            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.speciesUnlocked(BASE_SPECIES[i])) break; }
-            E.species = BASE_SPECIES[i].id;
-          } else if (row === 1) E.size = clamp(E.size + d, 0, SIZE_GRADES.length - 1);
-          else if (row === 2) {
-            const n2 = VIALS.length; let i = VIALS.findIndex(x2 => x2.id === E.vial);
-            if (i < 0) i = 0;
-            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.vialUnlocked(VIALS[i])) break; }
-            E.vial = VIALS[i].id;
-          }
+        const step2 = d => {
+          if (row === 0) E.size = clamp((E.size === undefined ? 1 : E.size) + d, 0, SIZE_GRADES.length - 1);
+          else if (row === 1) E.girth = clamp((E.girth === undefined ? 1 : E.girth) + d, 0, GIRTH_GRADES.length - 1);
+          else if (row === 2) { let i = HIDE_PAINTS.findIndex(x2 => x2.id === (E.paint || 'wild')); i = (i + d + HIDE_PAINTS.length) % HIDE_PAINTS.length; E.paint = HIDE_PAINTS[i].id; }
+          else { const n3 = VIALS.length; let i = VIALS.findIndex(x2 => x2.id === E.vial); if (i < 0) i = 0; for (let k = 0; k < n3; k++) { i = (i + d + n3) % n3; if (Create.vialUnlocked(VIALS[i])) break; } E.vial = VIALS[i].id; }
           SFX.ui();
         };
-        if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
-        if (Input.hit('ArrowRight', 'KeyD')) step(1);
+        if (Input.hit('ArrowLeft', 'KeyA')) step2(-1);
+        if (Input.hit('ArrowRight', 'KeyD')) step2(1);
         if (Input.mouse.clicked || Input.mouse.moved) {
           for (const c of cells) {
             if (Input.mouse.x < c.x || Input.mouse.x > c.x + c.w || Input.mouse.y < c.y || Input.mouse.y > c.y + c.h) continue;
             this.createRow = c.row;
             if (!Input.mouse.clicked) continue;
-            if (c.row === 0 && Create.speciesUnlocked(c.item)) { E.species = c.item.id; SFX.ui(); }
-            if (c.row === 1) { E.size = c.i; SFX.ui(); }
-            if (c.row === 2 && Create.vialUnlocked(c.item)) { E.vial = c.item.id; SFX.ui(); }
+            if (c.row === 0) { E.size = c.i; SFX.ui(); }
+            else if (c.row === 1) { E.girth = c.i; SFX.ui(); }
+            else if (c.row === 2) { E.paint = c.item.id; SFX.ui(); }
+            else if (Create.vialUnlocked(c.item)) { E.vial = c.item.id; SFX.ui(); }
           }
         }
-        const go = UI.createGoRect();
-        const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
-        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) { SFX.ui(); this.openStages(); }
+        const bk = UI.createBackRect();
+        if (Input.mouse.clicked && Input.mouse.x > bk.x && Input.mouse.x < bk.x + bk.w && Input.mouse.y > bk.y && Input.mouse.y < bk.y + bk.h) { this.createPhase = 0; SFX.ui(); break; }
+        const go2 = UI.createGoRect();
+        const goHit2 = Input.mouse.clicked && Input.mouse.x > go2.x && Input.mouse.x < go2.x + go2.w && Input.mouse.y > go2.y && Input.mouse.y < go2.y + go2.h;
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit2) { SFX.ui(); this.openStages(); }
         break;
       }
       case 'vialstore': {

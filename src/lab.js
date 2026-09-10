@@ -46,6 +46,7 @@ const Lab = {
     if (!this.ready) this.init();
     this.t += raw;
     if (this.hint > 0) this.hint -= raw;
+    if (this._spec) CrocView.update(this._spec, raw, 9.5);
     for (const s of this.staff) {
       if (s.mode === 'walk' || s.mode === 'clip') {
         if (s.waitT > 0) { s.waitT -= raw; s.anim.speed = 0; }
@@ -78,8 +79,10 @@ const Lab = {
     this.rightBank(ctx, t);
     this.tank(ctx, W / 2, t);           // the centrepiece
     this.floor(ctx, t);
+    this.acidBath(ctx, t);              // cut into the floor, so painted over it
     // staff walk between the machines and the railing
     for (const s of this.staff) this.drawStaff(ctx, s);
+    this.acidFx(ctx, t);
     this.foreground(ctx, t);
     this.lighting(ctx, t);
   },
@@ -349,8 +352,24 @@ const Lab = {
       ctx.fillRect(x0 + 2, Math.round(yy), w - 4, 2);
     }
     ctx.globalAlpha = 1;
-    // the embryo
-    this.embryo(ctx, cx, (top + bot) / 2 + 6, t);
+    // The specimen: the real animal, in the real art, floating in the acid.
+    // Nothing in this room is a placeholder for something else.
+    {
+      if (!this._spec) this._spec = CrocView.make();
+      const v = this._spec;
+      const look = typeof Create !== 'undefined' ? Create.look() : CROC_LOOKS.base;
+      const parts = buildCrocParts(look);
+      // held under, drifting, occasionally testing the glass
+      ctx.save();
+      ctx.translate(cx + 8, (top + bot) / 2 - 6 + Math.sin(t * 0.6) * 5);
+      ctx.rotate(-Math.PI / 2 + Math.sin(t * 0.35) * 0.22);
+      drawCroc(ctx, v.chain, parts, 1.3, { jaw: v.jaw * 0.5, legPhase: v.legPhase, flipY: 1 });
+      ctx.restore();
+      // the light it sits in
+      ctx.globalCompositeOperation = 'lighter';
+      Shape.star(ctx, cx, (top + bot) / 2 + 4, 34, '#7affda', 0.10 + 0.04 * Math.sin(t * 1.9));
+      ctx.globalCompositeOperation = 'source-over';
+    }
     // umbilical feed from the top cap
     ctx.strokeStyle = '#8a6a5a'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(cx + 2, top + 6);
@@ -376,84 +395,6 @@ const Lab = {
     Font.draw(ctx, 'SUBJECT 7', cx, bot - 23, { color: '#7affda', align: 'center' });
   },
 
-  // A curled saurian embryo: heavy skull, closed lid, translucent limbs, a
-  // visible spine, and a heartbeat that drives the whole thing.
-  embryo(ctx, cx, cy, t, glowK = 1) {
-    const beat = Math.pow(Math.max(0, Math.sin(t * 1.9)), 6);
-    const s = 1 + beat * 0.05;
-    const glow = 0.35 + beat * 0.45;
-    // the light it throws into the fluid
-    ctx.globalCompositeOperation = 'lighter';
-    Shape.star(ctx, cx, cy, 40 * s, '#7affda', (0.14 + beat * 0.14) * glowK);
-    Shape.blob(ctx, cx, cy, 22 * s, 'rgba(60,200,170,0.04)');
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.save();
-    ctx.translate(cx, cy + Math.sin(t * 0.7) * 2);
-    ctx.rotate(Math.sin(t * 0.4) * 0.12 - 0.25);
-    ctx.scale(s, s);
-    const skin = '#c8907a', skinL = '#e8b9a2', skinD = '#8f5f52', vein = '#7a4a52';
-    // tail, curled around the body
-    for (let i = 0; i < 16; i++) {
-      const a = 1.1 + i * 0.30, r = 20 - i * 0.9;
-      const tx = Math.cos(a) * r, ty = Math.sin(a) * r * 0.8 + 6;
-      const w = Math.max(1, 6 - i * 0.35);
-      ctx.fillStyle = i % 2 ? skin : skinD;
-      ctx.fillRect(Math.round(tx - w / 2), Math.round(ty - w / 2), Math.round(w), Math.round(w));
-    }
-    // body, a comma shape
-    Shape.blob(ctx, -1, 5, 13, skin, 1.05);
-    Shape.blob(ctx, -3, 2, 10, skinL, 0.9);
-    ctx.globalAlpha = 0.5; Shape.blob(ctx, 2, 9, 8, skinD, 0.8); ctx.globalAlpha = 1;
-    // spine, showing through
-    ctx.fillStyle = '#e8dcc8';
-    for (let i = 0; i < 9; i++) ctx.fillRect(Math.round(-8 + i * 2), Math.round(-2 + i * 1.3), 2, 1);
-    // ribs
-    ctx.globalAlpha = 0.4; ctx.fillStyle = '#f0e4d0';
-    for (let i = 0; i < 4; i++) ctx.fillRect(-6 + i * 3, 4, 1, 5);
-    ctx.globalAlpha = 1;
-    // veins
-    ctx.globalAlpha = 0.35; ctx.fillStyle = vein;
-    for (let i = 0; i < 7; i++) ctx.fillRect(-9 + i * 3, 6 + Math.round(Math.sin(i * 1.7) * 3), 2, 1);
-    ctx.globalAlpha = 1;
-    // limbs: stubby, translucent, folded in
-    const limb = (lx, ly, a2) => {
-      ctx.save(); ctx.translate(lx, ly); ctx.rotate(a2);
-      ctx.fillStyle = skinD; ctx.fillRect(0, -2, 9, 4);
-      ctx.fillStyle = skin; ctx.fillRect(0, -2, 8, 3);
-      ctx.fillStyle = skinL; ctx.fillRect(0, -2, 6, 1);
-      for (let f = 0; f < 3; f++) { ctx.fillStyle = skinD; ctx.fillRect(8, -2 + f * 2, 3, 1); }
-      ctx.restore();
-    };
-    limb(-6, 10, 0.7 + Math.sin(t * 1.3) * 0.08);
-    limb(4, 8, 0.2 + Math.sin(t * 1.3 + 1) * 0.08);
-    limb(-9, 2, 2.5 + Math.sin(t * 1.1) * 0.06);
-    // head: broad snout, brow ridge, closed lid
-    ctx.save(); ctx.translate(-10, -6); ctx.rotate(-0.55 + Math.sin(t * 0.9) * 0.05);
-    Shape.blob(ctx, 0, 0, 10, skin, 0.85);
-    Shape.blob(ctx, -1, -2, 8, skinL, 0.8);
-    // snout
-    ctx.fillStyle = skin; ctx.fillRect(-16, -2, 12, 7);
-    ctx.fillStyle = skinL; ctx.fillRect(-16, -2, 12, 2);
-    ctx.fillStyle = skinD; ctx.fillRect(-16, 4, 12, 1);
-    ctx.fillStyle = '#5a3830'; ctx.fillRect(-16, 0, 2, 1);         // nostril
-    // brow and closed eye
-    ctx.fillStyle = skinD; ctx.fillRect(-6, -5, 7, 2);
-    ctx.fillStyle = '#6a4038'; ctx.fillRect(-5, -3, 6, 2);
-    ctx.fillStyle = '#2a1a18'; ctx.fillRect(-5, -2, 6, 1);
-    // the eye behind the lid catches the glow
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = glow * 0.5; ctx.fillStyle = '#7affda'; ctx.fillRect(-4, -2, 4, 1);
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    // skull plate showing under the skin
-    ctx.globalAlpha = 0.28; ctx.fillStyle = '#f0e6d4'; ctx.fillRect(-7, -4, 9, 3); ctx.globalAlpha = 1;
-    ctx.restore();
-    // umbilical stump
-    ctx.fillStyle = '#8a6a5a'; ctx.fillRect(1, 12, 3, 4);
-    ctx.restore();
-    // a faint heartbeat ring in the fluid
-    if (beat > 0.25) { ctx.globalAlpha = (beat - 0.25) * 0.5; Shape.ring(ctx, cx, cy, 30 + (1 - beat) * 22, 1, '#8fffe4'); ctx.globalAlpha = 1; }
-  },
-
   // --- floor: grating, a service pit, light spill from the tank
   floor(ctx, t) {
     const W = LAB.W, F = LAB.FLOOR, H = LAB.H;
@@ -476,6 +417,79 @@ const Lab = {
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   },
 
+  // An open acid bath set into the floor to the left of the tank: a corroded
+  // steel trough of green fluid, dissolving something, fuming steadily.
+  acidBath(ctx, t) {
+    const F = LAB.FLOOR, x = 64, w = 78, h = 20, y = F + 2;
+    // trough, eaten away at the lip
+    ctx.fillStyle = '#2a3a34'; ctx.fillRect(x - 4, y - 4, w + 8, h + 6);
+    ctx.fillStyle = '#3d5249'; ctx.fillRect(x - 4, y - 4, w + 8, 2);
+    ctx.fillStyle = '#1b2a26'; ctx.fillRect(x, y, w, h);
+    // corrosion pitting the rim
+    for (let i = 0; i < 22; i++) { const px2 = x - 3 + ihash(i, 81) * (w + 6); ctx.fillStyle = ihash(i, 82) > 0.5 ? '#6a7a3a' : '#4a5a28'; ctx.fillRect(Math.round(px2), y - 4 + Math.round(ihash(i, 83) * 3), 2, 2); }
+    // the fluid: a lit surface, a darker body, and a meniscus that ripples
+    const surf = y + 3 + Math.sin(t * 1.7) * 0.6;
+    ctx.fillStyle = '#1d5a3c'; ctx.fillRect(x + 1, y + 3, w - 2, h - 4);
+    ctx.fillStyle = '#2f8a54'; ctx.fillRect(x + 1, Math.round(surf), w - 2, 2);
+    ctx.fillStyle = '#8fffc0'; ctx.fillRect(x + 1, Math.round(surf), w - 2, 1);
+    // bubbles bursting at the surface
+    for (let i = 0; i < 16; i++) {
+      const bp = (t * (0.5 + ihash(i, 84) * 0.7) + ihash(i, 85)) % 1;
+      const bx = x + 4 + ihash(i, 86) * (w - 8);
+      const by = y + h - 3 - bp * (h - 7);
+      ctx.globalAlpha = bp > 0.85 ? (1 - bp) / 0.15 : 0.7;
+      ctx.fillStyle = '#b8ffd8';
+      ctx.fillRect(Math.round(bx), Math.round(by), ihash(i, 87) > 0.7 ? 2 : 1, 1);
+      ctx.globalAlpha = 1;
+    }
+    // something half dissolved, propped in it
+    ctx.fillStyle = '#c8bfa0'; ctx.fillRect(x + 48, y - 6, 3, 10);
+    ctx.fillStyle = '#a89878'; ctx.fillRect(x + 51, y - 3, 6, 4);
+    ctx.fillStyle = '#8a9a58'; ctx.fillRect(x + 48, y + 2, 9, 2);
+    // fumes lifting off it
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 10; i++) {
+      const p = (t * 0.34 + i * 0.1) % 1;
+      ctx.globalAlpha = (1 - p) * 0.10;
+      Shape.puff(ctx, x + 10 + ihash(i, 88) * (w - 20) + Math.sin(t + i) * 4, y - p * 46, 3 + p * 10, '#8fffc0', i * 7);
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    // hazard plate
+    ctx.fillStyle = '#141e22'; ctx.fillRect(x + 2, y + h + 2, 40, 9);
+    Font.draw(ctx, 'CORROSIVE', x + 4, y + h + 4, { color: '#8a9a30' });
+  },
+  // Loose chemistry across the room: a dripping feed line, acid stains eating
+  // into the floor, and a green cast to the air near the bath.
+  acidFx(ctx, t) {
+    const F = LAB.FLOOR, W = LAB.W;
+    // corroded feed line running down the wall into the bath
+    ctx.fillStyle = '#4a5a3a'; ctx.fillRect(102, 52, 4, F - 52);
+    ctx.fillStyle = '#66784a'; ctx.fillRect(102, 52, 1, F - 52);
+    for (let i = 0; i < 9; i++) { const yy = 70 + i * 24; ctx.fillStyle = '#7a8a3a'; ctx.fillRect(101, yy, 6, 3); }
+    // a drip, falling on its own clock, splashing in the trough
+    const dp = (t * 0.55) % 1;
+    ctx.fillStyle = '#a8ffc8';
+    ctx.fillRect(103, Math.round(60 + dp * (F - 46)), 2, dp > 0.5 ? 3 : 2);
+    if (dp > 0.95) { ctx.globalAlpha = (1 - dp) / 0.05; Shape.ripple(ctx, 104, F + 6, 6, '#b8ffd8', 0.8); ctx.globalAlpha = 1; }
+    // stains where it has been dripping for years
+    ctx.globalAlpha = 0.28;
+    Shape.pool(ctx, 104, F + 24, 22, '#3a5a2a', 5, 0.24);
+    Shape.pool(ctx, 104, F + 24, 12, '#6a8a30', 9, 0.2);
+    ctx.globalAlpha = 0.2;
+    Shape.pool(ctx, 470, F + 25, 16, '#3a5a2a', 12, 0.22);
+    ctx.globalAlpha = 1;
+    // a spill creeping out from under the fume hood, and its fumes
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.05; ctx.fillStyle = '#7affb0';
+    ctx.fillRect(34, F - 60, 150, 88);
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 6; i++) {
+      const p = (t * 0.28 + i * 0.17) % 1;
+      ctx.globalAlpha = (1 - p) * 0.07;
+      Shape.puff(ctx, 470 + Math.sin(t * 0.7 + i) * 8, F - p * 40, 4 + p * 9, '#8fffc0', i * 11);
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  },
   drawStaff(ctx, s) {
     if (!s.rig) return;
     const F = LAB.FLOOR;

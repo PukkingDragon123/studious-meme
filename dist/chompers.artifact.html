@@ -1980,13 +1980,14 @@ function buildCrocParts(L) {
   // every pair of segments and turn the animal into a stack of crates
   const edgeV = o => { R.outlineTB(o, OL); R.outlineTB(o, OL); };
   const spikes = L.spikes || 0;
+  const girth = clamp(L.girth || 1, 0.72, 1.34);   // body depth, set in the creation bay
   const crest = Math.max(spikes ? 7 : 0, L.fin ? 13 : 0, L.shell ? 6 : 0, L.mane ? 7 : 0);
   // ------------------------------------------------ HEAD: rounded skull, long snout, big eye
   {
-    const w = 44, h = 22 + crest, o = mk(w, h), y0 = crest, cy = y0 + 10;
+    const w = 44, h = Math.ceil(22 * Math.max(1, girth)) + crest, o = mk(w, h), y0 = crest, cy = y0 + Math.round(10 * Math.max(1, girth));
     // snout: a tapering rounded slab
     for (let i = 0; i < 26; i++) {
-      const u = i / 25, hh = 4.6 - u * 1.5, x = 17 + i;
+      const u = i / 25, hh = (4.6 - u * 1.5) * (0.55 + girth * 0.45), x = 17 + i;
       for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.3 ? L.back : f < 0.4 ? L.mid : L.belly); }
       if (i % 3 === 0) px(o, x, cy - hh, hi(L.back));
     }
@@ -1994,7 +1995,7 @@ function buildCrocParts(L) {
     R.disc({ c: o.c, x: o.x, w, h }, 42, cy - 1, 3.1, L.mid);
     px(o, 40, cy - 4, L.back, 4, 3); px(o, 41, cy - 4, lo2(L.dark), 1, 1); px(o, 43, cy - 4, lo2(L.dark), 1, 1);
     // skull: a fat rounded blob
-    R.blob({ c: o.c, x: o.x, w, h }, 9, cy - 1, 10, 7.5, L.mid, { light: hi(L.back), shade: lo(L.mid), hx: 0.1,
+    R.blob({ c: o.c, x: o.x, w, h }, 9, cy - 1, 10, 7.5 * girth, L.mid, { light: hi(L.back), shade: lo(L.mid), hx: 0.1,
       pat: (i, j, u, v) => (v < -0.15 ? (v < -0.55 ? lo2(L.back) : L.back) : v > 0.45 ? L.belly : null) });
     // cheek line and jowl
     px(o, 4, cy + 4, lo(L.belly), 12, 1);
@@ -2031,7 +2032,8 @@ function buildCrocParts(L) {
   // ------------------------------------------------ BODY x5: rounded barrels
   parts.body = [];
   for (let i = 0; i < 5; i++) {
-    const w = 22, h = 24 + crest, o = mk(w, h), y0 = crest, cy = y0 + 11, half = 8.4 - Math.abs(i - 1.4) * 0.35;
+    const half = (8.4 - Math.abs(i - 1.4) * 0.35) * girth;
+    const w = 22, h = Math.ceil(half * 2 + 8) + crest, o = mk(w, h), y0 = crest, cy = y0 + Math.ceil(half) + 2;
     for (let x = 1; x < w - 1; x++) {
       const hh = half * (1 - Math.pow(Math.abs(x - w / 2) / (w / 1.7), 4));
       for (let j = -hh; j <= hh; j++) {
@@ -2073,7 +2075,7 @@ function buildCrocParts(L) {
   // ------------------------------------------------ TAIL x6: tapering with a crest
   parts.tail = [];
   for (let k = 0; k < 6; k++) {
-    const w = 18, bh = 15 - k * 2.1, h = bh * 2 + 10 + crest, o = mk(w, h), cy = crest + bh + 4;
+    const w = 18, bh = (15 - k * 2.1) * girth, h = bh * 2 + 10 + crest, o = mk(w, h), cy = crest + bh + 4;
     for (let x = 1; x < w - 1; x++) {
       const hh = Math.max(1.2, bh * 0.5 * (1 - (x - 1) / (w * 2.6)));
       for (let j = -hh; j <= hh; j++) { const f = j / hh; px(o, x, cy + j, f < -0.34 ? L.back : f < 0.36 ? L.mid : L.belly); }
@@ -4457,13 +4459,14 @@ function applyCard(player, card) {
 }
 // dominant path drives the croc palette; animal traits layer features on top
 function computeLook(player) {
+  const spBase = player.speciesLook || null;
   const sk = player.skills, entries = PATH_KEYS.map(k => [k, sk[k]]).sort((a, b) => b[1] - a[1]);
   const [k1, t1] = entries[0], [k2, t2] = entries[1];
   const total = t1 + t2;
   let L;
-  if (t1 === 0) L = Object.assign({}, CROC_LOOKS.base);
+  if (t1 === 0) L = Object.assign({}, CROC_LOOKS.base, spBase || {});
   else {
-    const primary = mixLook(CROC_LOOKS.base, CROC_LOOKS[k1], clamp(0.35 + t1 * 0.16, 0, 1));
+    const primary = mixLook(Object.assign({}, CROC_LOOKS.base, spBase || {}), CROC_LOOKS[k1], clamp(0.35 + t1 * 0.16, 0, 1));
     L = t2 > 0 ? mixLook(primary, CROC_LOOKS[k2], t2 / (total * 2)) : primary;
   }
   if (sk.ripper >= 2) L.scars = true;
@@ -4484,6 +4487,9 @@ function computeLook(player) {
   // the morph picked in the loadout is cosmetic and applied last
   const hide = typeof HIDE_BY_ID !== 'undefined' && HIDE_BY_ID[player.hide];
   if (hide && hide.apply) hide.apply(L);
+  // the creation bay has the last word on colour and body depth
+  if (typeof PAINT_BY_ID !== 'undefined') { const pt = PAINT_BY_ID[player.paintId]; if (pt && pt.apply) pt.apply(L); }
+  if (player.bodyGirth) L.girth = player.bodyGirth;
   return L;
 }
 // size tiers (croc size units). Reaching a new tier triggers a shed.
@@ -8128,6 +8134,135 @@ const DNA = {
   },
 };
 
+/* ===== src/preview.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// The specimen viewer. Two jobs:
+//
+//   * a live animated crocodile, using the real in-game body and art, so what
+//     you see in the creation bay is literally the animal you will play;
+//   * a holographic projection of it running an attack loop — coil, lunge,
+//     snap, recoil — for the species select.
+//
+// The hologram is not a filter over the sprite. The animal is rendered to an
+// offscreen buffer, tinted through its own alpha, then composited additively
+// with scanlines cut out of it and a projector cone under it, so it reads as
+// light in the air rather than a coloured sprite.
+// ---------------------------------------------------------------------------
+const CrocView = {
+  make() {
+    return { chain: new CrocChain(0, 0, 0), t: 0, jaw: 0, legPhase: 0, x: 0, y: 0, a: 0, hit: 0, roll: 0 };
+  },
+  // one attack cycle, in normalised phase. Returns the head pose.
+  script(v, u) {
+    // 0.00-0.30 hold, drifting          0.30-0.46 coil back, jaw cracks open
+    // 0.46-0.58 lunge                   0.58-0.64 snap
+    // 0.64-1.00 recoil and settle
+    let x = 0, a = 0, jaw = 0;
+    if (u < 0.30) { const k = u / 0.30; x = Math.sin(k * TAU) * 2; a = Math.sin(k * TAU * 0.5) * 0.05; jaw = 0.06; }
+    else if (u < 0.46) { const k = (u - 0.30) / 0.16, e = k * k; x = -14 * e; a = -0.18 * e; jaw = 0.06 + 0.62 * e; }
+    else if (u < 0.58) { const k = (u - 0.46) / 0.12, e = 1 - Math.pow(1 - k, 3); x = lerp(-14, 26, e); a = lerp(-0.18, 0.12, e); jaw = 0.68 + 0.22 * e; }
+    else if (u < 0.64) { const k = (u - 0.58) / 0.06; x = 26 + k * 2; a = 0.12 - k * 0.1; jaw = 0.9 * (1 - k * k); v.hit = Math.max(v.hit, 1 - k); }
+    else { const k = (u - 0.64) / 0.36, e = 1 - Math.pow(1 - k, 2); x = lerp(28, 0, e); a = lerp(0.02, 0, e); jaw = 0.04; }
+    return { x, a, jaw };
+  },
+  update(v, dt, cycle = 2.9) {
+    v.t += dt;
+    const u = (v.t % cycle) / cycle;
+    const p = this.script(v, u);
+    v.x = p.x; v.a = p.a; v.jaw = p.jaw;
+    if (v.hit > 0) v.hit -= dt * 3.4;
+    // the body follows the head, so the whole animal whips through the lunge
+    const swim = u > 0.44 && u < 0.66 ? 1.3 : 0.35;
+    v.chain.solve(v.x, v.y, v.a, 1, dt, swim, false);
+    v.legPhase += dt * 2.2;
+    return u;
+  },
+  // solid render, for the customise stage: the actual animal, actual art
+  draw(ctx, v, parts, cx, cy, worldSize) {
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(cy));
+    drawCroc(ctx, v.chain, parts, worldSize, { jaw: v.jaw, legPhase: v.legPhase, flipY: 1 });
+    ctx.restore();
+  },
+  // holographic render. `col` tints it; `k` is projector strength 0..1.
+  holo(ctx, v, parts, cx, cy, worldSize, col, k, t) {
+    const W = 320, H = 150;
+    if (!this._cv) { this._cv = mkCanvas(W, H); this._cx = ctxOf(this._cv); }
+    const o = this._cx;
+    o.clearRect(0, 0, W, H);
+    // 1. the animal, in its own art, into the buffer
+    o.save();
+    o.translate(W * 0.74, H * 0.52);
+    drawCroc(o, v.chain, parts, worldSize, { jaw: v.jaw, legPhase: v.legPhase, flipY: 1 });
+    o.restore();
+    // 2. tint through its own alpha: keeps the internal shading as luminance
+    o.save();
+    o.globalCompositeOperation = 'source-atop';
+    o.globalAlpha = 0.62;
+    o.fillStyle = col; o.fillRect(0, 0, W, H);
+    o.globalAlpha = 1;
+    // 3. Dim scanlines into it rather than punching them out. A full-alpha cut
+    // every third row removed a third of the animal and left horizontal bars
+    // where a crocodile should be.
+    o.globalCompositeOperation = 'destination-out';
+    o.globalAlpha = 0.42;
+    o.fillStyle = '#000';
+    const roll = Math.round((t * 22) % 4);
+    for (let y = 0; y < H; y += 4) o.fillRect(0, (y + roll) % H, W, 1);
+    o.globalAlpha = 1;
+    o.globalCompositeOperation = 'source-over';
+    o.restore();
+
+    // 4. composite: a jittered double exposure plus a bright core
+    const jx = Math.round(Math.sin(t * 41) * 1.2), jy = Math.round(Math.cos(t * 33) * 0.8);
+    const bx = Math.round(cx - W * 0.74), by = Math.round(cy - H * 0.52);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.30 * k; ctx.drawImage(this._cv, bx + jx + 2, by + jy);
+    ctx.globalAlpha = 0.22 * k; ctx.drawImage(this._cv, bx + jx - 2, by + jy);
+    ctx.globalAlpha = 0.95 * k; ctx.drawImage(this._cv, bx, by);
+    ctx.restore();
+    // 5. the strike flash, on the snap frame
+    if (v.hit > 0.02) {
+      const hx = cx + Math.cos(v.a) * 20 * worldSize, hy = cy + Math.sin(v.a) * 20 * worldSize;
+      ctx.globalCompositeOperation = 'lighter';
+      Shape.star(ctx, hx, hy, 14 + v.hit * 16, '#ffffff', v.hit * 0.8);
+      Shape.burst(ctx, hx, hy, 8 + (1 - v.hit) * 26, col, 12, 3, 0.8, 0.3);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  },
+  // the emitter plate and the cone of light it throws up
+  projector(ctx, cx, cy, w, col, t, k) {
+    const base = cy + 44;
+    // plate
+    ctx.fillStyle = '#22343a'; ctx.fillRect(cx - 26, base, 52, 6);
+    ctx.fillStyle = '#3a5a62'; ctx.fillRect(cx - 26, base, 52, 1);
+    ctx.fillStyle = '#0d1518'; ctx.fillRect(cx - 20, base + 2, 40, 2);
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = Math.sin(t * 7 + i) > 0 ? col : '#1a2a2e'; ctx.fillRect(cx - 18 + i * 9, base + 2, 3, 2); }
+    // cone
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createLinearGradient(0, base, 0, cy - 56);
+    g.addColorStop(0, rgba(col, 0.20 * k)); g.addColorStop(1, rgba(col, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cx - 20, base); ctx.lineTo(cx + 20, base);
+    ctx.lineTo(cx + w / 2, cy - 56); ctx.lineTo(cx - w / 2, cy - 56);
+    ctx.closePath(); ctx.fill();
+    // motes riding the cone
+    ctx.globalAlpha = 0.5 * k; ctx.fillStyle = col;
+    for (let i = 0; i < 22; i++) {
+      const p = ((t * 0.3 + ihash(i, 71)) % 1);
+      const spread = lerp(20, w / 2, p);
+      ctx.fillRect(Math.round(cx + (ihash(i, 72) * 2 - 1) * spread), Math.round(base - p * (base - (cy - 56))), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+  },
+};
+
 /* ===== src/creation.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
@@ -8145,27 +8280,27 @@ const DNA = {
 const BASE_SPECIES = [
   { id: 'dwarf', name: 'DWARF ALLIGATOR', latin: 'A. MISSISSIPPIENSIS (DWARF)',
     line: 'STUNTED, STUBBORN, CHEAP TO GROW. THE ONE THEY START EVERYONE ON.',
-    size: 1.0, hp: 1.0, spd: 1.0, bite: 1.0, need: null,
+    size: 1.0, hp: 1.0, spd: 1.0, bite: 1.0, need: null, gene: null, girth: 1.0, holo: '#7affda',
     look: { back: '#4a5a3a', mid: '#5f7048', belly: '#c8c0a0', dark: '#2e3a24', eye: '#c8a030' } },
   { id: 'caiman', name: 'SPECTACLED CAIMAN', latin: 'C. CROCODILUS',
     line: 'BONY BROW, BAD TEMPER. FASTER OUT OF THE GATE, THINNER SKINNED.',
-    size: 1.15, hp: 0.9, spd: 1.18, bite: 1.05, need: { runs: 3 },
+    size: 1.15, hp: 0.9, spd: 1.18, bite: 1.05, need: { runs: 3 }, gene: 'savage:claws', girth: 0.94, holo: '#a0e050',
     look: { back: '#5a5a3a', mid: '#74744a', belly: '#d0c8a0', dark: '#3a3a22', eye: '#a0c840' } },
   { id: 'nile', name: 'NILE CROCODILE', latin: 'C. NILOTICUS',
     line: 'THE STANDARD AGAINST WHICH THE PROJECT MEASURES ITSELF.',
-    size: 1.35, hp: 1.15, spd: 1.05, bite: 1.2, need: { bestTier: 5 },
+    size: 1.35, hp: 1.15, spd: 1.05, bite: 1.2, need: { bestTier: 5 }, gene: 'ripper:serrate', girth: 1.06, holo: '#ff5a3a',
     look: { back: '#4a4436', mid: '#635c46', belly: '#c4bc9c', dark: '#2c281e', eye: '#c8b040' } },
   { id: 'gharial', name: 'GHARIAL', latin: 'G. GANGETICUS',
     line: 'A JAW LIKE A NEEDLE FILE. BUILT FOR FISH AND FOR SPEED.',
-    size: 1.25, hp: 0.85, spd: 1.35, bite: 0.9, need: { kills: 400 },
+    size: 1.25, hp: 0.85, spd: 1.35, bite: 0.9, need: { kills: 400 }, gene: 'phantom:sleek', girth: 0.8, holo: '#60a8ff',
     look: { back: '#3e4a52', mid: '#546470', belly: '#c0c8cc', dark: '#242c33', eye: '#e0e8a0' } },
   { id: 'salt', name: 'SALTWATER CROCODILE', latin: 'C. POROSUS',
     line: 'THE LARGEST LIVING REPTILE. THE PROJECT KEEPS ONE. IT IS NOT FOR SALE.',
-    size: 1.7, hp: 1.35, spd: 0.92, bite: 1.35, need: { bestTier: 9 },
+    size: 1.7, hp: 1.35, spd: 0.92, bite: 1.35, need: { bestTier: 9 }, gene: 'bulwark:hide', girth: 1.18, holo: '#e0b050',
     look: { back: '#3a3a2c', mid: '#4e4e3a', belly: '#b8b494', dark: '#20201a', eye: '#d8c050' } },
   { id: 'deino', name: 'DEINOSUCHUS EMBRYO', latin: 'D. RIOGRANDENSIS (RECONSTRUCTED)',
     line: 'GROWN FROM A FRAGMENT. IT SHOULD NOT BE ALIVE. IT IS VERY MUCH ALIVE.',
-    size: 2.2, hp: 1.6, spd: 0.85, bite: 1.6, need: { best: 400000 },
+    size: 2.2, hp: 1.6, spd: 0.85, bite: 1.6, need: { best: 400000 }, gene: 'colossus:bulk', girth: 1.3, holo: '#c88af0',
     look: { back: '#4a3a3a', mid: '#5f4a48', belly: '#c0a898', dark: '#2a1e1e', eye: '#ff6030', spikes: 1 } },
 ];
 const SPECIES_BY_ID = {};
@@ -8173,6 +8308,29 @@ for (const s of BASE_SPECIES) SPECIES_BY_ID[s.id] = s;
 
 // Size is a real trade, not a difficulty slider: bigger starts you higher up
 // the food chain but eats hunger and slows you down.
+// Hide palettes. Cosmetic, and applied over whatever the species came with.
+const HIDE_PAINTS = [
+  { id: 'wild', name: 'WILD TYPE', swatch: null, apply: null, line: 'THE HIDE THE SPECIES CAME WITH. NO DYE, NO EDITS.' },
+  { id: 'blackwater', name: 'BLACKWATER', swatch: '#2a3238', line: 'NEAR BLACK. INVISIBLE IN TANNIC WATER AND IN PIPES.', apply: L => { L.back = '#22282e'; L.mid = '#333c44'; L.belly = '#7a8288'; L.dark = '#12161a'; } },
+  { id: 'tannin', name: 'TANNIN', swatch: '#5a4428', line: 'THE BROWN OF STANDING SWAMP WATER. THE DEFAULT DISGUISE.', apply: L => { L.back = '#3e2f1c'; L.mid = '#5a4428'; L.belly = '#b9a473'; L.dark = '#241a10'; } },
+  { id: 'marsh', name: 'MARSH GREEN', swatch: '#4a6a34', line: 'SAWGRASS AND ALGAE. LOSES YOU IN THE SHALLOWS.', apply: L => { L.back = '#33481f'; L.mid = '#4a6a34'; L.belly = '#b6c288'; L.dark = '#1c2812'; } },
+  { id: 'silt', name: 'SILT GREY', swatch: '#6a6e66', line: 'THE COLOUR OF A DREDGED CHANNEL BOTTOM.', apply: L => { L.back = '#4a4e48'; L.mid = '#6a6e66'; L.belly = '#c0c2b8'; L.dark = '#282c28'; } },
+  { id: 'leucistic', name: 'LEUCISTIC', swatch: '#e4e0d0', line: 'NO PIGMENT AT ALL. PINK EYED, AND IMPOSSIBLE TO HIDE.', apply: L => { L.back = '#d8d4c2'; L.mid = '#e8e4d4'; L.belly = '#f6f2e6'; L.dark = '#b0a894'; L.eye = '#e06a6a'; } },
+  { id: 'sulphur', name: 'SULPHUR', swatch: '#a8a830', line: 'THE LAB DYE NEVER WASHED OUT OF THE SCUTES.', apply: L => { L.back = '#7a7a20'; L.mid = '#a8a830'; L.belly = '#e0e070'; L.dark = '#4a4a12'; L.eye = '#40f0c8'; } },
+  { id: 'bloodline', name: 'BLOODLINE', swatch: '#8a2a28', line: 'THE RED ONES WERE NEVER MEANT TO LEAVE THE BUILDING.', apply: L => { L.back = '#6a1c1c'; L.mid = '#8a2a28'; L.belly = '#c07a68'; L.dark = '#3a0e0e'; L.eye = '#ffd040'; } },
+  { id: 'abyssal', name: 'ABYSSAL', swatch: '#1e4454', line: 'GREW UP WHERE THE LIGHT DOES NOT REACH. IT GLOWS FAINTLY.', apply: L => { L.back = '#16303c'; L.mid = '#1e4454'; L.belly = '#3a7a86'; L.dark = '#0a1a22'; L.eye = '#80fff0'; L.glow = '#40f0c8'; } },
+];
+const PAINT_BY_ID = {};
+for (const h of HIDE_PAINTS) PAINT_BY_ID[h.id] = h;
+
+// Girth. Depth of body, independent of length: a real trade of health for speed.
+const GIRTH_GRADES = [
+  { id: 'lean', name: 'LEAN', mul: 0.82, hp: 0.86, spd: 1.14, line: 'NARROW THROUGH THE CHEST. QUICK, AND EASY TO BREAK.' },
+  { id: 'normal', name: 'NORMAL', mul: 1.0, hp: 1, spd: 1, line: 'PROPORTIONED AS THE SPECIES INTENDED.' },
+  { id: 'heavy', name: 'HEAVY', mul: 1.14, hp: 1.14, spd: 0.92, line: 'DEEP BODIED. SOAKS PUNISHMENT, TURNS LIKE A BARGE.' },
+  { id: 'bull', name: 'BULL', mul: 1.28, hp: 1.3, spd: 0.84, line: 'ALL SHOULDER. NOTHING SHIFTS IT AND IT SHIFTS SLOWLY.' },
+];
+
 const SIZE_GRADES = [
   { id: 'runt', name: 'RUNT', mul: 0.78, line: 'SMALLEST VIABLE. FAST, STARVES SLOWLY, DIES TO ANYTHING.', hp: 0.8, spd: 1.22, hunger: 0.72 },
   { id: 'standard', name: 'STANDARD', mul: 1.0, line: 'WHAT THE PAPERWORK SAYS.', hp: 1, spd: 1, hunger: 1 },
@@ -8214,10 +8372,27 @@ const Create = {
   },
   // what the current build works out to
   spec() {
-    const e = G.embryo || { species: 'dwarf', size: 1, vial: 'none' };
+    const e = G.embryo || {};
     const sp = SPECIES_BY_ID[e.species] || BASE_SPECIES[0];
-    const gr = SIZE_GRADES[clamp(e.size, 0, SIZE_GRADES.length - 1)] || SIZE_GRADES[1];
-    return { sp, gr, size: sp.size * gr.mul, hp: sp.hp * gr.hp, spd: sp.spd * gr.spd, bite: sp.bite, hunger: gr.hunger, vial: VIAL_BY_ID[e.vial] || VIALS[0] };
+    const gr = SIZE_GRADES[clamp(e.size === undefined ? 1 : e.size, 0, SIZE_GRADES.length - 1)] || SIZE_GRADES[1];
+    const gi = GIRTH_GRADES[clamp(e.girth === undefined ? 1 : e.girth, 0, GIRTH_GRADES.length - 1)] || GIRTH_GRADES[1];
+    const pt = PAINT_BY_ID[e.paint] || HIDE_PAINTS[0];
+    return {
+      sp, gr, gi, pt,
+      size: sp.size * gr.mul,
+      girth: (sp.girth || 1) * gi.mul,
+      hp: sp.hp * gr.hp * gi.hp, spd: sp.spd * gr.spd * gi.spd, bite: sp.bite, hunger: gr.hunger,
+      vial: VIAL_BY_ID[e.vial] || VIALS[0],
+      gene: sp.gene ? GENE_BY_ID[sp.gene] : null,
+    };
+  },
+  // the look the specimen is actually wearing, for the preview and the run
+  look() {
+    const b = this.spec();
+    const L = Object.assign({}, CROC_LOOKS.base, b.sp.look || {});
+    if (b.pt && b.pt.apply) b.pt.apply(L);
+    L.girth = b.girth;
+    return L;
   },
   // stamp the build onto a fresh player
   applyTo(P) {
@@ -8225,10 +8400,14 @@ const Create = {
     P.baseSpecies = b.sp.id;
     P.st.hpMul *= b.hp; P.st.speed *= b.spd; P.st.bite *= b.bite; P.st.hungerRate *= b.hunger;
     P.startSize = b.size;
+    P.bodyGirth = b.girth;
+    P.speciesLook = b.sp.look || null;
+    P.paintId = (G.embryo && G.embryo.paint) || 'wild';
+    // the species' signature gene comes free: it is what the animal already is
+    if (b.gene && P.genes.indexOf(b.gene.id) < 0) { P.genes.push(b.gene.id); b.gene.apply(P); if (b.gene.downApply) b.gene.downApply(P); P.speciesGene = b.gene.id; }
     if (b.vial && b.vial.apply) b.vial.apply(P);
     P.vialId = b.vial ? b.vial.id : 'none';
-    // the species' own hide, before genes and morphs
-    if (b.sp.look) { P.speciesLook = b.sp.look; P.rebuildLook(); }
+    P.recomputeStats(); P.rebuildLook();
   },
 };
 
@@ -8519,6 +8698,7 @@ const Lab = {
     if (!this.ready) this.init();
     this.t += raw;
     if (this.hint > 0) this.hint -= raw;
+    if (this._spec) CrocView.update(this._spec, raw, 9.5);
     for (const s of this.staff) {
       if (s.mode === 'walk' || s.mode === 'clip') {
         if (s.waitT > 0) { s.waitT -= raw; s.anim.speed = 0; }
@@ -8551,8 +8731,10 @@ const Lab = {
     this.rightBank(ctx, t);
     this.tank(ctx, W / 2, t);           // the centrepiece
     this.floor(ctx, t);
+    this.acidBath(ctx, t);              // cut into the floor, so painted over it
     // staff walk between the machines and the railing
     for (const s of this.staff) this.drawStaff(ctx, s);
+    this.acidFx(ctx, t);
     this.foreground(ctx, t);
     this.lighting(ctx, t);
   },
@@ -8822,8 +9004,24 @@ const Lab = {
       ctx.fillRect(x0 + 2, Math.round(yy), w - 4, 2);
     }
     ctx.globalAlpha = 1;
-    // the embryo
-    this.embryo(ctx, cx, (top + bot) / 2 + 6, t);
+    // The specimen: the real animal, in the real art, floating in the acid.
+    // Nothing in this room is a placeholder for something else.
+    {
+      if (!this._spec) this._spec = CrocView.make();
+      const v = this._spec;
+      const look = typeof Create !== 'undefined' ? Create.look() : CROC_LOOKS.base;
+      const parts = buildCrocParts(look);
+      // held under, drifting, occasionally testing the glass
+      ctx.save();
+      ctx.translate(cx + 8, (top + bot) / 2 - 6 + Math.sin(t * 0.6) * 5);
+      ctx.rotate(-Math.PI / 2 + Math.sin(t * 0.35) * 0.22);
+      drawCroc(ctx, v.chain, parts, 1.3, { jaw: v.jaw * 0.5, legPhase: v.legPhase, flipY: 1 });
+      ctx.restore();
+      // the light it sits in
+      ctx.globalCompositeOperation = 'lighter';
+      Shape.star(ctx, cx, (top + bot) / 2 + 4, 34, '#7affda', 0.10 + 0.04 * Math.sin(t * 1.9));
+      ctx.globalCompositeOperation = 'source-over';
+    }
     // umbilical feed from the top cap
     ctx.strokeStyle = '#8a6a5a'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(cx + 2, top + 6);
@@ -8849,84 +9047,6 @@ const Lab = {
     Font.draw(ctx, 'SUBJECT 7', cx, bot - 23, { color: '#7affda', align: 'center' });
   },
 
-  // A curled saurian embryo: heavy skull, closed lid, translucent limbs, a
-  // visible spine, and a heartbeat that drives the whole thing.
-  embryo(ctx, cx, cy, t, glowK = 1) {
-    const beat = Math.pow(Math.max(0, Math.sin(t * 1.9)), 6);
-    const s = 1 + beat * 0.05;
-    const glow = 0.35 + beat * 0.45;
-    // the light it throws into the fluid
-    ctx.globalCompositeOperation = 'lighter';
-    Shape.star(ctx, cx, cy, 40 * s, '#7affda', (0.14 + beat * 0.14) * glowK);
-    Shape.blob(ctx, cx, cy, 22 * s, 'rgba(60,200,170,0.04)');
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.save();
-    ctx.translate(cx, cy + Math.sin(t * 0.7) * 2);
-    ctx.rotate(Math.sin(t * 0.4) * 0.12 - 0.25);
-    ctx.scale(s, s);
-    const skin = '#c8907a', skinL = '#e8b9a2', skinD = '#8f5f52', vein = '#7a4a52';
-    // tail, curled around the body
-    for (let i = 0; i < 16; i++) {
-      const a = 1.1 + i * 0.30, r = 20 - i * 0.9;
-      const tx = Math.cos(a) * r, ty = Math.sin(a) * r * 0.8 + 6;
-      const w = Math.max(1, 6 - i * 0.35);
-      ctx.fillStyle = i % 2 ? skin : skinD;
-      ctx.fillRect(Math.round(tx - w / 2), Math.round(ty - w / 2), Math.round(w), Math.round(w));
-    }
-    // body, a comma shape
-    Shape.blob(ctx, -1, 5, 13, skin, 1.05);
-    Shape.blob(ctx, -3, 2, 10, skinL, 0.9);
-    ctx.globalAlpha = 0.5; Shape.blob(ctx, 2, 9, 8, skinD, 0.8); ctx.globalAlpha = 1;
-    // spine, showing through
-    ctx.fillStyle = '#e8dcc8';
-    for (let i = 0; i < 9; i++) ctx.fillRect(Math.round(-8 + i * 2), Math.round(-2 + i * 1.3), 2, 1);
-    // ribs
-    ctx.globalAlpha = 0.4; ctx.fillStyle = '#f0e4d0';
-    for (let i = 0; i < 4; i++) ctx.fillRect(-6 + i * 3, 4, 1, 5);
-    ctx.globalAlpha = 1;
-    // veins
-    ctx.globalAlpha = 0.35; ctx.fillStyle = vein;
-    for (let i = 0; i < 7; i++) ctx.fillRect(-9 + i * 3, 6 + Math.round(Math.sin(i * 1.7) * 3), 2, 1);
-    ctx.globalAlpha = 1;
-    // limbs: stubby, translucent, folded in
-    const limb = (lx, ly, a2) => {
-      ctx.save(); ctx.translate(lx, ly); ctx.rotate(a2);
-      ctx.fillStyle = skinD; ctx.fillRect(0, -2, 9, 4);
-      ctx.fillStyle = skin; ctx.fillRect(0, -2, 8, 3);
-      ctx.fillStyle = skinL; ctx.fillRect(0, -2, 6, 1);
-      for (let f = 0; f < 3; f++) { ctx.fillStyle = skinD; ctx.fillRect(8, -2 + f * 2, 3, 1); }
-      ctx.restore();
-    };
-    limb(-6, 10, 0.7 + Math.sin(t * 1.3) * 0.08);
-    limb(4, 8, 0.2 + Math.sin(t * 1.3 + 1) * 0.08);
-    limb(-9, 2, 2.5 + Math.sin(t * 1.1) * 0.06);
-    // head: broad snout, brow ridge, closed lid
-    ctx.save(); ctx.translate(-10, -6); ctx.rotate(-0.55 + Math.sin(t * 0.9) * 0.05);
-    Shape.blob(ctx, 0, 0, 10, skin, 0.85);
-    Shape.blob(ctx, -1, -2, 8, skinL, 0.8);
-    // snout
-    ctx.fillStyle = skin; ctx.fillRect(-16, -2, 12, 7);
-    ctx.fillStyle = skinL; ctx.fillRect(-16, -2, 12, 2);
-    ctx.fillStyle = skinD; ctx.fillRect(-16, 4, 12, 1);
-    ctx.fillStyle = '#5a3830'; ctx.fillRect(-16, 0, 2, 1);         // nostril
-    // brow and closed eye
-    ctx.fillStyle = skinD; ctx.fillRect(-6, -5, 7, 2);
-    ctx.fillStyle = '#6a4038'; ctx.fillRect(-5, -3, 6, 2);
-    ctx.fillStyle = '#2a1a18'; ctx.fillRect(-5, -2, 6, 1);
-    // the eye behind the lid catches the glow
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = glow * 0.5; ctx.fillStyle = '#7affda'; ctx.fillRect(-4, -2, 4, 1);
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    // skull plate showing under the skin
-    ctx.globalAlpha = 0.28; ctx.fillStyle = '#f0e6d4'; ctx.fillRect(-7, -4, 9, 3); ctx.globalAlpha = 1;
-    ctx.restore();
-    // umbilical stump
-    ctx.fillStyle = '#8a6a5a'; ctx.fillRect(1, 12, 3, 4);
-    ctx.restore();
-    // a faint heartbeat ring in the fluid
-    if (beat > 0.25) { ctx.globalAlpha = (beat - 0.25) * 0.5; Shape.ring(ctx, cx, cy, 30 + (1 - beat) * 22, 1, '#8fffe4'); ctx.globalAlpha = 1; }
-  },
-
   // --- floor: grating, a service pit, light spill from the tank
   floor(ctx, t) {
     const W = LAB.W, F = LAB.FLOOR, H = LAB.H;
@@ -8949,6 +9069,79 @@ const Lab = {
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   },
 
+  // An open acid bath set into the floor to the left of the tank: a corroded
+  // steel trough of green fluid, dissolving something, fuming steadily.
+  acidBath(ctx, t) {
+    const F = LAB.FLOOR, x = 64, w = 78, h = 20, y = F + 2;
+    // trough, eaten away at the lip
+    ctx.fillStyle = '#2a3a34'; ctx.fillRect(x - 4, y - 4, w + 8, h + 6);
+    ctx.fillStyle = '#3d5249'; ctx.fillRect(x - 4, y - 4, w + 8, 2);
+    ctx.fillStyle = '#1b2a26'; ctx.fillRect(x, y, w, h);
+    // corrosion pitting the rim
+    for (let i = 0; i < 22; i++) { const px2 = x - 3 + ihash(i, 81) * (w + 6); ctx.fillStyle = ihash(i, 82) > 0.5 ? '#6a7a3a' : '#4a5a28'; ctx.fillRect(Math.round(px2), y - 4 + Math.round(ihash(i, 83) * 3), 2, 2); }
+    // the fluid: a lit surface, a darker body, and a meniscus that ripples
+    const surf = y + 3 + Math.sin(t * 1.7) * 0.6;
+    ctx.fillStyle = '#1d5a3c'; ctx.fillRect(x + 1, y + 3, w - 2, h - 4);
+    ctx.fillStyle = '#2f8a54'; ctx.fillRect(x + 1, Math.round(surf), w - 2, 2);
+    ctx.fillStyle = '#8fffc0'; ctx.fillRect(x + 1, Math.round(surf), w - 2, 1);
+    // bubbles bursting at the surface
+    for (let i = 0; i < 16; i++) {
+      const bp = (t * (0.5 + ihash(i, 84) * 0.7) + ihash(i, 85)) % 1;
+      const bx = x + 4 + ihash(i, 86) * (w - 8);
+      const by = y + h - 3 - bp * (h - 7);
+      ctx.globalAlpha = bp > 0.85 ? (1 - bp) / 0.15 : 0.7;
+      ctx.fillStyle = '#b8ffd8';
+      ctx.fillRect(Math.round(bx), Math.round(by), ihash(i, 87) > 0.7 ? 2 : 1, 1);
+      ctx.globalAlpha = 1;
+    }
+    // something half dissolved, propped in it
+    ctx.fillStyle = '#c8bfa0'; ctx.fillRect(x + 48, y - 6, 3, 10);
+    ctx.fillStyle = '#a89878'; ctx.fillRect(x + 51, y - 3, 6, 4);
+    ctx.fillStyle = '#8a9a58'; ctx.fillRect(x + 48, y + 2, 9, 2);
+    // fumes lifting off it
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 10; i++) {
+      const p = (t * 0.34 + i * 0.1) % 1;
+      ctx.globalAlpha = (1 - p) * 0.10;
+      Shape.puff(ctx, x + 10 + ihash(i, 88) * (w - 20) + Math.sin(t + i) * 4, y - p * 46, 3 + p * 10, '#8fffc0', i * 7);
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    // hazard plate
+    ctx.fillStyle = '#141e22'; ctx.fillRect(x + 2, y + h + 2, 40, 9);
+    Font.draw(ctx, 'CORROSIVE', x + 4, y + h + 4, { color: '#8a9a30' });
+  },
+  // Loose chemistry across the room: a dripping feed line, acid stains eating
+  // into the floor, and a green cast to the air near the bath.
+  acidFx(ctx, t) {
+    const F = LAB.FLOOR, W = LAB.W;
+    // corroded feed line running down the wall into the bath
+    ctx.fillStyle = '#4a5a3a'; ctx.fillRect(102, 52, 4, F - 52);
+    ctx.fillStyle = '#66784a'; ctx.fillRect(102, 52, 1, F - 52);
+    for (let i = 0; i < 9; i++) { const yy = 70 + i * 24; ctx.fillStyle = '#7a8a3a'; ctx.fillRect(101, yy, 6, 3); }
+    // a drip, falling on its own clock, splashing in the trough
+    const dp = (t * 0.55) % 1;
+    ctx.fillStyle = '#a8ffc8';
+    ctx.fillRect(103, Math.round(60 + dp * (F - 46)), 2, dp > 0.5 ? 3 : 2);
+    if (dp > 0.95) { ctx.globalAlpha = (1 - dp) / 0.05; Shape.ripple(ctx, 104, F + 6, 6, '#b8ffd8', 0.8); ctx.globalAlpha = 1; }
+    // stains where it has been dripping for years
+    ctx.globalAlpha = 0.28;
+    Shape.pool(ctx, 104, F + 24, 22, '#3a5a2a', 5, 0.24);
+    Shape.pool(ctx, 104, F + 24, 12, '#6a8a30', 9, 0.2);
+    ctx.globalAlpha = 0.2;
+    Shape.pool(ctx, 470, F + 25, 16, '#3a5a2a', 12, 0.22);
+    ctx.globalAlpha = 1;
+    // a spill creeping out from under the fume hood, and its fumes
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.05; ctx.fillStyle = '#7affb0';
+    ctx.fillRect(34, F - 60, 150, 88);
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 6; i++) {
+      const p = (t * 0.28 + i * 0.17) % 1;
+      ctx.globalAlpha = (1 - p) * 0.07;
+      Shape.puff(ctx, 470 + Math.sin(t * 0.7 + i) * 8, F - p * 40, 4 + p * 9, '#8fffc0', i * 11);
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  },
   drawStaff(ctx, s) {
     if (!s.rig) return;
     const F = LAB.FLOOR;
@@ -9509,7 +9702,7 @@ const UI = {
     const F = LAB.FLOOR;
     return [
       { id: 'archive', x: 6, y: F - 180, w: 164, h: 180, lx: 88, label: 'GENOME ARCHIVE', sub: 'EVERY SPECIES YOU HAVE EATEN' },
-      { id: 'create', x: 258, y: 78, w: 124, h: 218, lx: 320, label: 'CREATE SPECIMEN', sub: 'BUILD AN EMBRYO AND RELEASE IT' },
+      { id: 'create', x: 258, y: 78, w: 124, h: 218, lx: 320, label: 'CREATE SPECIMEN', sub: 'GROW AN ORGANISM AND RELEASE IT' },
       { id: 'vials', x: 434, y: F - 126, w: 200, h: 126, lx: 534, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
     ];
   },
@@ -9568,122 +9761,266 @@ const UI = {
     Font.draw(ctx, 'SOUND ' + (SFX.muted ? 'OFF' : 'ON') + ' (M)   HELP (H)', W - 8, H - 8, { color: '#3f6f66', align: 'right' });
   },
   // ---------- the creation bay ----------
+  // Two stages. SPECIES is a holographic projector running an attack loop with
+  // arrows either side of it. SPLICE commits, and CUSTOMISE is the specimen in
+  // an acid column with length, girth, hide and substance to set on it.
+  cvSpecies() { if (!this._cvS) this._cvS = CrocView.make(); return this._cvS; },
+  cvCustom() { if (!this._cvC) this._cvC = CrocView.make(); return this._cvC; },
+  // parts cache keyed on the look, so scrubbing sliders is not a rebuild storm
+  cvParts(look) {
+    const key = JSON.stringify(look);
+    if (this._cvKey !== key) { this._cvKey = key; this._cvParts = buildCrocParts(look); }
+    return this._cvParts;
+  },
+  createArrows() {
+    return [{ id: -1, x: 224, y: 130, w: 26, h: 40 }, { id: 1, x: 448, y: 130, w: 26, h: 40 }];
+  },
   createCells() {
     const W = G.W, out = [];
-    const px0 = 214, cw = Math.floor((W - px0 - 12) / 3);
-    BASE_SPECIES.forEach((sp, i) => out.push({ row: 0, i, x: px0 + (i % 3) * cw, y: 44 + Math.floor(i / 3) * 20, w: cw - 3, h: 18, item: sp }));
-    SIZE_GRADES.forEach((gr, i) => out.push({ row: 1, i, x: px0 + i * Math.floor((W - px0 - 12) / 4), y: 106, w: Math.floor((W - px0 - 12) / 4) - 3, h: 18, item: gr }));
-    const vw = Math.floor((W - px0 - 12) / 4);
-    VIALS.forEach((v, i) => out.push({ row: 2, i, x: px0 + (i % 4) * vw, y: 160 + Math.floor(i / 4) * 20, w: vw - 3, h: 18, item: v }));
+    const x0 = 216, cw = Math.floor((W - x0 - 12) / 4);
+    SIZE_GRADES.forEach((gr, i) => out.push({ row: 0, i, x: x0 + i * cw, y: 46, w: cw - 3, h: 17, item: gr }));
+    GIRTH_GRADES.forEach((gi, i) => out.push({ row: 1, i, x: x0 + i * cw, y: 92, w: cw - 3, h: 17, item: gi }));
+    const pw = Math.floor((W - x0 - 12) / 5);
+    HIDE_PAINTS.forEach((pt, i) => out.push({ row: 2, i, x: x0 + (i % 5) * pw, y: 138 + Math.floor(i / 5) * 19, w: pw - 3, h: 17, item: pt }));
+    const vw = Math.floor((W - x0 - 12) / 4);
+    VIALS.forEach((v, i) => out.push({ row: 3, i, x: x0 + (i % 4) * vw, y: 203 + Math.floor(i / 4) * 19, w: vw - 3, h: 17, item: v }));
     return out;
   },
-  createGoRect() { return { x: G.W - 152, y: G.H - 40, w: 134, h: 26 }; },
-  drawCreate(ctx) {
-    const W = G.W, H = G.H, t = G.menuT, E = G.embryo, b = Create.spec();
-    // the room stays behind, dimmed: you are still standing in the lab
-    ctx.fillStyle = 'rgba(3,10,12,0.82)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'CREATION BAY', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, 'GROW A SPECIMEN', 128, 12, { color: '#4f7f74' });
+  createGoRect() { return G.createPhase ? { x: G.W - 152, y: G.H - 38, w: 134, h: 26 } : { x: G.W / 2 - 62, y: G.H - 42, w: 124, h: 28 }; },
+  createBackRect() { return { x: 12, y: G.H - 38, w: 74, h: 26 }; },
 
-    // --- live embryo preview, in its own tank on the left
-    const tx = 16, ty = 44, tw = 186, th = 250;
+  drawCreate(ctx) {
+    if (G.createPhase) this.drawCustomise(ctx); else this.drawSpeciesSelect(ctx);
+  },
+
+  // ---- stage one: the species projector
+  drawSpeciesSelect(ctx) {
+    const W = G.W, H = G.H, t = G.menuT, E = G.embryo, b = Create.spec();
+    ctx.fillStyle = 'rgba(3,10,12,0.86)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'SPECIMEN LIBRARY', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, 'SELECT A BASE ORGANISM TO SPLICE FROM', 12, 26, { color: '#4f7f74' });
+
+    const idx = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
+    const open = Create.speciesUnlocked(b.sp);
+    const col = open ? (b.sp.holo || '#7affda') : '#5f7f78';
+    const cx = 348, cy = 138;
+
+    // --- the projector stage: plate, cone, grid floor
+    ctx.fillStyle = 'rgba(6,16,18,0.7)'; ctx.fillRect(214, 44, 268, 176);
+    this.bracket(ctx, 214, 44, 268, 176, rgba(col, 0.5), 14);
+    // reference grid behind it, receding
+    ctx.globalAlpha = 0.16; ctx.fillStyle = col;
+    for (let i = 0; i < 9; i++) ctx.fillRect(222, 60 + i * 18, 252, 1);
+    for (let i = 0; i < 11; i++) { const xx = 222 + i * 25.2; ctx.fillRect(Math.round(xx), 60, 1, 144); }
+    ctx.globalAlpha = 1;
+    CrocView.projector(ctx, cx, cy, 150, col, t, open ? 1 : 0.3);
+
+    // --- the specimen, running its attack loop
+    if (open) {
+      const v = this.cvSpecies();
+      const look = Object.assign({}, CROC_LOOKS.base, b.sp.look || {}, { girth: b.sp.girth || 1 });
+      CrocView.holo(ctx, v, this.cvParts(look), cx + 44, cy, 2.05, col, 1, t);
+      // the attack phase, called out as a label
+      const u = (v.t % 2.9) / 2.9;
+      const ph = u < 0.30 ? 'IDLE' : u < 0.46 ? 'COIL' : u < 0.58 ? 'LUNGE' : u < 0.64 ? 'STRIKE' : 'RECOVER';
+      Font.draw(ctx, ph, 474, 50, { color: u > 0.44 && u < 0.7 ? '#ffffff' : rgba(col, 0.7), align: 'right' });
+    } else {
+      Font.draw(ctx, 'NO SAMPLE ON FILE', cx, cy - 4, { color: '#3f5f58', align: 'center', scale: 2 });
+      Font.draw(ctx, Stages.hint(b.sp.need) || (b.sp.need && b.sp.need.best !== undefined ? 'SCORE ' + fmt(b.sp.need.best) : ''), cx, cy + 14, { color: '#5f7f78', align: 'center' });
+    }
+    // scanning sweep across the stage
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.10; ctx.fillStyle = col;
+    ctx.fillRect(214, 44 + ((t * 44) % 176), 268, 2);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+
+    // --- arrows either side, physical buttons
+    for (const a of this.createArrows()) {
+      const lit = Math.sin(t * 5 + (a.id > 0 ? 0 : Math.PI)) > -0.4;
+      ctx.fillStyle = 'rgba(10,26,28,0.9)'; ctx.fillRect(a.x, a.y, a.w, a.h);
+      ctx.fillStyle = lit ? col : rgba(col, 0.4); ctx.fillRect(a.x, a.y, a.w, 1);
+      this.bracket(ctx, a.x, a.y, a.w, a.h, rgba(col, 0.6), 6);
+      // chevron
+      ctx.fillStyle = lit ? '#e8fff8' : rgba(col, 0.6);
+      const mx = a.x + a.w / 2, my = a.y + a.h / 2;
+      for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(mx + a.id * (3 - i)), Math.round(my - i), 2, 1 + i * 2 > 0 ? 1 : 1);
+      for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(mx + a.id * (3 - i)), Math.round(my + i), 2, 1);
+    }
+    // the roster, as ticks under the stage
+    BASE_SPECIES.forEach((sp, i) => {
+      const bx = 214 + 14 + i * 40, on = i === idx, ok = Create.speciesUnlocked(sp);
+      ctx.fillStyle = on ? col : ok ? rgba(col, 0.4) : '#2a3230';
+      ctx.fillRect(bx, 226, 30, on ? 4 : 2);
+    });
+    Font.draw(ctx, (idx + 1) + ' / ' + BASE_SPECIES.length, 474, 232, { color: '#4f7f74', align: 'right' });
+
+    // --- the dossier on the right... actually below: name, latin, icon, gene, bars
+    // species portrait, taken from the animal's own head art
+    const px0 = 12, py0 = 44;
+    ctx.fillStyle = 'rgba(6,16,18,0.8)'; ctx.fillRect(px0, py0, 194, 176);
+    this.bracket(ctx, px0, py0, 194, 176, 'rgba(120,220,200,0.4)', 10);
+    if (open) {
+      const look = Object.assign({}, CROC_LOOKS.base, b.sp.look || {}, { girth: b.sp.girth || 1 });
+      const parts = this.cvParts(look);
+      const hd = parts.head;
+      ctx.save();
+      ctx.translate(px0 + 46, py0 + 30);
+      ctx.scale(1.5, 1.5);
+      ctx.drawImage(hd.c, -hd.ox, -hd.oy);
+      ctx.restore();
+      ctx.fillStyle = rgba(col, 0.25); ctx.fillRect(px0 + 6, py0 + 6, 78, 48);
+    }
+    Font.draw(ctx, b.sp.name, px0 + 90, py0 + 10, { color: open ? '#e8fff8' : '#5f7f78' });
+    Font.drawWrapped(ctx, b.sp.latin, px0 + 90, py0 + 22, 100, { color: '#5f9f94', lineHeight: 9 });
+    // stat bars
+    const bars = [['LENGTH', b.sp.size / 2.4], ['HEALTH', b.sp.hp / 1.7], ['SPEED', b.sp.spd / 1.4], ['BITE', b.sp.bite / 1.7], ['GIRTH', (b.sp.girth || 1) / 1.35]];
+    bars.forEach((r, i) => {
+      const by = py0 + 62 + i * 13;
+      Font.draw(ctx, r[0], px0 + 8, by, { color: '#4f7f74' });
+      ctx.fillStyle = '#111c1e'; ctx.fillRect(px0 + 54, by, 130, 6);
+      ctx.fillStyle = open ? col : '#2a3230'; ctx.fillRect(px0 + 54, by, Math.round(130 * clamp(r[1], 0.05, 1)), 6);
+      ctx.fillStyle = rgba('#ffffff', 0.35); ctx.fillRect(px0 + 54, by, Math.round(130 * clamp(r[1], 0.05, 1)), 2);
+    });
+    // the signature gene it brings with it
+    const gy = py0 + 130;
+    Font.draw(ctx, 'INNATE GENE', px0 + 8, gy, { color: '#4f7f74' });
+    if (b.gene) {
+      const L = LINEAGES[b.gene.lin], gc = L ? L.color : '#9ad8c0';
+      this.hex(ctx, px0 + 20, gy + 26, 13, rgba(gc, 0.3), gc, 2);
+      const ic = L ? ICONS[L.icon] : null;
+      if (ic) drawIcon(ctx, ic, px0 + 20, gy + 23, 13, t, { alpha: 1 });
+      Font.draw(ctx, b.gene.name, px0 + 40, gy + 14, { color: gc });
+      Font.drawWrapped(ctx, b.gene.desc, px0 + 40, gy + 25, 146, { color: '#9ef0c8', lineHeight: 9 });
+    } else {
+      Font.draw(ctx, 'NONE. A BLANK SLATE.', px0 + 8, gy + 14, { color: '#5f7f78' });
+      Font.drawWrapped(ctx, 'THE DWARF CARRIES NOTHING OF ITS OWN. EVERY POINT YOU SPEND IS YOURS.', px0 + 8, gy + 26, 178, { color: '#4f6f6a', lineHeight: 9 });
+    }
+
+    // --- flavour and the splice button
+    ctx.fillStyle = 'rgba(4,10,12,0.85)'; ctx.fillRect(12, 240, W - 24, 26);
+    Font.drawWrapped(ctx, b.sp.line, 18, 245, W - 36, { color: '#c8d8d0', lineHeight: 9 });
+    const go = this.createGoRect();
+    const p2 = 0.5 + 0.5 * Math.sin(t * 4);
+    ctx.fillStyle = open ? 'rgba(14,60,50,0.92)' : 'rgba(40,20,16,0.9)'; ctx.fillRect(go.x, go.y, go.w, go.h);
+    ctx.fillStyle = open ? mixColor('#1d6a58', '#7affda', p2) : '#5a3028'; ctx.fillRect(go.x, go.y, go.w, 2);
+    this.bracket(ctx, go.x, go.y, go.w, go.h, open ? '#7affda' : '#8a5040', 9);
+    Font.draw(ctx, open ? 'SPLICE' : 'LOCKED', go.x + go.w / 2, go.y + 8, { color: open ? '#d8fff0' : '#c08a7a', align: 'center', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP ARROWS TO BROWSE' : 'LEFT / RIGHT: BROWSE      ENTER: SPLICE      ESC: BACK', 12, H - 10, { color: '#4f7f74' });
+  },
+
+  // ---- stage two: customise the spliced animal
+  drawCustomise(ctx) {
+    const W = G.W, H = G.H, t = G.menuT, E = G.embryo, b = Create.spec();
+    ctx.fillStyle = 'rgba(3,10,12,0.86)'; ctx.fillRect(0, 0, W, H);
+    Font.draw(ctx, 'SPLICE CHAMBER', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, b.sp.name + '   ' + b.gr.name + ' / ' + b.gi.name, 12, 26, { color: '#4f7f74' });
+
+    // --- the acid column with the real animal in it
+    const tx = 12, ty = 38, tw = 194, th = 226;
     ctx.fillStyle = '#0a1416'; ctx.fillRect(tx - 3, ty - 3, tw + 6, th + 6);
     const fg = ctx.createLinearGradient(0, ty, 0, ty + th);
-    fg.addColorStop(0, '#1e5e58'); fg.addColorStop(1, '#0d3336');
+    fg.addColorStop(0, '#20624e'); fg.addColorStop(0.55, '#1a5347'); fg.addColorStop(1, '#0d3330');
     ctx.fillStyle = fg; ctx.fillRect(tx, ty, tw, th);
     ctx.save(); ctx.beginPath(); ctx.rect(tx, ty, tw, th); ctx.clip();
-    // drifting matter
-    ctx.globalAlpha = 0.45;
-    for (let i = 0; i < 40; i++) {
-      const px = tx + 3 + ihash(i, 41) * (tw - 6);
-      const py = ty + th - ((t * (7 + ihash(i, 42) * 13) + ihash(i, 43) * 500) % (th - 6));
-      ctx.fillStyle = ihash(i, 44) > 0.6 ? '#8fe8d0' : '#5fa89c';
-      ctx.fillRect(Math.round(px), Math.round(py), 1, 1);
+    // acid: rising columns of bubbles, drifting scum, a bright meniscus
+    for (let i = 0; i < 54; i++) {
+      const bx = tx + 4 + ihash(i, 41) * (tw - 8);
+      const sp = 12 + ihash(i, 45) * 26;
+      const by = ty + th - ((t * sp + ihash(i, 43) * 600) % (th - 4));
+      ctx.globalAlpha = 0.35 + ihash(i, 46) * 0.4;
+      ctx.fillStyle = ihash(i, 44) > 0.55 ? '#b8ffd8' : '#6fc0a4';
+      const s2 = ihash(i, 47) > 0.82 ? 2 : 1;
+      ctx.fillRect(Math.round(bx), Math.round(by), s2, s2);
     }
     ctx.globalAlpha = 1;
-    // the embryo, scaled by the chosen grade
-    const scale = clamp(0.8 + b.size * 0.42, 0.8, 1.55);
-    ctx.save();
-    ctx.translate(tx + tw / 2, ty + th / 2 + 10);
-    ctx.scale(scale, scale);
-    ctx.translate(-(tx + tw / 2), -(ty + th / 2 + 10));
-    Lab.embryo(ctx, tx + tw / 2, ty + th / 2 + 10, t, 0.55);
-    ctx.restore();
-    // the vial's colour bleeds into the fluid
+    // the specimen, solid, in the real art
+    const v = this.cvCustom();
+    const look = Create.look();
+    CrocView.draw(ctx, v, this.cvParts(look), tx + tw * 0.74, ty + th * 0.5, 1.4 + b.size * 0.45);
+    // acid haze over it and caustic banding
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.07; ctx.fillStyle = '#7affda';
+    for (let i = 0; i < 8; i++) ctx.fillRect(tx, ty + ((t * 18 + i * 30) % th), tw, 2);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     if (b.vial && b.vial.id !== 'none') {
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.10 + 0.04 * Math.sin(t * 2.4);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.11 + 0.04 * Math.sin(t * 2.4);
       ctx.fillStyle = b.vial.col; ctx.fillRect(tx, ty, tw, th);
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     }
     ctx.restore();
-    // glass furniture
+    // glass
     ctx.globalAlpha = 0.3; ctx.fillStyle = '#dffdf4'; ctx.fillRect(tx + 8, ty + 4, 3, th - 8); ctx.globalAlpha = 1;
     ctx.fillStyle = 'rgba(150,230,220,0.3)'; ctx.fillRect(tx, ty, 2, th); ctx.fillRect(tx + tw - 2, ty, 2, th);
-    ctx.fillStyle = '#2b4149'; ctx.fillRect(tx - 5, ty - 12, tw + 10, 13);
-    Font.draw(ctx, b.sp.name, tx + tw / 2, ty - 9, { color: '#b8ffe8', align: 'center' });
-    // vitals readout under the tank
-    const st2 = [['LENGTH', (b.size * 1.5).toFixed(1) + ' FT'], ['HEALTH', Math.round(b.hp * 100) + '%'], ['SPEED', Math.round(b.spd * 100) + '%'], ['BITE', Math.round(b.bite * 100) + '%'], ['HUNGER', Math.round(b.hunger * 100) + '%']];
+    for (let ry = ty + 40; ry < ty + th - 20; ry += 62) { ctx.fillStyle = '#3a565c'; ctx.fillRect(tx - 3, ry, tw + 6, 4); ctx.fillStyle = '#4e7078'; ctx.fillRect(tx - 3, ry, tw + 6, 1); }
+    // vitals strip
+    const st2 = [['LENGTH', (b.size * 1.5).toFixed(1) + 'FT'], ['HEALTH', Math.round(b.hp * 100) + '%'], ['SPEED', Math.round(b.spd * 100) + '%'], ['BITE', Math.round(b.bite * 100) + '%'], ['HUNGER', Math.round(b.hunger * 100) + '%']];
     st2.forEach((r, i) => {
-      const ry = ty + th + 6 + i * 10;
-      Font.draw(ctx, r[0], tx + 2, ry, { color: '#4f7f74' });
-      Font.draw(ctx, r[1], tx + tw - 2, ry, { color: '#d8e8de', align: 'right' });
+      const rx = tx + 2 + i * 39;
+      Font.draw(ctx, r[0].slice(0, 3), rx, ty + th + 6, { color: '#4f7f74' });
+      Font.draw(ctx, r[1], rx, ty + th + 16, { color: '#d8e8de' });
     });
 
-    // --- the three choice banks
+    // --- the four banks
     const cells = this.createCells();
-    const label = (txt, y) => { Font.draw(ctx, txt, 214, y, { color: '#7affda' }); ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(214, y + 9, W - 226, 1); };
-    label('BASE SPECIES', 32);
-    label('GROWTH GRADE', 94);
-    label('SUBSTANCE', 148);
+    const label = (txt, y, hint) => {
+      Font.draw(ctx, txt, 216, y, { color: '#7affda' });
+      if (hint) Font.draw(ctx, hint, W - 12, y, { color: '#3f6f66', align: 'right' });
+      ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, y + 9, W - 228, 1);
+    };
+    label('LENGTH', 34, b.gr.name);
+    label('GIRTH', 80, b.gi.name);
+    label('HIDE', 126, b.pt.name);
+    label('SUBSTANCE', 191, b.vial.name);
     for (const c of cells) {
       const item = c.item;
-      const open = c.row === 0 ? Create.speciesUnlocked(item) : c.row === 2 ? Create.vialUnlocked(item) : true;
-      const cur = c.row === 0 ? E.species === item.id : c.row === 1 ? E.size === c.i : E.vial === item.id;
-      const on = (G.createRow || 0) === c.row && ((c.row === 0 && E.species === item.id) || (c.row === 1 && E.size === c.i) || (c.row === 2 && E.vial === item.id));
-      const col = c.row === 2 ? item.col : '#7affda';
+      const open = c.row === 3 ? Create.vialUnlocked(item) : true;
+      const cur = (c.row === 0 && E.size === c.i) || (c.row === 1 && E.girth === c.i) || (c.row === 2 && (E.paint || 'wild') === item.id) || (c.row === 3 && E.vial === item.id);
+      const on = (G.createRow || 0) === c.row && cur;
+      const cc = c.row === 3 ? item.col : c.row === 2 && item.swatch ? item.swatch : '#7affda';
       ctx.fillStyle = cur ? 'rgba(30,80,70,0.9)' : 'rgba(10,22,24,0.85)'; ctx.fillRect(c.x, c.y, c.w, c.h);
-      ctx.fillStyle = !open ? '#2a2420' : cur ? col : '#2e4a46'; ctx.fillRect(c.x, c.y, c.w, 1);
+      ctx.fillStyle = !open ? '#2a2420' : cur ? cc : '#2e4a46'; ctx.fillRect(c.x, c.y, c.w, 1);
       if (on) this.bracket(ctx, c.x - 1, c.y - 1, c.w + 2, c.h + 2, '#ffffff', 5);
-      // vial swatch
-      if (c.row === 2) { ctx.fillStyle = open ? item.col : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 4, 4, 10); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(c.x + 3, c.y + 4, 1, 10); }
-      // a locked cell shows what it wants, not the word LOCKED over the top of it
-      let nm = item.name;
-      if (!open) nm = (c.row === 0 && item.need ? (item.need.best !== undefined ? 'SCORE ' + fmt(item.need.best) : Stages.hint(item.need)) : '') || 'LOCKED';
-      const maxc = Math.floor((c.w - (c.row === 2 ? 12 : 6)) / 6);
-      Font.draw(ctx, nm.length > maxc ? nm.slice(0, maxc) : nm, c.x + (c.row === 2 ? 10 : 4), c.y + 6, { color: !open ? '#6a5a4a' : cur ? '#e8fff8' : '#8fbfb6' });
+      let ind = 0;
+      if (c.row === 3) { ctx.fillStyle = open ? item.col : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 4, 4, 10); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(c.x + 3, c.y + 4, 1, 10); ind = 7; }
+      if (c.row === 2) { ctx.fillStyle = item.swatch || '#5f7048'; ctx.fillRect(c.x + 3, c.y + 5, 8, 8); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(c.x + 3, c.y + 5, 8, 2); ind = 11; }
+      let nm = open ? item.name : 'LOCKED';
+      const maxc = Math.floor((c.w - ind - 6) / 6);
+      Font.draw(ctx, nm.length > maxc ? nm.slice(0, maxc) : nm, c.x + 4 + ind, c.y + 6, { color: !open ? '#6a5a4a' : cur ? '#e8fff8' : '#8fbfb6' });
     }
 
-    // --- artifacts spliced into the embryo
-    Font.draw(ctx, 'SPLICED ARTIFACTS', 214, 204, { color: '#7affda' });
-    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(214, 213, W - 226, 1);
-    const owned = Missions.owned();
-    const slots = 5, sw2 = 26;
+    // --- artifacts
+    Font.draw(ctx, 'ARTIFACTS', 216, 248, { color: '#7affda' });
+    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, 257, 66, 1);
+    const owned = Missions.owned(), slots = 5, sw2 = 24;
     for (let i = 0; i < slots; i++) {
-      const sx2 = 216 + i * (sw2 + 4), sy2 = 220;
-      ctx.fillStyle = 'rgba(10,22,24,0.85)'; ctx.fillRect(sx2, sy2, sw2, 24);
+      const sx2 = 290 + i * (sw2 + 3), sy2 = 244;
+      ctx.fillStyle = 'rgba(10,22,24,0.85)'; ctx.fillRect(sx2, sy2, sw2, 18);
       const a = owned[i] ? ARTIFACT_BY_ID[owned[i]] : null;
-      if (a) { drawRelicGlyph(ctx, a, sx2 + sw2 / 2, sy2 + 12, t * 0.5, 0.85); ctx.fillStyle = a.col; ctx.fillRect(sx2, sy2, sw2, 1); }
-      else { ctx.fillStyle = '#2a3230'; ctx.fillRect(sx2 + sw2 / 2 - 4, sy2 + 10, 8, 3); ctx.fillRect(sx2 + sw2 / 2 - 1, sy2 + 7, 2, 9); }
+      if (a) { drawRelicGlyph(ctx, a, sx2 + sw2 / 2, sy2 + 9, t * 0.5, 0.7); ctx.fillStyle = a.col; ctx.fillRect(sx2, sy2, sw2, 1); }
+      else { ctx.fillStyle = '#2a3230'; ctx.fillRect(sx2 + sw2 / 2 - 3, sy2 + 8, 7, 2); ctx.fillRect(sx2 + sw2 / 2 - 1, sy2 + 5, 2, 8); }
     }
-    Font.draw(ctx, owned.length ? owned.length + ' OF ' + ARTIFACTS.length + ' RECOVERED — ALL ACTIVE' : 'NONE RECOVERED. THEY ARE OUT THERE.', 216 + slots * (sw2 + 4) + 6, 228, { color: owned.length ? '#c8b070' : '#5f7f78' });
 
-    // --- the flavour line for whatever is highlighted
+    // --- the line for whatever row is highlighted
     const row = G.createRow || 0;
-    const cur2 = row === 0 ? b.sp : row === 1 ? b.gr : row === 2 ? b.vial : null;
+    const cur2 = row === 0 ? b.gr : row === 1 ? b.gi : row === 2 ? b.pt : b.vial;
     if (cur2) {
-      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(214, 254, W - 226, 32);
-      Font.draw(ctx, cur2.latin || cur2.eff || '', 218, 258, { color: '#5f9f94' });
-      Font.drawWrapped(ctx, cur2.line || '', 218, 269, W - 236, { color: '#c8d8d0', lineHeight: 9 });
+      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(216, 264, W - 228, 30);
+      if (cur2.eff) Font.draw(ctx, cur2.eff, 220, 268, { color: '#5f9f94' });
+      Font.drawWrapped(ctx, cur2.line || '', 220, cur2.eff ? 279 : 272, W - 244, { color: '#c8d8d0', lineHeight: 9 });
     }
 
-    // --- release
+    // --- back and release
+    const bk = this.createBackRect();
+    ctx.fillStyle = 'rgba(10,22,24,0.9)'; ctx.fillRect(bk.x, bk.y, bk.w, bk.h);
+    this.bracket(ctx, bk.x, bk.y, bk.w, bk.h, 'rgba(120,220,200,0.45)', 7);
+    Font.draw(ctx, 'BACK', bk.x + bk.w / 2, bk.y + 9, { color: '#8fbfb6', align: 'center' });
     const go = this.createGoRect();
     const p2 = 0.5 + 0.5 * Math.sin(t * 4);
     ctx.fillStyle = 'rgba(60,20,10,0.9)'; ctx.fillRect(go.x, go.y, go.w, go.h);
     ctx.fillStyle = mixColor('#8a2a10', '#ff6030', p2); ctx.fillRect(go.x, go.y, go.w, 2);
     this.bracket(ctx, go.x, go.y, go.w, go.h, '#ff8050', 8);
     Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 7, { color: '#ffd0a0', align: 'center', scale: 2, outline: '#2a0c00' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK' : 'ARROWS PICK    ENTER: RELEASE    ESC: BACK', 12, H - 10, { color: '#4f7f74' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO SET' : 'ARROWS SET      ENTER: RELEASE      ESC: BACK', 96, H - 10, { color: '#4f7f74' });
   },
 
   // ---------- the substance store ----------
@@ -10694,7 +11031,9 @@ const G = {
     }
   },
   // the creation bay and the vial store, both reached from the lab floor
-  openCreate() { this.state = 'create'; this.menuT = 0; if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, artifacts: [] }; this.createRow = 0; SFX.ui(); },
+  openCreate() { this.state = 'create'; this.menuT = 0; this.createPhase = 0; this.createRow = 0;
+    if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, girth: 1, paint: 'wild', vial: 'none' };
+    SFX.ui(); },
   openVials() { this.state = 'vialstore'; this.menuT = 0; this.vialSel = 0; SFX.ui(); },
   openStages() {
     this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
@@ -10946,40 +11285,69 @@ const G = {
       }
       case 'create': {
         this.menuT += raw; Lab.update(raw);
-        const E = this.embryo, cells = UI.createCells();
-        if (Input.hit('Escape')) { this.state = 'title'; SFX.ui(); break; }
+        const E = this.embryo;
+        // both stages animate a live specimen
+        CrocView.update(UI.cvSpecies(), raw);
+        CrocView.update(UI.cvCustom(), raw, 3.4);
+        if (!this.createPhase) {
+          // ---- stage one: browse the species roster
+          if (Input.hit('Escape')) { this.state = 'title'; SFX.ui(); break; }
+          const n2 = BASE_SPECIES.length;
+          const step = d => {
+            let i = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
+            i = (i + d + n2) % n2;
+            E.species = BASE_SPECIES[i].id; SFX.ui();
+          };
+          if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
+          if (Input.hit('ArrowRight', 'KeyD')) step(1);
+          let clicked = null;
+          if (Input.mouse.clicked) {
+            for (const a of UI.createArrows()) if (Input.mouse.x > a.x && Input.mouse.x < a.x + a.w && Input.mouse.y > a.y && Input.mouse.y < a.y + a.h) clicked = a.id;
+          }
+          if (clicked) step(clicked);
+          const go = UI.createGoRect();
+          const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
+          if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) {
+            if (Create.speciesUnlocked(Create.spec().sp)) {
+              this.createPhase = 1; this.createRow = 0;
+              if (E.girth === undefined) E.girth = 1;
+              if (!E.paint) E.paint = 'wild';
+              SFX.pick(); SFX.levelup();
+            } else SFX.clank();
+          }
+          break;
+        }
+        // ---- stage two: set it up
+        const cells = UI.createCells();
+        if (Input.hit('Escape')) { this.createPhase = 0; SFX.ui(); break; }
         if (Input.hit('ArrowUp', 'KeyW')) { this.createRow = (this.createRow + 3) % 4; SFX.ui(); }
         if (Input.hit('ArrowDown', 'KeyS')) { this.createRow = (this.createRow + 1) % 4; SFX.ui(); }
         const row = this.createRow || 0;
-        const step = d => {
-          if (row === 0) {
-            const n2 = BASE_SPECIES.length; let i = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
-            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.speciesUnlocked(BASE_SPECIES[i])) break; }
-            E.species = BASE_SPECIES[i].id;
-          } else if (row === 1) E.size = clamp(E.size + d, 0, SIZE_GRADES.length - 1);
-          else if (row === 2) {
-            const n2 = VIALS.length; let i = VIALS.findIndex(x2 => x2.id === E.vial);
-            if (i < 0) i = 0;
-            for (let k = 0; k < n2; k++) { i = (i + d + n2) % n2; if (Create.vialUnlocked(VIALS[i])) break; }
-            E.vial = VIALS[i].id;
-          }
+        const step2 = d => {
+          if (row === 0) E.size = clamp((E.size === undefined ? 1 : E.size) + d, 0, SIZE_GRADES.length - 1);
+          else if (row === 1) E.girth = clamp((E.girth === undefined ? 1 : E.girth) + d, 0, GIRTH_GRADES.length - 1);
+          else if (row === 2) { let i = HIDE_PAINTS.findIndex(x2 => x2.id === (E.paint || 'wild')); i = (i + d + HIDE_PAINTS.length) % HIDE_PAINTS.length; E.paint = HIDE_PAINTS[i].id; }
+          else { const n3 = VIALS.length; let i = VIALS.findIndex(x2 => x2.id === E.vial); if (i < 0) i = 0; for (let k = 0; k < n3; k++) { i = (i + d + n3) % n3; if (Create.vialUnlocked(VIALS[i])) break; } E.vial = VIALS[i].id; }
           SFX.ui();
         };
-        if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
-        if (Input.hit('ArrowRight', 'KeyD')) step(1);
+        if (Input.hit('ArrowLeft', 'KeyA')) step2(-1);
+        if (Input.hit('ArrowRight', 'KeyD')) step2(1);
         if (Input.mouse.clicked || Input.mouse.moved) {
           for (const c of cells) {
             if (Input.mouse.x < c.x || Input.mouse.x > c.x + c.w || Input.mouse.y < c.y || Input.mouse.y > c.y + c.h) continue;
             this.createRow = c.row;
             if (!Input.mouse.clicked) continue;
-            if (c.row === 0 && Create.speciesUnlocked(c.item)) { E.species = c.item.id; SFX.ui(); }
-            if (c.row === 1) { E.size = c.i; SFX.ui(); }
-            if (c.row === 2 && Create.vialUnlocked(c.item)) { E.vial = c.item.id; SFX.ui(); }
+            if (c.row === 0) { E.size = c.i; SFX.ui(); }
+            else if (c.row === 1) { E.girth = c.i; SFX.ui(); }
+            else if (c.row === 2) { E.paint = c.item.id; SFX.ui(); }
+            else if (Create.vialUnlocked(c.item)) { E.vial = c.item.id; SFX.ui(); }
           }
         }
-        const go = UI.createGoRect();
-        const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
-        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) { SFX.ui(); this.openStages(); }
+        const bk = UI.createBackRect();
+        if (Input.mouse.clicked && Input.mouse.x > bk.x && Input.mouse.x < bk.x + bk.w && Input.mouse.y > bk.y && Input.mouse.y < bk.y + bk.h) { this.createPhase = 0; SFX.ui(); break; }
+        const go2 = UI.createGoRect();
+        const goHit2 = Input.mouse.clicked && Input.mouse.x > go2.x && Input.mouse.x < go2.x + go2.w && Input.mouse.y > go2.y && Input.mouse.y < go2.y + go2.h;
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit2) { SFX.ui(); this.openStages(); }
         break;
       }
       case 'vialstore': {

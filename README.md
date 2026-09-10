@@ -19,9 +19,10 @@ specimen jars, a centrifuge spinning behind glass, a fume hood with a flask
 over a burner, a whiteboard covered in scrawl, service pipes, a steam vent, and
 five staff walking the floor on their own beats — two pacing, one at the
 console, one at the bench, one carrying a clipboard. Ceiling strips throw
-visible cones and one of them is failing. In the middle of it, a containment
-column with a glowing saurian embryo in it: curled, umbilical attached, spine
-and ribs showing through the skin, and a heartbeat that drives its own light.
+visible cones and one of them is failing. An **open acid bath** is set into the floor: a corroded steel trough of green
+fluid with something half dissolved propped in it, bubbling and fuming, fed by
+a drip line that has been eating a stain into the concrete for years. In the
+middle of the room, a containment column with a specimen suspended in it.
 
 The menu is the furniture. Walk the selection along the room and the station
 you are pointed at gets a targeting bracket:
@@ -32,24 +33,48 @@ you are pointed at gets a targeting bracket:
 
 ## Creating a specimen
 
-Three decisions, previewed live in a tank as you make them.
+Two stages, and at no point are you looking at a placeholder — the preview is
+the real in-game body, in the real in-game art, so what you approve is
+literally the animal you play.
 
-**Base species** — you start with the **Dwarf Alligator** and nothing else.
-Spectacled caiman, Nile crocodile, gharial, saltwater crocodile and a
-reconstructed *Deinosuchus* embryo unlock against real save milestones; each
-has its own hide, length, health, speed and bite.
+### Stage one: the specimen library
 
-**Growth grade** — Runt, Standard, Overgrown or Hypertrophic. A real trade:
-bigger starts you higher up the food chain and eats hunger, smaller is fast and
-cheap to feed and dies to anything.
+A holographic projector on an emitter plate, throwing a cone of light with
+motes riding up it, running the chosen species through an **attack loop** —
+idle, coil, lunge, strike, recover — with the current phase called out beside
+it. The projection is not a filter over a sprite: the animal is rendered to a
+buffer, tinted through its own alpha so its shading survives as luminance, then
+composited additively with dimmed scanlines rolling through it and a jittered
+double exposure either side. The strike frame throws a flare and a burst.
 
-**Substance** — one vial, loaded before the run. Adrenal concentrate, clotting
-factor, a myostatin blocker, chitin graft serum, luminous plasma, a neural
-accelerant, digestive bile. Every one has a stated cost as well as an upside,
-and they are only readable once you have recovered them in the field. Vials
-drop from bosses and hide in secret areas, and they are kept forever.
+`<` and `>` either side step through the roster. The dossier on the left gives
+you, for each species:
 
-Recovered artifacts are shown spliced into the embryo and all of them apply.
+- a **portrait** taken from that animal's own head art
+- name and binomial
+- **length, health, speed, bite and girth** as bars
+- its **innate gene**, shown with its lineage hex and colour, granted free
+  because it is what the animal already is — the Nile brings serrated teeth,
+  the gharial a sleek body, the saltwater a thick hide, the caiman claws, the
+  reconstructed *Deinosuchus* dense bulk. The dwarf brings nothing, which is
+  the point of it.
+
+You start with the **Dwarf Alligator**. Everything else is a locked slot with
+no sample on file and its requirement printed under it.
+
+### Stage two: the splice chamber
+
+SPLICE commits, and the animal drops into an acid column — bubbling, fuming,
+caustic banding across the glass — where you set it up:
+
+- **Length** — Runt to Hypertrophic
+- **Girth** — Lean to Bull, a separate axis: body depth against speed, and it
+  visibly thickens the animal
+- **Hide** — nine palettes, from blackwater and tannin through leucistic to
+  abyssal, painted onto the real sprite as you pick
+- **Substance** — the vial
+
+Vitals update live underneath, and recovered artifacts show as spliced in.
 
 ## The drop
 

@@ -92,13 +92,14 @@ function applyCard(player, card) {
 }
 // dominant path drives the croc palette; animal traits layer features on top
 function computeLook(player) {
+  const spBase = player.speciesLook || null;
   const sk = player.skills, entries = PATH_KEYS.map(k => [k, sk[k]]).sort((a, b) => b[1] - a[1]);
   const [k1, t1] = entries[0], [k2, t2] = entries[1];
   const total = t1 + t2;
   let L;
-  if (t1 === 0) L = Object.assign({}, CROC_LOOKS.base);
+  if (t1 === 0) L = Object.assign({}, CROC_LOOKS.base, spBase || {});
   else {
-    const primary = mixLook(CROC_LOOKS.base, CROC_LOOKS[k1], clamp(0.35 + t1 * 0.16, 0, 1));
+    const primary = mixLook(Object.assign({}, CROC_LOOKS.base, spBase || {}), CROC_LOOKS[k1], clamp(0.35 + t1 * 0.16, 0, 1));
     L = t2 > 0 ? mixLook(primary, CROC_LOOKS[k2], t2 / (total * 2)) : primary;
   }
   if (sk.ripper >= 2) L.scars = true;
@@ -119,6 +120,9 @@ function computeLook(player) {
   // the morph picked in the loadout is cosmetic and applied last
   const hide = typeof HIDE_BY_ID !== 'undefined' && HIDE_BY_ID[player.hide];
   if (hide && hide.apply) hide.apply(L);
+  // the creation bay has the last word on colour and body depth
+  if (typeof PAINT_BY_ID !== 'undefined') { const pt = PAINT_BY_ID[player.paintId]; if (pt && pt.apply) pt.apply(L); }
+  if (player.bodyGirth) L.girth = player.bodyGirth;
   return L;
 }
 // size tiers (croc size units). Reaching a new tier triggers a shed.
