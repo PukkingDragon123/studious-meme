@@ -21,6 +21,23 @@ const DOC_LESSONS = [
   { id: 'l.zone', ev: 'zone', pay: 12, icon: 'globe', line: 'SURVEY A ZONE' },
 ];
 
+// What he says when he walks into a room with you. Short: he is a crocodile
+// with a doctorate, not a manual.
+const DOC_SCRIPT = {
+  research: [
+    { icon: 'flask', line: 'DATA BUYS SCIENCE' },
+    { icon: 'hex', line: 'SCIENCE BUYS TEETH' },
+    { icon: 'star', line: 'PICK A COLUMN' },
+  ],
+  habitat: [
+    { icon: 'egg', line: 'THEY ARE YOURS' },
+    { icon: 'meat', line: 'FEED THEM' },
+  ],
+  bench: [
+    { icon: 'vial', line: 'ONE TUBE PER RUN' },
+  ],
+};
+
 const Doc = {
   // ---------- state ----------
   save() {
@@ -48,6 +65,76 @@ const Doc = {
     return true;
   },
   cheer: 0, cheerPay: 0, t: 0, x: 196, dir: 1, waitT: 0, blink: 0,
+  // ---------- talking in a room ----------
+  // He walks on from the left, says his piece a line at a time, and then stays
+  // in the corner reacting to what you do.
+  scene: null,
+  say(id) {
+    if (this.off() || !DOC_SCRIPT[id]) { this.scene = null; return; }
+    const seen = this.save().seen || (this.save().seen = {});
+    this.scene = { id, i: 0, t: 0, walk: 0, hold: seen[id] ? 1 : 0 };
+    seen[id] = (seen[id] || 0) + 1;
+  },
+  sceneNext() {
+    const sc = this.scene; if (!sc) return false;
+    const script = DOC_SCRIPT[sc.id] || [];
+    if (sc.i < script.length - 1) { sc.i++; sc.t = 0; return true; }
+    sc.done = true; return false;
+  },
+  // he walks in, then idles; the caller just draws him every frame
+  drawScene(ctx, id) {
+    if (this.off()) return;
+    const sc = this.scene;
+    if (!sc || sc.id !== id) return;
+    sc.t += 1 / 60; sc.walk = Math.min(1, sc.walk + 1 / 36);
+    const script = DOC_SCRIPT[id] || [];
+    const line = sc.done ? null : script[Math.min(sc.i, script.length - 1)];
+    const F = LAB.FLOOR;
+    // he enters from off the left edge and settles at the bottom corner
+    const x = Math.round(lerp(-44, 46, easeOut(sc.walk)));
+    const prevX = this.x, prevDir = this.dir, prevWait = this.waitT, prevT = this.t;
+    this.x = x; this.dir = 1; this.waitT = sc.walk >= 1 ? 9 : 0; this.t = prevT;
+    const oldF = LAB.FLOOR;
+    LAB.FLOOR = G.H - 14;
+    this.draw(ctx);
+    // and his bubble, off to the right of him so it never covers him
+    if (line && sc.walk > 0.6) {
+      const w = Math.max(62, Font.width(line.line, 1) + 36), h = 25;
+      const bx = x + 24, by = G.H - 104;
+      // it floats over whatever is behind it, so it needs to be solid, bordered
+      // and shadowed or it reads as text lying loose on the screen
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx + 3, by + 3, w, h);
+      ctx.fillStyle = '#0c2124'; ctx.fillRect(bx, by, w, h);
+      ctx.fillStyle = '#1d4a46'; ctx.fillRect(bx, by, w, 1); ctx.fillRect(bx, by + h - 1, w, 1);
+      ctx.fillRect(bx, by, 1, h); ctx.fillRect(bx + w - 1, by, 1, h);
+      ctx.fillStyle = '#7affda'; ctx.fillRect(bx + 1, by + 1, w - 2, 2);
+      // the tail, stepping down toward him
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = '#0c2124'; ctx.fillRect(bx - 1 - i, by + h - 10 + i, i + 2, 2); }
+      this.icon(ctx, line.icon, bx + 14, by + 13, '#7affda');
+      Font.draw(ctx, line.line, bx + 26, by + 10, { color: '#e2f0e8' });
+      // the little chevron that says there is more
+      if (Math.floor(this.t * 3) % 2) { ctx.fillStyle = '#7affda'; for (let i = 0; i < 3; i++) ctx.fillRect(bx + w - 10 + i, by + h - 10 + i, 2, 1); }
+    } else if (this.cheer > 0 && sc.walk > 0.6) {
+      const txt = '+' + this.cheerPay, w = 56, bx = x + 24, by = G.H - 104;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx + 3, by + 3, w, 25);
+      ctx.fillStyle = '#231c08'; ctx.fillRect(bx, by, w, 25);
+      ctx.fillStyle = '#6a5a18'; ctx.fillRect(bx, by, w, 1); ctx.fillRect(bx, by + 24, w, 1); ctx.fillRect(bx, by, 1, 25); ctx.fillRect(bx + w - 1, by, 1, 25);
+      ctx.fillStyle = '#ffe060'; ctx.fillRect(bx + 1, by + 1, w - 2, 2);
+      this.icon(ctx, 'tick', bx + 14, by + 13, '#ffe060');
+      Font.draw(ctx, txt, bx + 26, by + 10, { color: '#ffe060' });
+    }
+    LAB.FLOOR = oldF;
+    this.x = prevX; this.dir = prevDir; this.waitT = prevWait;
+  },
+  sceneBubbleRect() {
+    const sc = this.scene; if (!sc || this.off()) return null;
+    const script = DOC_SCRIPT[sc.id] || [];
+    const line = sc.done ? null : script[Math.min(sc.i, script.length - 1)];
+    if (!line) return null;
+    const w = Math.max(62, Font.width(line.line, 1) + 36);
+    const x = Math.round(lerp(-44, 46, easeOut(sc.walk)));
+    return { x: x + 24, y: G.H - 104, w, h: 25 };
+  },
   update(raw) {
     this.t += raw;
     if (this.cheer > 0) this.cheer -= raw;

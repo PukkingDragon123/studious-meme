@@ -332,16 +332,18 @@ const G = {
     }
   },
   // the creation bay and the research lab, both reached from the lab floor
-  openResearch() { this.state = 'research'; this.menuT = 0; if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; } SFX.ui(); },
+  openResearch() { this.state = 'research'; this.menuT = 0; if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; } Doc.say('research'); SFX.ui(); },
   openLabBench() {
     this.state = 'bench'; this.menuT = 0;
     if (!this.benchTab) this.benchTab = 'vial';
+    Doc.say('bench');
     if (this.benchSel === undefined) this.benchSel = 0;
     SFX.ui();
   },
   openHabitat() {
     this.state = 'habitat'; this.menuT = 0;
     Habitat.ensure();
+    Doc.say('habitat');
     if (this.habSel === undefined) this.habSel = Habitat.runnerIndex();
     if (this.habRow === undefined) this.habRow = 0;
     if (this.habHatch === undefined) this.habHatch = 0;
@@ -756,7 +758,13 @@ const G = {
       }
       case 'research': {
         this.menuT += raw; Lab.update(raw);
-        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
+        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; Doc.scene = null; SFX.ui(); break; }
+        // he is mid-sentence: a tap on the bubble moves him along
+        {
+          const br = Doc.sceneBubbleRect();
+          if (br && Input.mouse.clicked && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.sceneNext(); SFX.ui(); break; }
+          if (br && Input.hit('KeyT')) { Doc.sceneNext(); SFX.ui(); break; }
+        }
         const cats = UI.resCatRects();
         if (Input.hit('ArrowLeft', 'KeyA')) { this.resCat = (this.resCat + cats.length - 1) % cats.length; this.resNode = 0; SFX.ui(); }
         if (Input.hit('ArrowRight', 'KeyD')) { this.resCat = (this.resCat + 1) % cats.length; this.resNode = 0; SFX.ui(); }

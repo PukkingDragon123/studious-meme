@@ -13,7 +13,7 @@
 // ---------------------------------------------------------------------------
 const RESEARCH = [
   {
-    id: 'morph', name: 'MORPHOLOGY', col: '#7affda', line: 'BASE STOCK AND BODY PLAN',
+    id: 'morph', name: 'MORPHOLOGY', col: '#7affda', icon: 'body', line: 'BASE STOCK AND BODY PLAN',
     nodes: [
       { id: 'm.size', name: 'GROWTH CONTROL', cost: 2, line: 'RUNT AND OVERGROWN LENGTHS', grant: { size: [0, 2] } },
       { id: 'm.girth', name: 'BODY DEPTH', cost: 3, need: ['m.size'], line: 'LEAN AND HEAVY FRAMES', grant: { girth: [0, 2] } },
@@ -26,7 +26,7 @@ const RESEARCH = [
     ],
   },
   {
-    id: 'pigment', name: 'PIGMENTATION', col: '#e0b050', line: 'HIDE AND CHROMATOPHORES',
+    id: 'pigment', name: 'PIGMENTATION', col: '#e0b050', icon: 'drop', line: 'HIDE AND CHROMATOPHORES',
     nodes: [
       { id: 'p.basic', name: 'BASE DYES', cost: 2, line: 'TANNIN AND MARSH GREEN', grant: { paint: ['tannin', 'marsh'] } },
       { id: 'p.dark', name: 'DARK PIGMENT', cost: 4, need: ['p.basic'], line: 'BLACKWATER AND SILT GREY', grant: { paint: ['blackwater', 'silt'] } },
@@ -35,7 +35,7 @@ const RESEARCH = [
     ],
   },
   {
-    id: 'gene', name: 'GENE THERAPY', col: '#ff5a3a', line: 'WHICH LINEAGES WILL TAKE',
+    id: 'gene', name: 'GENE THERAPY', col: '#ff5a3a', icon: 'helix', line: 'WHICH LINEAGES WILL TAKE',
     nodes: [
       { id: 'g.phantom', name: 'PHANTOM LINE', cost: 4, line: 'SPEED, STEALTH, AMBUSH', grant: { lineage: ['phantom'] } },
       { id: 'g.colossus', name: 'COLOSSUS LINE', cost: 6, line: 'MASS AS A WEAPON', grant: { lineage: ['colossus'] } },
@@ -45,19 +45,19 @@ const RESEARCH = [
     ],
   },
   {
-    id: 'chem', name: 'BIOCHEMISTRY', col: '#8ab820', line: 'STANDING TREATMENTS',
+    id: 'chem', name: 'BIOCHEMISTRY', col: '#8ab820', icon: 'flask', line: 'STANDING TREATMENTS',
     nodes: [
-      { id: 'c.clot', name: 'CLOTTING FACTOR', cost: 3, line: 'MEND WHILE FED', perk: P => { P.st.regen += 0.015; } },
-      { id: 'c.filter', name: 'HEPATIC FILTER', cost: 5, need: ['c.clot'], line: 'FILTH BUILDS 60% SLOWER', perk: P => { P.st.toxRes *= 2.5; } },
-      { id: 'c.chitin', name: 'CHITIN GRAFT', cost: 6, need: ['c.clot'], line: 'PLUS 10% ARMOUR', perk: P => { P.st.armor += 0.10; } },
-      { id: 'c.myo', name: 'MYOSTATIN BLOCK', cost: 8, need: ['c.chitin'], line: 'PLUS 12% BITE', perk: P => { P.st.bite *= 1.12; } },
-      { id: 'c.baro', name: 'BAROPHILIC MARROW', cost: 10, need: ['c.filter'], line: 'RATED 80% DEEPER', perk: P => { P.st.crushDepth *= 1.8; P.st.crushRes *= 1.5; } },
-      { id: 'c.adren', name: 'ADRENAL GLAND', cost: 10, need: ['c.myo'], line: 'PLUS 10% SPEED AND STAMINA', perk: P => { P.st.speed *= 1.10; P.st.dashCd *= 0.9; } },
-      { id: 'c.neuro', name: 'NEURAL ACCELERANT', cost: 18, need: ['c.adren', 'c.baro'], line: 'ONE EXTRA GENE POINT PER TIER', perk: P => { P.vialTierBonus = (P.vialTierBonus || 0) + 1; } },
+      { id: 'c.clot', pic: 'heart', name: 'CLOTTING FACTOR', cost: 3, line: 'MEND WHILE FED', perk: P => { P.st.regen += 0.015; } },
+      { id: 'c.filter', pic: 'filter', name: 'HEPATIC FILTER', cost: 5, need: ['c.clot'], line: 'FILTH BUILDS 60% SLOWER', perk: P => { P.st.toxRes *= 2.5; } },
+      { id: 'c.chitin', pic: 'shield', name: 'CHITIN GRAFT', cost: 6, need: ['c.clot'], line: 'PLUS 10% ARMOUR', perk: P => { P.st.armor += 0.10; } },
+      { id: 'c.myo', pic: 'jaw', name: 'MYOSTATIN BLOCK', cost: 8, need: ['c.chitin'], line: 'PLUS 12% BITE', perk: P => { P.st.bite *= 1.12; } },
+      { id: 'c.baro', pic: 'depth', name: 'BAROPHILIC MARROW', cost: 10, need: ['c.filter'], line: 'RATED 80% DEEPER', perk: P => { P.st.crushDepth *= 1.8; P.st.crushRes *= 1.5; } },
+      { id: 'c.adren', pic: 'bolt', name: 'ADRENAL GLAND', cost: 10, need: ['c.myo'], line: 'PLUS 10% SPEED AND STAMINA', perk: P => { P.st.speed *= 1.10; P.st.dashCd *= 0.9; } },
+      { id: 'c.neuro', pic: 'brain', name: 'NEURAL ACCELERANT', cost: 18, need: ['c.adren', 'c.baro'], line: 'ONE EXTRA GENE POINT PER TIER', perk: P => { P.vialTierBonus = (P.vialTierBonus || 0) + 1; } },
     ],
   },
   {
-    id: 'field', name: 'FIELD SURVEY', col: '#60a8ff', line: 'WHERE THEY WILL DROP YOU',
+    id: 'field', name: 'FIELD SURVEY', col: '#60a8ff', icon: 'globe', line: 'WHERE THEY WILL DROP YOU',
     nodes: [
       { id: 'f.sewer', name: 'MUNICIPAL SURVEY', cost: 6, line: 'OPENS THE SEWER NETWORK', grant: { zone: ['sewer'] } },
       { id: 'f.ocean', name: 'OFFSHORE SURVEY', cost: 10, line: 'OPENS THE OPEN OCEAN', grant: { zone: ['ocean'] } },

@@ -43,9 +43,14 @@ const CrocView = {
   },
   // solid render, for the customise stage: the actual animal, actual art
   draw(ctx, v, parts, cx, cy, worldSize) {
+    // drawCroc scales the PARTS by worldSize but lays them on the chain's raw
+    // node positions, so a chain solved at size 1 and drawn at 0.6 comes out as
+    // a row of disconnected blocks. Scale the whole space instead and hand
+    // drawCroc the size the chain was actually solved at.
     ctx.save();
     ctx.translate(Math.round(cx), Math.round(cy));
-    drawCroc(ctx, v.chain, parts, worldSize, { jaw: v.jaw, legPhase: v.legPhase, flipY: 1 });
+    if (worldSize !== 1) ctx.scale(worldSize, worldSize);
+    drawCroc(ctx, v.chain, parts, 1, { jaw: v.jaw, legPhase: v.legPhase, flipY: 1 });
     ctx.restore();
   },
   // holographic render. `col` tints it; `k` is projector strength 0..1.

@@ -35,7 +35,9 @@ and the screen you asked for is behind it when it comes back up.
 - **HABITAT** — the enclosures down the middle of the floor
 - **LAB** — the vial rack and the DNA wall on the right
 
-**Doc Croc** walks the floor between them. The project's lead herpetologist
+**Doc Croc** walks the floor between them, and follows you into whichever bay
+you open — he comes on from the wing, says his piece a line at a time, and then
+stands in the corner reacting to what you do. The project's lead herpetologist
 spliced himself years ago and it took; he wears a coat that no longer fits over
 the tail, keeps his spectacles pushed up on a brow that has no use for them, and
 carries a slate. He teaches the building one job at a time — a picture and two
@@ -87,11 +89,13 @@ first, five for a relic carried out. The death card shows the arithmetic. Data i
 never spent in the field and never lost on death — the lab is the part of you
 that survives.
 
-The research screen is the room itself, with the programme laid over it: five
-tracks down the left with their own colour and progress, the chosen track's chain
-of steps down the right. A step shows its name whether or not you can afford it —
-you are meant to see what you are saving for — and withholds only the detail until
-the step above it is paid for.
+The research screen has almost nothing written on it. Five programme cylinders
+stand down the left, each filled with its own colour to however far it has got.
+Beside the one you are looking at, its chain of steps — and a step does not say
+what it does, it **shows** it: the crocodile it unlocks, swimming; the two
+pigments it mixes, as swatches; the lineage it opens, as that line's hex; the
+place it finds, as that site's landmark. A padlock means the step above has not
+been paid for. The only writing on the screen is a price and a total.
 
 | Programme | What it buys |
 | --- | --- |
