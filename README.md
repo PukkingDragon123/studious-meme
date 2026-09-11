@@ -89,13 +89,20 @@ first, five for a relic carried out. The death card shows the arithmetic. Data i
 never spent in the field and never lost on death — the lab is the part of you
 that survives.
 
-The research screen has almost nothing written on it. Five programme cylinders
-stand down the left, each filled with its own colour to however far it has got.
-Beside the one you are looking at, its chain of steps — and a step does not say
-what it does, it **shows** it: the crocodile it unlocks, swimming; the two
-pigments it mixes, as swatches; the lineage it opens, as that line's hex; the
-place it finds, as that site's landmark. A padlock means the step above has not
-been paid for. The only writing on the screen is a price and a total.
+The research screen is a lit board bolted to a wall of the lab, not a menu over
+it: a lamp bar on two cables above it, a steel frame with bolts through it, an
+engraved plate at its head, and the floor of the room still visible underneath —
+tiles, a trolley, gas bottles, a drain, and Doc Croc standing on it talking up at
+you. Five programme cylinders are racked down the left of the board, each filled
+with its own colour to however far it has got. Beside the one you are looking at,
+its chain of steps, slotted into the board.
+
+Every step is written **and** drawn. Its name and what it gives you are on the
+card; in the specimen well beside them is the thing itself — the crocodile it
+unlocks, swimming; the two pigments it mixes, as swatches; the lineage it opens,
+as that line's hex; the place it finds, as that site's landmark. A padlock over
+the well means the step above has not been paid for. The price is stamped on a
+plate at the end of the card, and a tick replaces it once the step is funded.
 
 | Programme | What it buys |
 | --- | --- |

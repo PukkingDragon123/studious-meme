@@ -82,10 +82,13 @@ const Doc = {
     sc.done = true; return false;
   },
   // he walks in, then idles; the caller just draws him every frame
-  drawScene(ctx, id) {
+  drawScene(ctx, id, opts) {
     if (this.off()) return;
     const sc = this.scene;
     if (!sc || sc.id !== id) return;
+    // where his bubble hangs. Rooms with a full-height panel in them put it low,
+    // down on the floor beside him, so it never lands on what you are reading.
+    sc.by = (opts && opts.bubbleY) || G.H - 104;
     sc.t += 1 / 60; sc.walk = Math.min(1, sc.walk + 1 / 36);
     const script = DOC_SCRIPT[id] || [];
     const line = sc.done ? null : script[Math.min(sc.i, script.length - 1)];
@@ -100,7 +103,7 @@ const Doc = {
     // and his bubble, off to the right of him so it never covers him
     if (line && sc.walk > 0.6) {
       const w = Math.max(62, Font.width(line.line, 1) + 36), h = 25;
-      const bx = x + 24, by = G.H - 104;
+      const bx = x + 24, by = sc.by;
       // it floats over whatever is behind it, so it needs to be solid, bordered
       // and shadowed or it reads as text lying loose on the screen
       ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx + 3, by + 3, w, h);
@@ -115,7 +118,7 @@ const Doc = {
       // the little chevron that says there is more
       if (Math.floor(this.t * 3) % 2) { ctx.fillStyle = '#7affda'; for (let i = 0; i < 3; i++) ctx.fillRect(bx + w - 10 + i, by + h - 10 + i, 2, 1); }
     } else if (this.cheer > 0 && sc.walk > 0.6) {
-      const txt = '+' + this.cheerPay, w = 56, bx = x + 24, by = G.H - 104;
+      const txt = '+' + this.cheerPay, w = 56, bx = x + 24, by = sc.by;
       ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx + 3, by + 3, w, 25);
       ctx.fillStyle = '#231c08'; ctx.fillRect(bx, by, w, 25);
       ctx.fillStyle = '#6a5a18'; ctx.fillRect(bx, by, w, 1); ctx.fillRect(bx, by + 24, w, 1); ctx.fillRect(bx, by, 1, 25); ctx.fillRect(bx + w - 1, by, 1, 25);
@@ -133,7 +136,7 @@ const Doc = {
     if (!line) return null;
     const w = Math.max(62, Font.width(line.line, 1) + 36);
     const x = Math.round(lerp(-44, 46, easeOut(sc.walk)));
-    return { x: x + 24, y: G.H - 104, w, h: 25 };
+    return { x: x + 24, y: sc.by || G.H - 104, w, h: 25 };
   },
   update(raw) {
     this.t += raw;
