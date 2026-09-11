@@ -46,6 +46,7 @@ const Lab = {
     this.t += raw;
     if (this.hint > 0) this.hint -= raw;
     if (this._spec) CrocView.update(this._spec, raw, 9.5);
+    if (typeof Doc !== 'undefined') Doc.update(raw);
     for (const s of this.staff) {
       if (s.mode === 'walk' || s.mode === 'clip') {
         if (s.waitT > 0) { s.waitT -= raw; s.anim.speed = 0; }
@@ -81,6 +82,8 @@ const Lab = {
     this.acidBath(ctx, t);              // cut into the floor, so painted over it
     // staff walk between the machines and the railing
     for (const s of this.staff) this.drawStaff(ctx, s);
+    // the man who runs the place, such as he still is
+    if (typeof Doc !== 'undefined' && !Doc.off()) Doc.draw(ctx);
     this.acidFx(ctx, t);
     this.foreground(ctx, t);
     this.lighting(ctx, t);

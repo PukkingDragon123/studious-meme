@@ -24,6 +24,9 @@ class Player {
       // environment tolerance: how fast filth and pressure accumulate, and how
       // deep you can go before the water starts squeezing
       toxRes: 1, crushRes: 1, crushDepth: 560,
+      // species signatures
+      smallGrowth: 1, hatchling: false, biteRate: 1, chainCrit: 0, rollWindow: 1, bigLatch: 0,
+      fishSlayer: 1, fishSwallow: false, ambushMul: 2.5,
     };
     this.traits = [];
     this.lastMax = this.maxHp; this.hp = this.maxHp; this.hunger = 100;
@@ -353,16 +356,17 @@ class Player {
       const ph = this.qteT || 0;
       let off = Math.abs(ph - QTE_AT); if (off > 0.5) off = 1 - off;   // the window wraps
       const e = this.latched;
-      if (off < QTE_PERFECT) {
+      const WP = QTE_PERFECT * this.st.rollWindow, WG = QTE_GOOD * this.st.rollWindow;
+      if (off < WP) {
         this.qteHits = (this.qteHits || 0) + 2; Trials.bump(this, 'rollHits', 2);
         G.shake(8); SFX.crunch(1.4, this.pan); Cine.hit(1, '#fff0a0');
         if (e) { G.fx.gore(e.x, e.y, 70, 0, 0, false); G.fx.sparks(e.x, e.y, 8); }
-      } else if (off < QTE_GOOD) {
+      } else if (off < WG) {
         this.qteHits = (this.qteHits || 0) + 1; Trials.bump(this, 'rollHits');
         G.shake(5); SFX.chomp(this.size, this.pan); Cine.hit(0.45, '#9ef0c8');
         if (e) G.fx.blood(e.x, e.y, 6, 0, 0, 50, e.bloodColors);
       } else { this.qteMissed = true; SFX.chomp(this.size, this.pan); }
-      this.qteLast = off < QTE_PERFECT ? 2 : off < QTE_GOOD ? 1 : 0; this.qteLastT = 0.5;
+      this.qteLast = off < WP ? 2 : off < WG ? 1 : 0; this.qteLastT = 0.5;
       this.qteBeats = (this.qteBeats || 0) + 1;
       this.qteT = 0;
       this.biteCd = 0.1;
@@ -373,7 +377,7 @@ class Player {
       this.qteT = 0; this.qteHits = 0; this.qteBeats = 0; this.qteMissed = false;
       G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return;
     }
-    this.biteT = 0.18; this.biteHit = false; this.biteCd = 0.3;
+    this.biteT = 0.18; this.biteHit = false; this.biteCd = 0.3 * this.st.biteRate;
     if (this.st.lunge) { this.vx += Math.cos(this.angle) * this.st.lunge; this.vy += Math.sin(this.angle) * this.st.lunge; }
   }
   doBiteHit() {
@@ -393,9 +397,14 @@ class Player {
   }
   chompEntity(e, sx, sy, dx, dy) {
     if (e.onBite) { e.onBite(this, sx, sy, dx, dy); return; }
-    if (e.sizeClass <= this.size * 0.5 * this.st.swallow && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach)) { this.gulp(e); return; }
+    // a gharial takes fish whole whatever the size: that is the whole animal
+    const fishy = e.type === 'fish' && this.st.fishSwallow;
+    if ((fishy && e.edible) || (e.sizeClass <= this.size * 0.5 * this.st.swallow && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
-    if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= 2.5; crit = true; this.lastKillHow = 'ambush'; Trials.bump(this, 'ambush'); }
+    if (this.st.fishSlayer > 1 && e.type === 'fish') dmg *= this.st.fishSlayer;
+    if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= this.st.ambushMul; crit = true; this.lastKillHow = 'ambush'; Trials.bump(this, 'ambush'); }
+    // a skirmisher does not crit by luck, it crits on a rhythm
+    if (this.st.chainCrit && this.comboT > 0 && this.combo > 0 && (this.combo + 1) % this.st.chainCrit === 0) { dmg *= 2.4; crit = true; }
     if (chance(this.st.crit)) { dmg *= 3; crit = true; }
     if (this.st.woundMul > 1 && e.hp < e.maxHp * 0.6) { dmg *= this.st.woundMul; crit = true; }
     const applied = e.takeDamage(dmg, this, { dx, dy, pierce: this.st.pierce, crit });
@@ -407,7 +416,8 @@ class Player {
     SFX.crunch(this.size, e.pan);
     if (this.st.venom && !e.dead) { e.poison = Math.max(e.poison, 3); e.poisonDmg = dmg * this.st.venom / 3; }
     if (this.st.bleed && !e.dead) { e.bleedT = 3; e.bleedDmg = dmg * 0.12; }
-    if (!e.dead && e.latchable && e.sizeClass <= this.size * this.st.latchMul && e.sizeClass > this.size * 0.5 && !this.latched) {
+    const latchCap = this.size * Math.max(this.st.latchMul, this.st.bigLatch);
+    if (!e.dead && e.latchable && e.sizeClass <= latchCap && e.sizeClass > this.size * 0.5 && !this.latched) {
       this.latched = e; this.latchT = 0; G.fx.text(this.x, this.y - 22 * this.vis, 'LATCHED! BITE TO ROLL', { color: '#ff9080' });
     }
   }
@@ -556,7 +566,11 @@ class Player {
     this.ramHit.clear();
   }
   eat(e) {
-    const gain = e.mass * this.st.growth * (1 + Math.min(this.combo, 20) * 0.03) * (1 + 0.12 * this.tier);
+    // a scrapper is the animal that makes a meal out of things too small to
+    // be worth a bigger crocodile's time
+    const rel = e.mass / Math.max(1, this.mass);
+    const small = this.st.smallGrowth > 1 && rel < 0.18 ? this.st.smallGrowth : 1;
+    const gain = e.mass * this.st.growth * small * (1 + Math.min(this.combo, 20) * 0.03) * (1 + 0.12 * this.tier);
     this.mass += gain;
     this.hunger = Math.min(100, this.hunger + e.mass * 30 / Math.pow(this.size, 1.8) * this.st.hungerRestore);
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));

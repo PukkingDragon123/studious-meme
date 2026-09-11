@@ -238,16 +238,17 @@ const UI = {
     // track
     ctx.fillStyle = '#101a1c'; ctx.fillRect(gx, gy, gw, gh);
     // the bands: a wide green tear window with a gold core inside it
-    zone(QTE_AT, QTE_GOOD, '#1d5a4a', gh, 0);
-    zone(QTE_AT, QTE_PERFECT, '#8a6a10', gh, 0);
-    zone(QTE_AT, QTE_GOOD, '#2f8a72', 2, 0);
-    zone(QTE_AT, QTE_PERFECT, '#ffd040', 2, 0);
+    const RW = (P.st && P.st.rollWindow) || 1, WG = QTE_GOOD * RW, WP = QTE_PERFECT * RW;
+    zone(QTE_AT, WG, '#1d5a4a', gh, 0);
+    zone(QTE_AT, WP, '#8a6a10', gh, 0);
+    zone(QTE_AT, WG, '#2f8a72', 2, 0);
+    zone(QTE_AT, WP, '#ffd040', 2, 0);
     // tick marks along the track
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
     for (let i = 1; i < 16; i++) ctx.fillRect(gx + Math.round(i * gw / 16), gy, 1, i % 4 === 0 ? gh : 3);
     // needle, with a trail behind it so the direction reads at a glance
     const nx = gx + Math.round(wrap(ph) * gw);
-    const inWin = Math.min(Math.abs(ph - QTE_AT), 1 - Math.abs(ph - QTE_AT)) < QTE_GOOD;
+    const inWin = Math.min(Math.abs(ph - QTE_AT), 1 - Math.abs(ph - QTE_AT)) < WG;
     for (let k = 1; k <= 5; k++) {
       const tx = nx - k * 3;
       if (tx < gx) continue;
@@ -520,9 +521,10 @@ const UI = {
     const F = LAB.FLOOR, W = G.W, H = G.H;
     const out = [
       { id: 'research', x: 6, y: F - 180, w: 164, h: 180, label: 'RESEARCH' },
-      { id: 'create', x: 258, y: 78, w: 124, h: 218, label: 'CREATE' },
+      { id: 'habitat', x: 258, y: 78, w: 124, h: 218, label: 'HABITAT' },
+      { id: 'lab', x: 434, y: F - 132, w: 200, h: 132, label: 'LAB' },
     ];
-    const pw = 104, ph = 26, gap = 14, py = H - 48;
+    const pw = 86, ph = 26, gap = 10, py = H - 48;
     const total = out.length * pw + (out.length - 1) * gap;
     out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
     return out;
@@ -558,6 +560,9 @@ const UI = {
       Font.draw(ctx, s2.label, s2.bx + s2.bw / 2, s2.by + 9, { color: on ? '#e8fff8' : '#4f7f74', align: 'center', scale: 2, outline: '#04120e' });
       if (on) this.bracket(ctx, s2.bx - 3, s2.by - 3, s2.bw + 6, s2.bh + 6, '#7affda', 8);
     });
+
+    // --- Doc has something for you, or he does not
+    if (typeof Doc !== 'undefined') Doc.drawBubble(ctx);
 
     // --- one number that matters, and nothing else
     const d = Research.data();
@@ -654,260 +659,412 @@ const UI = {
     Font.draw(ctx, String(d), W - 12, bankY + 13, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 3, outline: '#3a2a00' });
     this.drawExit(ctx);
   },
-  // ---------- the creation bay ----------
-  // Two stages. SPECIES is a holographic projector running an attack loop with
-  // arrows either side of it. SPLICE commits, and CUSTOMISE is the specimen in
-  // an acid column with length, girth and hide to set on it.
-  cvSpecies() { if (!this._cvS) this._cvS = CrocView.make(); return this._cvS; },
-  cvCustom() { if (!this._cvC) this._cvC = CrocView.make(); return this._cvC; },
-  // parts cache keyed on the look, so scrubbing sliders is not a rebuild storm
-  cvParts(look) {
-    const key = JSON.stringify(look);
-    if (this._cvKey !== key) { this._cvKey = key; this._cvParts = buildCrocParts(look); }
-    return this._cvParts;
+  // The bay shutter. Picking a station drops a steel roller over that part of
+  // the room, and the screen you asked for is behind it when it comes back up.
+  drawWipe(ctx) {
+    const W = G.W, H = G.H;
+    const wp = G.labWipe;
+    let k = 0, cx = W / 2;
+    if (wp) { k = clamp(wp.t / (wp.dur * 0.5), 0, 1); cx = wp.x; if (wp.t > wp.dur * 0.5) k = 1; }
+    else if (G.wipeIn > 0) { G.wipeIn -= 1 / 60; k = clamp(G.wipeIn / 0.32, 0, 1); }
+    else return;
+    const hgt = Math.round(H * easeOut(k));
+    if (hgt <= 0) return;
+    // corrugated steel, lit along every rib
+    for (let y = 0; y < hgt; y += 6) {
+      ctx.fillStyle = '#2c3639'; ctx.fillRect(0, y, W, 5);
+      ctx.fillStyle = '#3f4c50'; ctx.fillRect(0, y, W, 1);
+      ctx.fillStyle = '#1a2124'; ctx.fillRect(0, y + 4, W, 1);
+    }
+    // the leading edge, with a hazard stripe and a warning lamp over the bay
+    ctx.fillStyle = '#161d20'; ctx.fillRect(0, hgt - 5, W, 5);
+    for (let x = -((hgt * 2) % 16); x < W; x += 16) { ctx.fillStyle = '#c8a020'; ctx.fillRect(x, hgt - 4, 8, 3); }
+    ctx.fillStyle = '#0a1012'; ctx.fillRect(0, hgt, W, 2);
+    if (k > 0.1 && k < 1) {
+      ctx.globalAlpha = 0.5 + 0.5 * Math.sin(G.t * 20);
+      ctx.fillStyle = '#ff5030'; ctx.fillRect(Math.round(cx) - 4, hgt - 12, 8, 5);
+      ctx.globalAlpha = 1;
+    }
   },
-  createArrows() {
-    return [{ id: -1, x: 224, y: 130, w: 26, h: 40 }, { id: 1, x: 448, y: 130, w: 26, h: 40 }];
-  },
-  createCells() {
-    const W = G.W, out = [];
-    const x0 = 216, cw = Math.floor((W - x0 - 12) / 4);
-    SIZE_GRADES.forEach((gr, i) => out.push({ row: 0, i, x: x0 + i * cw, y: 46, w: cw - 3, h: 17, item: gr }));
-    GIRTH_GRADES.forEach((gi, i) => out.push({ row: 1, i, x: x0 + i * cw, y: 92, w: cw - 3, h: 17, item: gi }));
-    const pw = Math.floor((W - x0 - 12) / 3);
-    HIDE_PAINTS.forEach((pt, i) => out.push({ row: 2, i, x: x0 + (i % 3) * pw, y: 138 + Math.floor(i / 3) * 20, w: pw - 3, h: 18, item: pt }));
+  // ---------- the laboratory ----------
+  // Two benches. The rack of vials is a rack of vials; the DNA wall is a wall
+  // of culture jars. Almost nothing here is a sentence.
+  benchTabs() { return [{ id: 'vial', x: 10, y: 8, w: 60, h: 20 }, { id: 'dna', x: 74, y: 8, w: 60, h: 20 }]; },
+  vialRects() {
+    const out = [], w = 62, h = 96, gap = 8;
+    const total = VIALS.length * w + (VIALS.length - 1) * gap, x0 = Math.round((G.W - total) / 2);
+    VIALS.forEach((v, i) => out.push({ v, i, x: x0 + i * (w + gap), y: 54, w, h }));
     return out;
   },
-  createGoRect() { return G.createPhase ? { x: G.W - 152, y: G.H - 38, w: 134, h: 26 } : { x: G.W / 2 - 62, y: G.H - 42, w: 124, h: 28 }; },
-  createBackRect() { return { x: 12, y: G.H - 38, w: 74, h: 26 }; },
-
-  drawCreate(ctx) {
-    if (G.createPhase) this.drawCustomise(ctx); else this.drawSpeciesSelect(ctx);
-  },
-
-  // ---- stage one: the species projector
-  drawSpeciesSelect(ctx) {
-    const W = G.W, H = G.H, t = G.menuT, E = G.embryo, b = Create.spec();
-    ctx.fillStyle = 'rgba(3,10,12,0.86)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'SPECIMEN LIBRARY', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, 'SELECT A BASE ORGANISM TO SPLICE FROM', 12, 26, { color: '#4f7f74' });
-
-    const idx = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
-    const open = Create.speciesUnlocked(b.sp);
-    const col = open ? (b.sp.holo || '#7affda') : '#5f7f78';
-    const cx = 348, cy = 138;
-
-    // --- the projector stage: plate, cone, grid floor
-    ctx.fillStyle = 'rgba(6,16,18,0.7)'; ctx.fillRect(214, 44, 268, 176);
-    this.bracket(ctx, 214, 44, 268, 176, rgba(col, 0.5), 14);
-    // reference grid behind it, receding
-    ctx.globalAlpha = 0.16; ctx.fillStyle = col;
-    for (let i = 0; i < 9; i++) ctx.fillRect(222, 60 + i * 18, 252, 1);
-    for (let i = 0; i < 11; i++) { const xx = 222 + i * 25.2; ctx.fillRect(Math.round(xx), 60, 1, 144); }
+  drawLabBench(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    ctx.fillStyle = 'rgba(3,10,12,0.88)'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.12; ctx.fillStyle = '#0a2a26';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
     ctx.globalAlpha = 1;
-    CrocView.projector(ctx, cx, cy, 150, col, t, open ? 1 : 0.3);
-
-    // --- the specimen, running its attack loop
-    if (open) {
-      const v = this.cvSpecies();
-      const look = Object.assign({}, CROC_LOOKS.base, b.sp.look || {}, { girth: b.sp.girth || 1 });
-      CrocView.holo(ctx, v, this.cvParts(look), cx + 44, cy, 2.05, col, 1, t);
-      // the attack phase, called out as a label
-      const u = (v.t % 2.9) / 2.9;
-      const ph = u < 0.30 ? 'IDLE' : u < 0.46 ? 'COIL' : u < 0.58 ? 'LUNGE' : u < 0.64 ? 'STRIKE' : 'RECOVER';
-      Font.draw(ctx, ph, 474, 50, { color: u > 0.44 && u < 0.7 ? '#ffffff' : rgba(col, 0.7), align: 'right' });
-    } else {
-      Font.draw(ctx, 'NO SAMPLE ON FILE', cx, cy - 4, { color: '#3f5f58', align: 'center', scale: 2 });
-      Font.draw(ctx, 'NEEDS RESEARCH', cx, cy + 14, { color: '#5f7f78', align: 'center' });
+    const tab = G.benchTab || 'vial';
+    for (const b of this.benchTabs()) {
+      const on = b.id === tab;
+      ctx.fillStyle = on ? 'rgba(14,34,32,0.96)' : 'rgba(6,16,16,0.85)'; ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = on ? '#7affda' : '#22403c'; ctx.fillRect(b.x, b.y, b.w, 2);
+      // the tab is a picture of the bench: a tube, or a helix
+      const cx = b.x + 16, cy = b.y + 10, c = on ? '#b8ffe8' : '#4f7f74';
+      if (b.id === 'vial') { ctx.fillStyle = c; ctx.fillRect(cx - 2, cy - 6, 5, 3); ctx.fillRect(cx - 2, cy - 3, 5, 9); }
+      else { ctx.fillStyle = c; for (let k = 0; k < 6; k++) { const a = k / 5 * Math.PI; ctx.fillRect(Math.round(cx + Math.sin(a) * 4) - 1, cy - 6 + k * 2, 2, 2); ctx.fillRect(Math.round(cx - Math.sin(a) * 4) - 1, cy - 6 + k * 2, 2, 2); } }
+      Font.draw(ctx, b.id === 'vial' ? 'VIALS' : 'DNA', b.x + 30, b.y + 7, { color: on ? '#e8fff8' : '#4f7f74' });
     }
-    // scanning sweep across the stage
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.10; ctx.fillStyle = col;
-    ctx.fillRect(214, 44 + ((t * 44) % 176), 268, 2);
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-
-    // --- arrows either side, physical buttons
-    for (const a of this.createArrows()) {
-      const lit = Math.sin(t * 5 + (a.id > 0 ? 0 : Math.PI)) > -0.4;
-      ctx.fillStyle = 'rgba(10,26,28,0.9)'; ctx.fillRect(a.x, a.y, a.w, a.h);
-      ctx.fillStyle = lit ? col : rgba(col, 0.4); ctx.fillRect(a.x, a.y, a.w, 1);
-      this.bracket(ctx, a.x, a.y, a.w, a.h, rgba(col, 0.6), 6);
-      // chevron
-      ctx.fillStyle = lit ? '#e8fff8' : rgba(col, 0.6);
-      const mx = a.x + a.w / 2, my = a.y + a.h / 2;
-      for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(mx + a.id * (3 - i)), Math.round(my - i), 2, 1 + i * 2 > 0 ? 1 : 1);
-      for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(mx + a.id * (3 - i)), Math.round(my + i), 2, 1);
-    }
-    // the roster, as ticks under the stage
-    BASE_SPECIES.forEach((sp, i) => {
-      const bx = 214 + 14 + i * 40, on = i === idx, ok = Create.speciesUnlocked(sp);
-      ctx.fillStyle = on ? col : ok ? rgba(col, 0.4) : '#2a3230';
-      ctx.fillRect(bx, 226, 30, on ? 4 : 2);
-    });
-    Font.draw(ctx, (idx + 1) + ' / ' + BASE_SPECIES.length, 474, 232, { color: '#4f7f74', align: 'right' });
-
-    // --- the dossier on the right... actually below: name, latin, icon, gene, bars
-    // species portrait, taken from the animal's own head art
-    const px0 = 12, py0 = 44;
-    ctx.fillStyle = 'rgba(6,16,18,0.8)'; ctx.fillRect(px0, py0, 194, 176);
-    this.bracket(ctx, px0, py0, 194, 176, 'rgba(120,220,200,0.4)', 10);
-    if (open) {
-      const look = Object.assign({}, CROC_LOOKS.base, b.sp.look || {}, { girth: b.sp.girth || 1 });
-      const parts = this.cvParts(look);
-      const hd = parts.head;
-      ctx.save();
-      ctx.translate(px0 + 46, py0 + 30);
-      ctx.scale(1.5, 1.5);
-      ctx.drawImage(hd.c, -hd.ox, -hd.oy);
-      ctx.restore();
-      ctx.fillStyle = rgba(col, 0.25); ctx.fillRect(px0 + 6, py0 + 6, 78, 48);
-    }
-    Font.draw(ctx, b.sp.name, px0 + 90, py0 + 10, { color: open ? '#e8fff8' : '#5f7f78' });
-    Font.drawWrapped(ctx, b.sp.latin, px0 + 90, py0 + 22, 100, { color: '#5f9f94', lineHeight: 9 });
-    // stat bars
-    const bars = [['LENGTH', b.sp.size / 2.4], ['HEALTH', b.sp.hp / 1.7], ['SPEED', b.sp.spd / 1.4], ['BITE', b.sp.bite / 1.7], ['GIRTH', (b.sp.girth || 1) / 1.35]];
-    bars.forEach((r, i) => {
-      const by = py0 + 62 + i * 13;
-      Font.draw(ctx, r[0], px0 + 8, by, { color: '#4f7f74' });
-      ctx.fillStyle = '#111c1e'; ctx.fillRect(px0 + 54, by, 130, 6);
-      ctx.fillStyle = open ? col : '#2a3230'; ctx.fillRect(px0 + 54, by, Math.round(130 * clamp(r[1], 0.05, 1)), 6);
-      ctx.fillStyle = rgba('#ffffff', 0.35); ctx.fillRect(px0 + 54, by, Math.round(130 * clamp(r[1], 0.05, 1)), 2);
-    });
-    // the signature gene it brings with it
-    const gy = py0 + 130;
-    Font.draw(ctx, 'INNATE GENE', px0 + 8, gy, { color: '#4f7f74' });
-    if (b.gene) {
-      const L = LINEAGES[b.gene.lin], gc = L ? L.color : '#9ad8c0';
-      this.hex(ctx, px0 + 20, gy + 26, 13, rgba(gc, 0.3), gc, 2);
-      const ic = L ? ICONS[L.icon] : null;
-      if (ic) drawIcon(ctx, ic, px0 + 20, gy + 23, 13, t, { alpha: 1 });
-      Font.draw(ctx, b.gene.name, px0 + 40, gy + 14, { color: gc });
-      Font.drawWrapped(ctx, b.gene.desc, px0 + 40, gy + 25, 146, { color: '#9ef0c8', lineHeight: 9 });
-    } else {
-      Font.draw(ctx, 'NONE. A BLANK SLATE.', px0 + 8, gy + 14, { color: '#5f7f78' });
-      Font.drawWrapped(ctx, 'THE DWARF CARRIES NOTHING OF ITS OWN. EVERY POINT YOU SPEND IS YOURS.', px0 + 8, gy + 26, 178, { color: '#4f6f6a', lineHeight: 9 });
-    }
-
-    // --- flavour and the splice button
-    ctx.fillStyle = 'rgba(4,10,12,0.85)'; ctx.fillRect(12, 240, W - 24, 26);
-    Font.drawWrapped(ctx, b.sp.line, 18, 245, W - 36, { color: '#c8d8d0', lineHeight: 9 });
-    const go = this.createGoRect();
-    const p2 = 0.5 + 0.5 * Math.sin(t * 4);
-    ctx.fillStyle = open ? 'rgba(14,60,50,0.92)' : 'rgba(40,20,16,0.9)'; ctx.fillRect(go.x, go.y, go.w, go.h);
-    ctx.fillStyle = open ? mixColor('#1d6a58', '#7affda', p2) : '#5a3028'; ctx.fillRect(go.x, go.y, go.w, 2);
-    this.bracket(ctx, go.x, go.y, go.w, go.h, open ? '#7affda' : '#8a5040', 9);
-    Font.draw(ctx, open ? 'SPLICE' : 'LOCKED', go.x + go.w / 2, go.y + 8, { color: open ? '#d8fff0' : '#c08a7a', align: 'center', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP ARROWS TO BROWSE' : 'LEFT / RIGHT: BROWSE      ENTER: SPLICE      ESC: BACK', 12, H - 10, { color: '#4f7f74' });
-  },
-
-  // ---- stage two: customise the spliced animal
-  drawCustomise(ctx) {
-    const W = G.W, H = G.H, t = G.menuT, E = G.embryo, b = Create.spec();
-    ctx.fillStyle = 'rgba(3,10,12,0.86)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'SPLICE CHAMBER', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, b.sp.name + '   ' + b.gr.name + ' / ' + b.gi.name, 12, 26, { color: '#4f7f74' });
-
-    // --- the acid column with the real animal in it
-    const tx = 12, ty = 38, tw = 194, th = 226;
-    ctx.fillStyle = '#0a1416'; ctx.fillRect(tx - 3, ty - 3, tw + 6, th + 6);
-    const fg = ctx.createLinearGradient(0, ty, 0, ty + th);
-    fg.addColorStop(0, '#20624e'); fg.addColorStop(0.55, '#1a5347'); fg.addColorStop(1, '#0d3330');
-    ctx.fillStyle = fg; ctx.fillRect(tx, ty, tw, th);
-    ctx.save(); ctx.beginPath(); ctx.rect(tx, ty, tw, th); ctx.clip();
-    // acid: rising columns of bubbles, drifting scum, a bright meniscus
-    for (let i = 0; i < 54; i++) {
-      const bx = tx + 4 + ihash(i, 41) * (tw - 8);
-      const sp = 12 + ihash(i, 45) * 26;
-      const by = ty + th - ((t * sp + ihash(i, 43) * 600) % (th - 4));
-      ctx.globalAlpha = 0.35 + ihash(i, 46) * 0.4;
-      ctx.fillStyle = ihash(i, 44) > 0.55 ? '#b8ffd8' : '#6fc0a4';
-      const s2 = ihash(i, 47) > 0.82 ? 2 : 1;
-      ctx.fillRect(Math.round(bx), Math.round(by), s2, s2);
-    }
-    ctx.globalAlpha = 1;
-    // the specimen, solid, in the real art
-    const v = this.cvCustom();
-    const look = Create.look();
-    CrocView.draw(ctx, v, this.cvParts(look), tx + tw * 0.74, ty + th * 0.5, 1.4 + b.size * 0.45);
-    // acid haze over it and caustic banding
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.07; ctx.fillStyle = '#7affda';
-    for (let i = 0; i < 8; i++) ctx.fillRect(tx, ty + ((t * 18 + i * 30) % th), tw, 2);
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    ctx.restore();
-    // glass
-    ctx.globalAlpha = 0.3; ctx.fillStyle = '#dffdf4'; ctx.fillRect(tx + 8, ty + 4, 3, th - 8); ctx.globalAlpha = 1;
-    ctx.fillStyle = 'rgba(150,230,220,0.3)'; ctx.fillRect(tx, ty, 2, th); ctx.fillRect(tx + tw - 2, ty, 2, th);
-    for (let ry = ty + 40; ry < ty + th - 20; ry += 62) { ctx.fillStyle = '#3a565c'; ctx.fillRect(tx - 3, ry, tw + 6, 4); ctx.fillStyle = '#4e7078'; ctx.fillRect(tx - 3, ry, tw + 6, 1); }
-    // vitals strip
-    const st2 = [['LENGTH', (b.size * 1.5).toFixed(1) + 'FT'], ['HEALTH', Math.round(b.hp * 100) + '%'], ['SPEED', Math.round(b.spd * 100) + '%'], ['BITE', Math.round(b.bite * 100) + '%'], ['HUNGER', Math.round(b.hunger * 100) + '%']];
-    st2.forEach((r, i) => {
-      const rx = tx + 2 + i * 39;
-      Font.draw(ctx, r[0].slice(0, 3), rx, ty + th + 6, { color: '#4f7f74' });
-      Font.draw(ctx, r[1], rx, ty + th + 16, { color: '#d8e8de' });
-    });
-
-    // --- the four banks
-    const cells = this.createCells();
-    const label = (txt, y, hint) => {
-      Font.draw(ctx, txt, 216, y, { color: '#7affda' });
-      if (hint) Font.draw(ctx, hint, W - 12, y, { color: '#3f6f66', align: 'right' });
-      ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, y + 9, W - 228, 1);
-    };
-    label('LENGTH', 34, b.gr.name);
-    label('GIRTH', 80, b.gi.name);
-    label('HIDE', 126, b.pt.name);
-    for (const c of cells) {
-      const item = c.item;
-      const open = Create.rowUnlocked(c.row, c.i, item);
-      const cur = (c.row === 0 && E.size === c.i) || (c.row === 1 && E.girth === c.i) || (c.row === 2 && (E.paint || 'wild') === item.id);
-      const on = (G.createRow || 0) === c.row && cur;
-      const cc = c.row === 2 && item.swatch ? item.swatch : '#7affda';
-      ctx.fillStyle = cur ? 'rgba(30,80,70,0.9)' : 'rgba(10,22,24,0.85)'; ctx.fillRect(c.x, c.y, c.w, c.h);
-      ctx.fillStyle = !open ? '#2a2420' : cur ? cc : '#2e4a46'; ctx.fillRect(c.x, c.y, c.w, 1);
-      if (on) this.bracket(ctx, c.x - 1, c.y - 1, c.w + 2, c.h + 2, '#ffffff', 5);
-      let ind = 0;
-      if (c.row === 2) { ctx.fillStyle = open ? (item.swatch || '#5f7048') : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 5, 8, 8); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(c.x + 3, c.y + 5, 8, 2); ind = 11; }
-      let nm = open ? item.name : 'LOCKED';
-      const maxc = Math.floor((c.w - ind - 6) / 6);
-      Font.draw(ctx, nm.length > maxc ? nm.slice(0, maxc) : nm, c.x + 4 + ind, c.y + 6, { color: !open ? '#6a5a4a' : cur ? '#e8fff8' : '#8fbfb6' });
-    }
-
-    // --- artifacts
-    Font.draw(ctx, 'ARTIFACTS', 216, 212, { color: '#7affda' });
-    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, 221, 66, 1);
-    const owned = Missions.owned(), slots = 5, sw2 = 24;
-    for (let i = 0; i < slots; i++) {
-      const sx2 = 290 + i * (sw2 + 3), sy2 = 208;
-      ctx.fillStyle = 'rgba(10,22,24,0.85)'; ctx.fillRect(sx2, sy2, sw2, 18);
-      const a = owned[i] ? ARTIFACT_BY_ID[owned[i]] : null;
-      if (a) { drawRelicGlyph(ctx, a, sx2 + sw2 / 2, sy2 + 9, t * 0.5, 0.7); ctx.fillStyle = a.col; ctx.fillRect(sx2, sy2, sw2, 1); }
-      else { ctx.fillStyle = '#2a3230'; ctx.fillRect(sx2 + sw2 / 2 - 3, sy2 + 8, 7, 2); ctx.fillRect(sx2 + sw2 / 2 - 1, sy2 + 5, 2, 8); }
-    }
-
-    // --- the line for whatever row is highlighted
-    const row = G.createRow || 0;
-    const cur2 = row === 0 ? b.gr : row === 1 ? b.gi : b.pt;
-    if (cur2) {
-      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(216, 236, W - 228, 28);
-      Font.drawWrapped(ctx, cur2.line || '', 220, 242, W - 244, { color: '#c8d8d0', lineHeight: 9 });
-    }
-
-    // --- back and release
-    const bk = this.createBackRect();
-    ctx.fillStyle = 'rgba(10,22,24,0.9)'; ctx.fillRect(bk.x, bk.y, bk.w, bk.h);
-    this.bracket(ctx, bk.x, bk.y, bk.w, bk.h, 'rgba(120,220,200,0.45)', 7);
-    Font.draw(ctx, 'BACK', bk.x + bk.w / 2, bk.y + 9, { color: '#8fbfb6', align: 'center' });
-    const go = this.createGoRect();
-    const p2 = 0.5 + 0.5 * Math.sin(t * 4);
-    ctx.fillStyle = 'rgba(60,20,10,0.9)'; ctx.fillRect(go.x, go.y, go.w, go.h);
-    ctx.fillStyle = mixColor('#8a2a10', '#ff6030', p2); ctx.fillRect(go.x, go.y, go.w, 2);
-    this.bracket(ctx, go.x, go.y, go.w, go.h, '#ff8050', 8);
-    Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 7, { color: '#ffd0a0', align: 'center', scale: 2, outline: '#2a0c00' });
+    if (tab === 'vial') this.drawVialRack(ctx, t); else this.drawDnaWall(ctx, t);
     this.drawExit(ctx);
   },
+  drawVialRack(ctx, t) {
+    const W = G.W, H = G.H, sel = clamp(G.benchSel || 0, 0, VIALS.length - 1), loaded = LabBench.loaded();
+    // the shelf the rack stands on
+    const rects = this.vialRects();
+    const x0 = rects[0].x - 10, x1 = rects[rects.length - 1].x + rects[0].w + 10, shy = rects[0].y + rects[0].h;
+    ctx.fillStyle = '#2a3438'; ctx.fillRect(x0, shy, x1 - x0, 6);
+    ctx.fillStyle = '#3d4a4e'; ctx.fillRect(x0, shy, x1 - x0, 2);
+    ctx.fillStyle = '#1a2226'; ctx.fillRect(x0 + 6, shy + 6, 6, 14); ctx.fillRect(x1 - 12, shy + 6, 6, 14);
+    for (const r of rects) {
+      const v = r.v, have = LabBench.have(v), on = r.i === sel, lit = loaded === v.id;
+      const gx = r.x + r.w / 2, top = r.y + 14, bh = r.h - 20;
+      // cradle
+      ctx.fillStyle = '#222c30'; ctx.fillRect(r.x + 8, r.y + r.h - 12, r.w - 16, 8);
+      // glass tube: neck, body, meniscus
+      ctx.fillStyle = '#8fb0b8'; ctx.fillRect(gx - 7, top - 8, 14, 5);
+      ctx.fillStyle = '#0d1618'; ctx.fillRect(gx - 10, top, 20, bh);
+      if (have) {
+        // the fluid, with a slow slosh on the surface and light through it
+        const lvl = 0.62 + Math.sin(t * 0.9 + r.i) * 0.02;
+        const fh = Math.round(bh * lvl), fy = top + bh - fh;
+        ctx.fillStyle = shade(v.col, 0.55); ctx.fillRect(gx - 9, fy, 18, fh);
+        ctx.fillStyle = v.col; ctx.fillRect(gx - 9, fy, 18, Math.max(2, Math.round(fh * 0.55)));
+        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.55); ctx.fillRect(gx - 9, fy, 18, 2);
+        // bubbles climbing the inside of the glass
+        for (let b = 0; b < 5; b++) {
+          const by = fy + fh - ((t * (10 + ihash(b, r.i) * 16) + ihash(b, 7) * fh) % fh);
+          ctx.fillStyle = mixColor(v.col, '#ffffff', 0.7);
+          ctx.fillRect(Math.round(gx - 5 + ihash(b, 3) * 10), Math.round(by), 1, 2);
+        }
+        ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = lit ? 0.2 : 0.07;
+        ctx.fillStyle = v.col; ctx.fillRect(gx - 12, top - 4, 24, bh + 8);
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      } else {
+        // an empty tube, with a dusty residue at the bottom
+        ctx.fillStyle = '#1a2426'; ctx.fillRect(gx - 9, top + bh - 6, 18, 6);
+      }
+      // glass highlight and rim
+      ctx.globalAlpha = 0.3; ctx.fillStyle = '#dffdf4'; ctx.fillRect(gx - 7, top + 4, 2, bh - 12); ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(150,230,220,0.28)'; ctx.fillRect(gx - 10, top, 1, bh); ctx.fillRect(gx + 9, top, 1, bh);
+      // the label on the tube: two arrows, up for what it gives, down for what it costs
+      if (have) {
+        ctx.fillStyle = 'rgba(230,230,214,0.9)'; ctx.fillRect(gx - 9, top + bh * 0.42, 18, 14);
+        ctx.fillStyle = '#2a8a4a'; ctx.fillRect(gx - 6, top + bh * 0.42 + 3, 2, 5); ctx.fillRect(gx - 8, top + bh * 0.42 + 4, 6, 1); ctx.fillRect(gx - 7, top + bh * 0.42 + 3, 4, 1);
+        ctx.fillStyle = '#a03020'; ctx.fillRect(gx + 3, top + bh * 0.42 + 5, 2, 5); ctx.fillRect(gx + 1, top + bh * 0.42 + 8, 6, 1); ctx.fillRect(gx + 2, top + bh * 0.42 + 9, 4, 1);
+      }
+      if (lit) { ctx.fillStyle = '#ffe060'; ctx.fillRect(r.x, r.y + 2, r.w, 2); for (let q = 0; q < 3; q++) ctx.fillRect(gx - 4 + q * 4, r.y + 6, 2, 2); }
+      if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, have ? '#7affda' : '#3a4a48', 8);
+    }
+    // the one reading: what the selected tube gives and what it takes
+    const v = VIALS[sel];
+    if (LabBench.have(v)) {
+      Font.draw(ctx, v.name, W / 2, H - 56, { color: v.col, align: 'center', scale: 2, outline: '#04120e' });
+      Font.draw(ctx, v.up, W / 2 - 24, H - 38, { color: '#4fd07a', align: 'right' });
+      ctx.fillStyle = '#4fd07a'; ctx.fillRect(W / 2 - 18, H - 36, 2, 6); ctx.fillRect(W / 2 - 20, H - 35, 6, 1); ctx.fillRect(W / 2 - 19, H - 36, 4, 1);
+      ctx.fillStyle = '#d05a40'; ctx.fillRect(W / 2 + 16, H - 36, 2, 6); ctx.fillRect(W / 2 + 14, H - 31, 6, 1); ctx.fillRect(W / 2 + 15, H - 30, 4, 1);
+      Font.draw(ctx, v.down, W / 2 + 24, H - 38, { color: '#d05a40' });
+    } else {
+      Font.draw(ctx, 'NOT ISOLATED', W / 2, H - 44, { color: '#5f7f78', align: 'center' });
+    }
+  },
+  dnaJars() {
+    // six shelves, one per lineage, each holding that line's genes as jars
+    const keys = Object.keys(LINEAGES), out = [];
+    const cols = 9, jw = 24, jh = 26;
+    keys.forEach((lin, row) => {
+      const mine = GENES.filter(g => !g.root && (g.lin === lin) && !g.hybrid);
+      mine.forEach((g, i) => out.push({ g, lin, row, i, open: !Genome.researchBlocked(g), x: 118 + i * (jw + 4), y: 42 + row * (jh + 12), w: jw, h: jh }));
+    });
+    return out;
+  },
+  drawDnaWall(ctx, t) {
+    const W = G.W, H = G.H;
+    const keys = Object.keys(LINEAGES);
+    const jars = this.dnaJars();
+    const sel = clamp(G.benchSel || 0, 0, Math.max(0, jars.length - 1));
+    keys.forEach((lin, row) => {
+      const Ln = LINEAGES[lin], open = Research.lineageOpen(lin);
+      const y = 42 + row * 38;
+      // the shelf, with the lineage's own colour along its lip
+      ctx.fillStyle = '#1e2a2c'; ctx.fillRect(104, y + 28, W - 118, 5);
+      ctx.fillStyle = open ? Ln.color : '#2a3838'; ctx.fillRect(104, y + 28, W - 118, 2);
+      // the line's mark: a coloured hex on the left, sealed if unfunded
+      this.hex(ctx, 92, y + 14, 11, open ? rgba(Ln.color, 0.25) : 'rgba(10,18,18,0.8)', open ? Ln.color : '#3a4a48', 1);
+      if (!open) { ctx.fillStyle = '#6f8f88'; ctx.fillRect(88, y + 13, 8, 6); ctx.fillRect(90, y + 9, 4, 4); }
+    });
+    for (const j of jars) {
+      const on = jars.indexOf(j) === sel;
+      const Ln = LINEAGES[j.lin], col = j.open ? Ln.color : '#33403f';
+      // culture jar: glass cylinder with a lid and a specimen suspended in it
+      ctx.fillStyle = '#0c1618'; ctx.fillRect(j.x, j.y, j.w, j.h);
+      ctx.fillStyle = j.open ? shade(col, 0.35) : '#111c1e'; ctx.fillRect(j.x + 1, j.y + 3, j.w - 2, j.h - 4);
+      if (j.open) {
+        ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.25 + 0.1 * Math.sin(t * 2 + j.i);
+        ctx.fillStyle = col; ctx.fillRect(j.x + 1, j.y + 3, j.w - 2, j.h - 4);
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+        // the specimen: a short strand of the gene's own colour, drifting
+        const cx = j.x + j.w / 2, cy = j.y + j.h / 2 + Math.sin(t * 1.1 + j.i) * 1.5;
+        for (let k = 0; k < 5; k++) {
+          const a = k / 4 * Math.PI + t * 0.6 + j.i;
+          ctx.fillStyle = k % 2 ? mixColor(col, '#ffffff', 0.5) : col;
+          ctx.fillRect(Math.round(cx + Math.sin(a) * 4) - 1, Math.round(cy - 6 + k * 3), 2, 2);
+          ctx.fillRect(Math.round(cx - Math.sin(a) * 4) - 1, Math.round(cy - 6 + k * 3), 2, 2);
+        }
+      } else {
+        ctx.fillStyle = '#28343a'; ctx.fillRect(j.x + j.w / 2 - 3, j.y + j.h / 2 - 1, 7, 6); ctx.fillRect(j.x + j.w / 2 - 2, j.y + j.h / 2 - 5, 5, 4);
+      }
+      // lid and glass
+      ctx.fillStyle = '#4a565a'; ctx.fillRect(j.x - 1, j.y, j.w + 2, 4);
+      ctx.fillStyle = '#63737a'; ctx.fillRect(j.x - 1, j.y, j.w + 2, 1);
+      ctx.globalAlpha = 0.26; ctx.fillStyle = '#dffdf4'; ctx.fillRect(j.x + 3, j.y + 6, 2, j.h - 11); ctx.globalAlpha = 1;
+      if (on) this.bracket(ctx, j.x - 2, j.y - 2, j.w + 4, j.h + 4, j.open ? Ln.color : '#3a4a48', 6);
+    }
+    const cur = jars[sel];
+    if (cur) {
+      const Ln = LINEAGES[cur.lin];
+      ctx.fillStyle = 'rgba(4,12,14,0.92)'; ctx.fillRect(10, H - 40, W - 20, 30);
+      ctx.fillStyle = cur.open ? Ln.color : '#3a4a48'; ctx.fillRect(10, H - 40, 3, 30);
+      Font.draw(ctx, cur.open ? cur.g.name : 'SEALED', 18, H - 36, { color: cur.open ? Ln.color : '#5f7f78' });
+      if (cur.open) Font.drawWrapped(ctx, cur.g.desc || '', 18, H - 26, W - 36, { color: '#8faaa4', lineHeight: 9 });
+      else Font.draw(ctx, 'GENE THERAPY HAS NOT FUNDED THIS LINE', 18, H - 26, { color: '#4f6f68' });
+    }
+  },
+  // ---------- the habitat ----------
+  // Six enclosures along the back wall. Every one of them is a window onto a
+  // real animal, at its real size, wearing its real hide — you choose by
+  // looking at crocodiles, not by reading a list of them.
+  habTanks() {
+    const n = HAB_SLOTS, w = 98, gap = 6, y = 30, h = 118;
+    const total = n * w + (n - 1) * gap, x0 = Math.round((G.W - total) / 2);
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ i, x: x0 + i * (w + gap), y, w, h });
+    return out;
+  },
+  habView(i) {
+    if (!this._habV) this._habV = [];
+    if (!this._habV[i]) { this._habV[i] = CrocView.make(); this._habV[i].t = i * 1.7; }
+    return this._habV[i];
+  },
+  habParts(look) {
+    const key = JSON.stringify(look);
+    if (!this._habP) this._habP = {};
+    if (!this._habP[key]) { if (Object.keys(this._habP).length > 24) this._habP = {}; this._habP[key] = buildCrocParts(look); }
+    return this._habP[key];
+  },
+  // the three upgrade meters, the feed plate and the hide swatches
+  habRows() {
+    const y0 = 168, out = [];
+    HAB_UPGRADES.forEach((u, i) => out.push({ kind: 'up', id: u.id, u, i, x: 14, y: y0 + i * 22, w: 178, h: 19 }));
+    out.push({ kind: 'feed', i: 0, x: 206, y: y0, w: 96, h: 41 });
+    out.push({ kind: 'go', i: 0, x: 206, y: y0 + 47, w: 96, h: 36 });
+    SIZE_GRADES.forEach((gr, i) => out.push({ kind: 'len', gr, i, x: 320 + i * 30, y: y0, w: 27, h: 22 }));
+    GIRTH_GRADES.forEach((gi, i) => out.push({ kind: 'girth', gi, i, x: 320 + i * 30, y: y0 + 26, w: 27, h: 22 }));
+    HIDE_PAINTS.forEach((pt, i) => out.push({ kind: 'hide', pt, i, x: 320 + (i % 5) * 30, y: y0 + 54 + Math.floor(i / 5) * 30, w: 27, h: 27 }));
+    return out;
+  },
+  habHatchRects() {
+    // the species you could put in an empty enclosure, as portraits
+    const out = [];
+    BASE_SPECIES.forEach((sp, i) => out.push({ sp, i, x: 20 + i * 100, y: 190, w: 92, h: 78 }));
+    return out;
+  },
+  drawHabitat(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    Habitat.ensure();
+    const L = Habitat.list(), sel = clamp(G.habSel || 0, 0, HAB_SLOTS - 1), cur = L[sel];
+    ctx.fillStyle = 'rgba(3,10,12,0.86)'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.12; ctx.fillStyle = '#0a2a26';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+    ctx.globalAlpha = 1;
 
+    // --- the row of enclosures
+    for (const k of this.habTanks()) {
+      const c = L[k.i], on = k.i === sel, isRunner = k.i === Habitat.runnerIndex() && c;
+      // the tank itself: frame, water, a light over it
+      ctx.fillStyle = '#0a1618'; ctx.fillRect(k.x - 2, k.y - 2, k.w + 4, k.h + 4);
+      const g = ctx.createLinearGradient(0, k.y, 0, k.y + k.h);
+      g.addColorStop(0, c ? '#2f6f66' : '#16302e'); g.addColorStop(1, c ? '#0c2b2c' : '#0a1a1c');
+      ctx.fillStyle = g; ctx.fillRect(k.x, k.y, k.w, k.h);
+      // ceiling strip over each enclosure
+      ctx.fillStyle = '#26383a'; ctx.fillRect(k.x + 12, k.y - 8, k.w - 24, 4);
+      ctx.fillStyle = c ? '#cfeee2' : '#3a4a4a'; ctx.fillRect(k.x + 16, k.y - 5, k.w - 32, 2);
+      if (c) {
+        ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.06;
+        ctx.fillStyle = '#bfeee0'; ctx.fillRect(k.x + 6, k.y, k.w - 12, k.h * 0.6);
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      }
+      // silt floor and a few bubbles
+      ctx.fillStyle = '#3a4436'; ctx.fillRect(k.x, k.y + k.h - 9, k.w, 9);
+      ctx.fillStyle = '#48543f'; ctx.fillRect(k.x, k.y + k.h - 9, k.w, 2);
+      if (c) for (let b = 0; b < 7; b++) {
+        const bx = k.x + 8 + ihash(b, k.i) * (k.w - 16);
+        const by = k.y + k.h - ((t * (12 + ihash(b, 9) * 20) + ihash(b, 3) * k.h) % k.h);
+        ctx.fillStyle = 'rgba(200,255,236,0.3)'; ctx.fillRect(Math.round(bx), Math.round(by), 1, ihash(b, 5) > 0.6 ? 2 : 1);
+      }
+      if (c) {
+        // the animal, alive, at a size that reads its grade
+        const v = this.habView(k.i);
+        CrocView.update(v, 0, 6.5 + (k.i % 3));
+        const sp = Habitat.spec(c);
+        const ws = clamp(0.5 + sp.size * 0.24 + c.lv * 0.02, 0.5, 1.15);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(k.x, k.y, k.w, k.h); ctx.clip();
+        CrocView.draw(ctx, v, this.habParts(Habitat.look(c)), k.x + k.w / 2 - 4, k.y + k.h * 0.52, ws);
+        ctx.restore();
+        // nameplate: a tag and a row of level pips, no sentence
+        ctx.fillStyle = 'rgba(4,12,14,0.9)'; ctx.fillRect(k.x, k.y + k.h - 26, k.w, 12);
+        Font.draw(ctx, Habitat.tag(c), k.x + 4, k.y + k.h - 23, { color: on ? '#e8fff8' : '#8fbfb6' });
+        const tr = sp.trait;
+        if (tr) { ctx.fillStyle = tr.col; ctx.fillRect(k.x + k.w - 6, k.y + k.h - 24, 4, 8); }
+        for (let p2 = 0; p2 < Habitat.MAX_LV; p2++) {
+          ctx.fillStyle = p2 < c.lv ? (sp.trait ? sp.trait.col : '#7affda') : '#1e2e2c';
+          ctx.fillRect(k.x + 4 + p2 * 7, k.y + k.h - 11, 5, 3);
+        }
+      } else {
+        // an empty enclosure is a plus and nothing else
+        ctx.fillStyle = '#2e4444';
+        ctx.fillRect(k.x + k.w / 2 - 10, k.y + k.h / 2 - 3, 20, 6);
+        ctx.fillRect(k.x + k.w / 2 - 3, k.y + k.h / 2 - 10, 6, 20);
+      }
+      // glass, then the state marks
+      ctx.globalAlpha = 0.22; ctx.fillStyle = '#dffdf4'; ctx.fillRect(k.x + 7, k.y + 4, 3, k.h - 12); ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(150,230,220,0.25)'; ctx.fillRect(k.x, k.y, 2, k.h); ctx.fillRect(k.x + k.w - 2, k.y, 2, k.h);
+      if (isRunner) {
+        ctx.fillStyle = '#ffe060';
+        ctx.fillRect(k.x, k.y - 2, k.w, 2);
+        for (let q = 0; q < 3; q++) ctx.fillRect(k.x + k.w / 2 - 4 + q * 4, k.y + 4, 2, 2);
+      }
+      if (on) this.bracket(ctx, k.x - 4, k.y - 4, k.w + 8, k.h + 8, '#7affda', 10);
+    }
 
+    if (!cur) { this.drawHabHatch(ctx, sel, t); this.drawExit(ctx); return; }
+
+    // --- the selected animal, in detail, mostly as meters and icons
+    const sp = Habitat.spec(cur), tr = sp.trait;
+    ctx.fillStyle = 'rgba(4,12,14,0.9)'; ctx.fillRect(8, 152, W - 16, 12);
+    Font.draw(ctx, Habitat.tag(cur) + '   ' + sp.name, 14, 155, { color: '#e8fff8' });
+    if (tr) Font.draw(ctx, tr.name, W - 14, 155, { color: tr.col, align: 'right' });
+    const pts = Habitat.points(cur);
+    for (const r of this.habRows()) {
+      const on = this.habRowIndex(r) === (G.habRow || 0);
+      if (r.kind === 'up') {
+        const have = cur.up[r.id];
+        ctx.fillStyle = on ? 'rgba(16,38,36,0.96)' : 'rgba(5,14,15,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = r.u.col; ctx.fillRect(r.x, r.y, 3, r.h);
+        Font.draw(ctx, r.u.name, r.x + 8, r.y + 6, { color: on ? '#e8fff8' : '#8faaa4' });
+        // the meter is the whole statement: how many notches are filled
+        for (let q = 0; q < Habitat.MAX_LV - 1; q++) {
+          ctx.fillStyle = q < have ? r.u.col : '#1c2a28';
+          ctx.fillRect(r.x + 54 + q * 10, r.y + 5, 8, 9);
+        }
+        if (pts > 0) { ctx.fillStyle = Math.floor(t * 4) % 2 ? '#ffe060' : '#7a6a20'; ctx.fillRect(r.x + r.w - 12, r.y + 7, 7, 3); ctx.fillRect(r.x + r.w - 10, r.y + 5, 3, 7); }
+        if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, pts > 0 ? '#ffe060' : r.u.col, 6);
+      } else if (r.kind === 'feed') {
+        const ok = Habitat.canFeed(cur), cost = Habitat.feedCost(cur);
+        ctx.fillStyle = on ? 'rgba(24,40,18,0.96)' : 'rgba(8,18,10,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = ok ? '#8ab820' : '#2e3a24'; ctx.fillRect(r.x, r.y, r.w, 2);
+        // a slab of meat, not the word FEED
+        const mx = r.x + 22, my = r.y + 22;
+        ctx.fillStyle = ok ? '#a8342c' : '#3a2420';
+        for (let dy = -7; dy <= 7; dy++) { const w2 = 10 - Math.abs(dy) * 0.6; ctx.fillRect(Math.round(mx - w2), my + dy, Math.round(w2 * 2), 1); }
+        ctx.fillStyle = ok ? '#d4564a' : '#4a2e28'; ctx.fillRect(mx - 6, my - 5, 8, 4);
+        ctx.fillStyle = ok ? '#e8dcc0' : '#3a3830'; ctx.fillRect(mx + 3, my + 2, 7, 3);
+        Font.draw(ctx, String(cost), r.x + r.w - 8, r.y + 16, { color: ok ? '#ffe060' : '#5f6f68', align: 'right', scale: 2 });
+        // the level bar underneath, filling toward the next notch
+        const need = habXpFor(cur.lv);
+        this.meter(ctx, r.x + 6, r.y + r.h - 8, r.w - 12, 4, cur.lv >= Habitat.MAX_LV ? 1 : cur.xp / need, '#8ab820', '#16220f');
+        if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, ok ? '#8ab820' : '#4a5a3a', 6);
+      } else if (r.kind === 'go') {
+        const isR = sel === Habitat.runnerIndex();
+        ctx.fillStyle = on ? 'rgba(48,22,8,0.96)' : 'rgba(16,10,6,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = isR ? '#ffe060' : '#8a4a20'; ctx.fillRect(r.x, r.y, r.w, 2);
+        Font.draw(ctx, isR ? 'RELEASE' : 'SELECT', r.x + r.w / 2, r.y + 13, { color: isR ? '#ffd0a0' : '#c0a080', align: 'center', scale: 2, outline: '#2a0c00' });
+        if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, '#ff8050', 6);
+      } else if (r.kind === 'len' || r.kind === 'girth') {
+        // length and girth are the animal's build, shown as a stack of bars
+        const isLen = r.kind === 'len';
+        const open = isLen ? Create.sizeUnlocked(r.i) : Create.girthUnlocked(r.i);
+        const worn = (isLen ? cur.size : cur.girth) === r.i;
+        ctx.fillStyle = worn ? 'rgba(30,80,70,0.95)' : 'rgba(8,18,18,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+        const col = open ? (isLen ? '#7affda' : '#e0b050') : '#22302e';
+        // a short wide bar for girth, a long thin one for length
+        if (isLen) { const hh = 3 + r.i * 3; ctx.fillStyle = col; ctx.fillRect(r.x + 4, r.y + r.h / 2 - 1, 4 + r.i * 5, 3); ctx.fillRect(r.x + 4, r.y + r.h / 2 - hh / 2, 2, hh); }
+        else { const hh = 4 + r.i * 3; ctx.fillStyle = col; ctx.fillRect(r.x + 7, r.y + r.h / 2 - hh / 2, 13, hh); }
+        if (!open) { ctx.fillStyle = '#4a5a58'; ctx.fillRect(r.x + r.w - 8, r.y + 4, 5, 4); ctx.fillRect(r.x + r.w - 7, r.y + 2, 3, 3); }
+        if (worn) this.bracket(ctx, r.x, r.y, r.w, r.h, '#ffffff', 5);
+        if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, '#7affda', 6);
+      } else {
+        const open = Create.paintUnlocked(r.pt), worn = cur.hide === r.pt.id;
+        ctx.fillStyle = worn ? 'rgba(30,80,70,0.95)' : 'rgba(8,18,18,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+        // the swatch IS the label
+        ctx.fillStyle = open ? (r.pt.swatch || '#5f7048') : '#22302e';
+        ctx.fillRect(r.x + 4, r.y + 4, r.w - 8, r.h - 8);
+        if (open) { ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.fillRect(r.x + 4, r.y + 4, r.w - 8, 4); }
+        else { ctx.fillStyle = '#4a5a58'; ctx.fillRect(r.x + r.w / 2 - 3, r.y + r.h / 2 - 1, 6, 5); ctx.fillRect(r.x + r.w / 2 - 2, r.y + r.h / 2 - 4, 4, 3); }
+        if (worn) this.bracket(ctx, r.x, r.y, r.w, r.h, '#ffffff', 5);
+        if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, '#7affda', 6);
+      }
+    }
+    // the one number that gates everything
+    const d = Research.data();
+    Font.draw(ctx, String(d), W - 12, H - 16, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 2, outline: '#3a2a00' });
+    if (pts > 0) { ctx.fillStyle = Math.floor(t * 4) % 2 ? '#ffe060' : '#8a7a20'; for (let q = 0; q < Math.min(pts, 8); q++) ctx.fillRect(14 + q * 7, H - 14, 5, 8); }
+    this.drawExit(ctx);
+  },
+  habRowIndex(r) {
+    const rows = this.habRows();
+    for (let i = 0; i < rows.length; i++) { const o = rows[i]; if (o.kind === r.kind && o.i === r.i && o.id === r.id) return i; }
+    return 0;
+  },
+  habApply(r, cur, sel) {
+    // one place that knows what activating a row means
+    if (r.kind === 'up') return Habitat.invest(cur, r.id) ? 'up' : null;
+    if (r.kind === 'feed') { const n = Habitat.feed(cur); return n === 0 && !Habitat.canFeed(cur) ? null : (n > 0 ? 'level' : 'fed'); }
+    if (r.kind === 'go') { if (sel !== Habitat.runnerIndex()) { Habitat.select(sel); return 'pick'; } return 'go'; }
+    if (r.kind === 'len') { if (!Create.sizeUnlocked(r.i)) return null; cur.size = r.i; G.storeSave(); return 'set'; }
+    if (r.kind === 'girth') { if (!Create.girthUnlocked(r.i)) return null; cur.girth = r.i; G.storeSave(); return 'set'; }
+    if (r.kind === 'hide') { if (!Create.paintUnlocked(r.pt)) return null; cur.hide = r.pt.id; G.storeSave(); return 'set'; }
+    return null;
+  },
+  // an empty enclosure asks one question: which animal goes in it
+  drawHabHatch(ctx, slot, t) {
+    const W = G.W, H = G.H;
+    for (const r of this.habHatchRects()) {
+      const sp = r.sp, open = Create.speciesUnlocked(sp), cost = Habitat.hatchCost(sp.id);
+      const afford = Research.data() >= cost, on = r.i === (G.habHatch || 0);
+      ctx.fillStyle = on ? 'rgba(16,38,36,0.96)' : 'rgba(5,14,15,0.92)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = open ? (sp.trait ? sp.trait.col : '#7affda') : '#2a3a38'; ctx.fillRect(r.x, r.y, r.w, 2);
+      // the portrait is the animal's own head art
+      ctx.save();
+      ctx.beginPath(); ctx.rect(r.x + 2, r.y + 4, r.w - 4, 44); ctx.clip();
+      if (open) {
+        const v = this.habView(20 + r.i); CrocView.update(v, 0, 5.2);
+        const L2 = Object.assign({}, CROC_LOOKS.base, sp.look || {});
+        L2.girth = sp.girth || 1;
+        CrocView.draw(ctx, v, this.habParts(L2), r.x + r.w / 2 - 2, r.y + 28, 0.62);
+      } else {
+        ctx.fillStyle = '#1b2726';
+        ctx.fillRect(r.x + r.w / 2 - 7, r.y + 24, 14, 12);
+        ctx.fillRect(r.x + r.w / 2 - 4, r.y + 16, 8, 8);
+      }
+      ctx.restore();
+      Font.draw(ctx, open ? sp.name : 'SEALED', r.x + r.w / 2, r.y + 52, { color: open ? '#c8d8d0' : '#5f7f78', align: 'center' });
+      if (open && sp.trait) Font.draw(ctx, sp.trait.name, r.x + r.w / 2, r.y + 62, { color: sp.trait.col, align: 'center' });
+      if (open) Font.draw(ctx, String(cost), r.x + r.w / 2, r.y + 68, { color: afford ? '#ffe060' : '#6a5a3a', align: 'center', scale: 2 });
+      if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, afford && open ? '#ffe060' : '#4a5a58', 7);
+    }
+    const d = Research.data();
+    Font.draw(ctx, String(d), W - 12, H - 16, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 2, outline: '#3a2a00' });
+  },
   drawLandmark(ctx, kind, x, y, on) {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
     const dim = c => (on ? c : mixColor(c, '#20302c', 0.62));
@@ -1028,15 +1185,18 @@ const UI = {
   // ---------- release-site display: a spinning globe ----------
   globeGeom() { return { cx: G.W * 0.34, cy: G.H * 0.53, r: Math.round(G.H * 0.32) }; },
   stageRows() {
-    // A pin is a staff standing off the surface with a head on it, so the hit
-    // target is the whole marker, not the four pixels where it meets the ground.
+    // Only the zone you are looking at puts markers on the sphere. Eighteen pins
+    // at once read as a line of dots strung round the equator; four or five read
+    // as places. The hit target is the whole marker, staff and head.
     const gg = this.globeGeom(), spin = G.globeSpin || 0;
+    const Z = zoneOf(STAGES[clamp(G.stageSel || 0, 0, STAGES.length - 1)]);
     return STAGES.map((st, i) => {
-      const [px2, py2, z2, vis] = Globe.project(st.lon, st.lat, gg.cx, gg.cy, gg.r, spin, G.globeTilt || 0.32);
-      const k = 0.5 + clamp(z2, 0, 1) * 0.5;          // pins on the near face stand tallest
-      const staff = Math.round(22 * k), head = Math.round(11 * k);
-      return { x: px2 - head - 3, y: py2 - staff - head - 3, w: head * 2 + 6, h: staff + head * 2 + 6,
-        st, i, px: px2, py: py2, z: z2, vis, k, staff, head };
+      const mine = st.zone === Z.id;
+      const [px2, py2, z2, vis] = Globe.project(st.lon, st.lat, gg.cx, gg.cy, gg.r, spin, G.globeTilt || 0.3);
+      const k = 0.62 + clamp(z2, 0, 1) * 0.38;        // pins on the near face stand tallest
+      const staff = Math.round(34 * k), head = Math.round(16 * k);
+      return { x: px2 - head - 4, y: py2 - staff - head - 4, w: head * 2 + 8, h: staff + head * 2 + 8,
+        st, i, px: px2, py: py2, z: z2, vis: vis && mine, mine, k, staff, head };
     });
   },
   // small corner brackets: the readouts all sit inside instrument frames
@@ -1069,7 +1229,7 @@ const UI = {
   },
   drawStages(ctx) {
     const W = G.W, H = G.H, t = G.menuT, gg = this.globeGeom();
-    const spin = G.globeSpin || 0, tilt = G.globeTilt || 0.32;
+    const spin = G.globeSpin || 0, tilt = G.globeTilt || 0.3;
     ctx.fillStyle = '#050a0c'; ctx.fillRect(0, 0, W, H);
     // instrument backdrop: faint grid and scan lines
     ctx.fillStyle = 'rgba(60,140,120,0.07)';
@@ -1115,8 +1275,8 @@ const UI = {
       for (let dy = -hr + 2; dy <= hr - 2; dy++) { const w = hr - 2 - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
       ctx.fillStyle = lt;
       for (let dy = -hr + 2; dy <= -hr + 4; dy++) { const w = hr - 2 - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
-      if (r.k > 0.72) {
-        ctx.save(); ctx.translate(px2, hy + 3); ctx.scale(0.5, 0.5);
+      {
+        ctx.save(); ctx.translate(px2, hy + 3); ctx.scale(0.72 * r.k, 0.72 * r.k);
         this.drawLandmark(ctx, st.id, 0, 0, open);
         ctx.restore();
       }
@@ -1128,9 +1288,10 @@ const UI = {
         ctx.fillRect(px2 - hr - 11, hy, 4, 1); ctx.fillRect(px2 + hr + 8, hy, 4, 1);
         ctx.fillRect(px2 - 1, hy - hr - 11, 1, 4);
         const nm = open ? st.name : 'SEALED';
-        const tw = Font.width(nm, 1) + 10, tx = clamp(px2 - tw / 2, 4, G.W - tw - 4), ty = hy - hr - 22;
-        ctx.fillStyle = 'rgba(4,12,14,0.9)'; ctx.fillRect(tx, ty, tw, 13);
+        const tw = Font.width(nm, 1) + 12, tx = clamp(px2 - tw / 2, 4, G.W - tw - 4), ty = hy - hr - 24;
+        ctx.fillStyle = 'rgba(4,12,14,0.92)'; ctx.fillRect(tx, ty, tw, 14);
         ctx.fillStyle = col; ctx.fillRect(tx, ty, tw, 1);
+        ctx.fillRect(px2 - 1, ty + 14, 2, 4);
         Font.draw(ctx, nm, tx + tw / 2, ty + 4, { color: open ? '#e8fff8' : '#8f7f78', align: 'center' });
       }
       ctx.globalAlpha = 1;

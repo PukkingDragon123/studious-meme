@@ -34,6 +34,47 @@ const BASE_SPECIES = [
     size: 2.2, hp: 1.6, spd: 0.85, bite: 1.6, need: { best: 400000 }, gene: 'colossus:bulk', girth: 1.3, holo: '#c88af0',
     look: { back: '#4a3a3a', mid: '#5f4a48', belly: '#c0a898', dark: '#2a1e1e', eye: '#ff6030', spikes: 1 } },
 ];
+// ---------------------------------------------------------------------------
+// What the animal IS. A species is not a stat block with a different number in
+// it — each one is a character with a signature that changes how you hunt, and
+// a line of handling that goes with it. The dwarf grows; the caiman chains; the
+// gharial owns the water and hates the bank; the Nile rolls; the saltwater
+// waits; the Deinosuchus simply eats the thing.
+// ---------------------------------------------------------------------------
+const SPECIES_TRAITS = {
+  dwarf: {
+    name: 'SCRAPPER', icon: 'up', col: '#7affda',
+    line: 'SMALL MEALS STILL COUNT. GROWS FAST AND THINKS FASTER.',
+    apply: P => { P.st.smallGrowth = 1.9; P.st.hatchling = true; P.vialTierBonus = (P.vialTierBonus || 0) + 1; },
+  },
+  caiman: {
+    name: 'SKIRMISHER', icon: 'chain', col: '#a0e050',
+    line: 'BITES FAST AND KEEPS BITING. EVERY THIRD IN A CHAIN LANDS CLEAN.',
+    apply: P => { P.st.biteRate = 0.68; P.st.chainCrit = 3; },
+  },
+  nile: {
+    name: 'DEATH ROLLER', icon: 'roll', col: '#ff5a3a',
+    line: 'LATCHES ONTO ANYTHING AND TAKES IT UNDER. THE LOCK IS WIDE OPEN.',
+    apply: P => { P.st.rollDmg *= 1.55; P.st.latchMul *= 1.4; P.st.rollWindow = 1.7; P.st.bigLatch = 3.2; },
+  },
+  gharial: {
+    name: 'FISH HAWK', icon: 'fish', col: '#60a8ff',
+    line: 'FISH ARE FOOD, WHATEVER THE SIZE. THE BANK IS NOT ITS COUNTRY.',
+    apply: P => { P.st.fishSlayer = 2.2; P.st.fishSwallow = true; P.st.speed *= 1.2; P.st.turn *= 1.25; P.st.landSpeed *= 0.55; P.st.hop *= 0.7; },
+  },
+  salt: {
+    name: 'AMBUSH APEX', icon: 'eye', col: '#e0b050',
+    line: 'STRIKES ONCE, OUT OF NOTHING, AND THAT IS USUALLY ENOUGH.',
+    apply: P => { P.st.ambush = true; P.st.ambushMul = 3.2; P.st.stealth *= 0.6; P.st.armor += 0.12; P.st.turn *= 0.82; },
+  },
+  deino: {
+    name: 'TITAN', icon: 'jaw', col: '#c88af0',
+    line: 'SWALLOWS WHAT SHOULD NOT FIT. NOTHING MOVES IT, AND IT MOVES THROUGH.',
+    apply: P => { P.st.swallow *= 1.8; P.st.knockImmune = true; P.st.bullRush = true; P.st.ramMul *= 1.6; P.st.hullMul *= 2; P.st.quake = true; P.st.accel *= 0.85; },
+  },
+};
+for (const sp of BASE_SPECIES) sp.trait = SPECIES_TRAITS[sp.id];
+
 const SPECIES_BY_ID = {};
 for (const s of BASE_SPECIES) SPECIES_BY_ID[s.id] = s;
 
@@ -79,30 +120,32 @@ const Create = {
   sizeUnlocked(i) { return i === 1 || Research.granted('size').has(i); },
   girthUnlocked(i) { return i === 1 || Research.granted('girth').has(i); },
   rowUnlocked(row, i, item) { return row === 0 ? this.sizeUnlocked(i) : row === 1 ? this.girthUnlocked(i) : this.paintUnlocked(item); },
-  // what the current build works out to
-  spec() {
-    const e = G.embryo || {};
-    const sp = SPECIES_BY_ID[e.species] || BASE_SPECIES[0];
-    const gr = SIZE_GRADES[clamp(e.size === undefined ? 1 : e.size, 0, SIZE_GRADES.length - 1)] || SIZE_GRADES[1];
-    const gi = GIRTH_GRADES[clamp(e.girth === undefined ? 1 : e.girth, 0, GIRTH_GRADES.length - 1)] || GIRTH_GRADES[1];
-    const pt = PAINT_BY_ID[e.paint] || HIDE_PAINTS[0];
+  // What the animal in the chosen enclosure works out to. There is no embryo
+  // and no splice bay any more: the thing you play is a crocodile that already
+  // exists, living in the habitat, and this reads it off.
+  spec(c) {
+    const croc = c || (typeof Habitat !== 'undefined' ? Habitat.runner() : null);
+    const sp = croc ? (SPECIES_BY_ID[croc.sp] || BASE_SPECIES[0]) : BASE_SPECIES[0];
+    const gr = SIZE_GRADES[clamp(croc ? croc.size : 1, 0, SIZE_GRADES.length - 1)] || SIZE_GRADES[1];
+    const gi = GIRTH_GRADES[clamp(croc ? croc.girth : 1, 0, GIRTH_GRADES.length - 1)] || GIRTH_GRADES[1];
+    const pt = PAINT_BY_ID[croc ? croc.hide : 'wild'] || HIDE_PAINTS[0];
     return {
-      sp, gr, gi, pt,
+      croc, sp, gr, gi, pt,
       size: sp.size * gr.mul,
       girth: (sp.girth || 1) * gi.mul,
       hp: sp.hp * gr.hp * gi.hp, spd: sp.spd * gr.spd * gi.spd, bite: sp.bite, hunger: gr.hunger,
       gene: sp.gene ? GENE_BY_ID[sp.gene] : null,
     };
   },
-  // the look the specimen is actually wearing, for the preview and the run
-  look() {
-    const b = this.spec();
+  // the look the animal is actually wearing, for the preview and the run
+  look(c) {
+    const b = this.spec(c);
     const L = Object.assign({}, CROC_LOOKS.base, b.sp.look || {});
     if (b.pt && b.pt.apply) b.pt.apply(L);
     L.girth = b.girth;
     return L;
   },
-  // stamp the build onto a fresh player
+  // stamp the chosen animal onto a fresh player
   applyTo(P) {
     const b = this.spec();
     P.baseSpecies = b.sp.id;
@@ -110,9 +153,14 @@ const Create = {
     P.startSize = b.size;
     P.bodyGirth = b.girth;
     P.speciesLook = b.sp.look || null;
-    P.paintId = (G.embryo && G.embryo.paint) || 'wild';
+    P.paintId = b.pt ? b.pt.id : 'wild';
     // the species' signature gene comes free: it is what the animal already is
     if (b.gene && P.genes.indexOf(b.gene.id) < 0) { P.genes.push(b.gene.id); b.gene.apply(P); if (b.gene.downApply) b.gene.downApply(P); P.speciesGene = b.gene.id; }
+    // the signature: what makes this animal that animal and not a recolour
+    P.speciesTrait = b.sp.trait || null;
+    if (b.sp.trait) b.sp.trait.apply(P);
+    // and everything the enclosure put into it
+    if (typeof Habitat !== 'undefined') Habitat.applyTo(P, b.croc);
     P.recomputeStats(); P.rebuildLook();
   },
 };

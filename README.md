@@ -26,56 +26,54 @@ fluid with something half dissolved propped in it, bubbling and fuming, fed by
 a drip line that has been eating a stain into the concrete for years. In the
 middle of the room, a containment column with a specimen suspended in it.
 
-The menu is the furniture. Two stations, two plates, no tabs and no blurb: walk
-the selection along the room and whichever one you are standing at gets a
-targeting bracket and its plate lights up.
+The menu is the furniture. Three stations, three plates, no tabs and no blurb:
+walk the selection along the room and whichever one you are standing at gets a
+targeting bracket. Choosing one drops a corrugated steel shutter over that bay,
+and the screen you asked for is behind it when it comes back up.
 
-- **CREATE** — the containment column in the middle of the floor
 - **RESEARCH** — the sequencer and monitor bank on the left wall
+- **HABITAT** — the enclosures down the middle of the floor
+- **LAB** — the vial rack and the DNA wall on the right
 
-## Creating a specimen
+**Doc Croc** walks the floor between them. The project's lead herpetologist
+spliced himself years ago and it took; he wears a coat that no longer fits over
+the tail, keeps his spectacles pushed up on a brow that has no use for them, and
+carries a slate. He teaches the building one job at a time — a picture and two
+or three words in a speech bubble — and every lesson is a thing you were going
+to do anyway, so doing it just pays you. Tap the bubble and he goes away and
+stays away.
 
-Two stages, and at no point are you looking at a placeholder — the preview is
-the real in-game body, in the real in-game art, so what you approve is
-literally the animal you play.
+## The habitat
 
-### Stage one: the specimen library
+Six enclosures with water in them. Each one is a window onto a real animal, at
+its real size, wearing its real hide — you choose what to play by looking at
+crocodiles, not by reading a list of them.
 
-A holographic projector on an emitter plate, throwing a cone of light with
-motes riding up it, running the chosen species through an **attack loop** —
-idle, coil, lunge, strike, recover — with the current phase called out beside
-it. The projection is not a filter over a sprite: the animal is rendered to a
-buffer, tinted through its own alpha so its shading survives as luminance, then
-composited additively with dimmed scanlines rolling through it and a jittered
-double exposure either side. The strike frame throws a flare and a burst.
+An animal here is a **character**, not a loadout slot. It has a species with a
+signature, a tag, a level it grew to by being fed, three tracks you can put
+points into, and a build. You pick which one goes out, and it is the one that
+comes back — a run feeds it, and it grows.
 
-`<` and `>` either side step through the roster. The dossier on the left gives
-you, for each species:
+- **FEED** it a slab of meat for DATA. Enough meat is a level; a level is a point.
+- **BODY / JAWS / BLOOD** — where the points go, as three rows of notches.
+- **LENGTH / GIRTH / HIDE** — its build, and every grade is a research line item.
+- **HATCH** a researched species into an empty enclosure and it is yours.
 
-- a **portrait** taken from that animal's own head art
-- name and binomial
-- **length, health, speed, bite and girth** as bars
-- its **innate gene**, shown with its lineage hex and colour, granted free
-  because it is what the animal already is — the Nile brings serrated teeth,
-  the gharial a sleek body, the saltwater a thick hide, the caiman claws, the
-  reconstructed *Deinosuchus* dense bulk. The dwarf brings nothing, which is
-  the point of it.
+### Every species is a different animal
 
-You start with the **Dwarf Alligator**. Everything else is a locked slot with
-no sample on file and its requirement printed under it.
+Not a stat block with a different number in it. The signature changes how you hunt:
 
-### Stage two: the splice chamber
+| Stock | Signature | What it does |
+| --- | --- | --- |
+| Dwarf Alligator | **SCRAPPER** | small meals still feed it — 90% more growth off anything under a fifth its mass, and an extra gene point a tier |
+| Spectacled Caiman | **SKIRMISHER** | jaw resets a third faster, and every third bite in a chain lands clean |
+| Nile Crocodile | **DEATH ROLLER** | latches onto things three times its size, and the jaw-lock window is 70% wider |
+| Gharial | **FISH HAWK** | fish take double and go down whole whatever the size; fast and sharp in the water, hopeless on the bank |
+| Saltwater Crocodile | **AMBUSH APEX** | a strike out of stillness hits for over three times, and it is hard to notice coming |
+| Deinosuchus | **TITAN** | swallows what should not fit, cannot be moved, and goes through hulls |
 
-SPLICE commits, and the animal drops into an acid column — bubbling, fuming,
-caustic banding across the glass — where you set it up:
-
-- **Length** — Runt to Hypertrophic
-- **Girth** — Lean to Bull, a separate axis: body depth against speed, and it
-  visibly thickens the animal
-- **Hide** — nine palettes, from blackwater and tannin through leucistic to
-  abyssal, painted onto the real sprite as you pick
-Vitals update live underneath, and recovered artifacts show as spliced in.
-Anything the lab has not funded is greyed out and cannot be stepped onto.
+There is no splice bay any more. The animal you play already exists, living in
+the habitat, and the enclosure is where it is built.
 
 ## Research
 
@@ -107,6 +105,19 @@ Until Gene Therapy has funded a line, its genes are sealed shut in the tree —
 crosshatched and stamped, not merely dim — and its prime is not on the loadout
 menu at all. Until Field Survey has been out there, a zone is a blank tab on the
 globe.
+
+## The laboratory
+
+Two benches, and almost no writing on either of them.
+
+**VIALS** is a rack. Every substance the project has drawn is a glass tube on a
+steel shelf — full, lit and bubbling if biochemistry has isolated it, empty and
+dusty if it has not. Each tube wears a label with two arrows: green up for what
+it gives you, red down for what it costs. Loading one is picking a tube up.
+
+**DNA** is a wall of culture jars in six shelves, one per lineage, each jar
+holding a strand of that gene drifting in solution. A lit jar is a gene on a line
+Gene Therapy has funded; a dark one with a padlock is a line nobody has paid for.
 
 ## The drop
 
@@ -143,6 +154,7 @@ as a fragment for hosts that supply their own document shell).
 | Pause / settings | `P` / `ESC` | `II` button |
 | Gene tree | `G` / `E` / `TAB` | tap the gene chip |
 | Spin the globe | drag, or hold `LEFT` / `RIGHT` | drag anywhere on the sphere |
+| Send Doc Croc away, or call him back | `T` | tap his speech bubble |
 | Site select: change site / change zone | `UP` / `DOWN`, `Q` / `E` | tap a pin |
 | Back out of a screen | `ESC` | the **X** in the top-right corner |
 | Trait codex | `C` | via pause |
@@ -156,9 +168,15 @@ has no escape key, so every screen that can be backed out of carries the same **
 corner, and it is only drawn on touch.
 
 The globe is a thing you turn rather than a carousel that turns for you: drag it with a finger or the
-mouse and it keeps spinning when you let go, then settles. Each release site stands on it as a
-**landmark pin** — a staff with a diamond head carrying that site's own icon, tallest on the near face
-of the sphere, with the selected one ringed, ticked and named on a tag.
+mouse and it keeps spinning when you let go, then settles. Only the zone you are looking at puts
+markers on the sphere — eighteen pins at once read as a line of dots strung round the equator, four or
+five read as places. Each stands on the surface as a **landmark pin**: a staff with a diamond head
+carrying that site's own icon, tallest on the near face, the selected one ringed, ticked and named.
+
+The sphere is painted a pixel at a time, so it used to re-derive every pixel's latitude and longitude
+from scratch sixty times a second, allocating a colour array for each one. None of that depends on the
+spin, so it is worked out once into a lookup and read back after; and the site select no longer
+simulates and renders an entire swamp behind a screen that paints over it.
 
 ## How a run works
 
