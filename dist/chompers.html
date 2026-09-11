@@ -5352,6 +5352,15 @@ const Genome = {
     return hexNbrs(g).some(n => this.has(P, n.id));
   },
   has(P, id) { return P.genes.indexOf(id) >= 0; },
+  // Two lineages are native to a crocodile. The rest is surgery, and surgery is
+  // a research programme — a gene on an unfunded line will not take at all.
+  researchBlocked(g) {
+    if (typeof Research === 'undefined' || g.root) return false;
+    if ((g.hybrid || g.chimera) && !Research.hybridsOpen()) return true;
+    if (g.lin && !Research.lineageOpen(g.lin)) return true;
+    if (g.lin2 && !Research.lineageOpen(g.lin2)) return true;
+    return false;
+  },
   // a gene can be taken when it touches one you already have
   unlocked(P, g) {
     if (g.root) return false;
@@ -5359,6 +5368,7 @@ const Genome = {
     if (this.has(P, 'core') === false) return false;
     // one apex per crocodile: the four ends of the tree are exclusive
     if (g.apex && P.apex) return false;
+    if (this.researchBlocked(g)) return false;
     // and some genes have to be earned by playing, not bought
     if (!Trials.met(P, g)) return false;
     return hexNbrs(g).some(n => this.has(P, n.id));
@@ -5435,6 +5445,131 @@ const Affinity = {
   onEat(P, e) { this.add(P, 'glut', clamp(e.mass * 0.02, 0.1, 2)); },
 };
 
+/* ===== src/research.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// THE RESEARCH LAB.
+//
+// You begin with nothing. One stock animal, one hide, one body plan, two gene
+// lineages, one map. Everything else is a line item on a research programme the
+// project funds out of what you bring back.
+//
+// A run pays DATA. Data buys nodes. Nodes open species, pigments, body grades,
+// gene lineages, standing biological perks and the other two zones. Nothing is
+// spent in the field and nothing is lost on death — the lab is the part of you
+// that survives.
+// ---------------------------------------------------------------------------
+const RESEARCH = [
+  {
+    id: 'morph', name: 'MORPHOLOGY', col: '#7affda', line: 'BASE STOCK AND BODY PLAN',
+    nodes: [
+      { id: 'm.size', name: 'GROWTH CONTROL', cost: 2, line: 'RUNT AND OVERGROWN LENGTHS', grant: { size: [0, 2] } },
+      { id: 'm.girth', name: 'BODY DEPTH', cost: 3, need: ['m.size'], line: 'LEAN AND HEAVY FRAMES', grant: { girth: [0, 2] } },
+      { id: 'm.caiman', name: 'CAIMAN STOCK', cost: 5, need: ['m.size'], line: 'SPECTACLED CAIMAN', grant: { species: ['caiman'] } },
+      { id: 'm.gharial', name: 'GAVIAL STOCK', cost: 8, need: ['m.caiman'], line: 'GHARIAL', grant: { species: ['gharial'] } },
+      { id: 'm.nile', name: 'NILE STOCK', cost: 10, need: ['m.caiman'], line: 'NILE CROCODILE', grant: { species: ['nile'] } },
+      { id: 'm.extreme', name: 'HYPERTROPHY', cost: 12, need: ['m.girth'], line: 'HYPERTROPHIC AND BULL GRADES', grant: { size: [3], girth: [3] } },
+      { id: 'm.salt', name: 'ESTUARINE STOCK', cost: 16, need: ['m.nile'], line: 'SALTWATER CROCODILE', grant: { species: ['salt'] } },
+      { id: 'm.deino', name: 'FOSSIL RECONSTRUCTION', cost: 26, need: ['m.salt', 'm.extreme'], line: 'DEINOSUCHUS', grant: { species: ['deino'] } },
+    ],
+  },
+  {
+    id: 'pigment', name: 'PIGMENTATION', col: '#e0b050', line: 'HIDE AND CHROMATOPHORES',
+    nodes: [
+      { id: 'p.basic', name: 'BASE DYES', cost: 2, line: 'TANNIN AND MARSH GREEN', grant: { paint: ['tannin', 'marsh'] } },
+      { id: 'p.dark', name: 'DARK PIGMENT', cost: 4, need: ['p.basic'], line: 'BLACKWATER AND SILT GREY', grant: { paint: ['blackwater', 'silt'] } },
+      { id: 'p.rare', name: 'PIGMENT DEFECTS', cost: 8, need: ['p.dark'], line: 'LEUCISTIC AND SULPHUR', grant: { paint: ['leucistic', 'sulphur'] } },
+      { id: 'p.exotic', name: 'CLASSIFIED LINES', cost: 14, need: ['p.rare'], line: 'BLOODLINE AND ABYSSAL', grant: { paint: ['bloodline', 'abyssal'] } },
+    ],
+  },
+  {
+    id: 'gene', name: 'GENE THERAPY', col: '#ff5a3a', line: 'WHICH LINEAGES WILL TAKE',
+    nodes: [
+      { id: 'g.phantom', name: 'PHANTOM LINE', cost: 4, line: 'SPEED, STEALTH, AMBUSH', grant: { lineage: ['phantom'] } },
+      { id: 'g.colossus', name: 'COLOSSUS LINE', cost: 6, line: 'MASS AS A WEAPON', grant: { lineage: ['colossus'] } },
+      { id: 'g.abyssal', name: 'ABYSSAL LINE', cost: 8, need: ['g.phantom'], line: 'VENOM, REGENERATION, THE DEEP', grant: { lineage: ['abyssal'] } },
+      { id: 'g.savage', name: 'SAVAGE LINE', cost: 8, need: ['g.colossus'], line: 'SPEED AND APPETITE', grant: { lineage: ['savage'] } },
+      { id: 'g.hybrid', name: 'SPLICE TOLERANCE', cost: 18, need: ['g.abyssal', 'g.savage'], line: 'HYBRIDS AND CHIMERAS WILL GRAFT', grant: { hybrid: true } },
+    ],
+  },
+  {
+    id: 'chem', name: 'BIOCHEMISTRY', col: '#8ab820', line: 'STANDING TREATMENTS',
+    nodes: [
+      { id: 'c.clot', name: 'CLOTTING FACTOR', cost: 3, line: 'MEND WHILE FED', perk: P => { P.st.regen += 0.015; } },
+      { id: 'c.filter', name: 'HEPATIC FILTER', cost: 5, need: ['c.clot'], line: 'FILTH BUILDS 60% SLOWER', perk: P => { P.st.toxRes *= 2.5; } },
+      { id: 'c.chitin', name: 'CHITIN GRAFT', cost: 6, need: ['c.clot'], line: 'PLUS 10% ARMOUR', perk: P => { P.st.armor += 0.10; } },
+      { id: 'c.myo', name: 'MYOSTATIN BLOCK', cost: 8, need: ['c.chitin'], line: 'PLUS 12% BITE', perk: P => { P.st.bite *= 1.12; } },
+      { id: 'c.baro', name: 'BAROPHILIC MARROW', cost: 10, need: ['c.filter'], line: 'RATED 80% DEEPER', perk: P => { P.st.crushDepth *= 1.8; P.st.crushRes *= 1.5; } },
+      { id: 'c.adren', name: 'ADRENAL GLAND', cost: 10, need: ['c.myo'], line: 'PLUS 10% SPEED AND STAMINA', perk: P => { P.st.speed *= 1.10; P.st.dashCd *= 0.9; } },
+      { id: 'c.neuro', name: 'NEURAL ACCELERANT', cost: 18, need: ['c.adren', 'c.baro'], line: 'ONE EXTRA GENE POINT PER TIER', perk: P => { P.vialTierBonus = (P.vialTierBonus || 0) + 1; } },
+    ],
+  },
+  {
+    id: 'field', name: 'FIELD SURVEY', col: '#60a8ff', line: 'WHERE THEY WILL DROP YOU',
+    nodes: [
+      { id: 'f.sewer', name: 'MUNICIPAL SURVEY', cost: 6, line: 'OPENS THE SEWER NETWORK', grant: { zone: ['sewer'] } },
+      { id: 'f.ocean', name: 'OFFSHORE SURVEY', cost: 10, line: 'OPENS THE OPEN OCEAN', grant: { zone: ['ocean'] } },
+      { id: 'f.deep', name: 'DEEP SOUNDING', cost: 16, need: ['f.sewer', 'f.ocean'], line: 'OPENS THE SUMP AND THE TRENCH', grant: { site: ['sump', 'trench'] } },
+    ],
+  },
+];
+const RES_NODE = {};
+for (const c of RESEARCH) for (const n of c.nodes) { n.cat = c; RES_NODE[n.id] = n; }
+
+const Research = {
+  done() { const r = G.save && G.save.research; return Array.isArray(r) ? r : (G.save ? (G.save.research = []) : []); },
+  has(id) { return this.done().indexOf(id) >= 0; },
+  data() { return (G.save && G.save.data) || 0; },
+  addData(n) { if (!G.save) return 0; const g = Math.max(0, Math.round(n)); G.save.data = (G.save.data || 0) + g; return g; },
+  // every node whose prerequisites are all bought
+  open(n) { return !n.need || n.need.every(id => this.has(id)); },
+  canBuy(n) { return !this.has(n.id) && this.open(n) && this.data() >= n.cost; },
+  buy(n) {
+    if (!this.canBuy(n)) return false;
+    G.save.data -= n.cost;
+    this.done().push(n.id);
+    G.storeSave();
+    return true;
+  },
+  // everything a given grant key has handed out so far
+  granted(key) {
+    const out = new Set();
+    for (const id of this.done()) {
+      const n = RES_NODE[id]; if (!n || !n.grant) continue;
+      const v = n.grant[key];
+      if (Array.isArray(v)) for (const k of v) out.add(k);
+      else if (v !== undefined) out.add(v);
+    }
+    return out;
+  },
+  // Two gene lineages are native to the animal. The other four are surgery.
+  lineageOpen(lin) { return lin === 'ripper' || lin === 'bulwark' || this.granted('lineage').has(lin); },
+  hybridsOpen() { return this.has('g.hybrid'); },
+  zoneOpen(id) { return id === 'glades' || this.granted('zone').has(id); },
+  siteOpen(id) { return this.granted('site').has(id); },
+  // the standing treatments, stamped onto every new animal
+  applyTo(P) { for (const id of this.done()) { const n = RES_NODE[id]; if (n && n.perk) n.perk(P); } },
+  progress(cat) {
+    let got = 0; for (const n of cat.nodes) if (this.has(n.id)) got++;
+    return { got, total: cat.nodes.length, frac: got / cat.nodes.length };
+  },
+  totalProgress() {
+    let got = 0, tot = 0;
+    for (const c of RESEARCH) for (const n of c.nodes) { tot++; if (this.has(n.id)) got++; }
+    return { got, tot, frac: tot ? got / tot : 0 };
+  },
+  // What a finished run was worth. Deliberately readable: the numbers on the
+  // death card add up to the number in the corner.
+  payout(stats, score, tier, relics) {
+    return {
+      score: Math.floor((score || 0) / 2200),
+      tier: Math.max(0, (tier || 0) - 1),
+      relics: (relics || 0) * 5,
+      get total() { return this.score + this.tier + this.relics; },
+    };
+  },
+};
+
 /* ===== src/stages.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
@@ -5469,12 +5604,12 @@ const STAGES = [
   { id: 'shaft', zone: 'sewer', lat: -0.12, lon: 3.62, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 2.1, diff: 1.6, need: { reach: 4200 } },
   { id: 'junction', zone: 'sewer', lat: 0.06, lon: 3.92, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 3.0, diff: 2.4, need: { reach: 6100 } },
   { id: 'gallery', zone: 'sewer', lat: 0.24, lon: 4.20, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 4.0, diff: 3.2, need: { reach: 7600 } },
-  { id: 'sump', zone: 'sewer', lat: 0.40, lon: 4.48, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
+  { id: 'sump', survey: true, zone: 'sewer', lat: 0.40, lon: 4.48, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
   // ---- ZONE 3: THE OPEN OCEAN. Past the seawall, down the wall, into the dark.
   { id: 'shelf', zone: 'ocean', lat: -0.34, lon: 5.10, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 4.4, diff: 3.0, need: { reach: 11000 } },
   { id: 'reef', zone: 'ocean', lat: -0.14, lon: 5.40, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 5.6, diff: 3.8, need: { reach: 15300 } },
   { id: 'wall', zone: 'ocean', lat: 0.08, lon: 5.72, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 7.2, diff: 4.5, need: { tier: 6 } },
-  { id: 'trench', zone: 'ocean', lat: 0.30, lon: 6.04, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
+  { id: 'trench', survey: true, zone: 'ocean', lat: 0.30, lon: 6.04, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
@@ -5519,9 +5654,25 @@ const Stages = {
     if (need.kills !== undefined && (s.kills || 0) < need.kills) return false;
     return true;
   },
-  unlocked(st) { return this.met(st.need); },
+  unlocked(st) {
+    // a site opens on two counts: the lab has surveyed its zone, and the animal
+    // has done enough in the field to be trusted with it
+    if (typeof Research !== 'undefined') {
+      const z = zoneOf(st);
+      if (!Research.zoneOpen(z.id)) return false;
+      if (st.survey && !Research.siteOpen(st.id)) return false;
+    }
+    return this.met(st.need);
+  },
   // one line telling the player what is still missing
-  hint(need) {
+  hint(need, st) {
+    // the zone survey outranks everything: there is no point telling somebody to
+    // grow when the lab has not found the place yet
+    if (st && typeof Research !== 'undefined') {
+      const z = zoneOf(st);
+      if (!Research.zoneOpen(z.id)) return 'SURVEY ' + z.name;
+      if (st.survey && !Research.siteOpen(st.id)) return 'DEEP SOUNDING';
+    }
     if (!need) return '';
     if (need.reach !== undefined) {
       const b = Biome.at(need.reach);
@@ -9138,16 +9289,13 @@ const CrocView = {
 /* ===== src/creation.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
-// THE CREATION BAY and the SUBSTANCE STORE.
+// THE CREATION BAY.
 //
-// Before a run you build the thing you are going to be. Three decisions:
-// which base species the lab grows you from, how big they let you come out,
-// and which recovered artifacts get spliced into the embryo. You start with a
-// dwarf alligator and nothing else; everything past that is earned.
-//
-// Vials are the other half of progression: biological substances recovered in
-// the field. One is loaded before a run and its effects are permanent for that
-// run. They are the reason to go back into a map you have already cleared.
+// Before a run you build the thing you are going to be: which base stock the
+// lab grows you from, how long and how deep through the body they let you come
+// out, and what hide it wears. You start with a dwarf alligator in the colour
+// it grew and nothing else. Every other option on this screen is a line item
+// on the research programme, and somebody has to fund it first.
 // ---------------------------------------------------------------------------
 const BASE_SPECIES = [
   { id: 'dwarf', name: 'DWARF ALLIGATOR', latin: 'A. MISSISSIPPIENSIS (DWARF)',
@@ -9210,42 +9358,16 @@ const SIZE_GRADES = [
   { id: 'huge', name: 'HYPERTROPHIC', mul: 1.7, line: 'THEY DO NOT AUTHORISE THIS. IT WILL BE HUNGRY.', hp: 1.45, spd: 0.8, hunger: 1.8 },
 ];
 
-// ---------------------------------------------------------------------------
-// Vials. Each is a substance with a real upside and a real cost.
-// ---------------------------------------------------------------------------
-const VIALS = [
-  { id: 'none', name: 'NO SUBSTANCE', col: '#5f7f78', line: 'CLEAN BLOOD. NOTHING TO REJECT.', eff: 'NO EFFECT', apply: () => {} },
-  { id: 'adren', name: 'ADRENAL CONCENTRATE', col: '#ff8030', line: 'DRAWN FROM A PANTHER THAT WOULD NOT STOP RUNNING.',
-    eff: '+18% SPEED AND STAMINA, -12% MAX HEALTH', apply: P => { P.st.speed *= 1.18; P.st.dashCd *= 0.8; P.st.hpMul *= 0.88; } },
-  { id: 'clot', name: 'CLOTTING FACTOR IX', col: '#c02828', line: 'IT MENDS. IT ALSO THICKENS.',
-    eff: 'REGENERATE WHILE FED, -10% SPEED', apply: P => { P.st.regen += 0.02; P.st.speed *= 0.9; } },
-  { id: 'myo', name: 'MYOSTATIN BLOCKER', col: '#e8d060', line: 'THE MUSCLE NEVER GETS THE MESSAGE TO STOP.',
-    eff: '+25% BITE, HUNGER DRAINS 25% FASTER', apply: P => { P.st.bite *= 1.25; P.st.hungerRate *= 1.25; } },
-  { id: 'chitin', name: 'CHITIN GRAFT SERUM', col: '#8a9a40', line: 'HARVESTED OFF SOMETHING THAT LIVED IN THE PIPES.',
-    eff: '-18% DAMAGE TAKEN, -15% GROWTH', apply: P => { P.st.armor += 0.18; P.st.growth *= 0.85; } },
-  { id: 'lumen', name: 'LUMINOUS PLASMA', col: '#40f0c8', line: 'IT GLOWS. THINGS COME TO LOOK.',
-    eff: 'PREY IS DRAWN TO YOU, EVERYTHING SEES YOU COMING', apply: P => { P.st.magnet = Math.max(P.st.magnet, 90); P.st.lure = 1; P.st.stealth *= 1.5; } },
-  { id: 'neuro', name: 'NEURAL ACCELERANT', col: '#a070ff', line: 'TIME OPENS UP. SO DOES THE HEADACHE.',
-    eff: '+2 GENE POINTS PER TIER, +1 STRAIN TOLERANCE', apply: P => { P.vialTierBonus = 2; P.strainBonus = (P.strainBonus || 0) + 1; } },
-  { id: 'bile', name: 'DIGESTIVE BILE', col: '#7a9a20', line: 'DISSOLVES BONE, SHELL AND HULL.',
-    eff: 'EAT ARMOURED PREY WHOLE, -10% BITE', apply: P => { P.st.ironStomach = true; P.st.swallow *= 1.3; P.st.bite *= 0.9; } },
-  { id: 'filter', name: 'HEPATIC FILTER CULTURE', col: '#8ab820', line: 'GROWN IN A SUMP. IT DRINKS WHAT WOULD KILL YOU.',
-    eff: 'FILTH BUILDS 70% SLOWER, -10% BITE', apply: P => { P.st.toxRes *= 3.2; P.st.bite *= 0.9; } },
-  { id: 'baro', name: 'BAROPHILIC MARROW', col: '#4a9ac8', line: 'TAKEN OFF SOMETHING DREDGED UP FROM A MILE DOWN.',
-    eff: 'RATED TWICE AS DEEP, -12% SPEED AT THE SURFACE', apply: P => { P.st.crushDepth *= 2.2; P.st.crushRes *= 1.8; P.st.speed *= 0.88; } },
-];
-const VIAL_BY_ID = {};
-for (const v of VIALS) VIAL_BY_ID[v.id] = v;
-
 const Create = {
-  rows: ['species', 'size', 'vial', 'artifacts'],
-  met(need) { return typeof Stages !== 'undefined' ? Stages.met(need) : true; },
-  speciesUnlocked(sp) { if (!sp.need) return true; const s = G.save || {}; if (sp.need.best !== undefined && (s.best || 0) < sp.need.best) return false; return this.met(sp.need); },
-  vialUnlocked(v) {
-    if (v.id === 'none') return true;
-    const owned = (G.save && G.save.vials) || [];
-    return owned.indexOf(v.id) >= 0;
-  },
+  rows: ['species', 'size', 'girth', 'hide'],
+  // Nothing here is given. You come out of the tank as a dwarf alligator in the
+  // hide it grew, at the length and depth the paperwork says, and every other
+  // option on this screen is a line item somebody has to fund first.
+  speciesUnlocked(sp) { return sp.id === 'dwarf' || Research.granted('species').has(sp.id); },
+  paintUnlocked(pt) { return pt.id === 'wild' || Research.granted('paint').has(pt.id); },
+  sizeUnlocked(i) { return i === 1 || Research.granted('size').has(i); },
+  girthUnlocked(i) { return i === 1 || Research.granted('girth').has(i); },
+  rowUnlocked(row, i, item) { return row === 0 ? this.sizeUnlocked(i) : row === 1 ? this.girthUnlocked(i) : this.paintUnlocked(item); },
   // what the current build works out to
   spec() {
     const e = G.embryo || {};
@@ -9258,7 +9380,6 @@ const Create = {
       size: sp.size * gr.mul,
       girth: (sp.girth || 1) * gi.mul,
       hp: sp.hp * gr.hp * gi.hp, spd: sp.spd * gr.spd * gi.spd, bite: sp.bite, hunger: gr.hunger,
-      vial: VIAL_BY_ID[e.vial] || VIALS[0],
       gene: sp.gene ? GENE_BY_ID[sp.gene] : null,
     };
   },
@@ -9281,8 +9402,6 @@ const Create = {
     P.paintId = (G.embryo && G.embryo.paint) || 'wild';
     // the species' signature gene comes free: it is what the animal already is
     if (b.gene && P.genes.indexOf(b.gene.id) < 0) { P.genes.push(b.gene.id); b.gene.apply(P); if (b.gene.downApply) b.gene.downApply(P); P.speciesGene = b.gene.id; }
-    if (b.vial && b.vial.apply) b.vial.apply(P);
-    P.vialId = b.vial ? b.vial.id : 'none';
     P.recomputeStats(); P.rebuildLook();
   },
 };
@@ -9546,9 +9665,8 @@ const Lab = {
   t: 0, staff: [], sel: 0, ready: false, camX: 0, hint: 0,
   // the room's interactive stations, laid out left to right
   stations: [
-    { id: 'create', x: 320, label: 'CREATE SPECIMEN', sub: 'BUILD AN EMBRYO AND RELEASE IT' },
-    { id: 'archive', x: 92, label: 'GENOME ARCHIVE', sub: 'EVERYTHING YOU HAVE EATEN' },
-    { id: 'vials', x: 548, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
+    { id: 'create', x: 320, label: 'CREATE' },
+    { id: 'research', x: 92, label: 'RESEARCH' },
   ],
   init() {
     this.t = 0; this.staff = []; this.ready = true;
@@ -10270,10 +10388,9 @@ const UI = {
     if (P.rollT > 0) this.drawRollGauge(ctx, P, t);
     // hints, stacked upward so two warnings never print on the same line
     const hints = [];
-    if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
-    if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
+    if (P.tether) hints.push(['BITE THE LINE', '#ff8040', 1]);
     if (P.latched && P.rollT <= 0) hints.push(['BITE TO ROLL', '#ff9080', 1]);
-    if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
+    if (P.grabbed) hints.push(['MASH BITE', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
     let hy = H - 20;
     for (const [txt, col, sc] of hints) {
       Font.draw(ctx, txt, W / 2, hy - (sc - 1) * Font.H, { color: col, align: 'center', shadow: true, scale: sc });
@@ -10311,12 +10428,13 @@ const UI = {
       if (b.sub) Font.draw(ctx, b.sub, W / 2, H * 0.3 + 20, { color: '#ffffff', align: 'center', outline: '#000' });
       ctx.globalAlpha = 1;
     }
-    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher && P.rollT <= 0) {
+    // two words on a first run, and only a first run. The game teaches itself.
+    if (G.t < 11 && G.state === 'play' && (G.save.runs || 0) < 1 && !G.finisher && P.rollT <= 0) {
       const touch = G.touchUI || Input.touch.active;
-      const msgs = touch
-        ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   HOLD SPEED TO RUN', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
-        : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   HOLD SHIFT: SPEED   UP+SHIFT: LEAP', 'EAT TO EARN GENES.  G: SPLICE THEM'];
-      Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
+      const msgs = touch ? ['LEFT THUMB TO SWIM', 'BITE PAD TO EAT'] : ['ARROWS TO SWIM', 'SPACE TO EAT'];
+      ctx.globalAlpha = clamp(Math.min(G.t, 11 - G.t), 0, 1);
+      Font.draw(ctx, msgs[G.t < 5.5 ? 0 : 1], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
+      ctx.globalAlpha = 1;
     }
   },
   drawRollGauge(ctx, P, t) {
@@ -10493,8 +10611,22 @@ const UI = {
       if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
       // a chimera gets a second ring: it is the far end of two lineages at once
       if (g.chimera && g.lin2) this.hex(ctx, c.sx, c.sy, r * 0.62, null, own ? LINEAGES[g.lin2].color : shade(LINEAGES[g.lin2].color, 0.5), 1);
-      const tp = Genome.trialBlocked(P, g) ? Trials.progress(P, g) : null;
+      const rb = !own && Genome.researchBlocked(g);
+      const tp = !rb && Genome.trialBlocked(P, g) ? Trials.progress(P, g) : null;
       if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
+      if (rb) {
+        // The lab has not funded this line. Seal it, but seal it in the
+        // lineage's own colour — you should still be able to read the shape of
+        // the tree and see which branch is the one you have not paid for.
+        const sc = mixColor(col, '#16262a', 0.55);
+        this.hex(ctx, c.sx, c.sy, r, 'rgba(4,10,12,0.62)', sc, 1);
+        ctx.fillStyle = rgba(shade(col, 0.8), 0.35);
+        for (let k = -r; k < r; k += 3) ctx.fillRect(Math.round(c.sx + k), Math.round(c.sy - 1), 2, 2);
+        ctx.fillStyle = mixColor(col, '#dff0f0', 0.35);
+        ctx.fillRect(Math.round(c.sx) - 4, Math.round(c.sy) - 1, 8, 6);
+        ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 5, 4, 3);
+        ctx.fillStyle = '#0e1a1c'; ctx.fillRect(Math.round(c.sx), Math.round(c.sy) + 1, 1, 3);
+      }
       if (tp) {
         // a trial gate: the node is reachable, you just have not earned it yet
         this.hex(ctx, c.sx, c.sy, r, null, '#ffa030', 1);
@@ -10576,13 +10708,9 @@ const UI = {
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
     else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : tprog && !tprog.done ? 'TRIAL LOCKED' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: tprog && !tprog.done ? '#ffa030' : '#7a6a6a', align: 'right' });
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
-    if (G.touchUI || Input.touch.active) {
-      Font.draw(ctx, 'TAP A GENE TO SPLICE IT', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
-      const bx = W - 22, by = 16;
-      ctx.globalAlpha = 0.8; ctx.strokeStyle = '#8fe8c8'; ctx.lineWidth = 1;
-      Shape.oct(ctx, bx, by, 13, null, '#8fe8c8', 1); ctx.globalAlpha = 1;
-      Font.draw(ctx, 'X', bx, by - 3, { color: '#8fe8c8', align: 'center', scale: 2, outline: '#04120e' });
-    } else Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
+    // the old duplicate close button here is now the shared exit control
+    if (!this.exitShown()) Font.draw(ctx, 'SPACE  SPLICE', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
+    this.drawExit(ctx);
   },
   drawLogo(ctx, x, y, scale, t) {
     const txt = 'CHOMPERS', w = Font.width(txt, scale);
@@ -10606,71 +10734,147 @@ const UI = {
   // The room does the talking. This is a hanging sign, a selection bracket
   // around whichever piece of furniture you are pointed at, and a footer.
   labStations() {
-    const F = LAB.FLOOR;
-    return [
-      { id: 'archive', x: 6, y: F - 180, w: 164, h: 180, lx: 88, label: 'GENOME ARCHIVE', sub: 'EVERY SPECIES YOU HAVE EATEN' },
-      { id: 'create', x: 258, y: 78, w: 124, h: 218, lx: 320, label: 'CREATE SPECIMEN', sub: 'GROW AN ORGANISM AND RELEASE IT' },
-      { id: 'vials', x: 434, y: F - 126, w: 200, h: 126, lx: 534, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
+    const F = LAB.FLOOR, W = G.W, H = G.H;
+    const out = [
+      { id: 'research', x: 6, y: F - 180, w: 164, h: 180, label: 'RESEARCH' },
+      { id: 'create', x: 258, y: 78, w: 124, h: 218, label: 'CREATE' },
     ];
+    const pw = 104, ph = 26, gap = 14, py = H - 48;
+    const total = out.length * pw + (out.length - 1) * gap;
+    out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
+    return out;
   },
   drawTitle(ctx) {
-    const W = G.W, H = G.H, t = G.titleT, touch = G.touchUI;
-    const st = this.labStations(), sel = st[clamp(G.labSel === undefined ? 1 : G.labSel, 0, st.length - 1)];
+    const W = G.W, H = G.H, t = G.titleT;
+    const st = this.labStations(), si = clamp(G.labSel === undefined ? 1 : G.labSel, 0, st.length - 1), sel = st[si];
 
-    // --- hanging illuminated sign, slung from the ceiling pipes
-    const sw = 246, sx = Math.round(W / 2 - sw / 2), sy = 40, sh = 40;
-    ctx.fillStyle = '#2a3c42'; ctx.fillRect(sx + 26, 26, 3, 16); ctx.fillRect(sx + sw - 29, 26, 3, 16);
+    // --- the sign, slung from the ceiling pipes. The whole title is the logo.
+    const sw = 214, sx = Math.round(W / 2 - sw / 2), sy = 34, sh = 30;
+    ctx.fillStyle = '#2a3c42'; ctx.fillRect(sx + 24, 20, 3, 14); ctx.fillRect(sx + sw - 27, 20, 3, 14);
     ctx.fillStyle = '#0c1417'; ctx.fillRect(sx - 3, sy - 3, sw + 6, sh + 6);
     ctx.fillStyle = '#16242a'; ctx.fillRect(sx, sy, sw, sh);
-    ctx.fillStyle = '#20343a'; ctx.fillRect(sx, sy, sw, 2);
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.10 + 0.03 * Math.sin(t * 3);
     ctx.fillStyle = '#ff5030'; ctx.fillRect(sx + 4, sy + 4, sw - 8, sh - 8);
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    this.drawLogo(ctx, W / 2, sy + 6, 3, t);
-    Font.draw(ctx, 'CHIMERA PROJECT   BIO-4 GENETICS', W / 2, sy + 30, { color: '#5f9f94', align: 'center' });
+    this.drawLogo(ctx, W / 2, sy + 4, 3, t);
 
-    // --- selection bracket drawn around the chosen station, inside the room
+    // --- a bracket in the room around whichever station you are standing at
     const pulse = 0.55 + 0.45 * Math.sin(t * 4);
     ctx.globalAlpha = 0.35 + pulse * 0.5;
-    this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 13);
+    this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 15);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#7affda';
-    for (let i = 0; i < 4; i++) {
-      const px = sel.x + (i % 2 ? sel.w : 0), py = sel.y + (i > 1 ? sel.h : 0);
-      ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 2, 2);
-    }
 
-    // --- the plate under the selected station
-    const plw = Math.max(158, Font.width(sel.sub, 1) + 22), plx = clamp(Math.round(sel.lx - plw / 2), 6, W - plw - 6);
-    const ply = H - 56;
-    ctx.fillStyle = 'rgba(4,10,12,0.88)'; ctx.fillRect(plx, ply, plw, 30);
-    this.bracket(ctx, plx, ply, plw, 30, 'rgba(120,255,215,0.5)', 7);
-    Font.draw(ctx, sel.label, plx + plw / 2, ply + 5, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, sel.sub, plx + plw / 2, ply + 21, { color: '#5f9f94', align: 'center' });
-
-    // --- three tabs, so the whole room's options are visible at once
-    const tw = 56, ty = H - 20;
+    // --- two plates, one per station, always both visible. No tabs, no blurb.
+    const py = st[0].by;
     st.forEach((s2, i) => {
-      const tx = Math.round(W / 2 - (st.length * tw) / 2 + i * tw);
-      const on = i === (G.labSel === undefined ? 1 : G.labSel);
-      ctx.fillStyle = on ? '#1d4a42' : '#101c1b'; ctx.fillRect(tx + 2, ty, tw - 4, 13);
-      ctx.fillStyle = on ? '#7affda' : '#2e4a46'; ctx.fillRect(tx + 2, ty, tw - 4, 1);
-      Font.draw(ctx, ['ARCHIVE', 'CREATE', 'VIALS'][i], tx + tw / 2, ty + 4, { color: on ? '#e8fff8' : '#4f7f74', align: 'center' });
+      const on = i === si;
+      ctx.fillStyle = on ? 'rgba(10,32,29,0.95)' : 'rgba(4,12,12,0.8)';
+      ctx.fillRect(s2.bx, s2.by, s2.bw, s2.bh);
+      ctx.fillStyle = on ? '#7affda' : '#22403c'; ctx.fillRect(s2.bx, s2.by, s2.bw, 2);
+      Font.draw(ctx, s2.label, s2.bx + s2.bw / 2, s2.by + 9, { color: on ? '#e8fff8' : '#4f7f74', align: 'center', scale: 2, outline: '#04120e' });
+      if (on) this.bracket(ctx, s2.bx - 3, s2.by - 3, s2.bw + 6, s2.bh + 6, '#7affda', 8);
     });
 
-    // --- prompt and footer
-    ctx.globalAlpha = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 3.2));
-    Font.draw(ctx, touch ? 'TAP A STATION' : 'ARROWS: WALK      ENTER: USE', W / 2, ply - 16, { color: '#ffe060', align: 'center', outline: '#3a1c00' });
+    // --- one number that matters, and nothing else
+    const d = Research.data();
+    if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
+    Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
+    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
+  },
+  // ---------- the research lab ----------
+  // The room stays visible behind it: five programmes down the left, the chosen
+  // programme's track down the right, and one number in the corner that is the
+  // only currency in the game.
+  resCatRects() {
+    const x = 10, y = 44, h = 30;
+    return RESEARCH.map((c, i) => ({ x, y: y + i * (h + 4), w: 150, h, c, i }));
+  },
+  resNodeRects() {
+    const cat = RESEARCH[clamp(G.resCat || 0, 0, RESEARCH.length - 1)];
+    const x = 176, y = 44, h = 26, gap = 3;
+    const n = cat.nodes.length, avail = G.H - y - 34;
+    const step = Math.min(h + gap, avail / n);
+    return cat.nodes.map((nd, i) => ({ x, y: Math.round(y + i * step), w: G.W - x - 10, h: Math.round(step - gap), nd, i }));
+  },
+  resState(nd) { return Research.has(nd.id) ? 'done' : !Research.open(nd) ? 'locked' : Research.data() >= nd.cost ? 'ready' : 'short'; },
+  drawResearch(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    ctx.fillStyle = 'rgba(3,10,12,0.82)'; ctx.fillRect(0, 0, W, H);
+    // scan lines over the room, so it reads as a screen laid over the lab
+    ctx.globalAlpha = 0.14; ctx.fillStyle = '#0a2a26';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
     ctx.globalAlpha = 1;
-    const sv = G.save;
-    Font.draw(ctx, 'BEST ' + fmt(sv.best || 0) + '   LONGEST ' + (sv.bestLen || 0).toFixed(1) + 'FT   RELICS ' + Missions.owned().length + '/' + ARTIFACTS.length, 8, H - 8, { color: '#3f6f66' });
-    Font.draw(ctx, 'SOUND ' + (SFX.muted ? 'OFF' : 'ON') + ' (M)   HELP (H)', W - 8, H - 8, { color: '#3f6f66', align: 'right' });
+
+    const tp = Research.totalProgress();
+    ctx.fillStyle = 'rgba(4,12,14,0.92)'; ctx.fillRect(6, 4, 190, 30);
+    Font.draw(ctx, 'RESEARCH', 12, 8, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    this.meter(ctx, 12, 24, 140, 4, tp.frac, '#3fd0a8', '#12241f');
+    Font.draw(ctx, tp.got + '/' + tp.tot, 190, 24, { color: '#4f7f74', align: 'right' });
+    // the bank
+    const d = Research.data();
+
+    // --- the five programmes
+    for (const r of this.resCatRects()) {
+      const on = r.i === (G.resCat || 0), pr = Research.progress(r.c);
+      ctx.fillStyle = on ? 'rgba(14,34,32,0.95)' : 'rgba(8,18,18,0.8)';
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = on ? r.c.col : mixColor(r.c.col, '#0d1a18', 0.6);
+      ctx.fillRect(r.x, r.y, 3, r.h);
+      Font.draw(ctx, r.c.name, r.x + 8, r.y + 5, { color: on ? '#e8fff8' : '#6f8f88' });
+      this.meter(ctx, r.x + 8, r.y + 17, 104, 4, pr.frac, r.c.col, '#12201e');
+      Font.draw(ctx, pr.got + '/' + pr.total, r.x + r.w - 6, r.y + 16, { color: on ? r.c.col : '#3f5f58', align: 'right' });
+      if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, r.c.col, 7);
+    }
+
+    // --- the chosen programme's track
+    const cat = RESEARCH[clamp(G.resCat || 0, 0, RESEARCH.length - 1)];
+    const rows = this.resNodeRects();
+    for (const r of rows) {
+      const nd = r.nd, st = this.resState(nd), on = r.i === (G.resNode || 0);
+      const col = st === 'done' ? cat.col : st === 'locked' ? '#3a4a48' : st === 'ready' ? '#ffe060' : '#6f8f88';
+      // the spine linking a node to the one it grew out of
+      if (r.i > 0) { ctx.fillStyle = st === 'locked' ? '#1e2e2c' : mixColor(cat.col, '#0d1a18', 0.45); ctx.fillRect(r.x + 7, r.y - 4, 2, 5); }
+      ctx.fillStyle = on ? 'rgba(16,38,36,0.96)' : 'rgba(5,14,15,0.92)';
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      // state pip: filled when owned, hollow when open, barred when locked
+      ctx.fillStyle = col;
+      if (st === 'done') ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 8, 8);
+      else if (st === 'locked') { ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 8, 2); ctx.fillRect(r.x + 4, r.y + r.h / 2 + 2, 8, 2); }
+      else { ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 8, 1); ctx.fillRect(r.x + 4, r.y + r.h / 2 + 3, 8, 1); ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 1, 8); ctx.fillRect(r.x + 11, r.y + r.h / 2 - 4, 1, 8); }
+      // the name is always readable — you are meant to see what you are saving
+      // for. Only the detail is withheld until the step above is paid for.
+      Font.draw(ctx, nd.name, r.x + 17, r.y + 5, { color: st === 'done' ? cat.col : st === 'locked' ? '#5f7f78' : on ? '#e8fff8' : '#8faaa4' });
+      Font.draw(ctx, st === 'locked' ? 'SEALED' : nd.line, r.x + 17, r.y + 15, { color: st === 'done' ? '#3f6f66' : st === 'locked' ? '#3f5f58' : '#5f7f78' });
+      // price, or a tick
+      if (st === 'done') Font.draw(ctx, 'DONE', r.x + r.w - 6, r.y + 9, { color: cat.col, align: 'right' });
+      else Font.draw(ctx, String(nd.cost), r.x + r.w - 6, r.y + 6, { color: st === 'ready' ? '#ffe060' : '#4f6f68', align: 'right', scale: 2 });
+      if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, st === 'ready' ? '#ffe060' : cat.col, 7);
+    }
+
+    // --- one prompt, and only when it means something
+    const cur = rows[clamp(G.resNode || 0, 0, rows.length - 1)];
+    if (cur) {
+      const st = this.resState(cur.nd);
+      if (st === 'ready') {
+        ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 5);
+        Font.draw(ctx, G.touchUI ? 'TAP AGAIN TO FUND' : 'ENTER  FUND', W / 2, H - 12, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
+        ctx.globalAlpha = 1;
+      } else if (st === 'short') Font.draw(ctx, 'NEEDS ' + (cur.nd.cost - Research.data()) + ' MORE DATA', W / 2, H - 12, { color: '#8f6f5f', align: 'center' });
+      else if (st === 'locked') Font.draw(ctx, 'FINISH THE STEP ABOVE', W / 2, H - 12, { color: '#5f7f78', align: 'center' });
+    }
+    // the bank goes last so no row can paint over it
+    const bankY = this.exitShown() ? 32 : 6;
+    const bw = Math.max(72, Font.width(String(d), 3) + 16);
+    ctx.fillStyle = 'rgba(4,12,14,0.92)'; ctx.fillRect(W - bw - 6, bankY, bw, 32);
+    Font.draw(ctx, 'DATA', W - 12, bankY + 4, { color: '#4f7f74', align: 'right' });
+    Font.draw(ctx, String(d), W - 12, bankY + 13, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 3, outline: '#3a2a00' });
+    this.drawExit(ctx);
   },
   // ---------- the creation bay ----------
   // Two stages. SPECIES is a holographic projector running an attack loop with
   // arrows either side of it. SPLICE commits, and CUSTOMISE is the specimen in
-  // an acid column with length, girth, hide and substance to set on it.
+  // an acid column with length, girth and hide to set on it.
   cvSpecies() { if (!this._cvS) this._cvS = CrocView.make(); return this._cvS; },
   cvCustom() { if (!this._cvC) this._cvC = CrocView.make(); return this._cvC; },
   // parts cache keyed on the look, so scrubbing sliders is not a rebuild storm
@@ -10687,10 +10891,8 @@ const UI = {
     const x0 = 216, cw = Math.floor((W - x0 - 12) / 4);
     SIZE_GRADES.forEach((gr, i) => out.push({ row: 0, i, x: x0 + i * cw, y: 46, w: cw - 3, h: 17, item: gr }));
     GIRTH_GRADES.forEach((gi, i) => out.push({ row: 1, i, x: x0 + i * cw, y: 92, w: cw - 3, h: 17, item: gi }));
-    const pw = Math.floor((W - x0 - 12) / 5);
-    HIDE_PAINTS.forEach((pt, i) => out.push({ row: 2, i, x: x0 + (i % 5) * pw, y: 138 + Math.floor(i / 5) * 19, w: pw - 3, h: 17, item: pt }));
-    const vw = Math.floor((W - x0 - 12) / 4);
-    VIALS.forEach((v, i) => out.push({ row: 3, i, x: x0 + (i % 4) * vw, y: 203 + Math.floor(i / 4) * 19, w: vw - 3, h: 17, item: v }));
+    const pw = Math.floor((W - x0 - 12) / 3);
+    HIDE_PAINTS.forEach((pt, i) => out.push({ row: 2, i, x: x0 + (i % 3) * pw, y: 138 + Math.floor(i / 3) * 20, w: pw - 3, h: 18, item: pt }));
     return out;
   },
   createGoRect() { return G.createPhase ? { x: G.W - 152, y: G.H - 38, w: 134, h: 26 } : { x: G.W / 2 - 62, y: G.H - 42, w: 124, h: 28 }; },
@@ -10733,7 +10935,7 @@ const UI = {
       Font.draw(ctx, ph, 474, 50, { color: u > 0.44 && u < 0.7 ? '#ffffff' : rgba(col, 0.7), align: 'right' });
     } else {
       Font.draw(ctx, 'NO SAMPLE ON FILE', cx, cy - 4, { color: '#3f5f58', align: 'center', scale: 2 });
-      Font.draw(ctx, Stages.hint(b.sp.need) || (b.sp.need && b.sp.need.best !== undefined ? 'SCORE ' + fmt(b.sp.need.best) : ''), cx, cy + 14, { color: '#5f7f78', align: 'center' });
+      Font.draw(ctx, 'NEEDS RESEARCH', cx, cy + 14, { color: '#5f7f78', align: 'center' });
     }
     // scanning sweep across the stage
     ctx.globalCompositeOperation = 'lighter';
@@ -10849,11 +11051,6 @@ const UI = {
     ctx.globalAlpha = 0.07; ctx.fillStyle = '#7affda';
     for (let i = 0; i < 8; i++) ctx.fillRect(tx, ty + ((t * 18 + i * 30) % th), tw, 2);
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    if (b.vial && b.vial.id !== 'none') {
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.11 + 0.04 * Math.sin(t * 2.4);
-      ctx.fillStyle = b.vial.col; ctx.fillRect(tx, ty, tw, th);
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    }
     ctx.restore();
     // glass
     ctx.globalAlpha = 0.3; ctx.fillStyle = '#dffdf4'; ctx.fillRect(tx + 8, ty + 4, 3, th - 8); ctx.globalAlpha = 1;
@@ -10877,30 +11074,28 @@ const UI = {
     label('LENGTH', 34, b.gr.name);
     label('GIRTH', 80, b.gi.name);
     label('HIDE', 126, b.pt.name);
-    label('SUBSTANCE', 191, b.vial.name);
     for (const c of cells) {
       const item = c.item;
-      const open = c.row === 3 ? Create.vialUnlocked(item) : true;
-      const cur = (c.row === 0 && E.size === c.i) || (c.row === 1 && E.girth === c.i) || (c.row === 2 && (E.paint || 'wild') === item.id) || (c.row === 3 && E.vial === item.id);
+      const open = Create.rowUnlocked(c.row, c.i, item);
+      const cur = (c.row === 0 && E.size === c.i) || (c.row === 1 && E.girth === c.i) || (c.row === 2 && (E.paint || 'wild') === item.id);
       const on = (G.createRow || 0) === c.row && cur;
-      const cc = c.row === 3 ? item.col : c.row === 2 && item.swatch ? item.swatch : '#7affda';
+      const cc = c.row === 2 && item.swatch ? item.swatch : '#7affda';
       ctx.fillStyle = cur ? 'rgba(30,80,70,0.9)' : 'rgba(10,22,24,0.85)'; ctx.fillRect(c.x, c.y, c.w, c.h);
       ctx.fillStyle = !open ? '#2a2420' : cur ? cc : '#2e4a46'; ctx.fillRect(c.x, c.y, c.w, 1);
       if (on) this.bracket(ctx, c.x - 1, c.y - 1, c.w + 2, c.h + 2, '#ffffff', 5);
       let ind = 0;
-      if (c.row === 3) { ctx.fillStyle = open ? item.col : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 4, 4, 10); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(c.x + 3, c.y + 4, 1, 10); ind = 7; }
-      if (c.row === 2) { ctx.fillStyle = item.swatch || '#5f7048'; ctx.fillRect(c.x + 3, c.y + 5, 8, 8); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(c.x + 3, c.y + 5, 8, 2); ind = 11; }
+      if (c.row === 2) { ctx.fillStyle = open ? (item.swatch || '#5f7048') : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 5, 8, 8); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(c.x + 3, c.y + 5, 8, 2); ind = 11; }
       let nm = open ? item.name : 'LOCKED';
       const maxc = Math.floor((c.w - ind - 6) / 6);
       Font.draw(ctx, nm.length > maxc ? nm.slice(0, maxc) : nm, c.x + 4 + ind, c.y + 6, { color: !open ? '#6a5a4a' : cur ? '#e8fff8' : '#8fbfb6' });
     }
 
     // --- artifacts
-    Font.draw(ctx, 'ARTIFACTS', 216, 248, { color: '#7affda' });
-    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, 257, 66, 1);
+    Font.draw(ctx, 'ARTIFACTS', 216, 212, { color: '#7affda' });
+    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, 221, 66, 1);
     const owned = Missions.owned(), slots = 5, sw2 = 24;
     for (let i = 0; i < slots; i++) {
-      const sx2 = 290 + i * (sw2 + 3), sy2 = 244;
+      const sx2 = 290 + i * (sw2 + 3), sy2 = 208;
       ctx.fillStyle = 'rgba(10,22,24,0.85)'; ctx.fillRect(sx2, sy2, sw2, 18);
       const a = owned[i] ? ARTIFACT_BY_ID[owned[i]] : null;
       if (a) { drawRelicGlyph(ctx, a, sx2 + sw2 / 2, sy2 + 9, t * 0.5, 0.7); ctx.fillStyle = a.col; ctx.fillRect(sx2, sy2, sw2, 1); }
@@ -10909,11 +11104,10 @@ const UI = {
 
     // --- the line for whatever row is highlighted
     const row = G.createRow || 0;
-    const cur2 = row === 0 ? b.gr : row === 1 ? b.gi : row === 2 ? b.pt : b.vial;
+    const cur2 = row === 0 ? b.gr : row === 1 ? b.gi : b.pt;
     if (cur2) {
-      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(216, 264, W - 228, 30);
-      if (cur2.eff) Font.draw(ctx, cur2.eff, 220, 268, { color: '#5f9f94' });
-      Font.drawWrapped(ctx, cur2.line || '', 220, cur2.eff ? 279 : 272, W - 244, { color: '#c8d8d0', lineHeight: 9 });
+      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(216, 236, W - 228, 28);
+      Font.drawWrapped(ctx, cur2.line || '', 220, 242, W - 244, { color: '#c8d8d0', lineHeight: 9 });
     }
 
     // --- back and release
@@ -10927,50 +11121,9 @@ const UI = {
     ctx.fillStyle = mixColor('#8a2a10', '#ff6030', p2); ctx.fillRect(go.x, go.y, go.w, 2);
     this.bracket(ctx, go.x, go.y, go.w, go.h, '#ff8050', 8);
     Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 7, { color: '#ffd0a0', align: 'center', scale: 2, outline: '#2a0c00' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO SET' : 'ARROWS SET      ENTER: RELEASE      ESC: BACK', 96, H - 10, { color: '#4f7f74' });
+    this.drawExit(ctx);
   },
 
-  // ---------- the substance store ----------
-  drawVialStore(ctx) {
-    const W = G.W, H = G.H, t = G.menuT;
-    ctx.fillStyle = 'rgba(3,10,12,0.9)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'SUBSTANCE STORE', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
-    const owned = (G.save && G.save.vials) || [];
-    Font.draw(ctx, owned.length + ' OF ' + (VIALS.length - 1) + ' RECOVERED', W - 12, 14, { color: '#5f9f94', align: 'right' });
-    // a rack of vials, drawn as glass
-    const list = VIALS.slice(1);
-    const cw = Math.floor((W - 24) / list.length);
-    list.forEach((v, i) => {
-      const x = 12 + i * cw, y = 44, have = owned.indexOf(v.id) >= 0;
-      const sel = i === (G.vialSel || 0);
-      // stopper, glass body, fluid
-      ctx.fillStyle = '#5a5248'; ctx.fillRect(x + cw / 2 - 5, y, 10, 4);
-      ctx.fillStyle = 'rgba(150,220,215,0.14)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 14, 54);
-      if (have) {
-        ctx.fillStyle = v.col; ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 37);
-        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.45); ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 2);
-        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.7); ctx.fillRect(x + cw / 2 - 5, y + 24, 2, 28);
-        // it bubbles
-        if (chance(0.4)) { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(x + cw / 2 + ((i * 3) % 4) - 2, y + 24 + ((t * 22 + i * 9) % 30), 1, 1); }
-        ctx.globalCompositeOperation = 'lighter'; Shape.star(ctx, x + cw / 2, y + 38, 12, v.col, 0.22); ctx.globalCompositeOperation = 'source-over';
-      } else {
-        ctx.fillStyle = 'rgba(40,52,52,0.5)'; ctx.fillRect(x + cw / 2 - 6, y + 40, 12, 17);
-      }
-      ctx.fillStyle = 'rgba(220,250,250,0.28)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 1, 54);
-      if (sel) this.bracket(ctx, x + 2, y - 4, cw - 4, 70, '#ffffff', 7);
-      Font.draw(ctx, have ? String(i + 1) : '?', x + cw / 2, y + 62, { color: have ? '#d8e8de' : '#4a5a56', align: 'center' });
-    });
-    const v = list[clamp(G.vialSel || 0, 0, list.length - 1)];
-    const have = owned.indexOf(v.id) >= 0;
-    ctx.fillStyle = 'rgba(6,14,16,0.9)'; ctx.fillRect(12, 130, W - 24, 78);
-    this.bracket(ctx, 12, 130, W - 24, 78, have ? v.col : '#3a4a48', 9);
-    Font.draw(ctx, have ? v.name : 'UNIDENTIFIED SUBSTANCE', 20, 138, { color: have ? v.col : '#5f7f78', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, have ? v.eff : 'RECOVER IT IN THE FIELD TO READ THE LABEL', 20, 158, { color: have ? '#d8e8de' : '#4f6f6a' });
-    if (have) Font.drawWrapped(ctx, v.line, 20, 172, W - 40, { color: '#8fbfb6', lineHeight: 9 });
-    Font.draw(ctx, 'ONE SUBSTANCE MAY BE LOADED PER RUN, IN THE CREATION BAY.', 12, 226, { color: '#4f7f74' });
-    Font.draw(ctx, 'VIALS DROP FROM BOSSES AND HIDE IN SECRET AREAS. THEY ARE KEPT FOREVER.', 12, 238, { color: '#3f6f66' });
-    Font.draw(ctx, 'ARROWS: BROWSE      ESC: BACK', W / 2, H - 14, { color: '#4f7f74', align: 'center' });
-  },
 
   drawLandmark(ctx, kind, x, y, on) {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
@@ -11092,14 +11245,38 @@ const UI = {
   // ---------- release-site display: a spinning globe ----------
   globeGeom() { return { cx: G.W * 0.34, cy: G.H * 0.53, r: Math.round(G.H * 0.32) }; },
   stageRows() {
-    // hit targets are the pins on the near face of the globe
+    // A pin is a staff standing off the surface with a head on it, so the hit
+    // target is the whole marker, not the four pixels where it meets the ground.
     const gg = this.globeGeom(), spin = G.globeSpin || 0;
     return STAGES.map((st, i) => {
       const [px2, py2, z2, vis] = Globe.project(st.lon, st.lat, gg.cx, gg.cy, gg.r, spin, G.globeTilt || 0.32);
-      return { x: px2 - 8, y: py2 - 8, w: 16, h: 16, st, i, px: px2, py: py2, z: z2, vis };
+      const k = 0.5 + clamp(z2, 0, 1) * 0.5;          // pins on the near face stand tallest
+      const staff = Math.round(22 * k), head = Math.round(11 * k);
+      return { x: px2 - head - 3, y: py2 - staff - head - 3, w: head * 2 + 6, h: staff + head * 2 + 6,
+        st, i, px: px2, py: py2, z: z2, vis, k, staff, head };
     });
   },
   // small corner brackets: the readouts all sit inside instrument frames
+  // A phone has no escape key. Every screen that can be backed out of carries
+  // the same control in the same corner, and it is only drawn on touch.
+  exitRect() { return { x: G.W - 26, y: 5, w: 21, h: 21 }; },
+  exitShown() { return !!(G.touchUI || Input.touch.active); },
+  exitHit() {
+    if (!this.exitShown() || !Input.mouse.clicked) return false;
+    const r = this.exitRect();
+    return Input.mouse.x >= r.x - 4 && Input.mouse.x <= r.x + r.w + 4 && Input.mouse.y >= r.y - 4 && Input.mouse.y <= r.y + r.h + 4;
+  },
+  drawExit(ctx) {
+    if (!this.exitShown()) return;
+    const r = this.exitRect();
+    ctx.fillStyle = 'rgba(6,16,16,0.85)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+    this.bracket(ctx, r.x, r.y, r.w, r.h, 'rgba(255,140,110,0.55)', 6);
+    ctx.fillStyle = '#ff8c6e';
+    for (let i = 0; i < 9; i++) {
+      ctx.fillRect(r.x + 6 + i, r.y + 6 + i, 2, 2);
+      ctx.fillRect(r.x + 14 - i, r.y + 6 + i, 2, 2);
+    }
+  },
   bracket(ctx, x, y, w, h, col, len = 6) {
     ctx.fillStyle = col;
     for (const [bx, by, dx, dy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) {
@@ -11136,19 +11313,43 @@ const UI = {
       if (!r.vis) continue;
       const fade = clamp(r.z * 2.4, 0, 1);
       const zc = zoneOf(st).col;
-      const col = st.kaiju ? '#ff7a40' : open ? zc : mixColor(zc, '#2a3a38', 0.65);
+      const col = !open ? mixColor(zc, '#2a3a38', 0.72) : st.kaiju ? '#ff7a40' : zc;
+      const dk = shade(col, 0.45), lt = mixColor(col, '#ffffff', 0.45);
+      const px2 = Math.round(r.px), py2 = Math.round(r.py);
+      const bob = sel ? Math.round(Math.sin(t * 3) * 1.5) : 0;
+      const hy = py2 - r.staff + bob, hr = r.head;
       ctx.globalAlpha = fade;
-      if (sel) {
-        const pr = 7 + Math.sin(t * 5) * 1.6;
-        Shape.ring(ctx, r.px, r.py, pr, 1, col);
-        ctx.fillStyle = col;
-        ctx.fillRect(Math.round(r.px - pr - 4), Math.round(r.py), 3, 1);
-        ctx.fillRect(Math.round(r.px + pr + 2), Math.round(r.py), 3, 1);
-      }
+      // ground shadow so the marker reads as standing on the sphere
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(px2 - 3, py2 - 1, 7, 2);
+      // staff
+      ctx.fillStyle = dk; ctx.fillRect(px2 - 1, hy, 3, r.staff - bob);
+      ctx.fillStyle = col; ctx.fillRect(px2 - 1, hy, 1, r.staff - bob);
+      // head: a pixel diamond carrying the site's own landmark, small
+      ctx.fillStyle = dk;
+      for (let dy = -hr; dy <= hr; dy++) { const w = hr - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
       ctx.fillStyle = col;
-      ctx.fillRect(Math.round(r.px - 2), Math.round(r.py - 2), 4, 4);
-      ctx.fillStyle = '#04100c'; ctx.fillRect(Math.round(r.px - 1), Math.round(r.py - 1), 2, 2);
-      if (open) { ctx.fillStyle = col; ctx.fillRect(Math.round(r.px), Math.round(r.py), 1, 1); }
+      for (let dy = -hr + 2; dy <= hr - 2; dy++) { const w = hr - 2 - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
+      ctx.fillStyle = lt;
+      for (let dy = -hr + 2; dy <= -hr + 4; dy++) { const w = hr - 2 - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
+      if (r.k > 0.72) {
+        ctx.save(); ctx.translate(px2, hy + 3); ctx.scale(0.5, 0.5);
+        this.drawLandmark(ctx, st.id, 0, 0, open);
+        ctx.restore();
+      }
+      if (!open) { ctx.fillStyle = 'rgba(6,14,14,0.55)'; for (let dy = -hr; dy <= hr; dy++) { const w = hr - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); } }
+      // the selected marker gets a halo, ticks and its name on a tag
+      if (sel) {
+        Shape.ring(ctx, px2, hy, hr + 5 + Math.sin(t * 5) * 1.4, 1, col);
+        ctx.fillStyle = col;
+        ctx.fillRect(px2 - hr - 11, hy, 4, 1); ctx.fillRect(px2 + hr + 8, hy, 4, 1);
+        ctx.fillRect(px2 - 1, hy - hr - 11, 1, 4);
+        const nm = open ? st.name : 'SEALED';
+        const tw = Font.width(nm, 1) + 10, tx = clamp(px2 - tw / 2, 4, G.W - tw - 4), ty = hy - hr - 22;
+        ctx.fillStyle = 'rgba(4,12,14,0.9)'; ctx.fillRect(tx, ty, tw, 13);
+        ctx.fillStyle = col; ctx.fillRect(tx, ty, tw, 1);
+        Font.draw(ctx, nm, tx + tw / 2, ty + 4, { color: open ? '#e8fff8' : '#8f7f78', align: 'center' });
+      }
       ctx.globalAlpha = 1;
     }
 
@@ -11161,9 +11362,11 @@ const UI = {
     ctx.fillStyle = 'rgba(6,18,16,0.75)'; ctx.fillRect(10, 8, W * 0.46, 30);
     this.bracket(ctx, 10, 8, W * 0.46, 30, rgba(Z.col, 0.35), 5);
     for (const z of ZONES) {
-      const on = z.id === Z.id, bx = 16 + (z.n - 1) * 12;
-      ctx.fillStyle = on ? z.col : mixColor(z.col, '#0a1614', 0.7);
+      // a zone the lab has not surveyed is a blank tab, not a dim one
+      const on = z.id === Z.id, surveyed = Research.zoneOpen(z.id), bx = 16 + (z.n - 1) * 12;
+      ctx.fillStyle = !surveyed ? '#1b2726' : on ? z.col : mixColor(z.col, '#0a1614', 0.7);
       ctx.fillRect(bx, on ? 13 : 15, 8, on ? 20 : 16);
+      if (!surveyed) { ctx.fillStyle = '#3c4a48'; ctx.fillRect(bx + 2, on ? 21 : 21, 4, 2); }
     }
     Font.draw(ctx, 'ZONE ' + Z.n, 58, 13, { color: Z.col, scale: 2, outline: '#04120e' });
     Font.draw(ctx, Z.name, 58, 28, { color: '#c8d8d0' });
@@ -11184,7 +11387,7 @@ const UI = {
     if (open) {
       Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 72, { color: '#c8d8d0' });
       for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 8 + shake), 84, 6, 6); }
-    } else Font.draw(ctx, Stages.hint(cur.need), px0 + iw + 10 + shake, 72, { color: '#a08070' });
+    } else Font.draw(ctx, Stages.hint(cur.need, cur), px0 + iw + 10 + shake, 72, { color: '#a08070' });
 
     // --- the chain of sites in this zone, so progress reads at a glance
     const sy2 = 122, sw2 = W - 22 - px0;
@@ -11227,15 +11430,15 @@ const UI = {
     // --- prompt
     const okCol = open ? '#ffe060' : '#ff8060';
     Font.draw(ctx, open ? 'ENTER' : 'LOCKED', px0 + shake, H - 30, { color: okCol, scale: 2, outline: '#2a1a00' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A SITE' : 'ARROWS  SITE      Q / E  ZONE', px0 + shake, H - 12, { color: '#4f7f74' });
-    // the zone's own line, under the globe, so each world gets a sentence
-    Font.draw(ctx, Z.sub, 14, H - 16, { color: rgba(Z.col, 0.7) });
+    Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE', px0 + shake, H - 12, { color: '#4f7f74' });
+    this.drawExit(ctx);
   },
   // ---------- loadout: the splice bay, with you in the tank ----------
   loadoutCells() {
     const W = G.W, out = [];
     const px0 = 176, pw = Math.floor((W - px0 - 18) / 4), py = 68;
-    PRIMES.forEach((p2, i) => out.push({ row: 0, i, x: px0 + (i % 4) * pw, y: py + Math.floor(i / 4) * 22, w: pw - 3, h: 20, item: p2 }));
+    const primes = PRIMES.filter(p2 => p2.id === 'none' || Research.lineageOpen(p2.id));
+    primes.forEach((p2, i) => out.push({ row: 0, i, x: px0 + (i % 4) * pw, y: py + Math.floor(i / 4) * 22, w: pw - 3, h: 20, item: p2 }));
     const hy = 132, hw = Math.floor((W - px0 - 18) / 3);
     HIDES.forEach((h, i) => out.push({ row: 1, i, x: px0 + (i % 3) * hw, y: hy + Math.floor(i / 3) * 22, w: hw - 3, h: 20, item: h }));
     return out;
@@ -11382,6 +11585,7 @@ const UI = {
     Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 5, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04140f' });
     ctx.globalAlpha = 1;
     Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK, THEN RELEASE' : 'ARROWS PICK      ENTER: RELEASE      ESC: BACK', 18, H - 12, { color: '#7f9a90' });
+    this.drawExit(ctx);
   },
   cardRects(n) {
     const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;
@@ -11462,19 +11666,31 @@ const UI = {
     if (cause === 'EATEN') cause = 'EATEN BY ' + (d.killer || 'THE SWAMP');
     else if (cause === 'SHOT') cause = 'SHOT BY POACHERS'; else if (cause === 'CRUSHED') cause = 'CRUSHED BY ' + (d.killer || 'SOMETHING HEAVY'); else if (cause === 'POISONED') cause = 'DIED OF VENOM';
     Font.draw(ctx, cause, W / 2, 64, { color: '#ffb0a0', align: 'center', scale: 1, shadow: true });
-    this.panel(ctx, W / 2 - 150, 84, 300, 164, 'rgba(6,4,4,0.85)', '#5a2020');
-    const mins = Math.floor(G.t / 60), secs = Math.floor(G.t % 60);
+    // Six lines. Everything else about the run is already somewhere you can
+    // look at it, and a wall of statistics is not a thing anybody reads twice.
     const rows = [
-      ['FINAL FORM', TIERS[P.tier].name + '  (' + P.lengthFt.toFixed(1) + ' FT)'], ['SCORE', fmt(G.score) + (G.score >= G.save.best && G.score > 0 ? '  NEW BEST!' : '')], ['SURVIVED', mins + 'M ' + secs + 'S'],
-      ['THINGS EATEN', String(s.eaten)], ['KILLS', String(s.kills)], ['BOSSES SLAIN', String(s.bosses)], ['BOATS AND CAMPS WRECKED', String(s.boats + (s.structures || 0))], ['BIGGEST MEAL', s.biggest || '-'],
-      ['ORDER', G.mission ? (G.mission.claimed ? 'RELIC TAKEN' : G.mission.done ? 'RELIC LEFT BEHIND' : G.mission.def.title + '  ' + Math.floor(G.mission.n) + '/' + G.mission.target) : '-'],
-      ['EVOLUTION', P.picked.filter(p => !p.startsWith('mut')).map(p => PATHS[p.split(':')[0]].name[0] + (+p.split(':')[1] + 1)).join(' ') || 'NONE'],
-      ['TRAITS', P.traits.length ? P.traits.map(id => (TRAIT_BY_ID[id] || {}).name || id).join(', ') : 'NONE'],
+      ['FORM', TIERS[P.tier].name + '  ' + P.lengthFt.toFixed(1) + ' FT'],
+      ['SCORE', fmt(G.score) + (G.score >= G.save.best && G.score > 0 ? '  BEST' : '')],
+      ['EATEN', String(s.eaten)],
+      ['KILLS', String(s.kills) + (s.bosses ? '  (' + s.bosses + ' BOSS)' : '')],
+      ['WRECKED', String(s.boats + (s.structures || 0))],
+      ['ORDER', G.mission ? (G.mission.claimed ? 'RELIC TAKEN' : G.mission.done ? 'RELIC LEFT' : Math.floor(G.mission.n) + '/' + G.mission.target) : '-'],
     ];
-    rows.forEach((r, i) => { const y = 92 + i * 14; Font.draw(ctx, r[0], W / 2 - 140, y, { color: '#c09090' }); Font.draw(ctx, r[1], W / 2 + 140, y, { color: '#ffffff', align: 'right' }); });
-    Font.draw(ctx, 'BEST ' + fmt(G.save.best) + '     LONGEST ' + G.save.bestLen.toFixed(1) + ' FT', W / 2, 254, { color: '#90a898', align: 'center' });
-    if (t > 1 && Math.floor(t * 2) % 2 === 0) Font.draw(ctx, 'PRESS ENTER TO HUNT AGAIN', W / 2, 262, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
-    Font.draw(ctx, 'ESC: TITLE      C: TRAIT CODEX', W / 2, 290, { color: '#708878', align: 'center' });
+    this.panel(ctx, W / 2 - 150, 84, 300, 14 + rows.length * 16, 'rgba(6,4,4,0.85)', '#5a2020');
+    rows.forEach((r, i) => { const y = 92 + i * 16; Font.draw(ctx, r[0], W / 2 - 140, y, { color: '#c09090' }); Font.draw(ctx, r[1], W / 2 + 140, y, { color: '#ffffff', align: 'right' }); });
+    // what the lab got out of it: the only thing that leaves this screen with you
+    const pay = d.pay;
+    if (pay && t > 0.6) {
+      const py2 = 200, reveal = clamp((t - 0.6) * 2.2, 0, 1);
+      ctx.fillStyle = 'rgba(6,14,12,0.9)'; ctx.fillRect(W / 2 - 150, py2, 300, 20);
+      ctx.fillStyle = '#3fd0a8'; ctx.fillRect(W / 2 - 150, py2, 300, 1);
+      Font.draw(ctx, 'DATA RECOVERED', W / 2 - 142, py2 + 7, { color: '#4f7f74' });
+      const parts = [['SCORE', pay.score], ['GROWTH', pay.tier], ['RELIC', pay.relics]].filter(r => r[1] > 0);
+      let bx = W / 2 - 40;
+      for (const r of parts) { Font.draw(ctx, r[0] + ' +' + r[1], bx, py2 + 7, { color: '#8fbfb6' }); bx += Font.width(r[0] + ' +' + r[1], 1) + 10; }
+      Font.draw(ctx, '+' + Math.round(pay.total * reveal), W / 2 + 142, py2 + 4, { color: '#ffe060', align: 'right', scale: 2, outline: '#3a2a00' });
+    }
+    if (t > 1 && Math.floor(t * 2) % 2 === 0) Font.draw(ctx, this.exitShown() ? 'TAP TO HUNT AGAIN' : 'ENTER  AGAIN', W / 2, 244, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
   },
   drawPause(ctx) {
     const W = G.W, H = G.H;
@@ -11486,6 +11702,7 @@ const UI = {
     opts.forEach((o, i) => { Font.draw(ctx, '[' + o[0] + '] ' + o[1], W / 2 - 110, 90 + i * 14, { color: '#d0dcc8' }); Font.draw(ctx, o[2], W / 2 + 110, 90 + i * 14, { color: '#ffe060', align: 'right' }); });
     this.drawHelpBody(ctx, 164);
     Font.draw(ctx, 'ESC / P: RESUME      Q: QUIT TO TITLE', W / 2, H - 16, { color: '#90a898', align: 'center' });
+    this.drawExit(ctx);
   },
   drawHelpBody(ctx, y) {
     const W = G.W;
@@ -11504,7 +11721,7 @@ const UI = {
     this.drawHelpBody(ctx, 70);
     Font.draw(ctx, 'EVOLUTION PATHS', W / 2, 168, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
     PATH_KEYS.forEach((k, i) => { const p = PATHS[k]; Font.draw(ctx, p.name + ': ' + p.tag, W / 2, 190 + i * 12, { color: p.color, align: 'center' }); });
-    Font.draw(ctx, 'ESC / H: BACK', W / 2, H - 16, { color: '#90a898', align: 'center' });
+    this.drawExit(ctx);
   },
   drawIntro(ctx) {
     const W = G.W, H = G.H, e = G.intro; if (!e) return;
@@ -11704,6 +11921,7 @@ const UI = {
     const maxScroll = Math.max(0, Math.ceil(total / cols) - rowsShown);
     if (maxScroll > 0) Font.draw(ctx, 'UP / DOWN TO SCROLL   ' + (scroll + 1) + '/' + (maxScroll + 1), W / 2, H - 26, { color: '#708878', align: 'center' });
     Font.draw(ctx, 'ESC / C: BACK', W / 2, H - 14, { color: '#90a898', align: 'center' });
+    this.drawExit(ctx);
   },
   drawScreenFx(ctx) {
     const W = G.W, H = G.H;
@@ -11745,7 +11963,7 @@ const UI = {
 'use strict';
 const Input = {
   keys: {}, pressed: {}, mouse: { x: 0, y: 0, down: false, rdown: false, clicked: false, rclicked: false, moved: false },
-  touch: { active: false, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, brace: false, biteHeld: false, dashHeld: false, biteId: null, dashId: null, braceId: null, holdT: 0, autoBite: false },
+  touch: { active: false, menuId: null, joy: false, jx: 0, jy: 0, jid: null, sx: 0, sy: 0, cx: 0, cy: 0, bite: false, dash: false, brace: false, biteHeld: false, dashHeld: false, biteId: null, dashId: null, braceId: null, holdT: 0, autoBite: false },
   init(canvas) {
     window.addEventListener('keydown', e => {
       if (!this.keys[e.code]) this.pressed[e.code] = true; this.keys[e.code] = true;
@@ -11784,7 +12002,7 @@ const Input = {
         this.mouse.x = x; this.mouse.y = y; this.mouse.moved = true;
         // the intro is playable, so the pads have to live through it too
         const playable = G.state === 'play' || G.state === 'intro';
-        if (!playable) { this.mouse.clicked = true; if (this.inPad(P.pause, x, y)) this.pressed.Escape = true; continue; }
+        if (!playable) { this.mouse.clicked = true; this.mouse.down = true; T.menuId = t.identifier; if (this.inPad(P.pause, x, y)) this.pressed.Escape = true; continue; }
         // curled in the tank there is nothing to steer: every tap is a chomp
         if (G.state === 'intro' && G.intro && G.intro.phase === 'tank') { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; continue; }
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
@@ -11799,6 +12017,9 @@ const Input = {
     canvas.addEventListener('touchmove', e => {
       e.preventDefault();
       for (const t of e.changedTouches) {
+        // a finger dragged across a menu is a pointer, so screens like the globe
+        // can be pushed around the same way they are with a mouse
+        if (t.identifier === T.menuId) { const [mx, my] = tpos(t); this.mouse.x = mx; this.mouse.y = my; this.mouse.moved = true; continue; }
         if (t.identifier !== T.jid) continue;
         const [x, y] = tpos(t); T.cx = x; T.cy = y;
         let dx = x - T.sx, dy = y - T.sy; let d = Math.hypot(dx, dy); const R = 32;
@@ -11809,6 +12030,7 @@ const Input = {
     }, { passive: false });
     const end = e => {
       for (const t of e.changedTouches) {
+        if (t.identifier === T.menuId) { T.menuId = null; this.mouse.down = false; }
         if (t.identifier === T.jid) { T.joy = false; T.jid = null; T.jx = 0; T.jy = 0; }
         if (t.identifier === T.biteId) { T.biteHeld = false; T.biteId = null; }
         if (t.identifier === T.dashId) { T.dashId = null; T.dashHeld = false; }
@@ -11922,7 +12144,7 @@ const G = {
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2, s = this.scale || 1;
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
-  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], vials: [] }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], vials: [] }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
+  loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], research: [], data: 0 }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], research: [], data: 0 }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
   storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
@@ -11957,8 +12179,9 @@ const G = {
         else P.genePoints += 1;                       // unspliced trades the gene for a point
         P.rebuildLook();
       }
-      if (typeof Create !== 'undefined') Create.applyTo(P);   // species, growth grade and substance
+      if (typeof Create !== 'undefined') Create.applyTo(P);   // species, growth grade and hide
       Missions.applyAll(P);                           // relics you have already carried out
+      Research.applyTo(P);                            // standing treatments out of the lab
       P.recomputeStats();
       this.stage = stage || STAGES[0];
       this.storeSave();
@@ -12069,11 +12292,11 @@ const G = {
       else if (SPECIES[kind]) { const d = SPECIES[kind], band = d.band || [10, 200]; Spawn.school(x, d.nearFloor ? fy - 30 : clamp(rand(band[0], band[1]), 10, fy - 15), kind); }
     }
   },
-  // the creation bay and the vial store, both reached from the lab floor
+  // the creation bay and the research lab, both reached from the lab floor
   openCreate() { this.state = 'create'; this.menuT = 0; this.createPhase = 0; this.createRow = 0;
-    if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, girth: 1, paint: 'wild', vial: 'none' };
+    if (!this.embryo) this.embryo = { species: 'dwarf', size: 1, girth: 1, paint: 'wild' };
     SFX.ui(); },
-  openVials() { this.state = 'vialstore'; this.menuT = 0; this.vialSel = 0; SFX.ui(); },
+  openResearch() { this.state = 'research'; this.menuT = 0; if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; } SFX.ui(); },
   openStages() {
     this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
     if (this.stageSel === undefined) {
@@ -12139,7 +12362,18 @@ const G = {
     this.player.hp = this.player.maxHp;
     this.fx.text(e.x, e.y - 40, 'BOSS DEVOURED', { scale: 3, color: '#ffd060', life: 2 });
   },
-  onPlayerDeath(cause, src) { this.deathInfo = { cause, killer: src && src.name }; this.dyingT = 0; this.state = 'dying'; this.storeSave(); },
+  onPlayerDeath(cause, src) {
+    const P = this.player;
+    // A run is only worth what the lab can read off it. Pay it out here, once,
+    // and hand the breakdown to the death card so the number is never a mystery.
+    const relics = this.mission && this.mission.claimed ? 1 : 0;
+    const pay = Research.payout(this.stats, this.score, P.tier, relics);
+    Research.addData(pay.total);
+    this.save.runs = (this.save.runs || 0) + 1;
+    this.save.kills = (this.save.kills || 0) + (this.stats.kills || 0);
+    this.deathInfo = { cause, killer: src && src.name, pay };
+    this.dyingT = 0; this.state = 'dying'; this.storeSave();
+  },
   // growing into a new tier: the body splits out of its old hide on screen,
   // and the tier itself lands at the burst halfway through
   growTier(tier) {
@@ -12337,11 +12571,15 @@ const G = {
         if (this.labSel === undefined) this.labSel = 1;      // start on CREATE
         if (Input.hit('ArrowLeft', 'KeyA')) { this.labSel = (this.labSel + stn.length - 1) % stn.length; SFX.ui(); }
         if (Input.hit('ArrowRight', 'KeyD')) { this.labSel = (this.labSel + 1) % stn.length; SFX.ui(); }
-        // clicking or tapping a station selects it; a second hit uses it
+        // the station in the room and its plate are the same target
         let hit = -1;
         if (Input.mouse.clicked) {
-          for (let i = 0; i < stn.length; i++) { const s2 = stn[i]; if (Input.mouse.x > s2.x && Input.mouse.x < s2.x + s2.w && Input.mouse.y > s2.y && Input.mouse.y < s2.y + s2.h) hit = i; }
-          if (hit < 0) { const ty = this.H - 18, tw = 54; for (let i = 0; i < stn.length; i++) { const tx = this.W / 2 - (stn.length * tw) / 2 + i * tw; if (Input.mouse.x > tx && Input.mouse.x < tx + tw && Input.mouse.y > ty && Input.mouse.y < ty + 12) hit = i; } }
+          for (let i = 0; i < stn.length; i++) {
+            const s2 = stn[i];
+            const inRoom = Input.mouse.x > s2.x && Input.mouse.x < s2.x + s2.w && Input.mouse.y > s2.y && Input.mouse.y < s2.y + s2.h;
+            const onPlate = Input.mouse.x > s2.bx && Input.mouse.x < s2.bx + s2.bw && Input.mouse.y > s2.by && Input.mouse.y < s2.by + s2.bh;
+            if (inRoom || onPlate) hit = i;
+          }
         }
         if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; break; }
         if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; break; }
@@ -12349,10 +12587,7 @@ const G = {
         if (hit >= 0 && hit !== this.labSel) { this.labSel = hit; SFX.ui(); break; }
         if (use) {
           SFX.init(); SFX.resume(); SFX.ui();
-          const id = stn[this.labSel].id;
-          if (id === 'create') this.openCreate();
-          else if (id === 'archive') { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; }
-          else this.openVials();
+          if (stn[this.labSel].id === 'create') this.openCreate(); else this.openResearch();
         }
         break;
       }
@@ -12364,7 +12599,7 @@ const G = {
         CrocView.update(UI.cvCustom(), raw, 3.4);
         if (!this.createPhase) {
           // ---- stage one: browse the species roster
-          if (Input.hit('Escape')) { this.state = 'title'; SFX.ui(); break; }
+          if (Input.hit('Escape') || UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
           const n2 = BASE_SPECIES.length;
           const step = d => {
             let i = BASE_SPECIES.findIndex(x2 => x2.id === E.species);
@@ -12392,15 +12627,16 @@ const G = {
         }
         // ---- stage two: set it up
         const cells = UI.createCells();
-        if (Input.hit('Escape')) { this.createPhase = 0; SFX.ui(); break; }
-        if (Input.hit('ArrowUp', 'KeyW')) { this.createRow = (this.createRow + 3) % 4; SFX.ui(); }
-        if (Input.hit('ArrowDown', 'KeyS')) { this.createRow = (this.createRow + 1) % 4; SFX.ui(); }
+        if (Input.hit('Escape') || UI.exitHit()) { this.createPhase = 0; SFX.ui(); break; }
+        if (Input.hit('ArrowUp', 'KeyW')) { this.createRow = (this.createRow + 2) % 3; SFX.ui(); }
+        if (Input.hit('ArrowDown', 'KeyS')) { this.createRow = (this.createRow + 1) % 3; SFX.ui(); }
         const row = this.createRow || 0;
+        // stepping a bank skips anything the lab has not funded yet
         const step2 = d => {
-          if (row === 0) E.size = clamp((E.size === undefined ? 1 : E.size) + d, 0, SIZE_GRADES.length - 1);
-          else if (row === 1) E.girth = clamp((E.girth === undefined ? 1 : E.girth) + d, 0, GIRTH_GRADES.length - 1);
-          else if (row === 2) { let i = HIDE_PAINTS.findIndex(x2 => x2.id === (E.paint || 'wild')); i = (i + d + HIDE_PAINTS.length) % HIDE_PAINTS.length; E.paint = HIDE_PAINTS[i].id; }
-          else { const n3 = VIALS.length; let i = VIALS.findIndex(x2 => x2.id === E.vial); if (i < 0) i = 0; for (let k = 0; k < n3; k++) { i = (i + d + n3) % n3; if (Create.vialUnlocked(VIALS[i])) break; } E.vial = VIALS[i].id; }
+          const walk = (list, from, ok) => { let i = from; for (let k = 0; k < list.length; k++) { i = (i + d + list.length) % list.length; if (ok(i)) return i; } return from; };
+          if (row === 0) E.size = walk(SIZE_GRADES, E.size === undefined ? 1 : E.size, i => Create.sizeUnlocked(i));
+          else if (row === 1) E.girth = walk(GIRTH_GRADES, E.girth === undefined ? 1 : E.girth, i => Create.girthUnlocked(i));
+          else { const from = Math.max(0, HIDE_PAINTS.findIndex(x2 => x2.id === (E.paint || 'wild'))); E.paint = HIDE_PAINTS[walk(HIDE_PAINTS, from, i => Create.paintUnlocked(HIDE_PAINTS[i]))].id; }
           SFX.ui();
         };
         if (Input.hit('ArrowLeft', 'KeyA')) step2(-1);
@@ -12410,10 +12646,10 @@ const G = {
             if (Input.mouse.x < c.x || Input.mouse.x > c.x + c.w || Input.mouse.y < c.y || Input.mouse.y > c.y + c.h) continue;
             this.createRow = c.row;
             if (!Input.mouse.clicked) continue;
+            if (!Create.rowUnlocked(c.row, c.i, c.item)) { SFX.clank && SFX.clank(); continue; }
             if (c.row === 0) { E.size = c.i; SFX.ui(); }
             else if (c.row === 1) { E.girth = c.i; SFX.ui(); }
-            else if (c.row === 2) { E.paint = c.item.id; SFX.ui(); }
-            else if (Create.vialUnlocked(c.item)) { E.vial = c.item.id; SFX.ui(); }
+            else { E.paint = c.item.id; SFX.ui(); }
           }
         }
         const bk = UI.createBackRect();
@@ -12423,44 +12659,96 @@ const G = {
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit2) { SFX.ui(); this.openStages(); }
         break;
       }
-      case 'vialstore': {
+      case 'research': {
         this.menuT += raw; Lab.update(raw);
-        const n2 = VIALS.length - 1;
-        if (Input.hit('Escape', 'Enter')) { this.state = 'title'; SFX.ui(); break; }
-        if (Input.hit('ArrowLeft', 'KeyA')) { this.vialSel = (this.vialSel + n2 - 1) % n2; SFX.ui(); }
-        if (Input.hit('ArrowRight', 'KeyD')) { this.vialSel = (this.vialSel + 1) % n2; SFX.ui(); }
-        if (Input.mouse.clicked) { const cw = Math.floor((this.W - 24) / n2); const i = Math.floor((Input.mouse.x - 12) / cw); if (i >= 0 && i < n2) { this.vialSel = i; SFX.ui(); } }
+        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
+        const cats = UI.resCatRects();
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.resCat = (this.resCat + cats.length - 1) % cats.length; this.resNode = 0; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.resCat = (this.resCat + 1) % cats.length; this.resNode = 0; SFX.ui(); }
+        let rows = UI.resNodeRects();
+        if (Input.hit('ArrowUp', 'KeyW')) { this.resNode = (this.resNode + rows.length - 1) % rows.length; SFX.ui(); }
+        if (Input.hit('ArrowDown', 'KeyS')) { this.resNode = (this.resNode + 1) % rows.length; SFX.ui(); }
+        // pointing at a programme switches to it; pointing at a node selects it,
+        // and pointing at the one already selected funds it
+        let fund = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
+        if (Input.mouse.clicked) {
+          const inRect = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
+          let took = false;
+          for (const r of cats) if (inRect(r)) { if (this.resCat !== r.i) { this.resCat = r.i; this.resNode = 0; SFX.ui(); } took = true; }
+          if (!took) { rows = UI.resNodeRects(); for (const r of rows) if (inRect(r)) { if (this.resNode === r.i) fund = true; else { this.resNode = r.i; SFX.ui(); } took = true; } }
+        }
+        rows = UI.resNodeRects();
+        const cur = rows[clamp(this.resNode || 0, 0, rows.length - 1)];
+        if (fund && cur) {
+          if (Research.buy(cur.nd)) {
+            SFX.levelup(); this.whiteFlash(0.25);
+            this.banner = { text: 'FUNDED', sub: cur.nd.name, t: 2.6, max: 2.6, color: cur.nd.cat.col };
+          } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+        }
+        if (this.menuShake > 0) this.menuShake -= raw;
         break;
       }
       case 'stages': {
         this.menuT += raw; this.updateWorld(dt, true);
         const list = STAGES;
-        // the globe eases round to whichever site is selected, and drifts a
-        // little while you decide so it never looks frozen
+        // --- the globe is a thing you turn, not a carousel that turns for you
         {
-          const want = list[this.stageSel] ? list[this.stageSel].lon : 0;
-          let d2 = angleDiff(this.globeSpin, want);
-          this.globeSpin += d2 * Math.min(1, raw * 4.5) + raw * 0.045;
-          this.globeTilt = 0.3 + Math.sin(this.menuT * 0.35) * 0.06;
+          const gg = UI.globeGeom();
+          const mx = Input.mouse.x, my = Input.mouse.y;
+          const overGlobe = dist(mx, my, gg.cx, gg.cy) < gg.r * 1.3;
+          if (Input.mouse.down && (this.globeDrag || overGlobe)) {
+            if (!this.globeDrag) { this.globeDrag = true; this.globeDragX = mx; this.globeDragY = my; this.globeMoved = 0; }
+            const dx = mx - this.globeDragX, dy = my - this.globeDragY;
+            this.globeDragX = mx; this.globeDragY = my;
+            this.globeMoved += Math.abs(dx) + Math.abs(dy);
+            this.globeSpin -= dx / gg.r * 1.1;
+            this.globeTilt = clamp((this.globeTilt || 0.32) + dy / gg.r * 0.6, -0.85, 0.85);
+            this.globeVel = -dx / gg.r * 1.1 / Math.max(0.008, raw) * 0.016;
+            this.globeFree = true;
+          } else {
+            if (this.globeDrag) this.globeDrag = false;
+            if (this.globeFree) {
+              // let go and it keeps turning, then settles
+              this.globeSpin += (this.globeVel || 0) * raw * 60;
+              this.globeVel = (this.globeVel || 0) * Math.pow(0.06, raw);
+              if (Math.abs(this.globeVel) < 0.0006) this.globeVel = 0;
+              this.globeTilt = lerp(this.globeTilt || 0.32, 0.3, Math.min(1, raw * 1.2));
+            } else {
+              const want = list[this.stageSel] ? list[this.stageSel].lon : 0;
+              this.globeSpin += angleDiff(this.globeSpin, want) * Math.min(1, raw * 4.5);
+              this.globeTilt = 0.3 + Math.sin(this.menuT * 0.35) * 0.06;
+            }
+          }
+          // holding left or right turns it by hand as well
+          const hold = (Input.down('ArrowLeft', 'KeyA') ? -1 : 0) + (Input.down('ArrowRight', 'KeyD') ? 1 : 0);
+          if (hold) { this.globeSpin += hold * raw * 1.5; this.globeFree = true; this.globeVel = hold * 0.024; }
         }
         if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
         const rows = UI.stageRows();
-        if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }
-        // arrows walk the sites inside the current zone; Q/E jump between zones
+        // pointing at a pin picks it, but only when the pointer was not being
+        // used to turn the globe — a drag that ends over a marker is still a drag
+        const picking = !this.globeDrag && this.globeMoved < 6;
+        if (picking && (Input.mouse.moved || Input.mouse.clicked)) {
+          for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (!r.vis) continue; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; }
+        }
+        if (!Input.mouse.down) this.globeMoved = 0;
+        if (UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
+        // up and down walk the sites in this zone and bring the globe round to
+        // them; left and right are the hands on the sphere
         const zHere = zoneOf(list[this.stageSel]), zSites = STAGES_BY_ZONE[zHere.id] || list;
-        const stepSite = d => { const k = zSites.indexOf(list[this.stageSel]); const nx = zSites[(k + d + zSites.length) % zSites.length]; this.stageSel = list.indexOf(nx); SFX.ui(); };
+        const stepSite = d => { const k = zSites.indexOf(list[this.stageSel]); const nx = zSites[(k + d + zSites.length) % zSites.length]; this.stageSel = list.indexOf(nx); this.globeFree = false; this.globeVel = 0; SFX.ui(); };
         const stepZone = d => {
           const zi = ZONES.indexOf(zHere), nz = ZONES[(zi + d + ZONES.length) % ZONES.length];
           const sites = STAGES_BY_ZONE[nz.id] || [];
           let best = sites[0];
           for (const st of sites) if (Stages.unlocked(st)) best = st;
-          if (best) { this.stageSel = list.indexOf(best); SFX.ui(); }
+          if (best) { this.stageSel = list.indexOf(best); this.globeFree = false; this.globeVel = 0; SFX.ui(); }
         };
-        if (Input.hit('ArrowLeft', 'KeyA', 'ArrowUp', 'KeyW')) stepSite(-1);
-        if (Input.hit('ArrowRight', 'KeyD', 'ArrowDown', 'KeyS')) stepSite(1);
+        if (Input.hit('ArrowUp', 'KeyW')) stepSite(-1);
+        if (Input.hit('ArrowDown', 'KeyS')) stepSite(1);
         if (Input.hit('KeyQ')) stepZone(-1);
         if (Input.hit('KeyE', 'Tab')) stepZone(1);
-        const rowHit = Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
+        const rowHit = picking && Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
           const st = list[this.stageSel];
           if (Stages.unlocked(st)) { this.openLoadout(st); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
@@ -12470,25 +12758,26 @@ const G = {
       }
       case 'loadout': {
         this.menuT += raw; this.updateWorld(dt, true);
-        if (Input.hit('Escape')) { this.state = 'stages'; SFX.ui(); break; }
+        if (Input.hit('Escape') || UI.exitHit()) { this.state = 'stages'; SFX.ui(); break; }
         const cells = UI.loadoutCells();
         if (Input.mouse.moved || Input.mouse.clicked) {
           for (const c of cells) if (Input.mouse.x > c.x && Input.mouse.x < c.x + c.w && Input.mouse.y > c.y && Input.mouse.y < c.y + c.h) { this.loadRow = c.row; this.loadCol = c.i; }
         }
-        const n0 = (this.loadRow || 0) === 0 ? PRIMES.length : HIDES.length;
+        const openPrimes = PRIMES.filter(p => p.id === 'none' || Research.lineageOpen(p.id));
+        const n0 = (this.loadRow || 0) === 0 ? openPrimes.length : HIDES.length;
         if (Input.hit('ArrowLeft', 'KeyA')) { this.loadCol = (this.loadCol + n0 - 1) % n0; SFX.ui(); }
         if (Input.hit('ArrowRight', 'KeyD')) { this.loadCol = (this.loadCol + 1) % n0; SFX.ui(); }
         if (Input.hit('ArrowUp', 'KeyW') || Input.hit('ArrowDown', 'KeyS')) {
           // jump to the row's current pick rather than resetting it to the first cell
           this.loadRow = (this.loadRow || 0) === 0 ? 1 : 0;
           this.loadCol = this.loadRow === 0
-            ? Math.max(0, PRIMES.findIndex(x2 => x2.id === this.loadout.prime))
+            ? Math.max(0, openPrimes.findIndex(x2 => x2.id === this.loadout.prime))
             : Math.max(0, HIDES.findIndex(x2 => x2.id === this.loadout.hide));
           SFX.ui();
         }
         // read the row after the arrows, and never select a locked morph
         const row = this.loadRow || 0;
-        if (row === 0) this.loadout.prime = PRIMES[clamp(this.loadCol, 0, PRIMES.length - 1)].id;
+        if (row === 0) this.loadout.prime = openPrimes[clamp(this.loadCol, 0, openPrimes.length - 1)].id;
         else { const h = HIDES[clamp(this.loadCol, 0, HIDES.length - 1)]; if (Stages.met(h.need)) this.loadout.hide = h.id; }
         const go = UI.loadoutGoRect();
         const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
@@ -12570,7 +12859,7 @@ const G = {
         if (Input.hit('Escape')) { this.startRun(true); this.state = 'title'; }
         break;
       case 'pause':
-        if (Input.hit('Escape', 'KeyP', 'Enter')) { this.state = 'play'; SFX.ui(); }
+        if (Input.hit('Escape', 'KeyP', 'Enter') || UI.exitHit()) { this.state = 'play'; SFX.ui(); }
         if (Input.hit('KeyQ')) { this.storeSave(); this.startRun(true); this.state = 'title'; }
         if (Input.hit('Digit1')) { this.settings.gore = !this.settings.gore; SFX.ui(); }
         if (Input.hit('Digit2')) { this.settings.shake = !this.settings.shake; SFX.ui(); }
@@ -12579,12 +12868,12 @@ const G = {
         if (Input.hit('KeyC')) { this.prevState = 'pause'; this.state = 'codex'; this.codexScroll = 0; SFX.ui(); }
         break;
       case 'help':
-        if (Input.hit('Escape', 'KeyH', 'Enter')) { this.state = this.prevState; SFX.ui(); }
+        if (Input.hit('Escape', 'KeyH', 'Enter') || UI.exitHit()) { this.state = this.prevState; SFX.ui(); }
         else if (Input.hit('KeyC')) { this.state = 'codex'; this.codexScroll = 0; SFX.ui(); }
         break;
       case 'genes': {
         const P = this.player;
-        if (Input.hit('Escape', 'KeyG', 'KeyE', 'Tab', 'Enter')) { this.state = 'play'; SFX.ui(); break; }
+        if (Input.hit('Escape', 'KeyG', 'KeyE', 'Tab', 'Enter') || UI.exitHit()) { this.state = 'play'; SFX.ui(); break; }
         const cells = UI.geneCells();
         if (Input.mouse.clicked && dist(Input.mouse.x, Input.mouse.y, this.W - 22, 16) < 15) { this.state = 'play'; SFX.ui(); break; }
         if (Input.mouse.moved || Input.mouse.clicked) {
@@ -12739,7 +13028,7 @@ const G = {
     // the front end is a room, not a camera on the swamp
     if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); return; }
     if (this.state === 'create') { Lab.draw(ctx); UI.drawCreate(ctx); return; }
-    if (this.state === 'vialstore') { Lab.draw(ctx); UI.drawVialStore(ctx); return; }
+    if (this.state === 'research') { Lab.draw(ctx); UI.drawResearch(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }

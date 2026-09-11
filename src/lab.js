@@ -18,9 +18,8 @@ const Lab = {
   t: 0, staff: [], sel: 0, ready: false, camX: 0, hint: 0,
   // the room's interactive stations, laid out left to right
   stations: [
-    { id: 'create', x: 320, label: 'CREATE SPECIMEN', sub: 'BUILD AN EMBRYO AND RELEASE IT' },
-    { id: 'archive', x: 92, label: 'GENOME ARCHIVE', sub: 'EVERYTHING YOU HAVE EATEN' },
-    { id: 'vials', x: 548, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
+    { id: 'create', x: 320, label: 'CREATE' },
+    { id: 'research', x: 92, label: 'RESEARCH' },
   ],
   init() {
     this.t = 0; this.staff = []; this.ready = true;

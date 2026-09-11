@@ -171,10 +171,9 @@ const UI = {
     if (P.rollT > 0) this.drawRollGauge(ctx, P, t);
     // hints, stacked upward so two warnings never print on the same line
     const hints = [];
-    if (P.onLand) hints.push(['ON LAND: UP TO HOP', '#c8d8a0', 1]);
-    if (P.tether) hints.push(['HARPOONED! BITE TO SNAP THE LINE', '#ff8040', 1]);
+    if (P.tether) hints.push(['BITE THE LINE', '#ff8040', 1]);
     if (P.latched && P.rollT <= 0) hints.push(['BITE TO ROLL', '#ff9080', 1]);
-    if (P.grabbed) hints.push(['MASH BITE TO BREAK FREE!', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
+    if (P.grabbed) hints.push(['MASH BITE', '#ff6040', Math.floor(t * 8) % 2 ? 1 : 2]);
     let hy = H - 20;
     for (const [txt, col, sc] of hints) {
       Font.draw(ctx, txt, W / 2, hy - (sc - 1) * Font.H, { color: col, align: 'center', shadow: true, scale: sc });
@@ -212,12 +211,13 @@ const UI = {
       if (b.sub) Font.draw(ctx, b.sub, W / 2, H * 0.3 + 20, { color: '#ffffff', align: 'center', outline: '#000' });
       ctx.globalAlpha = 1;
     }
-    if (G.t < 16 && G.state === 'play' && G.runs <= 1 && !G.finisher && P.rollT <= 0) {
+    // two words on a first run, and only a first run. The game teaches itself.
+    if (G.t < 11 && G.state === 'play' && (G.save.runs || 0) < 1 && !G.finisher && P.rollT <= 0) {
       const touch = G.touchUI || Input.touch.active;
-      const msgs = touch
-        ? ['LEFT THUMB: SWIM AND WALK', 'BITE PAD CHOMPS   HOLD SPEED TO RUN', 'EAT TO EARN GENES.  GENE CHIP SPLICES THEM']
-        : ['WASD / ARROWS: SWIM AND WALK', 'SPACE: BITE   HOLD SHIFT: SPEED   UP+SHIFT: LEAP', 'EAT TO EARN GENES.  G: SPLICE THEM'];
-      Font.draw(ctx, msgs[Math.min(2, Math.floor(G.t / 5.3))], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
+      const msgs = touch ? ['LEFT THUMB TO SWIM', 'BITE PAD TO EAT'] : ['ARROWS TO SWIM', 'SPACE TO EAT'];
+      ctx.globalAlpha = clamp(Math.min(G.t, 11 - G.t), 0, 1);
+      Font.draw(ctx, msgs[G.t < 5.5 ? 0 : 1], W / 2, H - 46, { color: '#ffffff', align: 'center', shadow: true });
+      ctx.globalAlpha = 1;
     }
   },
   drawRollGauge(ctx, P, t) {
@@ -394,8 +394,22 @@ const UI = {
       if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
       // a chimera gets a second ring: it is the far end of two lineages at once
       if (g.chimera && g.lin2) this.hex(ctx, c.sx, c.sy, r * 0.62, null, own ? LINEAGES[g.lin2].color : shade(LINEAGES[g.lin2].color, 0.5), 1);
-      const tp = Genome.trialBlocked(P, g) ? Trials.progress(P, g) : null;
+      const rb = !own && Genome.researchBlocked(g);
+      const tp = !rb && Genome.trialBlocked(P, g) ? Trials.progress(P, g) : null;
       if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
+      if (rb) {
+        // The lab has not funded this line. Seal it, but seal it in the
+        // lineage's own colour — you should still be able to read the shape of
+        // the tree and see which branch is the one you have not paid for.
+        const sc = mixColor(col, '#16262a', 0.55);
+        this.hex(ctx, c.sx, c.sy, r, 'rgba(4,10,12,0.62)', sc, 1);
+        ctx.fillStyle = rgba(shade(col, 0.8), 0.35);
+        for (let k = -r; k < r; k += 3) ctx.fillRect(Math.round(c.sx + k), Math.round(c.sy - 1), 2, 2);
+        ctx.fillStyle = mixColor(col, '#dff0f0', 0.35);
+        ctx.fillRect(Math.round(c.sx) - 4, Math.round(c.sy) - 1, 8, 6);
+        ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 5, 4, 3);
+        ctx.fillStyle = '#0e1a1c'; ctx.fillRect(Math.round(c.sx), Math.round(c.sy) + 1, 1, 3);
+      }
       if (tp) {
         // a trial gate: the node is reachable, you just have not earned it yet
         this.hex(ctx, c.sx, c.sy, r, null, '#ffa030', 1);
@@ -477,13 +491,9 @@ const UI = {
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
     else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : tprog && !tprog.done ? 'TRIAL LOCKED' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: tprog && !tprog.done ? '#ffa030' : '#7a6a6a', align: 'right' });
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
-    if (G.touchUI || Input.touch.active) {
-      Font.draw(ctx, 'TAP A GENE TO SPLICE IT', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
-      const bx = W - 22, by = 16;
-      ctx.globalAlpha = 0.8; ctx.strokeStyle = '#8fe8c8'; ctx.lineWidth = 1;
-      Shape.oct(ctx, bx, by, 13, null, '#8fe8c8', 1); ctx.globalAlpha = 1;
-      Font.draw(ctx, 'X', bx, by - 3, { color: '#8fe8c8', align: 'center', scale: 2, outline: '#04120e' });
-    } else Font.draw(ctx, 'MOVE: WASD / MOUSE      TAKE: SPACE OR CLICK      G / ESC: BACK', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
+    // the old duplicate close button here is now the shared exit control
+    if (!this.exitShown()) Font.draw(ctx, 'SPACE  SPLICE', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
+    this.drawExit(ctx);
   },
   drawLogo(ctx, x, y, scale, t) {
     const txt = 'CHOMPERS', w = Font.width(txt, scale);
@@ -507,71 +517,147 @@ const UI = {
   // The room does the talking. This is a hanging sign, a selection bracket
   // around whichever piece of furniture you are pointed at, and a footer.
   labStations() {
-    const F = LAB.FLOOR;
-    return [
-      { id: 'archive', x: 6, y: F - 180, w: 164, h: 180, lx: 88, label: 'GENOME ARCHIVE', sub: 'EVERY SPECIES YOU HAVE EATEN' },
-      { id: 'create', x: 258, y: 78, w: 124, h: 218, lx: 320, label: 'CREATE SPECIMEN', sub: 'GROW AN ORGANISM AND RELEASE IT' },
-      { id: 'vials', x: 434, y: F - 126, w: 200, h: 126, lx: 534, label: 'SUBSTANCE STORE', sub: 'VIALS RECOVERED IN THE FIELD' },
+    const F = LAB.FLOOR, W = G.W, H = G.H;
+    const out = [
+      { id: 'research', x: 6, y: F - 180, w: 164, h: 180, label: 'RESEARCH' },
+      { id: 'create', x: 258, y: 78, w: 124, h: 218, label: 'CREATE' },
     ];
+    const pw = 104, ph = 26, gap = 14, py = H - 48;
+    const total = out.length * pw + (out.length - 1) * gap;
+    out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
+    return out;
   },
   drawTitle(ctx) {
-    const W = G.W, H = G.H, t = G.titleT, touch = G.touchUI;
-    const st = this.labStations(), sel = st[clamp(G.labSel === undefined ? 1 : G.labSel, 0, st.length - 1)];
+    const W = G.W, H = G.H, t = G.titleT;
+    const st = this.labStations(), si = clamp(G.labSel === undefined ? 1 : G.labSel, 0, st.length - 1), sel = st[si];
 
-    // --- hanging illuminated sign, slung from the ceiling pipes
-    const sw = 246, sx = Math.round(W / 2 - sw / 2), sy = 40, sh = 40;
-    ctx.fillStyle = '#2a3c42'; ctx.fillRect(sx + 26, 26, 3, 16); ctx.fillRect(sx + sw - 29, 26, 3, 16);
+    // --- the sign, slung from the ceiling pipes. The whole title is the logo.
+    const sw = 214, sx = Math.round(W / 2 - sw / 2), sy = 34, sh = 30;
+    ctx.fillStyle = '#2a3c42'; ctx.fillRect(sx + 24, 20, 3, 14); ctx.fillRect(sx + sw - 27, 20, 3, 14);
     ctx.fillStyle = '#0c1417'; ctx.fillRect(sx - 3, sy - 3, sw + 6, sh + 6);
     ctx.fillStyle = '#16242a'; ctx.fillRect(sx, sy, sw, sh);
-    ctx.fillStyle = '#20343a'; ctx.fillRect(sx, sy, sw, 2);
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.10 + 0.03 * Math.sin(t * 3);
     ctx.fillStyle = '#ff5030'; ctx.fillRect(sx + 4, sy + 4, sw - 8, sh - 8);
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    this.drawLogo(ctx, W / 2, sy + 6, 3, t);
-    Font.draw(ctx, 'CHIMERA PROJECT   BIO-4 GENETICS', W / 2, sy + 30, { color: '#5f9f94', align: 'center' });
+    this.drawLogo(ctx, W / 2, sy + 4, 3, t);
 
-    // --- selection bracket drawn around the chosen station, inside the room
+    // --- a bracket in the room around whichever station you are standing at
     const pulse = 0.55 + 0.45 * Math.sin(t * 4);
     ctx.globalAlpha = 0.35 + pulse * 0.5;
-    this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 13);
+    this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 15);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#7affda';
-    for (let i = 0; i < 4; i++) {
-      const px = sel.x + (i % 2 ? sel.w : 0), py = sel.y + (i > 1 ? sel.h : 0);
-      ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 2, 2);
-    }
 
-    // --- the plate under the selected station
-    const plw = Math.max(158, Font.width(sel.sub, 1) + 22), plx = clamp(Math.round(sel.lx - plw / 2), 6, W - plw - 6);
-    const ply = H - 56;
-    ctx.fillStyle = 'rgba(4,10,12,0.88)'; ctx.fillRect(plx, ply, plw, 30);
-    this.bracket(ctx, plx, ply, plw, 30, 'rgba(120,255,215,0.5)', 7);
-    Font.draw(ctx, sel.label, plx + plw / 2, ply + 5, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, sel.sub, plx + plw / 2, ply + 21, { color: '#5f9f94', align: 'center' });
-
-    // --- three tabs, so the whole room's options are visible at once
-    const tw = 56, ty = H - 20;
+    // --- two plates, one per station, always both visible. No tabs, no blurb.
+    const py = st[0].by;
     st.forEach((s2, i) => {
-      const tx = Math.round(W / 2 - (st.length * tw) / 2 + i * tw);
-      const on = i === (G.labSel === undefined ? 1 : G.labSel);
-      ctx.fillStyle = on ? '#1d4a42' : '#101c1b'; ctx.fillRect(tx + 2, ty, tw - 4, 13);
-      ctx.fillStyle = on ? '#7affda' : '#2e4a46'; ctx.fillRect(tx + 2, ty, tw - 4, 1);
-      Font.draw(ctx, ['ARCHIVE', 'CREATE', 'VIALS'][i], tx + tw / 2, ty + 4, { color: on ? '#e8fff8' : '#4f7f74', align: 'center' });
+      const on = i === si;
+      ctx.fillStyle = on ? 'rgba(10,32,29,0.95)' : 'rgba(4,12,12,0.8)';
+      ctx.fillRect(s2.bx, s2.by, s2.bw, s2.bh);
+      ctx.fillStyle = on ? '#7affda' : '#22403c'; ctx.fillRect(s2.bx, s2.by, s2.bw, 2);
+      Font.draw(ctx, s2.label, s2.bx + s2.bw / 2, s2.by + 9, { color: on ? '#e8fff8' : '#4f7f74', align: 'center', scale: 2, outline: '#04120e' });
+      if (on) this.bracket(ctx, s2.bx - 3, s2.by - 3, s2.bw + 6, s2.bh + 6, '#7affda', 8);
     });
 
-    // --- prompt and footer
-    ctx.globalAlpha = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 3.2));
-    Font.draw(ctx, touch ? 'TAP A STATION' : 'ARROWS: WALK      ENTER: USE', W / 2, ply - 16, { color: '#ffe060', align: 'center', outline: '#3a1c00' });
+    // --- one number that matters, and nothing else
+    const d = Research.data();
+    if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
+    Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
+    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
+  },
+  // ---------- the research lab ----------
+  // The room stays visible behind it: five programmes down the left, the chosen
+  // programme's track down the right, and one number in the corner that is the
+  // only currency in the game.
+  resCatRects() {
+    const x = 10, y = 44, h = 30;
+    return RESEARCH.map((c, i) => ({ x, y: y + i * (h + 4), w: 150, h, c, i }));
+  },
+  resNodeRects() {
+    const cat = RESEARCH[clamp(G.resCat || 0, 0, RESEARCH.length - 1)];
+    const x = 176, y = 44, h = 26, gap = 3;
+    const n = cat.nodes.length, avail = G.H - y - 34;
+    const step = Math.min(h + gap, avail / n);
+    return cat.nodes.map((nd, i) => ({ x, y: Math.round(y + i * step), w: G.W - x - 10, h: Math.round(step - gap), nd, i }));
+  },
+  resState(nd) { return Research.has(nd.id) ? 'done' : !Research.open(nd) ? 'locked' : Research.data() >= nd.cost ? 'ready' : 'short'; },
+  drawResearch(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    ctx.fillStyle = 'rgba(3,10,12,0.82)'; ctx.fillRect(0, 0, W, H);
+    // scan lines over the room, so it reads as a screen laid over the lab
+    ctx.globalAlpha = 0.14; ctx.fillStyle = '#0a2a26';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
     ctx.globalAlpha = 1;
-    const sv = G.save;
-    Font.draw(ctx, 'BEST ' + fmt(sv.best || 0) + '   LONGEST ' + (sv.bestLen || 0).toFixed(1) + 'FT   RELICS ' + Missions.owned().length + '/' + ARTIFACTS.length, 8, H - 8, { color: '#3f6f66' });
-    Font.draw(ctx, 'SOUND ' + (SFX.muted ? 'OFF' : 'ON') + ' (M)   HELP (H)', W - 8, H - 8, { color: '#3f6f66', align: 'right' });
+
+    const tp = Research.totalProgress();
+    ctx.fillStyle = 'rgba(4,12,14,0.92)'; ctx.fillRect(6, 4, 190, 30);
+    Font.draw(ctx, 'RESEARCH', 12, 8, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    this.meter(ctx, 12, 24, 140, 4, tp.frac, '#3fd0a8', '#12241f');
+    Font.draw(ctx, tp.got + '/' + tp.tot, 190, 24, { color: '#4f7f74', align: 'right' });
+    // the bank
+    const d = Research.data();
+
+    // --- the five programmes
+    for (const r of this.resCatRects()) {
+      const on = r.i === (G.resCat || 0), pr = Research.progress(r.c);
+      ctx.fillStyle = on ? 'rgba(14,34,32,0.95)' : 'rgba(8,18,18,0.8)';
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = on ? r.c.col : mixColor(r.c.col, '#0d1a18', 0.6);
+      ctx.fillRect(r.x, r.y, 3, r.h);
+      Font.draw(ctx, r.c.name, r.x + 8, r.y + 5, { color: on ? '#e8fff8' : '#6f8f88' });
+      this.meter(ctx, r.x + 8, r.y + 17, 104, 4, pr.frac, r.c.col, '#12201e');
+      Font.draw(ctx, pr.got + '/' + pr.total, r.x + r.w - 6, r.y + 16, { color: on ? r.c.col : '#3f5f58', align: 'right' });
+      if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, r.c.col, 7);
+    }
+
+    // --- the chosen programme's track
+    const cat = RESEARCH[clamp(G.resCat || 0, 0, RESEARCH.length - 1)];
+    const rows = this.resNodeRects();
+    for (const r of rows) {
+      const nd = r.nd, st = this.resState(nd), on = r.i === (G.resNode || 0);
+      const col = st === 'done' ? cat.col : st === 'locked' ? '#3a4a48' : st === 'ready' ? '#ffe060' : '#6f8f88';
+      // the spine linking a node to the one it grew out of
+      if (r.i > 0) { ctx.fillStyle = st === 'locked' ? '#1e2e2c' : mixColor(cat.col, '#0d1a18', 0.45); ctx.fillRect(r.x + 7, r.y - 4, 2, 5); }
+      ctx.fillStyle = on ? 'rgba(16,38,36,0.96)' : 'rgba(5,14,15,0.92)';
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      // state pip: filled when owned, hollow when open, barred when locked
+      ctx.fillStyle = col;
+      if (st === 'done') ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 8, 8);
+      else if (st === 'locked') { ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 8, 2); ctx.fillRect(r.x + 4, r.y + r.h / 2 + 2, 8, 2); }
+      else { ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 8, 1); ctx.fillRect(r.x + 4, r.y + r.h / 2 + 3, 8, 1); ctx.fillRect(r.x + 4, r.y + r.h / 2 - 4, 1, 8); ctx.fillRect(r.x + 11, r.y + r.h / 2 - 4, 1, 8); }
+      // the name is always readable — you are meant to see what you are saving
+      // for. Only the detail is withheld until the step above is paid for.
+      Font.draw(ctx, nd.name, r.x + 17, r.y + 5, { color: st === 'done' ? cat.col : st === 'locked' ? '#5f7f78' : on ? '#e8fff8' : '#8faaa4' });
+      Font.draw(ctx, st === 'locked' ? 'SEALED' : nd.line, r.x + 17, r.y + 15, { color: st === 'done' ? '#3f6f66' : st === 'locked' ? '#3f5f58' : '#5f7f78' });
+      // price, or a tick
+      if (st === 'done') Font.draw(ctx, 'DONE', r.x + r.w - 6, r.y + 9, { color: cat.col, align: 'right' });
+      else Font.draw(ctx, String(nd.cost), r.x + r.w - 6, r.y + 6, { color: st === 'ready' ? '#ffe060' : '#4f6f68', align: 'right', scale: 2 });
+      if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, st === 'ready' ? '#ffe060' : cat.col, 7);
+    }
+
+    // --- one prompt, and only when it means something
+    const cur = rows[clamp(G.resNode || 0, 0, rows.length - 1)];
+    if (cur) {
+      const st = this.resState(cur.nd);
+      if (st === 'ready') {
+        ctx.globalAlpha = 0.65 + 0.35 * Math.sin(t * 5);
+        Font.draw(ctx, G.touchUI ? 'TAP AGAIN TO FUND' : 'ENTER  FUND', W / 2, H - 12, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
+        ctx.globalAlpha = 1;
+      } else if (st === 'short') Font.draw(ctx, 'NEEDS ' + (cur.nd.cost - Research.data()) + ' MORE DATA', W / 2, H - 12, { color: '#8f6f5f', align: 'center' });
+      else if (st === 'locked') Font.draw(ctx, 'FINISH THE STEP ABOVE', W / 2, H - 12, { color: '#5f7f78', align: 'center' });
+    }
+    // the bank goes last so no row can paint over it
+    const bankY = this.exitShown() ? 32 : 6;
+    const bw = Math.max(72, Font.width(String(d), 3) + 16);
+    ctx.fillStyle = 'rgba(4,12,14,0.92)'; ctx.fillRect(W - bw - 6, bankY, bw, 32);
+    Font.draw(ctx, 'DATA', W - 12, bankY + 4, { color: '#4f7f74', align: 'right' });
+    Font.draw(ctx, String(d), W - 12, bankY + 13, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 3, outline: '#3a2a00' });
+    this.drawExit(ctx);
   },
   // ---------- the creation bay ----------
   // Two stages. SPECIES is a holographic projector running an attack loop with
   // arrows either side of it. SPLICE commits, and CUSTOMISE is the specimen in
-  // an acid column with length, girth, hide and substance to set on it.
+  // an acid column with length, girth and hide to set on it.
   cvSpecies() { if (!this._cvS) this._cvS = CrocView.make(); return this._cvS; },
   cvCustom() { if (!this._cvC) this._cvC = CrocView.make(); return this._cvC; },
   // parts cache keyed on the look, so scrubbing sliders is not a rebuild storm
@@ -588,10 +674,8 @@ const UI = {
     const x0 = 216, cw = Math.floor((W - x0 - 12) / 4);
     SIZE_GRADES.forEach((gr, i) => out.push({ row: 0, i, x: x0 + i * cw, y: 46, w: cw - 3, h: 17, item: gr }));
     GIRTH_GRADES.forEach((gi, i) => out.push({ row: 1, i, x: x0 + i * cw, y: 92, w: cw - 3, h: 17, item: gi }));
-    const pw = Math.floor((W - x0 - 12) / 5);
-    HIDE_PAINTS.forEach((pt, i) => out.push({ row: 2, i, x: x0 + (i % 5) * pw, y: 138 + Math.floor(i / 5) * 19, w: pw - 3, h: 17, item: pt }));
-    const vw = Math.floor((W - x0 - 12) / 4);
-    VIALS.forEach((v, i) => out.push({ row: 3, i, x: x0 + (i % 4) * vw, y: 203 + Math.floor(i / 4) * 19, w: vw - 3, h: 17, item: v }));
+    const pw = Math.floor((W - x0 - 12) / 3);
+    HIDE_PAINTS.forEach((pt, i) => out.push({ row: 2, i, x: x0 + (i % 3) * pw, y: 138 + Math.floor(i / 3) * 20, w: pw - 3, h: 18, item: pt }));
     return out;
   },
   createGoRect() { return G.createPhase ? { x: G.W - 152, y: G.H - 38, w: 134, h: 26 } : { x: G.W / 2 - 62, y: G.H - 42, w: 124, h: 28 }; },
@@ -634,7 +718,7 @@ const UI = {
       Font.draw(ctx, ph, 474, 50, { color: u > 0.44 && u < 0.7 ? '#ffffff' : rgba(col, 0.7), align: 'right' });
     } else {
       Font.draw(ctx, 'NO SAMPLE ON FILE', cx, cy - 4, { color: '#3f5f58', align: 'center', scale: 2 });
-      Font.draw(ctx, Stages.hint(b.sp.need) || (b.sp.need && b.sp.need.best !== undefined ? 'SCORE ' + fmt(b.sp.need.best) : ''), cx, cy + 14, { color: '#5f7f78', align: 'center' });
+      Font.draw(ctx, 'NEEDS RESEARCH', cx, cy + 14, { color: '#5f7f78', align: 'center' });
     }
     // scanning sweep across the stage
     ctx.globalCompositeOperation = 'lighter';
@@ -750,11 +834,6 @@ const UI = {
     ctx.globalAlpha = 0.07; ctx.fillStyle = '#7affda';
     for (let i = 0; i < 8; i++) ctx.fillRect(tx, ty + ((t * 18 + i * 30) % th), tw, 2);
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    if (b.vial && b.vial.id !== 'none') {
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.11 + 0.04 * Math.sin(t * 2.4);
-      ctx.fillStyle = b.vial.col; ctx.fillRect(tx, ty, tw, th);
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    }
     ctx.restore();
     // glass
     ctx.globalAlpha = 0.3; ctx.fillStyle = '#dffdf4'; ctx.fillRect(tx + 8, ty + 4, 3, th - 8); ctx.globalAlpha = 1;
@@ -778,30 +857,28 @@ const UI = {
     label('LENGTH', 34, b.gr.name);
     label('GIRTH', 80, b.gi.name);
     label('HIDE', 126, b.pt.name);
-    label('SUBSTANCE', 191, b.vial.name);
     for (const c of cells) {
       const item = c.item;
-      const open = c.row === 3 ? Create.vialUnlocked(item) : true;
-      const cur = (c.row === 0 && E.size === c.i) || (c.row === 1 && E.girth === c.i) || (c.row === 2 && (E.paint || 'wild') === item.id) || (c.row === 3 && E.vial === item.id);
+      const open = Create.rowUnlocked(c.row, c.i, item);
+      const cur = (c.row === 0 && E.size === c.i) || (c.row === 1 && E.girth === c.i) || (c.row === 2 && (E.paint || 'wild') === item.id);
       const on = (G.createRow || 0) === c.row && cur;
-      const cc = c.row === 3 ? item.col : c.row === 2 && item.swatch ? item.swatch : '#7affda';
+      const cc = c.row === 2 && item.swatch ? item.swatch : '#7affda';
       ctx.fillStyle = cur ? 'rgba(30,80,70,0.9)' : 'rgba(10,22,24,0.85)'; ctx.fillRect(c.x, c.y, c.w, c.h);
       ctx.fillStyle = !open ? '#2a2420' : cur ? cc : '#2e4a46'; ctx.fillRect(c.x, c.y, c.w, 1);
       if (on) this.bracket(ctx, c.x - 1, c.y - 1, c.w + 2, c.h + 2, '#ffffff', 5);
       let ind = 0;
-      if (c.row === 3) { ctx.fillStyle = open ? item.col : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 4, 4, 10); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(c.x + 3, c.y + 4, 1, 10); ind = 7; }
-      if (c.row === 2) { ctx.fillStyle = item.swatch || '#5f7048'; ctx.fillRect(c.x + 3, c.y + 5, 8, 8); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(c.x + 3, c.y + 5, 8, 2); ind = 11; }
+      if (c.row === 2) { ctx.fillStyle = open ? (item.swatch || '#5f7048') : '#2a3230'; ctx.fillRect(c.x + 3, c.y + 5, 8, 8); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(c.x + 3, c.y + 5, 8, 2); ind = 11; }
       let nm = open ? item.name : 'LOCKED';
       const maxc = Math.floor((c.w - ind - 6) / 6);
       Font.draw(ctx, nm.length > maxc ? nm.slice(0, maxc) : nm, c.x + 4 + ind, c.y + 6, { color: !open ? '#6a5a4a' : cur ? '#e8fff8' : '#8fbfb6' });
     }
 
     // --- artifacts
-    Font.draw(ctx, 'ARTIFACTS', 216, 248, { color: '#7affda' });
-    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, 257, 66, 1);
+    Font.draw(ctx, 'ARTIFACTS', 216, 212, { color: '#7affda' });
+    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(216, 221, 66, 1);
     const owned = Missions.owned(), slots = 5, sw2 = 24;
     for (let i = 0; i < slots; i++) {
-      const sx2 = 290 + i * (sw2 + 3), sy2 = 244;
+      const sx2 = 290 + i * (sw2 + 3), sy2 = 208;
       ctx.fillStyle = 'rgba(10,22,24,0.85)'; ctx.fillRect(sx2, sy2, sw2, 18);
       const a = owned[i] ? ARTIFACT_BY_ID[owned[i]] : null;
       if (a) { drawRelicGlyph(ctx, a, sx2 + sw2 / 2, sy2 + 9, t * 0.5, 0.7); ctx.fillStyle = a.col; ctx.fillRect(sx2, sy2, sw2, 1); }
@@ -810,11 +887,10 @@ const UI = {
 
     // --- the line for whatever row is highlighted
     const row = G.createRow || 0;
-    const cur2 = row === 0 ? b.gr : row === 1 ? b.gi : row === 2 ? b.pt : b.vial;
+    const cur2 = row === 0 ? b.gr : row === 1 ? b.gi : b.pt;
     if (cur2) {
-      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(216, 264, W - 228, 30);
-      if (cur2.eff) Font.draw(ctx, cur2.eff, 220, 268, { color: '#5f9f94' });
-      Font.drawWrapped(ctx, cur2.line || '', 220, cur2.eff ? 279 : 272, W - 244, { color: '#c8d8d0', lineHeight: 9 });
+      ctx.fillStyle = 'rgba(4,10,12,0.8)'; ctx.fillRect(216, 236, W - 228, 28);
+      Font.drawWrapped(ctx, cur2.line || '', 220, 242, W - 244, { color: '#c8d8d0', lineHeight: 9 });
     }
 
     // --- back and release
@@ -828,50 +904,9 @@ const UI = {
     ctx.fillStyle = mixColor('#8a2a10', '#ff6030', p2); ctx.fillRect(go.x, go.y, go.w, 2);
     this.bracket(ctx, go.x, go.y, go.w, go.h, '#ff8050', 8);
     Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 7, { color: '#ffd0a0', align: 'center', scale: 2, outline: '#2a0c00' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO SET' : 'ARROWS SET      ENTER: RELEASE      ESC: BACK', 96, H - 10, { color: '#4f7f74' });
+    this.drawExit(ctx);
   },
 
-  // ---------- the substance store ----------
-  drawVialStore(ctx) {
-    const W = G.W, H = G.H, t = G.menuT;
-    ctx.fillStyle = 'rgba(3,10,12,0.9)'; ctx.fillRect(0, 0, W, H);
-    Font.draw(ctx, 'SUBSTANCE STORE', 12, 10, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
-    const owned = (G.save && G.save.vials) || [];
-    Font.draw(ctx, owned.length + ' OF ' + (VIALS.length - 1) + ' RECOVERED', W - 12, 14, { color: '#5f9f94', align: 'right' });
-    // a rack of vials, drawn as glass
-    const list = VIALS.slice(1);
-    const cw = Math.floor((W - 24) / list.length);
-    list.forEach((v, i) => {
-      const x = 12 + i * cw, y = 44, have = owned.indexOf(v.id) >= 0;
-      const sel = i === (G.vialSel || 0);
-      // stopper, glass body, fluid
-      ctx.fillStyle = '#5a5248'; ctx.fillRect(x + cw / 2 - 5, y, 10, 4);
-      ctx.fillStyle = 'rgba(150,220,215,0.14)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 14, 54);
-      if (have) {
-        ctx.fillStyle = v.col; ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 37);
-        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.45); ctx.fillRect(x + cw / 2 - 6, y + 20, 12, 2);
-        ctx.fillStyle = mixColor(v.col, '#ffffff', 0.7); ctx.fillRect(x + cw / 2 - 5, y + 24, 2, 28);
-        // it bubbles
-        if (chance(0.4)) { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(x + cw / 2 + ((i * 3) % 4) - 2, y + 24 + ((t * 22 + i * 9) % 30), 1, 1); }
-        ctx.globalCompositeOperation = 'lighter'; Shape.star(ctx, x + cw / 2, y + 38, 12, v.col, 0.22); ctx.globalCompositeOperation = 'source-over';
-      } else {
-        ctx.fillStyle = 'rgba(40,52,52,0.5)'; ctx.fillRect(x + cw / 2 - 6, y + 40, 12, 17);
-      }
-      ctx.fillStyle = 'rgba(220,250,250,0.28)'; ctx.fillRect(x + cw / 2 - 7, y + 4, 1, 54);
-      if (sel) this.bracket(ctx, x + 2, y - 4, cw - 4, 70, '#ffffff', 7);
-      Font.draw(ctx, have ? String(i + 1) : '?', x + cw / 2, y + 62, { color: have ? '#d8e8de' : '#4a5a56', align: 'center' });
-    });
-    const v = list[clamp(G.vialSel || 0, 0, list.length - 1)];
-    const have = owned.indexOf(v.id) >= 0;
-    ctx.fillStyle = 'rgba(6,14,16,0.9)'; ctx.fillRect(12, 130, W - 24, 78);
-    this.bracket(ctx, 12, 130, W - 24, 78, have ? v.col : '#3a4a48', 9);
-    Font.draw(ctx, have ? v.name : 'UNIDENTIFIED SUBSTANCE', 20, 138, { color: have ? v.col : '#5f7f78', scale: 2, outline: '#04120e' });
-    Font.draw(ctx, have ? v.eff : 'RECOVER IT IN THE FIELD TO READ THE LABEL', 20, 158, { color: have ? '#d8e8de' : '#4f6f6a' });
-    if (have) Font.drawWrapped(ctx, v.line, 20, 172, W - 40, { color: '#8fbfb6', lineHeight: 9 });
-    Font.draw(ctx, 'ONE SUBSTANCE MAY BE LOADED PER RUN, IN THE CREATION BAY.', 12, 226, { color: '#4f7f74' });
-    Font.draw(ctx, 'VIALS DROP FROM BOSSES AND HIDE IN SECRET AREAS. THEY ARE KEPT FOREVER.', 12, 238, { color: '#3f6f66' });
-    Font.draw(ctx, 'ARROWS: BROWSE      ESC: BACK', W / 2, H - 14, { color: '#4f7f74', align: 'center' });
-  },
 
   drawLandmark(ctx, kind, x, y, on) {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
@@ -993,14 +1028,38 @@ const UI = {
   // ---------- release-site display: a spinning globe ----------
   globeGeom() { return { cx: G.W * 0.34, cy: G.H * 0.53, r: Math.round(G.H * 0.32) }; },
   stageRows() {
-    // hit targets are the pins on the near face of the globe
+    // A pin is a staff standing off the surface with a head on it, so the hit
+    // target is the whole marker, not the four pixels where it meets the ground.
     const gg = this.globeGeom(), spin = G.globeSpin || 0;
     return STAGES.map((st, i) => {
       const [px2, py2, z2, vis] = Globe.project(st.lon, st.lat, gg.cx, gg.cy, gg.r, spin, G.globeTilt || 0.32);
-      return { x: px2 - 8, y: py2 - 8, w: 16, h: 16, st, i, px: px2, py: py2, z: z2, vis };
+      const k = 0.5 + clamp(z2, 0, 1) * 0.5;          // pins on the near face stand tallest
+      const staff = Math.round(22 * k), head = Math.round(11 * k);
+      return { x: px2 - head - 3, y: py2 - staff - head - 3, w: head * 2 + 6, h: staff + head * 2 + 6,
+        st, i, px: px2, py: py2, z: z2, vis, k, staff, head };
     });
   },
   // small corner brackets: the readouts all sit inside instrument frames
+  // A phone has no escape key. Every screen that can be backed out of carries
+  // the same control in the same corner, and it is only drawn on touch.
+  exitRect() { return { x: G.W - 26, y: 5, w: 21, h: 21 }; },
+  exitShown() { return !!(G.touchUI || Input.touch.active); },
+  exitHit() {
+    if (!this.exitShown() || !Input.mouse.clicked) return false;
+    const r = this.exitRect();
+    return Input.mouse.x >= r.x - 4 && Input.mouse.x <= r.x + r.w + 4 && Input.mouse.y >= r.y - 4 && Input.mouse.y <= r.y + r.h + 4;
+  },
+  drawExit(ctx) {
+    if (!this.exitShown()) return;
+    const r = this.exitRect();
+    ctx.fillStyle = 'rgba(6,16,16,0.85)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+    this.bracket(ctx, r.x, r.y, r.w, r.h, 'rgba(255,140,110,0.55)', 6);
+    ctx.fillStyle = '#ff8c6e';
+    for (let i = 0; i < 9; i++) {
+      ctx.fillRect(r.x + 6 + i, r.y + 6 + i, 2, 2);
+      ctx.fillRect(r.x + 14 - i, r.y + 6 + i, 2, 2);
+    }
+  },
   bracket(ctx, x, y, w, h, col, len = 6) {
     ctx.fillStyle = col;
     for (const [bx, by, dx, dy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) {
@@ -1037,19 +1096,43 @@ const UI = {
       if (!r.vis) continue;
       const fade = clamp(r.z * 2.4, 0, 1);
       const zc = zoneOf(st).col;
-      const col = st.kaiju ? '#ff7a40' : open ? zc : mixColor(zc, '#2a3a38', 0.65);
+      const col = !open ? mixColor(zc, '#2a3a38', 0.72) : st.kaiju ? '#ff7a40' : zc;
+      const dk = shade(col, 0.45), lt = mixColor(col, '#ffffff', 0.45);
+      const px2 = Math.round(r.px), py2 = Math.round(r.py);
+      const bob = sel ? Math.round(Math.sin(t * 3) * 1.5) : 0;
+      const hy = py2 - r.staff + bob, hr = r.head;
       ctx.globalAlpha = fade;
-      if (sel) {
-        const pr = 7 + Math.sin(t * 5) * 1.6;
-        Shape.ring(ctx, r.px, r.py, pr, 1, col);
-        ctx.fillStyle = col;
-        ctx.fillRect(Math.round(r.px - pr - 4), Math.round(r.py), 3, 1);
-        ctx.fillRect(Math.round(r.px + pr + 2), Math.round(r.py), 3, 1);
-      }
+      // ground shadow so the marker reads as standing on the sphere
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(px2 - 3, py2 - 1, 7, 2);
+      // staff
+      ctx.fillStyle = dk; ctx.fillRect(px2 - 1, hy, 3, r.staff - bob);
+      ctx.fillStyle = col; ctx.fillRect(px2 - 1, hy, 1, r.staff - bob);
+      // head: a pixel diamond carrying the site's own landmark, small
+      ctx.fillStyle = dk;
+      for (let dy = -hr; dy <= hr; dy++) { const w = hr - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
       ctx.fillStyle = col;
-      ctx.fillRect(Math.round(r.px - 2), Math.round(r.py - 2), 4, 4);
-      ctx.fillStyle = '#04100c'; ctx.fillRect(Math.round(r.px - 1), Math.round(r.py - 1), 2, 2);
-      if (open) { ctx.fillStyle = col; ctx.fillRect(Math.round(r.px), Math.round(r.py), 1, 1); }
+      for (let dy = -hr + 2; dy <= hr - 2; dy++) { const w = hr - 2 - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
+      ctx.fillStyle = lt;
+      for (let dy = -hr + 2; dy <= -hr + 4; dy++) { const w = hr - 2 - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); }
+      if (r.k > 0.72) {
+        ctx.save(); ctx.translate(px2, hy + 3); ctx.scale(0.5, 0.5);
+        this.drawLandmark(ctx, st.id, 0, 0, open);
+        ctx.restore();
+      }
+      if (!open) { ctx.fillStyle = 'rgba(6,14,14,0.55)'; for (let dy = -hr; dy <= hr; dy++) { const w = hr - Math.abs(dy); if (w < 0) continue; ctx.fillRect(px2 - w, hy + dy, w * 2 + 1, 1); } }
+      // the selected marker gets a halo, ticks and its name on a tag
+      if (sel) {
+        Shape.ring(ctx, px2, hy, hr + 5 + Math.sin(t * 5) * 1.4, 1, col);
+        ctx.fillStyle = col;
+        ctx.fillRect(px2 - hr - 11, hy, 4, 1); ctx.fillRect(px2 + hr + 8, hy, 4, 1);
+        ctx.fillRect(px2 - 1, hy - hr - 11, 1, 4);
+        const nm = open ? st.name : 'SEALED';
+        const tw = Font.width(nm, 1) + 10, tx = clamp(px2 - tw / 2, 4, G.W - tw - 4), ty = hy - hr - 22;
+        ctx.fillStyle = 'rgba(4,12,14,0.9)'; ctx.fillRect(tx, ty, tw, 13);
+        ctx.fillStyle = col; ctx.fillRect(tx, ty, tw, 1);
+        Font.draw(ctx, nm, tx + tw / 2, ty + 4, { color: open ? '#e8fff8' : '#8f7f78', align: 'center' });
+      }
       ctx.globalAlpha = 1;
     }
 
@@ -1062,9 +1145,11 @@ const UI = {
     ctx.fillStyle = 'rgba(6,18,16,0.75)'; ctx.fillRect(10, 8, W * 0.46, 30);
     this.bracket(ctx, 10, 8, W * 0.46, 30, rgba(Z.col, 0.35), 5);
     for (const z of ZONES) {
-      const on = z.id === Z.id, bx = 16 + (z.n - 1) * 12;
-      ctx.fillStyle = on ? z.col : mixColor(z.col, '#0a1614', 0.7);
+      // a zone the lab has not surveyed is a blank tab, not a dim one
+      const on = z.id === Z.id, surveyed = Research.zoneOpen(z.id), bx = 16 + (z.n - 1) * 12;
+      ctx.fillStyle = !surveyed ? '#1b2726' : on ? z.col : mixColor(z.col, '#0a1614', 0.7);
       ctx.fillRect(bx, on ? 13 : 15, 8, on ? 20 : 16);
+      if (!surveyed) { ctx.fillStyle = '#3c4a48'; ctx.fillRect(bx + 2, on ? 21 : 21, 4, 2); }
     }
     Font.draw(ctx, 'ZONE ' + Z.n, 58, 13, { color: Z.col, scale: 2, outline: '#04120e' });
     Font.draw(ctx, Z.name, 58, 28, { color: '#c8d8d0' });
@@ -1085,7 +1170,7 @@ const UI = {
     if (open) {
       Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 72, { color: '#c8d8d0' });
       for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 8 + shake), 84, 6, 6); }
-    } else Font.draw(ctx, Stages.hint(cur.need), px0 + iw + 10 + shake, 72, { color: '#a08070' });
+    } else Font.draw(ctx, Stages.hint(cur.need, cur), px0 + iw + 10 + shake, 72, { color: '#a08070' });
 
     // --- the chain of sites in this zone, so progress reads at a glance
     const sy2 = 122, sw2 = W - 22 - px0;
@@ -1128,15 +1213,15 @@ const UI = {
     // --- prompt
     const okCol = open ? '#ffe060' : '#ff8060';
     Font.draw(ctx, open ? 'ENTER' : 'LOCKED', px0 + shake, H - 30, { color: okCol, scale: 2, outline: '#2a1a00' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A SITE' : 'ARROWS  SITE      Q / E  ZONE', px0 + shake, H - 12, { color: '#4f7f74' });
-    // the zone's own line, under the globe, so each world gets a sentence
-    Font.draw(ctx, Z.sub, 14, H - 16, { color: rgba(Z.col, 0.7) });
+    Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE', px0 + shake, H - 12, { color: '#4f7f74' });
+    this.drawExit(ctx);
   },
   // ---------- loadout: the splice bay, with you in the tank ----------
   loadoutCells() {
     const W = G.W, out = [];
     const px0 = 176, pw = Math.floor((W - px0 - 18) / 4), py = 68;
-    PRIMES.forEach((p2, i) => out.push({ row: 0, i, x: px0 + (i % 4) * pw, y: py + Math.floor(i / 4) * 22, w: pw - 3, h: 20, item: p2 }));
+    const primes = PRIMES.filter(p2 => p2.id === 'none' || Research.lineageOpen(p2.id));
+    primes.forEach((p2, i) => out.push({ row: 0, i, x: px0 + (i % 4) * pw, y: py + Math.floor(i / 4) * 22, w: pw - 3, h: 20, item: p2 }));
     const hy = 132, hw = Math.floor((W - px0 - 18) / 3);
     HIDES.forEach((h, i) => out.push({ row: 1, i, x: px0 + (i % 3) * hw, y: hy + Math.floor(i / 3) * 22, w: hw - 3, h: 20, item: h }));
     return out;
@@ -1283,6 +1368,7 @@ const UI = {
     Font.draw(ctx, 'RELEASE', go.x + go.w / 2, go.y + 5, { color: '#b8ffe8', align: 'center', scale: 2, outline: '#04140f' });
     ctx.globalAlpha = 1;
     Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP TO PICK, THEN RELEASE' : 'ARROWS PICK      ENTER: RELEASE      ESC: BACK', 18, H - 12, { color: '#7f9a90' });
+    this.drawExit(ctx);
   },
   cardRects(n) {
     const w = 168, h = 168, gap = 14, total = n * w + (n - 1) * gap, x0 = (G.W - total) / 2, y = 162;
@@ -1363,19 +1449,31 @@ const UI = {
     if (cause === 'EATEN') cause = 'EATEN BY ' + (d.killer || 'THE SWAMP');
     else if (cause === 'SHOT') cause = 'SHOT BY POACHERS'; else if (cause === 'CRUSHED') cause = 'CRUSHED BY ' + (d.killer || 'SOMETHING HEAVY'); else if (cause === 'POISONED') cause = 'DIED OF VENOM';
     Font.draw(ctx, cause, W / 2, 64, { color: '#ffb0a0', align: 'center', scale: 1, shadow: true });
-    this.panel(ctx, W / 2 - 150, 84, 300, 164, 'rgba(6,4,4,0.85)', '#5a2020');
-    const mins = Math.floor(G.t / 60), secs = Math.floor(G.t % 60);
+    // Six lines. Everything else about the run is already somewhere you can
+    // look at it, and a wall of statistics is not a thing anybody reads twice.
     const rows = [
-      ['FINAL FORM', TIERS[P.tier].name + '  (' + P.lengthFt.toFixed(1) + ' FT)'], ['SCORE', fmt(G.score) + (G.score >= G.save.best && G.score > 0 ? '  NEW BEST!' : '')], ['SURVIVED', mins + 'M ' + secs + 'S'],
-      ['THINGS EATEN', String(s.eaten)], ['KILLS', String(s.kills)], ['BOSSES SLAIN', String(s.bosses)], ['BOATS AND CAMPS WRECKED', String(s.boats + (s.structures || 0))], ['BIGGEST MEAL', s.biggest || '-'],
-      ['ORDER', G.mission ? (G.mission.claimed ? 'RELIC TAKEN' : G.mission.done ? 'RELIC LEFT BEHIND' : G.mission.def.title + '  ' + Math.floor(G.mission.n) + '/' + G.mission.target) : '-'],
-      ['EVOLUTION', P.picked.filter(p => !p.startsWith('mut')).map(p => PATHS[p.split(':')[0]].name[0] + (+p.split(':')[1] + 1)).join(' ') || 'NONE'],
-      ['TRAITS', P.traits.length ? P.traits.map(id => (TRAIT_BY_ID[id] || {}).name || id).join(', ') : 'NONE'],
+      ['FORM', TIERS[P.tier].name + '  ' + P.lengthFt.toFixed(1) + ' FT'],
+      ['SCORE', fmt(G.score) + (G.score >= G.save.best && G.score > 0 ? '  BEST' : '')],
+      ['EATEN', String(s.eaten)],
+      ['KILLS', String(s.kills) + (s.bosses ? '  (' + s.bosses + ' BOSS)' : '')],
+      ['WRECKED', String(s.boats + (s.structures || 0))],
+      ['ORDER', G.mission ? (G.mission.claimed ? 'RELIC TAKEN' : G.mission.done ? 'RELIC LEFT' : Math.floor(G.mission.n) + '/' + G.mission.target) : '-'],
     ];
-    rows.forEach((r, i) => { const y = 92 + i * 14; Font.draw(ctx, r[0], W / 2 - 140, y, { color: '#c09090' }); Font.draw(ctx, r[1], W / 2 + 140, y, { color: '#ffffff', align: 'right' }); });
-    Font.draw(ctx, 'BEST ' + fmt(G.save.best) + '     LONGEST ' + G.save.bestLen.toFixed(1) + ' FT', W / 2, 254, { color: '#90a898', align: 'center' });
-    if (t > 1 && Math.floor(t * 2) % 2 === 0) Font.draw(ctx, 'PRESS ENTER TO HUNT AGAIN', W / 2, 262, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
-    Font.draw(ctx, 'ESC: TITLE      C: TRAIT CODEX', W / 2, 290, { color: '#708878', align: 'center' });
+    this.panel(ctx, W / 2 - 150, 84, 300, 14 + rows.length * 16, 'rgba(6,4,4,0.85)', '#5a2020');
+    rows.forEach((r, i) => { const y = 92 + i * 16; Font.draw(ctx, r[0], W / 2 - 140, y, { color: '#c09090' }); Font.draw(ctx, r[1], W / 2 + 140, y, { color: '#ffffff', align: 'right' }); });
+    // what the lab got out of it: the only thing that leaves this screen with you
+    const pay = d.pay;
+    if (pay && t > 0.6) {
+      const py2 = 200, reveal = clamp((t - 0.6) * 2.2, 0, 1);
+      ctx.fillStyle = 'rgba(6,14,12,0.9)'; ctx.fillRect(W / 2 - 150, py2, 300, 20);
+      ctx.fillStyle = '#3fd0a8'; ctx.fillRect(W / 2 - 150, py2, 300, 1);
+      Font.draw(ctx, 'DATA RECOVERED', W / 2 - 142, py2 + 7, { color: '#4f7f74' });
+      const parts = [['SCORE', pay.score], ['GROWTH', pay.tier], ['RELIC', pay.relics]].filter(r => r[1] > 0);
+      let bx = W / 2 - 40;
+      for (const r of parts) { Font.draw(ctx, r[0] + ' +' + r[1], bx, py2 + 7, { color: '#8fbfb6' }); bx += Font.width(r[0] + ' +' + r[1], 1) + 10; }
+      Font.draw(ctx, '+' + Math.round(pay.total * reveal), W / 2 + 142, py2 + 4, { color: '#ffe060', align: 'right', scale: 2, outline: '#3a2a00' });
+    }
+    if (t > 1 && Math.floor(t * 2) % 2 === 0) Font.draw(ctx, this.exitShown() ? 'TAP TO HUNT AGAIN' : 'ENTER  AGAIN', W / 2, 244, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
   },
   drawPause(ctx) {
     const W = G.W, H = G.H;
@@ -1387,6 +1485,7 @@ const UI = {
     opts.forEach((o, i) => { Font.draw(ctx, '[' + o[0] + '] ' + o[1], W / 2 - 110, 90 + i * 14, { color: '#d0dcc8' }); Font.draw(ctx, o[2], W / 2 + 110, 90 + i * 14, { color: '#ffe060', align: 'right' }); });
     this.drawHelpBody(ctx, 164);
     Font.draw(ctx, 'ESC / P: RESUME      Q: QUIT TO TITLE', W / 2, H - 16, { color: '#90a898', align: 'center' });
+    this.drawExit(ctx);
   },
   drawHelpBody(ctx, y) {
     const W = G.W;
@@ -1405,7 +1504,7 @@ const UI = {
     this.drawHelpBody(ctx, 70);
     Font.draw(ctx, 'EVOLUTION PATHS', W / 2, 168, { color: '#ffe060', align: 'center', scale: 2, outline: '#402000' });
     PATH_KEYS.forEach((k, i) => { const p = PATHS[k]; Font.draw(ctx, p.name + ': ' + p.tag, W / 2, 190 + i * 12, { color: p.color, align: 'center' }); });
-    Font.draw(ctx, 'ESC / H: BACK', W / 2, H - 16, { color: '#90a898', align: 'center' });
+    this.drawExit(ctx);
   },
   drawIntro(ctx) {
     const W = G.W, H = G.H, e = G.intro; if (!e) return;
@@ -1605,6 +1704,7 @@ const UI = {
     const maxScroll = Math.max(0, Math.ceil(total / cols) - rowsShown);
     if (maxScroll > 0) Font.draw(ctx, 'UP / DOWN TO SCROLL   ' + (scroll + 1) + '/' + (maxScroll + 1), W / 2, H - 26, { color: '#708878', align: 'center' });
     Font.draw(ctx, 'ESC / C: BACK', W / 2, H - 14, { color: '#90a898', align: 'center' });
+    this.drawExit(ctx);
   },
   drawScreenFx(ctx) {
     const W = G.W, H = G.H;

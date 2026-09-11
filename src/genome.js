@@ -198,6 +198,15 @@ const Genome = {
     return hexNbrs(g).some(n => this.has(P, n.id));
   },
   has(P, id) { return P.genes.indexOf(id) >= 0; },
+  // Two lineages are native to a crocodile. The rest is surgery, and surgery is
+  // a research programme — a gene on an unfunded line will not take at all.
+  researchBlocked(g) {
+    if (typeof Research === 'undefined' || g.root) return false;
+    if ((g.hybrid || g.chimera) && !Research.hybridsOpen()) return true;
+    if (g.lin && !Research.lineageOpen(g.lin)) return true;
+    if (g.lin2 && !Research.lineageOpen(g.lin2)) return true;
+    return false;
+  },
   // a gene can be taken when it touches one you already have
   unlocked(P, g) {
     if (g.root) return false;
@@ -205,6 +214,7 @@ const Genome = {
     if (this.has(P, 'core') === false) return false;
     // one apex per crocodile: the four ends of the tree are exclusive
     if (g.apex && P.apex) return false;
+    if (this.researchBlocked(g)) return false;
     // and some genes have to be earned by playing, not bought
     if (!Trials.met(P, g)) return false;
     return hexNbrs(g).some(n => this.has(P, n.id));

@@ -26,12 +26,12 @@ fluid with something half dissolved propped in it, bubbling and fuming, fed by
 a drip line that has been eating a stain into the concrete for years. In the
 middle of the room, a containment column with a specimen suspended in it.
 
-The menu is the furniture. Walk the selection along the room and the station
-you are pointed at gets a targeting bracket:
+The menu is the furniture. Two stations, two plates, no tabs and no blurb: walk
+the selection along the room and whichever one you are standing at gets a
+targeting bracket and its plate lights up.
 
-- **CREATE SPECIMEN** — the embryo column
-- **GENOME ARCHIVE** — the sequencer and monitor bank
-- **SUBSTANCE STORE** — the vial rack and fume hood
+- **CREATE** — the containment column in the middle of the floor
+- **RESEARCH** — the sequencer and monitor bank on the left wall
 
 ## Creating a specimen
 
@@ -74,9 +74,39 @@ caustic banding across the glass — where you set it up:
   visibly thickens the animal
 - **Hide** — nine palettes, from blackwater and tannin through leucistic to
   abyssal, painted onto the real sprite as you pick
-- **Substance** — the vial
-
 Vitals update live underneath, and recovered artifacts show as spliced in.
+Anything the lab has not funded is greyed out and cannot be stepped onto.
+
+## Research
+
+**You begin with nothing.** One stock animal — a dwarf alligator — in the hide it
+grew, at the length and depth the paperwork says, with two gene lineages and one
+map. Not a second colour. Everything else in this game is a line item on a
+research programme, and the programme is funded out of what you bring back.
+
+A finished run pays **DATA**: one per 2,200 points, one per size tier past the
+first, five for a relic carried out. The death card shows the arithmetic. Data is
+never spent in the field and never lost on death — the lab is the part of you
+that survives.
+
+The research screen is the room itself, with the programme laid over it: five
+tracks down the left with their own colour and progress, the chosen track's chain
+of steps down the right. A step shows its name whether or not you can afford it —
+you are meant to see what you are saving for — and withholds only the detail until
+the step above it is paid for.
+
+| Programme | What it buys |
+| --- | --- |
+| **MORPHOLOGY** | length and girth grades, then caiman, gharial, Nile, saltwater and a reconstructed *Deinosuchus* |
+| **PIGMENTATION** | the nine hides, in four batches, from base dyes up to the lines that were never released |
+| **GENE THERAPY** | the four gene lineages a crocodile is not born with, then splice tolerance for hybrids and chimeras |
+| **BIOCHEMISTRY** | standing treatments stamped onto every animal after: clotting, filtration, chitin, myostatin block, barophilic marrow, adrenal, neural accelerant |
+| **FIELD SURVEY** | the sewer network, the open ocean, and a deep sounding that opens the sump and the trench |
+
+Until Gene Therapy has funded a line, its genes are sealed shut in the tree —
+crosshatched and stamped, not merely dim — and its prime is not on the loadout
+menu at all. Until Field Survey has been out there, a zone is a blank tab on the
+globe.
 
 ## The drop
 
@@ -112,14 +142,23 @@ as a fragment for hosts that supply their own document shell).
 | Steer with the mouse | hold left mouse | - |
 | Pause / settings | `P` / `ESC` | `II` button |
 | Gene tree | `G` / `E` / `TAB` | tap the gene chip |
-| Site select: change site / change zone | arrows / `Q` and `E` | tap a pin |
+| Spin the globe | drag, or hold `LEFT` / `RIGHT` | drag anywhere on the sphere |
+| Site select: change site / change zone | `UP` / `DOWN`, `Q` / `E` | tap a pin |
+| Back out of a screen | `ESC` | the **X** in the top-right corner |
 | Trait codex | `C` | via pause |
 | Break the tank | mash `SPACE` | tap |
 | Help | `H` | via pause |
 | Mute | `M` | via pause |
 
 On a phone held upright the canvas turns sideways automatically so the game fills the screen; touch
-input is mapped through the rotation. The touch pads can be switched off in the pause menu.
+input is mapped through the rotation. The touch pads can be switched off in the pause menu. A phone
+has no escape key, so every screen that can be backed out of carries the same **X** in the same
+corner, and it is only drawn on touch.
+
+The globe is a thing you turn rather than a carousel that turns for you: drag it with a finger or the
+mouse and it keeps spinning when you let go, then settles. Each release site stands on it as a
+**landmark pin** — a staff with a diamond head carrying that site's own icon, tallest on the near face
+of the sphere, with the selected one ringed, ticked and named on a tag.
 
 ## How a run works
 
@@ -134,7 +173,7 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 - **Speed up** by holding the speed button: a sustained run that drinks stamina. Aim **up** and press it instead and it becomes a leap — same pool, so opening the throttle costs you the jump.
 - **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
 - **Bosses** arrive after certain sheds, and which one comes is decided by the zone you are standing in — the sewer sends the Broodmother and the Gnasher before the Sludge King, the glades send Old Scar and the Poacher Warboat before the Skunk Ape, the ocean sends the Anvil and the Green Wall before the Lantern. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
-- **The water itself is a hazard** in two of the three zones. Sewer water fills a **FILTH** meter that eventually starts eating health and smears the screen greasy green; past the depth your body is rated for, a **PRESSURE** meter fills, the view closes in and shivers, and the hull starts to give. Genes, relics and two of the vials raise both ratings.
+- **The water itself is a hazard** in two of the three zones. Sewer water fills a **FILTH** meter that eventually starts eating health and smears the screen greasy green; past the depth your body is rated for, a **PRESSURE** meter fills, the view closes in and shivers, and the hull starts to give. Genes, relics and two research treatments raise both ratings.
 - **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight cuts to an **execution**: bars close in, the camera frames the pair, and three to five prompts come up on big key caps with a bar draining under each. You get three whole misses, and landing one prompt is enough. Every hit is a held impact frame with a blood wash over the lens.
 - **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run from the splice bay.
 - Death is permanent, but the traits and relics you unlock are not.

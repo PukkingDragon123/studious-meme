@@ -1,15 +1,12 @@
 'use strict';
 // ---------------------------------------------------------------------------
-// THE CREATION BAY and the SUBSTANCE STORE.
+// THE CREATION BAY.
 //
-// Before a run you build the thing you are going to be. Three decisions:
-// which base species the lab grows you from, how big they let you come out,
-// and which recovered artifacts get spliced into the embryo. You start with a
-// dwarf alligator and nothing else; everything past that is earned.
-//
-// Vials are the other half of progression: biological substances recovered in
-// the field. One is loaded before a run and its effects are permanent for that
-// run. They are the reason to go back into a map you have already cleared.
+// Before a run you build the thing you are going to be: which base stock the
+// lab grows you from, how long and how deep through the body they let you come
+// out, and what hide it wears. You start with a dwarf alligator in the colour
+// it grew and nothing else. Every other option on this screen is a line item
+// on the research programme, and somebody has to fund it first.
 // ---------------------------------------------------------------------------
 const BASE_SPECIES = [
   { id: 'dwarf', name: 'DWARF ALLIGATOR', latin: 'A. MISSISSIPPIENSIS (DWARF)',
@@ -72,42 +69,16 @@ const SIZE_GRADES = [
   { id: 'huge', name: 'HYPERTROPHIC', mul: 1.7, line: 'THEY DO NOT AUTHORISE THIS. IT WILL BE HUNGRY.', hp: 1.45, spd: 0.8, hunger: 1.8 },
 ];
 
-// ---------------------------------------------------------------------------
-// Vials. Each is a substance with a real upside and a real cost.
-// ---------------------------------------------------------------------------
-const VIALS = [
-  { id: 'none', name: 'NO SUBSTANCE', col: '#5f7f78', line: 'CLEAN BLOOD. NOTHING TO REJECT.', eff: 'NO EFFECT', apply: () => {} },
-  { id: 'adren', name: 'ADRENAL CONCENTRATE', col: '#ff8030', line: 'DRAWN FROM A PANTHER THAT WOULD NOT STOP RUNNING.',
-    eff: '+18% SPEED AND STAMINA, -12% MAX HEALTH', apply: P => { P.st.speed *= 1.18; P.st.dashCd *= 0.8; P.st.hpMul *= 0.88; } },
-  { id: 'clot', name: 'CLOTTING FACTOR IX', col: '#c02828', line: 'IT MENDS. IT ALSO THICKENS.',
-    eff: 'REGENERATE WHILE FED, -10% SPEED', apply: P => { P.st.regen += 0.02; P.st.speed *= 0.9; } },
-  { id: 'myo', name: 'MYOSTATIN BLOCKER', col: '#e8d060', line: 'THE MUSCLE NEVER GETS THE MESSAGE TO STOP.',
-    eff: '+25% BITE, HUNGER DRAINS 25% FASTER', apply: P => { P.st.bite *= 1.25; P.st.hungerRate *= 1.25; } },
-  { id: 'chitin', name: 'CHITIN GRAFT SERUM', col: '#8a9a40', line: 'HARVESTED OFF SOMETHING THAT LIVED IN THE PIPES.',
-    eff: '-18% DAMAGE TAKEN, -15% GROWTH', apply: P => { P.st.armor += 0.18; P.st.growth *= 0.85; } },
-  { id: 'lumen', name: 'LUMINOUS PLASMA', col: '#40f0c8', line: 'IT GLOWS. THINGS COME TO LOOK.',
-    eff: 'PREY IS DRAWN TO YOU, EVERYTHING SEES YOU COMING', apply: P => { P.st.magnet = Math.max(P.st.magnet, 90); P.st.lure = 1; P.st.stealth *= 1.5; } },
-  { id: 'neuro', name: 'NEURAL ACCELERANT', col: '#a070ff', line: 'TIME OPENS UP. SO DOES THE HEADACHE.',
-    eff: '+2 GENE POINTS PER TIER, +1 STRAIN TOLERANCE', apply: P => { P.vialTierBonus = 2; P.strainBonus = (P.strainBonus || 0) + 1; } },
-  { id: 'bile', name: 'DIGESTIVE BILE', col: '#7a9a20', line: 'DISSOLVES BONE, SHELL AND HULL.',
-    eff: 'EAT ARMOURED PREY WHOLE, -10% BITE', apply: P => { P.st.ironStomach = true; P.st.swallow *= 1.3; P.st.bite *= 0.9; } },
-  { id: 'filter', name: 'HEPATIC FILTER CULTURE', col: '#8ab820', line: 'GROWN IN A SUMP. IT DRINKS WHAT WOULD KILL YOU.',
-    eff: 'FILTH BUILDS 70% SLOWER, -10% BITE', apply: P => { P.st.toxRes *= 3.2; P.st.bite *= 0.9; } },
-  { id: 'baro', name: 'BAROPHILIC MARROW', col: '#4a9ac8', line: 'TAKEN OFF SOMETHING DREDGED UP FROM A MILE DOWN.',
-    eff: 'RATED TWICE AS DEEP, -12% SPEED AT THE SURFACE', apply: P => { P.st.crushDepth *= 2.2; P.st.crushRes *= 1.8; P.st.speed *= 0.88; } },
-];
-const VIAL_BY_ID = {};
-for (const v of VIALS) VIAL_BY_ID[v.id] = v;
-
 const Create = {
-  rows: ['species', 'size', 'vial', 'artifacts'],
-  met(need) { return typeof Stages !== 'undefined' ? Stages.met(need) : true; },
-  speciesUnlocked(sp) { if (!sp.need) return true; const s = G.save || {}; if (sp.need.best !== undefined && (s.best || 0) < sp.need.best) return false; return this.met(sp.need); },
-  vialUnlocked(v) {
-    if (v.id === 'none') return true;
-    const owned = (G.save && G.save.vials) || [];
-    return owned.indexOf(v.id) >= 0;
-  },
+  rows: ['species', 'size', 'girth', 'hide'],
+  // Nothing here is given. You come out of the tank as a dwarf alligator in the
+  // hide it grew, at the length and depth the paperwork says, and every other
+  // option on this screen is a line item somebody has to fund first.
+  speciesUnlocked(sp) { return sp.id === 'dwarf' || Research.granted('species').has(sp.id); },
+  paintUnlocked(pt) { return pt.id === 'wild' || Research.granted('paint').has(pt.id); },
+  sizeUnlocked(i) { return i === 1 || Research.granted('size').has(i); },
+  girthUnlocked(i) { return i === 1 || Research.granted('girth').has(i); },
+  rowUnlocked(row, i, item) { return row === 0 ? this.sizeUnlocked(i) : row === 1 ? this.girthUnlocked(i) : this.paintUnlocked(item); },
   // what the current build works out to
   spec() {
     const e = G.embryo || {};
@@ -120,7 +91,6 @@ const Create = {
       size: sp.size * gr.mul,
       girth: (sp.girth || 1) * gi.mul,
       hp: sp.hp * gr.hp * gi.hp, spd: sp.spd * gr.spd * gi.spd, bite: sp.bite, hunger: gr.hunger,
-      vial: VIAL_BY_ID[e.vial] || VIALS[0],
       gene: sp.gene ? GENE_BY_ID[sp.gene] : null,
     };
   },
@@ -143,8 +113,6 @@ const Create = {
     P.paintId = (G.embryo && G.embryo.paint) || 'wild';
     // the species' signature gene comes free: it is what the animal already is
     if (b.gene && P.genes.indexOf(b.gene.id) < 0) { P.genes.push(b.gene.id); b.gene.apply(P); if (b.gene.downApply) b.gene.downApply(P); P.speciesGene = b.gene.id; }
-    if (b.vial && b.vial.apply) b.vial.apply(P);
-    P.vialId = b.vial ? b.vial.id : 'none';
     P.recomputeStats(); P.rebuildLook();
   },
 };

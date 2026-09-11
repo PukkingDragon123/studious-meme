@@ -31,12 +31,12 @@ const STAGES = [
   { id: 'shaft', zone: 'sewer', lat: -0.12, lon: 3.62, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 2.1, diff: 1.6, need: { reach: 4200 } },
   { id: 'junction', zone: 'sewer', lat: 0.06, lon: 3.92, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 3.0, diff: 2.4, need: { reach: 6100 } },
   { id: 'gallery', zone: 'sewer', lat: 0.24, lon: 4.20, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 4.0, diff: 3.2, need: { reach: 7600 } },
-  { id: 'sump', zone: 'sewer', lat: 0.40, lon: 4.48, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
+  { id: 'sump', survey: true, zone: 'sewer', lat: 0.40, lon: 4.48, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
   // ---- ZONE 3: THE OPEN OCEAN. Past the seawall, down the wall, into the dark.
   { id: 'shelf', zone: 'ocean', lat: -0.34, lon: 5.10, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 4.4, diff: 3.0, need: { reach: 11000 } },
   { id: 'reef', zone: 'ocean', lat: -0.14, lon: 5.40, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 5.6, diff: 3.8, need: { reach: 15300 } },
   { id: 'wall', zone: 'ocean', lat: 0.08, lon: 5.72, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 7.2, diff: 4.5, need: { tier: 6 } },
-  { id: 'trench', zone: 'ocean', lat: 0.30, lon: 6.04, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
+  { id: 'trench', survey: true, zone: 'ocean', lat: 0.30, lon: 6.04, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
@@ -81,9 +81,25 @@ const Stages = {
     if (need.kills !== undefined && (s.kills || 0) < need.kills) return false;
     return true;
   },
-  unlocked(st) { return this.met(st.need); },
+  unlocked(st) {
+    // a site opens on two counts: the lab has surveyed its zone, and the animal
+    // has done enough in the field to be trusted with it
+    if (typeof Research !== 'undefined') {
+      const z = zoneOf(st);
+      if (!Research.zoneOpen(z.id)) return false;
+      if (st.survey && !Research.siteOpen(st.id)) return false;
+    }
+    return this.met(st.need);
+  },
   // one line telling the player what is still missing
-  hint(need) {
+  hint(need, st) {
+    // the zone survey outranks everything: there is no point telling somebody to
+    // grow when the lab has not found the place yet
+    if (st && typeof Research !== 'undefined') {
+      const z = zoneOf(st);
+      if (!Research.zoneOpen(z.id)) return 'SURVEY ' + z.name;
+      if (st.survey && !Research.siteOpen(st.id)) return 'DEEP SOUNDING';
+    }
     if (!need) return '';
     if (need.reach !== undefined) {
       const b = Biome.at(need.reach);
