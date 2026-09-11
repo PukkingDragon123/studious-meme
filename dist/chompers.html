@@ -2294,6 +2294,31 @@ def('moccasin', { name: 'WATER MOCCASIN', ft: 3, lb: 2.5, rig: 'snake', cat: 'sn
 def('python', { name: 'BURMESE PYTHON', ft: 15, lb: 200, rig: 'snake', cat: 'snake', base: '#c8a86a', band: '#5a3a20', belly: '#e8d8a8', dark: '#3a2410', eye: '#101010', pattern: 'blotch', n: 22, hp: 110, speed: 60, constrict: 7 });
 def('indigo', { name: 'EASTERN INDIGO SNAKE', ft: 7, lb: 8, rig: 'snake', cat: 'snake', base: '#1e2238', band: '#2a2e48', belly: '#6a5a4a', dark: '#0c0e18', eye: '#3a3a3a', pattern: 'plain', n: 16, hp: 24, speed: 90 });
 def('ratsnake', { name: 'YELLOW RAT SNAKE', ft: 5, lb: 3, rig: 'snake', cat: 'snake', base: '#c8b060', band: '#7a6a30', belly: '#e8e0b0', dark: '#3a3010', eye: '#3a3a3a', pattern: 'bands', n: 14, hp: 16, speed: 85 });
+// ---------------------------------------------------------------------------
+// SEWER NETWORK. Things that live in a pipe: blind, pale, fast, or numerous.
+// ---------------------------------------------------------------------------
+F('piranha', 'RED-BELLIED PIRANHA', 1.1, 3, { len: 44, h: 0.42, snout: 'blunt', tail: 'fork', back: '#4a4a44', mid: '#7a7268', belly: '#c04030', dark: '#22201c', pattern: 'speck', dorsal: 'soft', teeth: true }, { speed: 130, band: [10, 260], school: [4, 9], flee: 0, pred: 3 });
+F('cavefish', 'BLIND CAVE FISH', 0.8, 1, { len: 40, h: 0.26, snout: 'blunt', tail: 'round', back: '#cfc6bc', mid: '#e8e0d6', belly: '#f4efe8', dark: '#a89e94', dorsal: 'soft' }, { speed: 60, band: [20, 400], school: [3, 7], flee: 60 });
+F('sewereel', 'SWAMP EEL', 2.6, 5, { len: 72, h: 0.13, snout: 'point', tail: 'eel', back: '#3a2e22', mid: '#6a5638', belly: '#b09868', dark: '#1a1208', dorsal: 'none' }, { speed: 90, band: [10, 500], nearFloor: true, school: [1, 2], flee: 70, pred: 4 });
+F('sludgecarp', 'SLUDGE CARP', 3.4, 40, { len: 70, h: 0.4, snout: 'blunt', tail: 'fork', back: '#4a4a2a', mid: '#7a7a44', belly: '#b8b47c', dark: '#242414', pattern: 'blotch', dorsal: 'soft', barbels: true }, { speed: 65, band: [20, 400], school: [1, 3], flee: 90 });
+F('mutantcat', 'MUTANT CATFISH', 6, 140, { len: 82, h: 0.34, snout: 'blunt', tail: 'eel', back: '#2e3a2a', mid: '#4e6244', belly: '#9aa878', dark: '#141a12', pattern: 'blotch', dorsal: 'sail', barbels: true, teeth: true }, { speed: 95, band: [20, 600], school: [1, 1], flee: 0, pred: 14 });
+Q('bigrat', 'BLOATED RAT', 2.0, 14, { len: 36, h: 0.52, legs: 0.26, snout: 0.9, ears: 'long', tail: 'long', tailCol: '#b08878', body: '#4a3e34', belly: '#8a7a64', dark: '#1e1812', eye: '#e8d030', pattern: 'blotch' }, { speed: 120, flee: 40, gibs: 3, pred: 2 });
+P('vagrant', 'DRIFTER', 5.7, 150, { skin: '#c0a088', shirt: '#4a4438', pants: '#3a3630', hair: '#2a2420' }, { speed: 80, flee: 150 });
+
+// ---------------------------------------------------------------------------
+// OPEN OCEAN. Reef, wall and trench.
+// ---------------------------------------------------------------------------
+F('parrotfish', 'RAINBOW PARROTFISH', 2.6, 18, { len: 58, h: 0.42, snout: 'blunt', tail: 'lunate', back: '#2a7a6a', mid: '#3aa8b8', belly: '#8ad8c0', dark: '#123a38', pattern: 'speck', dorsal: 'soft' }, { speed: 80, band: [20, 240], school: [2, 5], flee: 110 });
+F('angelfish', 'QUEEN ANGELFISH', 1.4, 4, { len: 46, h: 0.58, snout: 'point', tail: 'round', back: '#2a5aa8', mid: '#e8c840', belly: '#f0e090', dark: '#14285a', pattern: 'stripe', dorsal: 'spiny' }, { speed: 70, band: [20, 220], school: [2, 6], flee: 100 });
+F('barracuda', 'GREAT BARRACUDA', 5, 60, { len: 82, h: 0.19, snout: 'point', tail: 'lunate', back: '#5a6a72', mid: '#b8c4c8', belly: '#e8eef0', dark: '#22303a', pattern: 'bar', dorsal: 'spiny', teeth: true }, { speed: 190, band: [20, 500], school: [1, 2], flee: 0, pred: 12 });
+F('moray', 'GREEN MORAY', 6, 60, { len: 84, h: 0.16, snout: 'point', tail: 'eel', back: '#3a5a2a', mid: '#6a8a3a', belly: '#b0c070', dark: '#1a2a10', dorsal: 'none', teeth: true }, { speed: 70, band: [200, 900], nearFloor: true, school: [1, 1], flee: 0, pred: 11 });
+F('lionfish', 'LIONFISH', 1.2, 3, { len: 44, h: 0.46, snout: 'point', tail: 'round', back: '#8a2a20', mid: '#e8e0d0', belly: '#f0e8dc', dark: '#3a1008', pattern: 'bar', dorsal: 'spiny' }, { speed: 45, band: [20, 400], school: [1, 2], flee: 50, venom: 8 });
+F('tuna', 'BLUEFIN TUNA', 8, 600, { len: 80, h: 0.34, snout: 'point', tail: 'lunate', back: '#1e3a6a', mid: '#7a9ab8', belly: '#e0e8ee', dark: '#0c1a34', dorsal: 'soft' }, { speed: 240, band: [40, 700], school: [1, 4], flee: 200 });
+F('hammer', 'HAMMERHEAD', 11, 500, { len: 88, h: 0.26, snout: 'blunt', tail: 'lunate', back: '#6a7a80', mid: '#a8b8bc', belly: '#dde4e4', dark: '#26343a', dorsal: 'sail', teeth: true }, { speed: 185, band: [60, 900], school: [1, 1], flee: 0, pred: 26 });
+F('oarfish', 'OARFISH', 16, 300, { len: 92, h: 0.12, snout: 'blunt', tail: 'eel', back: '#8a94a0', mid: '#c8d4dc', belly: '#eef2f6', dark: '#3a444e', dorsal: 'sail' }, { speed: 60, band: [500, 1200], school: [1, 1], flee: 120 });
+F('anglerfish', 'ABYSSAL ANGLER', 3.4, 30, { len: 60, h: 0.52, snout: 'blunt', tail: 'round', back: '#241c2a', mid: '#3a2e42', belly: '#5a4a62', dark: '#100a14', dorsal: 'spiny', teeth: true }, { speed: 45, band: [600, 1300], nearFloor: true, school: [1, 1], flee: 0, pred: 9 });
+F('isopod', 'GIANT ISOPOD', 1.6, 6, { len: 40, h: 0.5, snout: 'blunt', tail: 'round', back: '#a89880', mid: '#c8b8a0', belly: '#e0d4c0', dark: '#5a4c3c', pattern: 'bar', dorsal: 'none' }, { speed: 30, band: [700, 1300], nearFloor: true, school: [1, 3], flee: 40 });
+
 def('skunkape', { name: 'THE SKUNK APE', ft: 7.5, lb: 500, rig: 'biped', cat: 'boss', len: 60, skin: '#3a2a20', shirt: '#2a1e14', pants: '#2a1e14', hair: '#1a1410', boots: '#3a2a20' });
 // ------------------------------------------------------------ turtles, frogs, crustaceans, rays
 def('turtle', { name: 'SNAPPING TURTLE', ft: 1.5, lb: 30, rig: 'turtle', cat: 'turtle', len: 40, shell: '#4a5a34', skin: '#7d8a48', belly: '#c8b080', dark: '#1e2a14', hooked: true, armor: 12, hp: 40 });
@@ -2703,8 +2728,50 @@ const Gore = {
 // shore and channel of one long swamp, split into named biomes that each carry
 // their own palette, plants, animals and human activity.
 // ---------------------------------------------------------------------------
+// The drowned municipal system west of the lab is authored as one table so the
+// floor and the ceiling can never drift apart: [x, floorY, roofY]. Headroom is
+// the whole design here — long tight runs you have to surface in, crawls that
+// squeeze, chambers that open overhead, and one shaft that drops away.
+const SEWER_SECTION = [
+  // ---- THE OUTFALL SUMP: a vaulted dead end, deep and still --------------
+  [-16000, 260, -210], [-15840, 300, -230], [-15660, 330, -200], [-15480, 280, -150],
+  [-15300, 210, -110], [-15120, 170, -86], [-14940, 120, -60], [-14760, 96, -44],
+  [-14580, 130, -70], [-14400, 180, -120],
+  // ---- THE DEEP GALLERY: the trunk main, with ledges and side vaults -----
+  [-14300, 150, -100], [-14160, 90, -64], [-14020, 40, -50],
+  [-13900, -26, -124], [-13800, -30, -128],                        // dry maintenance ledge
+  [-13700, 36, -60], [-13560, 110, -48], [-13420, 150, -40],     // low run, barely a hand of air
+  [-13280, 120, -54], [-13140, 170, -96],
+  [-13000, 240, -180], [-12840, 300, -250], [-12680, 330, -270], // the gallery vault
+  [-12520, 280, -210], [-12360, 200, -140], [-12200, 130, -80], [-12060, 60, -54],
+  [-11920, -28, -122], [-11820, -32, -126],                        // pump house floor
+  [-11720, 40, -56], [-11580, 110, -44], [-11440, 90, -34],      // the tightest crawl in the system
+  [-11300, 130, -58], [-11160, 180, -110], [-11020, 150, -90], [-10880, 100, -62],
+  [-10740, 140, -70], [-10600, 190, -120], [-10460, 160, -96],
+  // ---- JUNCTION 9: the hub, and the spokes running off it ---------------
+  [-10400, 140, -86], [-10260, 210, -160], [-10100, 300, -260],
+  [-9940, 360, -330], [-9780, 330, -300],                        // the junction vault
+  [-9620, 250, -200], [-9460, 150, -110], [-9320, 60, -70],
+  [-9200, -26, -136], [-9100, -30, -140],                         // side gallery, walkable
+  [-9000, 44, -72], [-8860, 120, -50], [-8720, 170, -42], [-8580, 140, -56],
+  [-8440, 200, -120], [-8300, 260, -190], [-8160, 220, -160], [-8020, 150, -96],
+  [-7880, 90, -60], [-7740, 130, -46], [-7600, 170, -54], [-7460, 210, -110],
+  // ---- THE DROP SHAFT: the system falls away under the city -------------
+  [-7400, 230, -140], [-7260, 300, -220], [-7120, 420, -360], [-6980, 560, -540],
+  [-6840, 700, -760], [-6700, 780, -820], [-6560, 720, -760],    // the shaft itself
+  [-6420, 600, -600], [-6280, 460, -430], [-6140, 330, -300], [-6000, 220, -190],
+  [-5860, 140, -110], [-5720, 90, -70], [-5580, 130, -56], [-5440, 180, -80],
+  [-5300, 150, -110],
+  // ---- THE UNDERCROFT: somebody lives down here -------------------------
+  [-5200, 120, -96], [-5060, 60, -120],
+  [-4920, -28, -150], [-4800, -36, -160], [-4680, -30, -150],    // the camp ledge
+  [-4560, 50, -120], [-4420, 120, -96], [-4280, 170, -130], [-4140, 140, -150],
+  [-4000, 80, -120], [-3860, 40, -100], [-3720, 90, -80], [-3580, 130, -70],
+  [-3440, 96, -90], [-3300, 40, -110], [-3220, -40, -130], [-3140, -58, -140],
+];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
+  ...SEWER_SECTION.map(p => [p[0], p[1]]),
   // containment lab: a dry concrete floor with the tank at the west end
   [-3000, -60], [-2700, -60], [-2500, -60], [-2380, -58], [-2300, -56],
   // sewer tunnel: a shallow flooded run east toward daylight
@@ -2743,6 +2810,31 @@ const MAP_PROFILE = [
   [15500, 780], [15800, 840], [16100, 880], [16400, 860], [16700, 800],
   [17000, 700], [17250, 520], [17450, 300], [17600, 90], [17700, -70],
   [17900, -96], [18200, -100], [18600, -98], [19000, -100],
+  // ===================== OPEN OCEAN =============================
+  // Past the seawall the bottom falls away: a sand shelf, then reef, then the
+  // wall, then blue water over a trench with caves cut into its sides.
+  [19300, -60], [19500, 40], [19700, 160], [19950, 280], [20200, 340],          // shelf, shelving out
+  [20500, 300], [20800, 360], [21100, 420], [21400, 380], [21700, 300],
+  [22000, 260], [22300, 320], [22600, 290], [22900, 220], [23200, 260],         // the reef: broken relief
+  [23500, 340], [23800, 300], [24100, 230], [24400, 280], [24700, 360],
+  [25000, 420], [25300, 560], [25600, 780], [25900, 1020], [26200, 1180],       // the wall
+  [26550, 1240], [26900, 1200], [27250, 1260], [27600, 1220], [27950, 1280],    // blue water
+  [28300, 1240], [28650, 1300], [29000, 1260], [29350, 1180], [29700, 1240],
+  [30050, 1420], [30400, 1620], [30750, 1780], [31100, 1860], [31450, 1820],    // the trench
+  [31800, 1900], [32150, 1960], [32500, 1900], [32850, 1840], [33200, 1880],
+  [33550, 1820], [33900, 1760], [34250, 1800], [34600, 1840], [35000, 1820],
+];
+// ---------------------------------------------------------------------------
+// Roof profile. Only the enclosed stretches have one: the sewer network the
+// whole way, and the ocean caves cut into the trench wall. Between control
+// points the roof is interpolated exactly like the floor, so a tunnel can
+// pinch to a crawl, open into a chamber, or rise into a shaft.
+// ---------------------------------------------------------------------------
+const ROOF_PROFILE = SEWER_SECTION.map(p => [p[0], p[2]]);
+const OCEAN_CAVES = [
+  // [x0, x1, roof] — overhangs and cave mouths in the trench wall
+  [26050, 26600, 420], [27400, 27900, 760], [29100, 29700, 900],
+  [30600, 31400, 1180], [32200, 32900, 1360],
 ];
 const MapData = {
   x0: MAP_PROFILE[0][0], x1: MAP_PROFILE[MAP_PROFILE.length - 1][0],
@@ -2758,11 +2850,85 @@ const MapData = {
     const wob = vnoise(x * 0.045, 11) * 6 - 3 + vnoise(x * 0.012, 3) * 10 - 5;
     return base + wob * (Math.abs(base) > 8 ? 1 : 0.35);
   },
+  // interpolated roof, or null where the sky is open
+  roofY(x) {
+    const R = ROOF_PROFILE;
+    // west of the first control point is the bulkhead the system dead-ends on
+    if (x < R[0][0] && x > R[0][0] - 3000) return R[0][1];
+    if (x >= R[0][0] && x <= R[R.length - 1][0]) {
+      let lo = 0, hi = R.length - 1;
+      while (lo < hi - 1) { const m = (lo + hi) >> 1; if (R[m][0] <= x) lo = m; else hi = m; }
+      const a = R[lo], b = R[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
+      const base = lerp(a[1], b[1], t * t * (3 - 2 * t));
+      return base + vnoise(x * 0.05, 31) * 8 - 4 + Math.sin(x * 0.021) * 3;
+    }
+    // ocean caves: an overhang that closes over the water for a stretch
+    for (const [cx0, cx1, r] of OCEAN_CAVES) {
+      if (x < cx0 || x > cx1) continue;
+      const u = (x - cx0) / (cx1 - cx0);
+      // the mouth flares open at both ends so it never reads as a hard wall
+      const flare = Math.min(1, Math.min(u, 1 - u) * 5);
+      if (flare <= 0.02) return null;
+      return r * flare + vnoise(x * 0.04, 41) * 14 - 7;
+    }
+    return null;
+  },
 };
 // ---------------------------------------------------------------------------
 // Biomes
 // ---------------------------------------------------------------------------
 const BIOMES = [
+  // ===================== SEWER NETWORK ==========================
+  {
+    id: 'sump', name: 'THE OUTFALL SUMP', x0: -16600, x1: -14300,
+    sky: ['#070d10', '#101a1e'], water: ['#41532c', '#25321a', '#0a0e07'], scum: '#7a8a2a', fog: '#101c1e',
+    parallax: ['block', 'pipe', 'block'], ground: ['#2e3438', '#22282c', '#161a1e'], grass: '#3a4a34',
+    indoor: true, roof: -200, dark: 0.72, toxic: 0.5, flora: '#6e7a2a', floraMix: 0.62,
+    plants: [['trash', 2.4], ['algae', 2.2], ['rubble', 1.8], ['pipe', 1.4], ['weed', 0.8]],
+    fish: [['cavefish', 3], ['sewereel', 2.2], ['sludgecarp', 2], ['piranha', 1.6], ['minnow', 1.4]],
+    land: [['bigrat', 3], ['rat', 4]],
+    structures: [], music: 0.9,
+  },
+  {
+    id: 'gallery', name: 'THE DEEP GALLERY', x0: -14300, x1: -10400,
+    sky: ['#08110f', '#131f1c'], water: ['#3f5a38', '#233420', '#0a110c'], scum: '#6a7a26', fog: '#121e1c',
+    parallax: ['block', 'block', 'pipe'], ground: ['#343a3a', '#262c2c', '#181c1c'], grass: '#3f5a3a',
+    indoor: true, roof: -180, dark: 0.66, toxic: 0.35, flora: '#6a7a2e', floraMix: 0.55,
+    plants: [['algae', 2.6], ['trash', 2], ['rubble', 2], ['pipe', 1.6], ['mushroom', 1.2], ['weed', 1]],
+    fish: [['piranha', 3], ['sludgecarp', 2.4], ['sewereel', 2], ['cavefish', 2], ['walkingcat', 2], ['snakehead', 1.4]],
+    land: [['bigrat', 4], ['rat', 4], ['opossum', 1.2]],
+    structures: [], music: 0.85,
+  },
+  {
+    id: 'junction', name: 'JUNCTION 9', x0: -10400, x1: -7400,
+    sky: ['#0a1412', '#16241f'], water: ['#3d6048', '#21402e', '#091713'], scum: '#6a7a30', fog: '#14211d',
+    parallax: ['pipe', 'block', 'pipe'], ground: ['#3a3f3c', '#2a2f2c', '#1b201e'], grass: '#4a6a3a',
+    indoor: true, roof: -220, dark: 0.58, toxic: 0.25, flora: '#728030', floraMix: 0.46,
+    plants: [['pipe', 2.4], ['rubble', 2], ['trash', 1.8], ['algae', 1.8], ['crate', 1.2], ['mushroom', 1]],
+    fish: [['piranha', 2.6], ['walkingcat', 2.4], ['sludgecarp', 2], ['sewereel', 1.8], ['mutantcat', 0.9], ['tilapia', 1.4]],
+    land: [['bigrat', 3], ['rat', 3], ['vagrant', 1.6]],
+    structures: [], music: 0.7,
+  },
+  {
+    id: 'shaft', name: 'THE DROP SHAFT', x0: -7400, x1: -5200,
+    sky: ['#0c1618', '#1a2a2c'], water: ['#2a5a5e', '#153a3e', '#04161a'], scum: '#4a6a4a', fog: '#16262a',
+    parallax: ['block', 'pipe', 'block'], ground: ['#33383c', '#252a2e', '#171b1f'], grass: '#3a5a44',
+    indoor: true, roof: -520, dark: 0.5, toxic: 0.15, flora: '#6a8a3e', floraMix: 0.36,
+    plants: [['algae', 2.2], ['pipe', 2], ['rubble', 1.8], ['moss', 1.6], ['vine', 1.4], ['mushroom', 1.2]],
+    fish: [['mutantcat', 1.4], ['piranha', 2.4], ['cavefish', 2.4], ['sewereel', 2], ['eel', 1.4], ['catfish', 1.6]],
+    land: [['bigrat', 2.4], ['vagrant', 1.2]],
+    structures: [], music: 0.75,
+  },
+  {
+    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3200,
+    sky: ['#0d1a1c', '#1a2a2c'], water: ['#40705c', '#20463a', '#0a1a16'], scum: '#5a7a3a', fog: '#1c2c2e',
+    parallax: ['block', 'pipe', 'block'], ground: ['#3d4342', '#2d3332', '#1e2322'], grass: '#456a44',
+    indoor: true, roof: -150, dark: 0.42, toxic: 0.08, flora: '#6f8a44', floraMix: 0.3,
+    plants: [['crate', 2], ['trash', 2], ['rubble', 1.6], ['algae', 1.6], ['pipe', 1.4], ['mushroom', 1.4], ['moss', 1.2]],
+    fish: [['walkingcat', 2.6], ['sludgecarp', 2], ['piranha', 1.6], ['cavefish', 1.6], ['tilapia', 1.6], ['minnow', 2]],
+    land: [['vagrant', 2.4], ['bigrat', 2.6], ['rat', 3], ['opossum', 1.4]],
+    structures: [], music: 0.55,
+  },
   {
     id: 'lab', name: 'CONTAINMENT', x0: -3200, x1: -2260,
     sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
@@ -2865,7 +3031,7 @@ const BIOMES = [
   },
   {
     // Endgame. A dredged harbour under a city that has finally noticed you.
-    id: 'seawall', name: 'THE SEAWALL', x0: 15300, x1: 99999,
+    id: 'seawall', name: 'THE SEAWALL', x0: 15300, x1: 19000,
     sky: ['#141c34', '#40506e'], water: ['#1d5c74', '#0c3346', '#02121c'], scum: '#3a5a5a', fog: '#5a6a86',
     parallax: ['tower', 'block', 'tower'], ground: ['#5e6068', '#43454c', '#2a2c32'], grass: '#4a5a4a',
     plants: [['rubble', 2.2], ['rock', 1.6], ['trash', 1.8], ['pipe', 1.4], ['algae', 1.2], ['shellbed', 1]],
@@ -2873,6 +3039,43 @@ const BIOMES = [
     land: [['ranger', 2], ['poacher', 2]],
     structures: [['seawall', 3], ['sign', 0.6]],
     town: true, kaiju: true, music: 1.2,
+  },
+  // ===================== OPEN OCEAN =============================
+  {
+    id: 'shelf', name: 'THE SHELF', x0: 19000, x1: 21800,
+    sky: ['#3a86c8', '#dceaf2'], water: ['#3aa8c0', '#1e6a86', '#0a2a3a'], scum: '#7a9a6a', fog: '#cfe4ee',
+    parallax: ['bluff', 'block', 'bluff'], ground: ['#c8bc9a', '#a89a78', '#7a6e54'], grass: '#7aa86a', open: 'coast',
+    plants: [['weed', 2.2], ['algae', 1.8], ['reed', 1.2], ['oyster', 1.4], ['rubble', 1]],
+    fish: [['mullet', 3], ['snapper', 2.6], ['ladyfish', 2], ['sheepshead', 2], ['redfish', 2], ['ray', 1.6], ['tarpon', 1.4]],
+    land: [], structures: [['buoy', 1.6], ['crabtrap', 1.2]],
+    music: 0.3,
+  },
+  {
+    id: 'reef', name: 'THE REEF', x0: 21800, x1: 25000,
+    sky: ['#2f7ec4', '#cfe8f4'], water: ['#2fb0b8', '#1a7a86', '#07303c'], scum: '#8aa85a', fog: '#c0e2ee',
+    parallax: ['bluff', 'bluff', 'block'], ground: ['#c0a884', '#9a8464', '#6e5c44'], grass: '#5ab0a0', open: 'reef',
+    plants: [['coral', 3.2], ['fan', 2.4], ['sponge', 2], ['weed', 1.6], ['algae', 1.4], ['oyster', 1.2]],
+    fish: [['parrotfish', 3], ['angelfish', 2.8], ['snapper', 2.4], ['lionfish', 1.6], ['barracuda', 1.4], ['grouper', 1], ['moray', 1.2], ['turtle', 1.2]],
+    land: [], structures: [['buoy', 1], ['wreck', 1.2]],
+    music: 0.35,
+  },
+  {
+    id: 'wall', name: 'THE WALL', x0: 25000, x1: 29800,
+    sky: ['#1e5e9e', '#9ac4dc'], water: ['#1f7a92', '#104a62', '#031824'], scum: '#5a7a5a', fog: '#8ab0c8',
+    parallax: ['bluff', 'block', 'bluff'], ground: ['#7a7060', '#5a5246', '#3a352c'], grass: '#3a8a80', open: 'rig',
+    plants: [['fan', 2.4], ['coral', 2], ['sponge', 1.8], ['kelp', 2.2], ['algae', 1.4]],
+    fish: [['tuna', 2.4], ['barracuda', 2.4], ['hammer', 1.2], ['shark', 1.4], ['grouper', 1.6], ['moray', 1.4], ['dolphin', 1.2], ['manatee', 0.8], ['sawfish', 1]],
+    land: [], structures: [['wreck', 1.4]],
+    dark: 0.2, flora: '#5a8a90', floraMix: 0.4, music: 0.7,
+  },
+  {
+    id: 'trench', name: 'THE TRENCH', x0: 29800, x1: 35400,
+    sky: ['#0a2436', '#245878'], water: ['#12465c', '#082a3a', '#010b12'], scum: '#3a5a4a', fog: '#123044',
+    parallax: ['bluff', 'bluff', 'block'], ground: ['#4a4a50', '#34343a', '#202024'], grass: '#2a6a70', open: 'deep',
+    plants: [['tubeworm', 3.2], ['sponge', 2], ['fan', 1.2], ['coral', 1], ['rubble', 2]],
+    fish: [['anglerfish', 2.4], ['oarfish', 1.2], ['isopod', 2.4], ['moray', 1.4], ['hammer', 1.4], ['grouper', 1.2], ['eel', 1.6]],
+    land: [], structures: [['wreck', 1.6]],
+    dark: 0.72, flora: '#7a8a96', floraMix: 0.6, pressure: 1, music: 0.95,
   },
 ];
 const Biome = {
@@ -2895,6 +3098,8 @@ const Biome = {
       scum: mixColor(a.scum, b.scum, t), fog: mixColor(a.fog, b.fog, t), grass: mixColor(a.grass, b.grass, t),
       ground: [mixColor(a.ground[0], b.ground[0], t), mixColor(a.ground[1], b.ground[1], t), mixColor(a.ground[2], b.ground[2], t)],
       parallax: t > 0.5 ? b.parallax : a.parallax, plants: a.plants, fish: a.fish, land: a.land, structures: a.structures,
+      flora: a.flora || b.flora || null, floraMix: lerp(a.floraMix || 0, b.floraMix || 0, t), open: t > 0.5 ? b.open : a.open,
+      toxic: lerp(a.toxic || 0, b.toxic || 0, t), pressure: lerp(a.pressure || 0, b.pressure || 0, t), indoor: t > 0.5 ? b.indoor : a.indoor,
     };
   },
   // decor for one strip of ground, chosen from the biome's plant table
@@ -2924,7 +3129,12 @@ const PLANT_RULES = {
   sunkbranch: { land: false, minD: 60, make: (o, x, y, r) => o.push({ type: 'sunkbranch', x, y, s: 0.9 + r() * 0.9, flip: r() < 0.5 }) },
   shellbed: { land: false, minD: 80, make: (o, x, y, r) => o.push({ type: 'shellbed', x, y, n: 3 + Math.floor(r() * 6) }) },
   oyster: { land: false, minD: 10, maxD: 120, make: (o, x, y, r) => o.push({ type: 'oyster', x, y, n: 3 + Math.floor(r() * 5) }) },
-  coral: { land: false, minD: 200, make: (o, x, y, r) => o.push({ type: 'coral', x, y, s: 0.8 + r() * 0.8, v: Math.floor(r() * 3) }) },
+  coral: { land: false, minD: 180, make: (o, x, y, r) => { if (r() < 0.45) return; o.push({ type: 'coral', x, y, s: 0.8 + r() * 1.1, v: Math.floor(r() * 4), ph: r() * TAU }); } },
+  // --- reef and deep-ocean growth ---
+  fan: { land: false, minD: 200, make: (o, x, y, r) => { if (r() < 0.4) return; o.push({ type: 'fan', x, y, s: 0.9 + r() * 1.0, v: Math.floor(r() * 3), lean: r() < 0.5 ? -1 : 1, ph: r() * TAU }); } },
+  sponge: { land: false, minD: 240, make: (o, x, y, r) => { if (r() < 0.35) return; o.push({ type: 'sponge', x, y, s: 0.8 + r() * 0.9, n: 1 + Math.floor(r() * 3), v: Math.floor(r() * 3), ph: r() * TAU }); } },
+  kelp: { land: false, minD: 200, maxD: 620, make: (o, x, y, r) => o.push({ type: 'kelp', x, y, h: 70 + r() * 150, ph: r() * TAU, v: r() < 0.5 ? 0 : 1 }) },
+  tubeworm: { land: false, minD: 700, make: (o, x, y, r) => o.push({ type: 'tubeworm', x, y, n: 3 + Math.floor(r() * 5), s: 0.8 + r() * 0.7, ph: r() * TAU }) },
   rock: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'rock', x, y, v: r() < 0.5 ? 0 : 1, s: 1.1 + r() * 1.8 }) },
   log: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'log', x, y, s: 1 + r() * 1.2 }) },
   trash: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'trash', x, y, v: Math.floor(r() * 4), s: 0.9 + r() * 0.6 }) },
@@ -3126,9 +3336,17 @@ const World = {
   floorY(x) { return MapData.floorY(x); },
   // inside the lab and sewer the world has a ceiling; elsewhere it is open sky
   roofY(x) {
+    // An authored roof beats a flat one: the sewer network and the ocean caves
+    // both want headroom that changes along their length — crawls, chambers,
+    // shafts — and a per-biome constant cannot express any of that.
+    const pr = MapData.roofY(x);
+    if (pr !== null) {
+      // the mouth of the storm drain flares open so daylight leaks in
+      if (x > -320 && x < 200) return pr - (x + 320) * 0.45;
+      return pr;
+    }
     const B = Biome.at(x); if (!B.indoor) return null;
     const r = B.roof + Math.sin(x * 0.02) * 3 + vnoise(x * 0.05, 21) * 6;
-    // the mouth of the tunnel flares open so daylight leaks in
     if (B.id === 'sewer' && x > -320) return r - (x + 320) * 0.45;
     return r;
   },
@@ -3243,10 +3461,101 @@ const World = {
     }
     ctx.globalAlpha = 1;
   },
+  // Open water has no treeline. Out past the seawall the horizon is empty
+  // except for what floats on it, so the parallax becomes shipping: hulls at
+  // three distances, a rig standing over the wall, and birds working a bait
+  // ball. Everything sits ON the waterline instead of behind a shore.
+  drawOceanHorizon(ctx, cam, day) {
+    const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
+    if (hy < -50) return;
+    const BP = Biome.mixPal(cam.x), mode = BP.open;
+    const haze = mixColor(sc.bot, BP.fog, 0.5);
+    // a low bank of haze sitting on the join, so the sea meets the sky softly
+    const g0 = ctx.createLinearGradient(0, hy - 26, 0, hy + 3);
+    g0.addColorStop(0, rgba(haze, 0)); g0.addColorStop(1, rgba(haze, 0.7));
+    ctx.fillStyle = g0; ctx.fillRect(0, hy - 26, W, 29);
+    // the last of the land, only while the shelf is still in sight
+    if (mode === 'coast') {
+      const col = mixColor(sc.bot, '#3c5a48', 0.2), ox = cam.x * 0.04;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(0, hy + 2);
+      for (let sx = 0; sx <= W; sx += 6) { const wx = ox + sx; const h = Math.max(0, fbm(wx * 0.0016, 3) - 0.42) * 90; ctx.lineTo(sx, hy - h); }
+      ctx.lineTo(W, hy + 2); ctx.closePath(); ctx.fill();
+    }
+    const SHIPS = [
+      { f: 0.06, s: 0.45, col: 0.68, dens: 1400 },
+      { f: 0.11, s: 0.7, col: 0.45, dens: 1100 },
+      { f: 0.2, s: 1, col: 0.22, dens: 900 },
+    ];
+    for (const L of SHIPS) {
+      const ox = cam.x * L.f, col = mixColor(haze, '#1c2c38', 1 - L.col);
+      for (let k = Math.floor(ox / L.dens) - 1; k <= Math.floor((ox + W) / L.dens) + 1; k++) {
+        const r = ihash(k, 401); if (r > 0.78) continue;
+        const sx = k * L.dens + ihash(k, 402) * L.dens - ox;
+        if (sx < -160 || sx > W + 160) continue;
+        const kind = r < 0.3 ? 'trawler' : r < 0.58 ? 'container' : 'sail';
+        const S = L.s, bob = Math.sin(t * 0.5 + k) * 0.8 * S;
+        const base = hy + bob;
+        ctx.fillStyle = col;
+        if (kind === 'sail') {
+          ctx.fillRect(Math.round(sx - 9 * S), Math.round(base - 3 * S), Math.round(18 * S), Math.round(3 * S));
+          ctx.beginPath(); ctx.moveTo(sx, base - 4 * S); ctx.lineTo(sx, base - 30 * S); ctx.lineTo(sx + 11 * S, base - 4 * S); ctx.closePath(); ctx.fill();
+        } else if (kind === 'trawler') {
+          ctx.fillRect(Math.round(sx - 16 * S), Math.round(base - 5 * S), Math.round(32 * S), Math.round(5 * S));
+          ctx.fillRect(Math.round(sx - 6 * S), Math.round(base - 12 * S), Math.round(11 * S), Math.round(7 * S));
+          ctx.fillRect(Math.round(sx - 2 * S), Math.round(base - 26 * S), Math.round(2 * S), Math.round(14 * S));
+          // derrick booms out over the water
+          ctx.fillRect(Math.round(sx - 16 * S), Math.round(base - 18 * S), Math.round(15 * S), Math.max(1, Math.round(S)));
+          if (night > 0.4) { ctx.fillStyle = mixColor(col, '#ffe2a0', 0.7); ctx.fillRect(Math.round(sx - 3 * S), Math.round(base - 27 * S), Math.max(1, Math.round(2 * S)), Math.max(1, Math.round(2 * S))); ctx.fillStyle = col; }
+        } else {
+          ctx.fillRect(Math.round(sx - 44 * S), Math.round(base - 7 * S), Math.round(88 * S), Math.round(7 * S));
+          ctx.fillRect(Math.round(sx + 20 * S), Math.round(base - 20 * S), Math.round(14 * S), Math.round(13 * S));
+          ctx.fillRect(Math.round(sx + 25 * S), Math.round(base - 30 * S), Math.round(3 * S), Math.round(10 * S));
+          // deck cargo, stacked in blocks
+          for (let q = 0; q < 7; q++) { const bw = 10 * S, bh = (5 + (ihash(k * 9 + q, 403) * 9)) * S; ctx.fillRect(Math.round(sx - 42 * S + q * 11 * S), Math.round(base - 7 * S - bh), Math.round(bw), Math.round(bh)); }
+        }
+      }
+    }
+    // the rig: a platform standing over the drop, legs going down into the blue
+    if (mode === 'rig' || mode === 'deep') {
+      const ox = cam.x * 0.16, dens = 2600, col = mixColor(haze, '#16242e', 0.82);
+      for (let k = Math.floor(ox / dens) - 1; k <= Math.floor((ox + W) / dens) + 1; k++) {
+        if (ihash(k, 411) > 0.55) continue;
+        const sx = k * dens + ihash(k, 412) * dens - ox;
+        if (sx < -180 || sx > W + 180) continue;
+        ctx.fillStyle = col;
+        ctx.fillRect(Math.round(sx - 34), Math.round(hy - 34), 68, 9);
+        for (const lx of [-26, -9, 9, 26]) { ctx.fillRect(Math.round(sx + lx), Math.round(hy - 25), 3, 27); }
+        for (let q = 0; q < 3; q++) ctx.fillRect(Math.round(sx - 30), Math.round(hy - 22 + q * 8), 60, 1);
+        ctx.fillRect(Math.round(sx - 20), Math.round(hy - 50), 15, 16);
+        ctx.fillRect(Math.round(sx + 12), Math.round(hy - 74), 4, 40);
+        // flare stack
+        const fl = 3 + Math.sin(t * 7 + k) * 1.5;
+        ctx.fillStyle = mixColor(col, '#ff9040', 0.75);
+        ctx.fillRect(Math.round(sx + 11), Math.round(hy - 74 - fl), 6, Math.round(fl));
+        if (night > 0.3) { ctx.fillStyle = mixColor(col, '#ffe2a0', 0.8); for (let q = 0; q < 5; q++) ctx.fillRect(Math.round(sx - 30 + q * 14), Math.round(hy - 32), 2, 2); }
+      }
+    }
+    // working birds over a bait ball
+    const bo = cam.x * 0.3;
+    for (let k = Math.floor(bo / 700) - 1; k <= Math.floor((bo + W) / 700) + 1; k++) {
+      if (ihash(k, 421) > 0.5) continue;
+      const cx = k * 700 + ihash(k, 422) * 700 - bo;
+      ctx.fillStyle = mixColor(haze, '#20303a', 0.8);
+      for (let q = 0; q < 9; q++) {
+        const a = t * 0.5 + q * 0.7 + k, bx = cx + Math.cos(a) * (30 + q * 3), by = hy - 26 - Math.abs(Math.sin(a * 1.3)) * 20 - q;
+        const flap = Math.sin(t * 9 + q * 2) > 0 ? 1 : -1;
+        ctx.fillRect(Math.round(bx), Math.round(by), 2, 1);
+        ctx.fillRect(Math.round(bx - 2), Math.round(by - flap), 2, 1);
+        ctx.fillRect(Math.round(bx + 2), Math.round(by - flap), 2, 1);
+      }
+    }
+  },
   drawParallax(ctx, cam, day) {
     const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
+    if (BP.open) { this.drawOceanHorizon(ctx, cam, day); return; }
     // furthest ridge: bare hills, no trees, barely separated from the sky
     {
       const col = mixColor(sc.bot, '#3c5a48', 0.26), ox = cam.x * 0.05;
@@ -3393,20 +3702,26 @@ const World = {
         ctx.restore();
       }
     }
-    // --- god rays: soft wedges falling from the surface
-    if (light > 0.3) {
+    // --- god rays: soft wedges falling from the surface. Under a concrete
+    // crown they are lamplight through the scum, not sun, so they go warm,
+    // short and sparse; in the deep there is nothing left to make them at all.
+    const roofed = this.isIndoor(cam.x);
+    const rays = roofed ? 3 : 6, rayCol = roofed ? [255, 226, 150] : [215, 255, 240];
+    const rayLen = roofed ? 0.55 : 1, rayA = roofed ? 0.7 : 1;
+    if (light > 0.3 || roofed) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      for (let i = 0; i < 6; i++) {
+      const lightK = roofed ? 1 : light;
+      for (let i = 0; i < rays; i++) {
         const seed = ihash(i, 55), sway = Math.sin(this.t * 0.28 + i * 1.7) * 14 * z;
         const bx = (((seed * 1400 - cam.x * 0.4 * z) % 1400) + 1400) % 1400 - 240 + sway;
-        const bw = (14 + ihash(i, 56) * 26) * z, len = (200 + ihash(i, 57) * 220) * z;
+        const bw = (14 + ihash(i, 56) * 26) * z, len = (200 + ihash(i, 57) * 220) * z * rayLen;
         const gy0 = hy, gy1 = hy + len;
         if (gy0 > H || gy1 < 0) continue;
         const gr = ctx.createLinearGradient(0, gy0, 0, gy1);
-        gr.addColorStop(0, `rgba(215,255,240,${(0.11 * light).toFixed(3)})`);
-        gr.addColorStop(0.45, `rgba(200,248,235,${(0.05 * light).toFixed(3)})`);
-        gr.addColorStop(1, 'rgba(190,240,230,0)');
+        gr.addColorStop(0, `rgba(${rayCol[0]},${rayCol[1]},${rayCol[2]},${(0.11 * lightK * rayA).toFixed(3)})`);
+        gr.addColorStop(0.45, `rgba(${rayCol[0]},${rayCol[1]},${rayCol[2]},${(0.05 * lightK * rayA).toFixed(3)})`);
+        gr.addColorStop(1, `rgba(${rayCol[0]},${rayCol[1]},${rayCol[2]},0)`);
         ctx.fillStyle = gr;
         ctx.beginPath();
         ctx.moveTo(bx, gy0); ctx.lineTo(bx + bw, gy0);
@@ -3637,46 +3952,247 @@ const World = {
     const W = G.W, H = G.H, z = cam.zoom, step = 4;
     if (!this.isIndoor(cam.toWorldX(W / 2)) && !this.isIndoor(cam.toWorldX(0)) && !this.isIndoor(cam.toWorldX(W))) return;
     const B = Biome.mixPal(cam.x);
-    // back wall behind everything
-    ctx.fillStyle = B.ground[2]; ctx.fillRect(0, 0, W, H);
+    // --- back wall: glazed brick, courses and pilasters -------------------
+    const wall = shade(B.ground[2], 1.2), wallD = shade(B.ground[2], 0.62), wallL = shade(B.ground[2], 1.55);
+    ctx.fillStyle = wall; ctx.fillRect(0, 0, W, H);
     for (let sx = 0; sx < W; sx += 8) {
       const wx = cam.toWorldX(sx), hcol = ihash(Math.floor(wx / 26), 5);
-      ctx.fillStyle = hcol < 0.3 ? shade(B.ground[2], 1.14) : hcol < 0.6 ? shade(B.ground[2], 0.9) : B.ground[2];
+      ctx.fillStyle = hcol < 0.3 ? shade(wall, 1.14) : hcol < 0.6 ? shade(wall, 0.88) : wall;
       ctx.fillRect(sx, 0, 8, H);
     }
-    // brick courses
-    ctx.globalAlpha = 0.25;
-    for (let sy = 0; sy < H; sy += Math.max(4, Math.round(9 * z))) {
-      ctx.fillStyle = shade(B.ground[2], 0.7); ctx.fillRect(0, sy, W, 1);
-      for (let sx = (Math.floor(sy / 9) % 2) * 12; sx < W; sx += Math.max(8, Math.round(24 * z))) ctx.fillRect(sx, sy, 1, Math.max(4, Math.round(9 * z)));
+    const course = Math.max(3, Math.round(7 * z));
+    ctx.globalAlpha = 0.42;
+    for (let sy = 0; sy < H; sy += course) {
+      ctx.fillStyle = wallD; ctx.fillRect(0, sy, W, 1);
+      const off = ((sy / course) | 0) % 2 ? Math.round(7 * z) : 0;
+      for (let sx = off; sx < W; sx += Math.max(6, Math.round(14 * z))) ctx.fillRect(sx, sy, 1, course);
     }
     ctx.globalAlpha = 1;
-    // ceiling slab
+    // pilasters: shallow piers standing off the wall every 150 units
+    const leftW = cam.toWorldX(-80), rightW = cam.toWorldX(W + 80);
+    for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
+      const [sx] = cam.toScreen(wx, 0), pw = Math.max(2, Math.round(9 * z));
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = wallD; ctx.fillRect(Math.round(sx - pw / 2), 0, pw, H);
+      ctx.fillStyle = wallL; ctx.fillRect(Math.round(sx - pw / 2), 0, Math.max(1, Math.round(z)), H);
+      ctx.globalAlpha = 1;
+    }
+    // damp streaks running down the brick
+    ctx.globalAlpha = 0.3;
+    for (let i = 0; i < 24; i++) {
+      const wx = leftW + ihash(i + Math.floor(leftW / 900) * 31, 77) * (rightW - leftW);
+      const [sx] = cam.toScreen(wx, 0);
+      ctx.fillStyle = mixColor(wallD, B.scum, 0.35);
+      ctx.fillRect(Math.round(sx), 0, Math.max(1, Math.round(1.6 * z)), H * (0.3 + ihash(i, 78) * 0.7));
+    }
+    ctx.globalAlpha = 1;
+    // --- the vault overhead ----------------------------------------------
+    const slab = shade(B.ground[0], 1.05), slabD = shade(B.ground[0], 0.5), slabL = shade(B.ground[0], 1.4);
     ctx.beginPath(); ctx.moveTo(-4, -10);
     for (let sx = -step; sx <= W + step; sx += step) { const wx = cam.toWorldX(sx), r = this.roofY(wx); ctx.lineTo(sx, r === null ? -20 : cam.toScreen(wx, r)[1]); }
     ctx.lineTo(W + 4, -10); ctx.closePath();
-    ctx.fillStyle = B.ground[0]; ctx.fill();
+    ctx.fillStyle = slab; ctx.fill();
+    // segment joints: short ticks up into the slab every 26 units of arch
+    for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
+      const r = this.roofY(wx); if (r === null) continue;
+      const [sx, sy] = cam.toScreen(wx, r);
+      ctx.fillStyle = slabD; ctx.fillRect(Math.round(sx), Math.round(sy - 12 * z), Math.max(1, Math.round(1.4 * z)), Math.round(12 * z));
+    }
+    // the arch edge itself, three bands so the vault has a soffit
     for (let sx = -step; sx <= W + step; sx += step) {
       const wx = cam.toWorldX(sx), r = this.roofY(wx); if (r === null) continue;
       const sy = cam.toScreen(wx, r)[1];
-      ctx.fillStyle = shade(B.ground[0], 0.55); ctx.fillRect(sx, Math.round(sy) - Math.max(1, Math.round(2 * z)), step, Math.max(1, Math.round(2 * z)));
-      ctx.fillStyle = shade(B.ground[0], 1.2); ctx.fillRect(sx, Math.round(sy) - Math.max(2, Math.round(4 * z)), step, Math.max(1, Math.round(z)));
+      ctx.fillStyle = slabL; ctx.fillRect(sx, Math.round(sy) - Math.max(2, Math.round(5 * z)), step, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = slab; ctx.fillRect(sx, Math.round(sy) - Math.max(1, Math.round(3 * z)), step, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = slabD; ctx.fillRect(sx, Math.round(sy) - Math.max(1, Math.round(1.4 * z)), step, Math.max(1, Math.round(1.6 * z)));
+      // soot and scum where the water once stood against the crown
+      if (ihash(Math.floor(wx / 7), 91) < 0.3) { ctx.globalAlpha = 0.35; ctx.fillStyle = B.scum; ctx.fillRect(sx, Math.round(sy) - Math.round(2 * z), step, Math.max(1, Math.round(z))); ctx.globalAlpha = 1; }
     }
     // ribs, hanging lamps and dripping pipes
-    const left = cam.toWorldX(-60), right = cam.toWorldX(W + 60);
-    for (let wx = Math.floor(left / 150) * 150; wx < right; wx += 150) {
+    for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
       const r = this.roofY(wx); if (r === null) continue;
       const [sx, sy] = cam.toScreen(wx, r), fy = cam.toScreen(wx, this.floorY(wx))[1];
       ctx.fillStyle = shade(B.ground[0], 0.75); ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy), Math.round(6 * z), Math.round(fy - sy));
       ctx.fillStyle = shade(B.ground[0], 1.1); ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy), Math.max(1, Math.round(z)), Math.round(fy - sy));
+      // conduit slung along the crown between the ribs
+      const nx = wx + 150, nr = this.roofY(nx);
+      if (nr !== null) {
+        const [nsx, nsy] = cam.toScreen(nx, nr);
+        const sag = 5 * z;
+        ctx.strokeStyle = shade(B.ground[0], 0.55); ctx.lineWidth = Math.max(1, Math.round(1.6 * z));
+        ctx.beginPath(); ctx.moveTo(sx, sy + 4 * z); ctx.quadraticCurveTo((sx + nsx) / 2, (sy + nsy) / 2 + sag, nsx, nsy + 4 * z); ctx.stroke();
+      }
       // lamp
       const lx = wx + 75, lr = this.roofY(lx); if (lr === null) continue;
       const [lsx, lsy] = cam.toScreen(lx, lr);
       const on = ihash(Math.floor(lx / 150), 9) > 0.25 || Math.sin(this.t * 9 + lx) > 0;
       ctx.fillStyle = '#2a2e30'; ctx.fillRect(Math.round(lsx - z), Math.round(lsy), Math.max(1, Math.round(2 * z)), Math.round(5 * z));
+      ctx.fillStyle = '#3a3f42'; ctx.fillRect(Math.round(lsx - 6 * z), Math.round(lsy + 4 * z), Math.round(12 * z), Math.max(1, Math.round(2 * z)));
       ctx.fillStyle = on ? '#ffe8a0' : '#3a3a34'; ctx.fillRect(Math.round(lsx - 5 * z), Math.round(lsy + 5 * z), Math.round(10 * z), Math.round(3 * z));
       if (on) { ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(lsx, lsy + 6 * z, 2, lsx, lsy + 6 * z, 70 * z); g.addColorStop(0, 'rgba(255,224,150,0.22)'); g.addColorStop(1, 'rgba(255,224,150,0)'); ctx.fillStyle = g; ctx.fillRect(lsx - 70 * z, lsy, 140 * z, 150 * z); ctx.globalCompositeOperation = 'source-over'; }
       if (chance(0.02)) G.fx.add({ type: 'drop', x: lx + rand(-30, 30), y: lr + 8, vx: 0, vy: 20, s: 1, color: '#9ab0b8', life: 3 });
+    }
+  },
+  // The deep is not an empty black rectangle. Below the light there is marine
+  // snow drifting down forever, the far side of the canyon showing as a flat
+  // silhouette, and things that make their own light.
+  drawDeepScene(ctx, cam, day) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    const depth = cam.y;
+    if (depth < 240) return;
+    const B = Biome.mixPal(cam.x);
+    const k = clamp((depth - 240) / 700, 0, 1);
+    // --- the far side of the canyon, two layers of flat strata ----------
+    // Anchored to the seabed rather than to the camera: a distant wall does
+    // not slide up and down as you swim, it only slides sideways.
+    if (B.open || B.pressure) {
+      const bed = this.floorY(cam.x);
+      const WALLS = [
+        { f: 0.24, mix: 0.22, amp: 190, rise: 560, sc: 0.0011, seed: 61, a: 0.5 },
+        { f: 0.44, mix: 0.1, amp: 260, rise: 380, sc: 0.0007, seed: 83, a: 0.62 },
+      ];
+      for (const L of WALLS) {
+        const col = mixColor(B.water[1], B.fog, L.mix);
+        const ox = cam.x * L.f;
+        const crest = cam.toScreen(0, Math.max(160, bed - L.rise))[1];
+        ctx.globalAlpha = L.a * (0.35 + k * 0.65);
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.moveTo(-4, H + 8);
+        let minY = H;
+        for (let sx = -8; sx <= W + 8; sx += 8) {
+          const wx = ox + sx / z;
+          const h = (fbm(wx * L.sc, L.seed) * 0.85 + 0.15) * L.amp * z;
+          const yy = crest - h; if (yy < minY) minY = yy;
+          ctx.lineTo(sx, yy);
+        }
+        ctx.lineTo(W + 4, H + 8); ctx.closePath(); ctx.fill();
+        // horizontal bedding planes so the rock has grain at this distance
+        ctx.save(); ctx.clip();
+        ctx.fillStyle = shade(col, 0.72);
+        for (let yy = Math.max(0, minY); yy < H; yy += Math.max(3, Math.round(11 * z))) ctx.fillRect(0, Math.round(yy), W, Math.max(1, Math.round(1.4 * z)));
+        ctx.fillStyle = shade(col, 1.25);
+        for (let yy = Math.max(0, minY); yy < H; yy += Math.max(6, Math.round(23 * z))) ctx.fillRect(0, Math.round(yy), W, Math.max(1, Math.round(z)));
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+    }
+    // --- marine snow: three drifting layers, denser the deeper you go ----
+    const t = this.t;
+    ctx.globalAlpha = 1;
+    for (let L = 0; L < 3; L++) {
+      const f = 0.35 + L * 0.3, cell = 34 - L * 8, fall = 9 + L * 7;
+      const ox = cam.x * f, oy = cam.y * f + t * fall;
+      const sz = Math.max(1, Math.round((L === 2 ? 2 : 1) * z * 0.7));
+      ctx.fillStyle = rgba(mixColor('#dfeef0', B.water[0], 0.3), (0.1 + L * 0.07) * (0.35 + k * 0.65));
+      const i0 = Math.floor(ox / cell) - 1, i1 = Math.floor((ox + W / z) / cell) + 1;
+      const j0 = Math.floor(oy / cell) - 1, j1 = Math.floor((oy + H / z) / cell) + 1;
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const h = ihash(i * 733 + j * 91, 17 + L); if (h > 0.55) continue;
+        const wx = i * cell + ihash(i + j * 7, 23 + L) * cell;
+        const wy = j * cell + ihash(i * 3 + j, 29 + L) * cell;
+        const sx = (wx - ox) * z + Math.sin(t * 0.5 + j) * 2 * z, sy = (wy - oy) * z;
+        if (sx < -4 || sx > W + 4 || sy < -4 || sy > H + 4) continue;
+        ctx.fillRect(Math.round(sx), Math.round(sy), sz, sz);
+      }
+    }
+  },
+  // Bioluminescence rides on top of the night pass: these are the only lights
+  // down here, so nothing is allowed to dim them.
+  drawDeepGlow(ctx, cam, day) {
+    const W = G.W, H = G.H, z = cam.zoom, t = this.t;
+    const k = clamp((cam.y - 240) / 700, 0, 1);
+    if (k <= 0.45) return;
+    const B = Biome.mixPal(cam.x);
+    if (!B.open && !B.pressure) return;
+    ctx.globalCompositeOperation = 'lighter';
+    const cell = 70, ox = cam.x * 0.9, oy = cam.y * 0.9;
+    const i0 = Math.floor(ox / cell) - 1, i1 = Math.floor((ox + W / z) / cell) + 1;
+    const j0 = Math.floor(oy / cell) - 1, j1 = Math.floor((oy + H / z) / cell) + 1;
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+      const h = ihash(i * 977 + j * 131, 53); if (h > 0.5) continue;
+      const ph = h * 40 + i * 0.7 + j * 1.3;
+      const pulse = Math.max(0, Math.sin(t * (0.6 + h) + ph));
+      if (pulse < 0.12) continue;
+      const wx = i * cell + ihash(i + j * 5, 57) * cell, wy = j * cell + ihash(i * 5 + j, 59) * cell;
+      const sx = (wx - ox) * z + Math.sin(t * 0.3 + j) * 7 * z, sy = (wy - oy) * z + Math.cos(t * 0.24 + i) * 6 * z;
+      if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
+      const col = h < 0.18 ? '#6affd8' : h < 0.34 ? '#58c8ff' : '#c08cff';
+      const a0 = pulse * (k - 0.45) / 0.55;
+      ctx.globalAlpha = a0 * 0.9; ctx.fillStyle = col;
+      ctx.fillRect(Math.round(sx), Math.round(sy), Math.max(1, Math.round(1.4 * z)), Math.max(1, Math.round(1.4 * z)));
+      ctx.globalAlpha = a0 * 0.34;
+      ctx.fillRect(Math.round(sx) - Math.round(z), Math.round(sy) - Math.round(z), Math.max(3, Math.round(4 * z)), Math.max(3, Math.round(4 * z)));
+      ctx.globalAlpha = a0 * 0.1;
+      ctx.fillRect(Math.round(sx) - Math.round(3 * z), Math.round(sy) - Math.round(3 * z), Math.max(6, Math.round(9 * z)), Math.max(6, Math.round(9 * z)));
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  // Concrete dressing for the drowned system: a hard capping course on every
+  // invert, expansion joints, slime at the waterline and outfall pipes set into
+  // the back wall. Runs after the terrain so it sits on top of the soil.
+  drawTunnelFloor(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom, step = Math.max(2, Math.round(3 * z));
+    const B = Biome.mixPal(cam.x);
+    const cap = shade(B.ground[0], 1.18), capD = shade(B.ground[0], 0.62), joint = shade(B.ground[2], 0.7);
+    const slime = mixColor(B.scum, '#1a2a12', 0.35);
+    for (let sx = 0; sx <= W; sx += step) {
+      const wx = cam.toWorldX(sx), r = this.roofY(wx); if (r === null) continue;
+      const fy = this.floorY(wx), su = this.surface(wx);
+      const [, sy] = cam.toScreen(wx, fy);
+      if (sy < -20 || sy > H + 10) continue;
+      ctx.fillStyle = cap; ctx.fillRect(sx, Math.round(sy), step, Math.max(1, Math.round(1.6 * z)));
+      ctx.fillStyle = capD; ctx.fillRect(sx, Math.round(sy + 1.6 * z), step, Math.max(1, Math.round(2.4 * z)));
+      // expansion joints every 120 units, cut down into the invert
+      const cell = Math.floor(wx / 120);
+      if (Math.abs(wx - cell * 120) < 3) { ctx.fillStyle = joint; ctx.fillRect(sx, Math.round(sy), Math.max(1, Math.round(1.4 * z)), Math.round(9 * z)); }
+      // slime band where the water has stood against the concrete
+      if (fy < su + 26 && fy > su - 40) {
+        const [, wy] = cam.toScreen(wx, su);
+        ctx.globalAlpha = 0.6; ctx.fillStyle = slime;
+        ctx.fillRect(sx, Math.round(wy - 1.5 * z), step, Math.max(1, Math.round(4 * z)));
+        ctx.globalAlpha = 1;
+      }
+    }
+  },
+  // Pipe mouths punched through the back wall. The system is a network, and a
+  // network has to visibly go somewhere other than left and right.
+  drawTunnelPipes(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    const B = Biome.mixPal(cam.x);
+    const left = cam.toWorldX(-140), right = cam.toWorldX(W + 140);
+    const rim = shade(B.ground[0], 0.9), rimL = shade(B.ground[0], 1.25), bore = shade(B.ground[2], 0.34);
+    for (let wx = Math.floor(left / 260) * 260; wx < right; wx += 260) {
+      const h = ihash(Math.floor(wx / 260), 313);
+      if (h > 0.72) continue;
+      const r0 = this.roofY(wx); if (r0 === null) continue;
+      const fy = this.floorY(wx), su = this.surface(wx);
+      // set into the wall between the ceiling and the invert
+      const rad = (14 + h * 22);
+      const wy = lerp(r0 + rad + 8, fy - rad - 6, 0.25 + ihash(Math.floor(wx / 260), 317) * 0.55);
+      if (wy - rad < r0 || wy + rad > fy) continue;
+      const [sx, sy] = cam.toScreen(wx, wy);
+      Shape.oct(ctx, sx, sy, (rad + 4) * z, rim);
+      Shape.oct(ctx, sx, sy, (rad + 2) * z, rimL);
+      Shape.oct(ctx, sx, sy, rad * z, bore);
+      Shape.oct(ctx, sx, sy, rad * z * 0.72, '#04080a');
+      // brickwork ring
+      for (let a = 0; a < 8; a++) {
+        const an = a / 8 * TAU + 0.4;
+        ctx.fillStyle = a % 2 ? rim : shade(rim, 0.8);
+        ctx.fillRect(Math.round(sx + Math.cos(an) * (rad + 3) * z), Math.round(sy + Math.sin(an) * (rad + 3) * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z)));
+      }
+      // a live one still runs
+      if (h < 0.3) {
+        const fall = Math.min(fy, su) - wy;
+        if (fall > 0) {
+          ctx.globalAlpha = 0.5; ctx.fillStyle = mixColor(B.water[0], '#d8e8e0', 0.5);
+          ctx.fillRect(Math.round(sx - 2 * z), Math.round(sy), Math.max(1, Math.round(4 * z)), Math.round(fall * z));
+          ctx.globalAlpha = 0.25; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy), Math.max(1, Math.round(8 * z)), Math.round(fall * z * 0.7));
+          ctx.globalAlpha = 1;
+          if (chance(0.25)) G.fx.add({ type: 'drop', x: wx + rand(-4, 4), y: wy + 6, vx: rand(-6, 6), vy: 90, s: 1, color: '#a8c4c0', life: 1.6 });
+        }
+      } else if (chance(0.02)) G.fx.add({ type: 'drop', x: wx + rand(-6, 6), y: wy, vx: 0, vy: 30, s: 1, color: '#8aa4a8', life: 2.4 });
     }
   },
   // Aerial perspective under water. Fading toward the deep water colour keeps the
@@ -3747,6 +4263,11 @@ const World = {
     };
     // ambient current: everything under water leans the same way and breathes
     const flowAt = (wx) => Math.sin(t * 0.55 + wx * 0.008) * 3.4 + Water.velocity(wx) * 0.035 + Water.wind * 4;
+    // Biome tint for growing things. Nothing in a storm drain is the green of a
+    // sawgrass prairie; the same weed painter has to read sickly down there and
+    // lush out in the glades, so the palette is pulled toward the biome's own.
+    const BP = Biome.mixPal(cam.x), fc = BP.flora, fk = BP.floraMix || 0;
+    const fl = fc && fk > 0 ? (c) => mixColor(c, fc, fk) : (c) => c;
     const AO_W = { bush: 15, oak: 30, palm: 9, cypress: 12, mangrove: 20, fern: 9, sawgrass: 8, palmetto: 12,
       crate: 10, cooler: 9, firewood: 10, post: 4, stump: 9, log: 20, rock: 10, mushroom: 4, flower: 3, fallen: 20 };
     for (const d of this.decor) {
@@ -3763,10 +4284,10 @@ const World = {
       }
       switch (d.type) {
         case 'seagrass': if (layer !== 0) break; {
-          const fl = flowAt(d.x), dk = d.v ? '#1f4a38' : '#26543f', md = d.v ? '#3f8a6a' : '#4f9a72', lt = d.v ? '#6fc79a' : '#7fd6a6';
+          const fw = flowAt(d.x), dk = fl(d.v ? '#1f4a38' : '#26543f'), md = fl(d.v ? '#3f8a6a' : '#4f9a72'), lt = fl(d.v ? '#6fc79a' : '#7fd6a6');
           for (let b = -3; b <= 3; b++) {
             const bl = d.h * (0.66 + ihash(Math.floor(d.x) * 7 + b, 71) * 0.42);
-            const sway = (Math.sin(t * 1.1 + d.ph + b * 0.5) * 4 + fl + (d.bend || 0) * 5) * z;
+            const sway = (Math.sin(t * 1.1 + d.ph + b * 0.5) * 4 + fw + (d.bend || 0) * 5) * z;
             const bx = sx + b * 2.1 * z, ty = sy - bl * z;
             blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.55, 1.7 * z, dk, md, lt);
           }
@@ -3777,8 +4298,126 @@ const World = {
             ctx.fillStyle = '#b0aa9a'; ctx.fillRect(Math.round(sx + ox), Math.round(sy - 4 * z - oy), Math.max(1, Math.round(z)), Math.max(1, Math.round(2 * z))); }
           break; }
         case 'coral': if (layer !== 0) break; {
-          const cols = [['#c86a7a', '#e08a98'], ['#c8a050', '#e0c070'], ['#7a9ac0', '#9ab8d8']][d.v % 3];
-          for (let b = -1; b <= 1; b++) { const hh = (7 + Math.abs(b) * -2 + 6) * d.s * z; ctx.fillStyle = cols[0]; ctx.fillRect(Math.round(sx + b * 4 * d.s * z), Math.round(sy - hh), Math.max(1, Math.round(3 * d.s * z)), Math.round(hh)); ctx.fillStyle = cols[1]; ctx.fillRect(Math.round(sx + b * 4 * d.s * z), Math.round(sy - hh), Math.max(1, Math.round(z)), Math.round(hh * 0.5)); }
+          // branching stag coral. Three generations of tapering limbs, each
+          // segment a chunky pixel block with a lit edge and a pale polyp tip.
+          const CP = [['#8e3a52', '#c4566e', '#eb92a4'], ['#986a1e', '#cfa03a', '#f2d879'],
+            ['#37678e', '#5a94bc', '#93c4e2'], ['#6d3474', '#a05aa8', '#d295d6']][d.v % 4];
+          const s2 = d.s * z, seed = Math.floor(d.x), fl = flowAt(d.x) * 0.012;
+          const limb = (bx, by, ang, len, w, gen) => {
+            const steps = Math.max(2, Math.round(len / 2.4));
+            let x0 = bx, y0 = by, a = ang;
+            for (let i = 0; i < steps; i++) {
+              a += (ihash(seed + gen * 37 + i, 17) - 0.5) * 0.26 + fl;
+              const x1 = x0 + Math.sin(a) * 2.4 * s2, y1 = y0 - Math.cos(a) * 2.4 * s2;
+              const ww = Math.max(1, Math.round(w * (1 - i / steps * 0.5) * s2));
+              const top = Math.min(y0, y1), hh = Math.abs(y1 - y0) + 1.2 * s2;
+              ctx.fillStyle = CP[0]; ctx.fillRect(Math.round((x0 + x1) / 2 - ww / 2), Math.round(top), ww, Math.max(1, Math.round(hh)));
+              ctx.fillStyle = CP[1]; ctx.fillRect(Math.round((x0 + x1) / 2 - ww / 2), Math.round(top), Math.max(1, Math.round(ww * 0.45)), Math.max(1, Math.round(hh)));
+              x0 = x1; y0 = y1;
+            }
+            ctx.fillStyle = CP[2];
+            ctx.fillRect(Math.round(x0 - 0.9 * s2), Math.round(y0 - 1.4 * s2), Math.max(1, Math.round(1.9 * s2)), Math.max(1, Math.round(1.9 * s2)));
+            if (gen < 2) {
+              limb(x0, y0, ang - 0.46 - ihash(seed + gen, 23) * 0.34, len * 0.6, w * 0.72, gen + 1);
+              limb(x0, y0, ang + 0.46 + ihash(seed + gen, 29) * 0.34, len * 0.56, w * 0.72, gen + 1);
+            }
+          };
+          // rubble foot so it is rooted rather than floating on the sand
+          ctx.fillStyle = '#7e7462'; ctx.fillRect(Math.round(sx - 4 * s2), Math.round(sy - 1.5 * s2), Math.round(8 * s2), Math.max(1, Math.round(2.5 * s2)));
+          const trunks = 2 + (seed & 1);
+          for (let k = 0; k < trunks; k++) limb(sx + (k - (trunks - 1) / 2) * 4 * s2, sy, (k - (trunks - 1) / 2) * 0.34, 13 + ihash(seed + k, 43) * 7, 3.2, 0);
+          break; }
+        case 'fan': if (layer !== 0) break; {
+          // gorgonian sea fan: a stem, radiating ribs and cross-links, leaning
+          // into the current and breathing with it
+          const FP = [['#8a2f3e', '#c4515f', '#e0868f'], ['#7a4a18', '#b8842c', '#dcb35c'], ['#5a2f6a', '#8f4fa0', '#c087cf']][d.v % 3];
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          const sway = (Math.sin(t * 0.8 + d.ph) * 0.1 + flowAt(d.x) * 0.02) * d.lean;
+          const H = 22 * s2, base = 0.28 * d.lean + sway;
+          ctx.save(); ctx.translate(sx, sy); ctx.rotate(base);
+          ctx.fillStyle = FP[0]; ctx.fillRect(Math.round(-1 * s2), Math.round(-7 * s2), Math.max(1, Math.round(2.2 * s2)), Math.round(7.4 * s2));
+          const RIBS = 7;
+          for (let r0 = 0; r0 < RIBS; r0++) {
+            const a0 = (r0 / (RIBS - 1) - 0.5) * 1.5;
+            const rl = H * (0.62 + 0.38 * Math.cos(a0 * 1.1));
+            let px0 = 0, py0 = -6 * s2;
+            for (let i = 1; i <= 6; i++) {
+              const u = i / 6, bend = a0 * (0.7 + u * 0.6);
+              const px1 = Math.sin(bend) * rl * u, py1 = -6 * s2 - Math.cos(bend) * rl * u;
+              ctx.fillStyle = i > 4 ? FP[2] : FP[1];
+              ctx.fillRect(Math.round((px0 + px1) / 2 - 0.6 * s2), Math.round(Math.min(py0, py1)), Math.max(1, Math.round(1.4 * s2)), Math.max(1, Math.round(Math.abs(py1 - py0) + s2)));
+              // web between neighbouring ribs
+              if (r0 > 0 && i % 2 === 0) { ctx.fillStyle = FP[0]; ctx.globalAlpha = 0.65; ctx.fillRect(Math.round(px1 - 2.6 * s2), Math.round(py1), Math.max(1, Math.round(2.6 * s2)), Math.max(1, Math.round(s2))); ctx.globalAlpha = 1; }
+              px0 = px1; py0 = py1;
+            }
+            ctx.fillStyle = FP[2]; ctx.fillRect(Math.round(px0 - 0.6 * s2), Math.round(py0 - s2), Math.max(1, Math.round(1.6 * s2)), Math.max(1, Math.round(1.6 * s2)));
+          }
+          ctx.restore();
+          ctx.fillStyle = '#6e6a5c'; ctx.fillRect(Math.round(sx - 3 * s2), Math.round(sy - s2), Math.round(6 * s2), Math.max(1, Math.round(2 * s2)));
+          break; }
+        case 'sponge': if (layer !== 0) break; {
+          // barrel sponges: thick mottled tubes with a dark mouth on top
+          const SPP = [['#9a5a2a', '#c07a3a', '#5a3418'], ['#8a4a5a', '#b06a78', '#4a2430'], ['#6a7a3a', '#90a250', '#36401c']][d.v % 3];
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          for (let i = 0; i < d.n; i++) {
+            const ox = (ihash(i, seed) - 0.5) * 20 * s2;
+            const hh = (9 + ihash(i, seed + 7) * 13) * s2, ww = (6 + ihash(i, seed + 11) * 4) * s2;
+            const bx = sx + ox, top = sy - hh;
+            ctx.fillStyle = SPP[0]; ctx.fillRect(Math.round(bx - ww / 2), Math.round(top), Math.round(ww), Math.round(hh + s2));
+            ctx.fillStyle = SPP[1]; ctx.fillRect(Math.round(bx - ww / 2), Math.round(top), Math.max(1, Math.round(ww * 0.35)), Math.round(hh));
+            // pitted surface
+            for (let k = 0; k < 6; k++) { const px2 = bx - ww / 2 + ihash(k, seed + i * 3) * ww, py2 = top + 2 * s2 + ihash(k, seed + i * 5) * (hh - 3 * s2);
+              ctx.fillStyle = SPP[2]; ctx.fillRect(Math.round(px2), Math.round(py2), Math.max(1, Math.round(s2)), Math.max(1, Math.round(s2))); }
+            // mouth, breathing a slow exhalation
+            ctx.fillStyle = SPP[2]; ctx.fillRect(Math.round(bx - ww * 0.32), Math.round(top), Math.round(ww * 0.64), Math.max(1, Math.round(2 * s2)));
+            if (chance(0.01) && layer === 0) G.fx.add({ type: 'bubble', x: d.x + ox / z, y: d.y - hh / z, vx: 0, vy: -14, s: 0.7, seed: rand(TAU), life: 2 });
+          }
+          break; }
+        case 'kelp': if (layer !== 0) break; {
+          // a stipe that runs most of the way to the light, with blades down it
+          const dk = fl(d.v ? '#2a4418' : '#33421c'), md = fl(d.v ? '#4a6e26' : '#567a2c'), lt = fl(d.v ? '#7ea84a' : '#8cb455');
+          const fw = flowAt(d.x), top = sy - d.h * z;
+          const swayTop = (Math.sin(t * 0.62 + d.ph) * 16 + fw * 2.2 + (d.bend || 0) * 8) * z;
+          blade(sx, sy, sx + swayTop, top, sx + swayTop * 0.18, sy - d.h * z * 0.55, 2.4 * z, dk, md, lt);
+          // broad ribbon blades, alternating down the stipe, each one a tapered
+          // strap rather than a twig — a bare stalk reads as bamboo, not kelp
+          const N = Math.max(4, Math.round(d.h / 17));
+          for (let i = 1; i <= N; i++) {
+            const u = i / (N + 1), bx = sx + swayTop * u * u, by = sy - d.h * z * u;
+            const dir = i % 2 ? 1 : -1, bl = (17 + ihash(i, Math.floor(d.x)) * 15) * z * (0.6 + u * 0.6);
+            const lean = Math.sin(t * 0.9 + d.ph + i) * 3 * z;
+            const segs = 6, bh = (7 + ihash(i, 71) * 4) * z;
+            for (let q = 0; q < segs; q++) {
+              const uq = q / segs, taper = Math.sin((1 - uq) * 1.9) ;
+              const bxq = bx + dir * bl * uq + lean * uq * uq;
+              const byq = by - bl * 0.28 * uq + Math.sin(t * 1.1 + d.ph + i + uq * 2.4) * 2 * z * uq;
+              ctx.fillStyle = q < 2 ? dk : md;
+              ctx.fillRect(Math.round(bxq), Math.round(byq - bh * taper * 0.5), Math.max(1, Math.round(bl / segs + z)), Math.max(1, Math.round(bh * taper)));
+              if (q > 0) { ctx.fillStyle = lt; ctx.fillRect(Math.round(bxq), Math.round(byq - bh * taper * 0.5), Math.max(1, Math.round(bl / segs + z)), Math.max(1, Math.round(z))); }
+            }
+            // gas bladder at the base of the blade
+            ctx.fillStyle = dk; ctx.fillRect(Math.round(bx + dir * z), Math.round(by - 2 * z), Math.max(1, Math.round(2.4 * z)), Math.max(1, Math.round(3.4 * z)));
+          }
+          break; }
+        case 'tubeworm': if (layer !== 0) break; {
+          // vent worms: pale calcified tubes, red plumes that flinch back in
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          for (let i = 0; i < d.n; i++) {
+            const ox = (ihash(i, seed) - 0.5) * 26 * s2, hh = (10 + ihash(i, seed + 3) * 20) * s2;
+            const lean = Math.sin(t * 0.4 + d.ph + i) * 1.6 * s2;
+            const bx = sx + ox, top = sy - hh;
+            ctx.fillStyle = '#b8b2a4'; ctx.fillRect(Math.round(bx - 1.6 * s2), Math.round(top), Math.max(1, Math.round(3.2 * s2)), Math.round(hh + s2));
+            ctx.fillStyle = '#e0dccc'; ctx.fillRect(Math.round(bx - 1.6 * s2), Math.round(top), Math.max(1, Math.round(s2)), Math.round(hh));
+            ctx.fillStyle = '#8a8478'; for (let k = 1; k * 4 * s2 < hh; k++) ctx.fillRect(Math.round(bx - 1.6 * s2), Math.round(top + k * 4 * s2), Math.max(1, Math.round(3.2 * s2)), Math.max(1, Math.round(s2)));
+            // plume: out most of the time, snapped in on a slow cycle
+            const out = 0.35 + 0.65 * clamp(Math.sin(t * 0.5 + d.ph + i * 1.7) * 2.2, 0, 1);
+            const pl = 5 * s2 * out;
+            if (pl > 0.6) {
+              ctx.fillStyle = '#8e1c22'; ctx.fillRect(Math.round(bx - 1.8 * s2 + lean), Math.round(top - pl), Math.max(1, Math.round(3.6 * s2)), Math.max(1, Math.round(pl)));
+              ctx.fillStyle = '#d8343a'; ctx.fillRect(Math.round(bx - 1.2 * s2 + lean), Math.round(top - pl), Math.max(1, Math.round(1.4 * s2)), Math.max(1, Math.round(pl * 0.8)));
+              ctx.fillStyle = '#f06a6a'; ctx.fillRect(Math.round(bx - 2.2 * s2 + lean), Math.round(top - pl), Math.max(1, Math.round(s2)), Math.max(1, Math.round(s2)));
+            }
+          }
           break; }
         case 'trash': if (layer !== 0) break; {
           const s2 = d.s * z;
@@ -3835,10 +4474,10 @@ const World = {
           break; }
 
         case 'weed': if (layer !== 0) break; {
-          const fl = flowAt(d.x), dk = d.v ? '#1b3f24' : '#25492a', md = d.v ? '#2f6a3a' : '#3f7a44', lt = d.v ? '#5f9c58' : '#6fae62';
+          const fw = flowAt(d.x), dk = fl(d.v ? '#1b3f24' : '#25492a'), md = fl(d.v ? '#2f6a3a' : '#3f7a44'), lt = fl(d.v ? '#5f9c58' : '#6fae62');
           for (let b = -2; b <= 2; b++) {
             const bl = d.h * (0.6 + ihash(Math.floor(d.x) * 5 + b, 73) * 0.5);
-            const sway = (Math.sin(t * 1.3 + d.ph + b) * 3.4 + fl * 0.8 + (d.bend || 0) * 5) * z;
+            const sway = (Math.sin(t * 1.3 + d.ph + b) * 3.4 + fw * 0.8 + (d.bend || 0) * 5) * z;
             const bx = sx + b * 2 * z, ty = sy - bl * z;
             blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.6, 1.4 * z, dk, md, lt);
             // a few leaflets so it is not a bare stalk
@@ -3851,7 +4490,7 @@ const World = {
         case 'lily': if (layer !== 1) break; { const s = SPR.lily[d.v]; const wy = cam.toScreen(d.x, this.surface(d.x))[1]; drawSpr(ctx, s, sx, wy - 1 * z, 0, z, z, s.w / 2, s.h - 1); break; }
         case 'reed': if (layer !== 0) break; {
           const top = cam.toScreen(d.x, d.top)[1]; const sway = (Math.sin(t * 1.1 + d.ph) * 3 + (d.bend || 0) * 4) * z;
-          blade(sx, sy, sx + sway, top, sx + sway * 0.3, (sy + top) / 2, 1.8 * z, '#2a4a20', '#4f7a3a', '#7aa85a');
+          blade(sx, sy, sx + sway, top, sx + sway * 0.3, (sy + top) / 2, 1.8 * z, fl('#2a4a20'), fl('#4f7a3a'), fl('#7aa85a'));
           if (d.v) { ctx.fillStyle = '#6b4a2e'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 8 * z), Math.max(1, Math.round(2 * z)), Math.max(2, Math.round(7 * z))); }
           else { ctx.strokeStyle = '#7fae5f'; ctx.beginPath(); ctx.moveTo(sx + sway, top); ctx.lineTo(sx + sway + 4 * z, top - 6 * z); ctx.stroke(); }
           break; }
@@ -3889,7 +4528,7 @@ const World = {
           if (d.bloom) { ctx.fillStyle = '#b28ae0'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(3 * z))); ctx.fillStyle = '#e0d060'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(z))); }
           break; }
         case 'algae': if (layer !== 0) break; {
-          ctx.strokeStyle = d.v ? 'rgba(90,150,90,0.5)' : 'rgba(120,170,110,0.42)'; ctx.lineWidth = Math.max(1, 2 * z);
+          ctx.strokeStyle = rgba(fl(d.v ? '#5a965a' : '#78aa6e'), d.v ? 0.5 : 0.42); ctx.lineWidth = Math.max(1, 2 * z);
           for (let b = -1; b <= 1; b++) {
             ctx.beginPath(); ctx.moveTo(sx + b * 3 * z, sy);
             for (let k = 1; k <= 4; k++) { const kk = k / 4, yy = sy - d.h * z * kk, xx = sx + b * 3 * z + Math.sin(t * 0.8 + d.ph + kk * 3) * 7 * z * kk; ctx.lineTo(xx, yy); }
@@ -4558,15 +5197,15 @@ function gene(o) { GENES.push(o); return o; }
       ['wraith', 'WRAITH', 'APEX: +50% stamina, +60% leap, time slows when you breach, afterimages.', p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; p.st.leapMul *= 1.6; p.st.wraith = true; p.evo.phantom = true; }, L => { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }, 'Barely there: -30% max HP.', p => { p.st.hpMul *= 0.7; }, 6],
     ],
     abyssal: [
-      ['venom', 'VENOM GLANDS', 'Bites poison: 40% extra damage over 3s, and poisoned prey crawls.', p => { p.st.venom += 0.4; }, L => { L.spots = '#40f0c8'; }, 'Glands where muscle was: -15% bite.', p => { p.st.bite *= 0.85; }, 2],
+      ['venom', 'VENOM GLANDS', 'Bites poison: 40% extra damage over 3s, and poisoned prey crawls. Filth builds half as fast.', p => { p.st.venom += 0.4; p.st.toxRes *= 2; }, L => { L.spots = '#40f0c8'; }, 'Glands where muscle was: -15% bite.', p => { p.st.bite *= 0.85; }, 2],
       ['regen', 'REGENERATION', 'Regenerate 2.5% HP a second while fed.', p => { p.st.regen += 0.025; }, L => { L.gills = true; }, 'Mending costs mass: -20% growth.', p => { p.st.growth *= 0.8; }, 3],
-      ['lure', 'BIOLUMINESCENT LURE', 'A glow draws small prey to your mouth.', p => { p.st.lure = 200; p.st.magnet = Math.max(p.st.magnet, 150); }, L => { L.glow = '#40f0c8'; }, 'An ambusher waits: -20% speed.', p => { p.st.speed *= 0.8; }, 4],
+      ['lure', 'BIOLUMINESCENT LURE', 'A glow draws small prey to your mouth, and you are rated 60% deeper.', p => { p.st.lure = 200; p.st.magnet = Math.max(p.st.magnet, 150); p.st.crushDepth *= 1.6; }, L => { L.glow = '#40f0c8'; }, 'An ambusher waits: -20% speed.', p => { p.st.speed *= 0.8; }, 4],
       ['leviathan', 'LEVIATHAN', 'APEX: every 6th bite unleashes a shockwave. Toxic blood, immune to venom.', p => { p.st.leviathan = true; p.st.toxicBlood = true; p.st.venomImmune = true; p.evo.abyssal = true; }, L => { L.glow = '#40f0c8'; L.spots = '#80fff0'; L.fin = '#40f0c8'; }, 'Soft between the plates: -25% armour.', p => { p.st.armor -= 0.25; }, 6],
     ],
     colossus: [
       ['gorge', 'GORGE', 'Meals grow you 30% more.', p => { p.st.growth *= 1.3; }, L => { L.belly = mixColor(L.belly, '#f0e8c0', 0.3); }, 'Always hungry: hunger drains 30% faster.', p => { p.st.hungerRate *= 1.3; }, 2],
       ['unhinged', 'UNHINGED JAW', 'Swallow prey up to 90% of your size whole.', p => { p.st.swallow *= 1.8; p.st.hungerRestore *= 1.25; }, L => { L.stripe2 = true; }, 'A loose jaw drags: -15% speed.', p => { p.st.speed *= 0.85; }, 3],
-      ['bulk', 'DENSE BULK', '+50% max HP and prey under 60% of your size flees in terror.', p => { p.st.hpMul *= 1.5; p.st.fearAura = true; }, L => { L.paddle = shade(L.mid, 0.8); }, 'Turns like a barge: -25% acceleration, -20% turn.', p => { p.st.accel *= 0.75; p.st.turn *= 0.8; }, 4],
+      ['bulk', 'DENSE BULK', '+50% max HP, prey under 60% of your size flees in terror, and pressure works on you slower.', p => { p.st.hpMul *= 1.5; p.st.fearAura = true; p.st.crushRes *= 1.7; }, L => { L.paddle = shade(L.mid, 0.8); }, 'Turns like a barge: -25% acceleration, -20% turn.', p => { p.st.accel *= 0.75; p.st.turn *= 0.8; }, 4],
       ['titan', 'TITAN', 'APEX: +40% growth again, bites shake the swamp, and you crush what you ram.', p => { p.st.growth *= 1.4; p.st.quake = true; p.st.bullRush = true; p.st.ramMul *= 1.5; p.evo.colossus = true; }, L => { L.spikes = 2; L.horn = true; }, 'Mass is not momentum: -30% speed.', p => { p.st.speed *= 0.7; }, 6],
     ],
     savage: [
@@ -4803,19 +5442,48 @@ const Affinity = {
 // once you have reached a stretch of the swamp you can drop straight into it,
 // bigger and against a harder table. The last stage is the city.
 // ---------------------------------------------------------------------------
+// Three zones. The globe carries every release site; the zone decides which
+// face of it you are looking at, what the water does to you, and what is
+// waiting at the bottom of it.
+const ZONES = [
+  { id: 'sewer', n: 1, name: 'THE SEWER NETWORK', sub: 'A DROWNED CITY SYSTEM. NO SKY, NO WAY BACK UP.', col: '#8ab820', x0: -16600, x1: -3200 },
+  { id: 'glades', n: 2, name: 'THE EVERGLADES', sub: 'OPEN WATER, OPEN SEASON. THE MAP THEY RELEASED YOU INTO.', col: '#7fffd8', x0: -3200, x1: 19000 },
+  { id: 'ocean', n: 3, name: 'THE OPEN OCEAN', sub: 'PAST THE SEAWALL. SALT, DEPTH, AND NOTHING TO HOLD ON TO.', col: '#60a8ff', x0: 19000, x1: 99999 },
+];
+const ZONE_BY_ID = {};
+for (const z of ZONES) ZONE_BY_ID[z.id] = z;
+
 const STAGES = [
-  { id: 'outfall', lat: -0.36, lon: 0.10, name: 'THE OUTFALL', sub: 'WHERE THE PIPE SPITS YOU OUT', x: 320, size: 1.0, diff: 0, intro: true },
-  { id: 'mangrove', lat: -0.22, lon: 0.42, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
-  { id: 'camp', lat: -0.06, lon: 0.72, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
-  { id: 'cypress', lat: 0.10, lon: 0.98, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
-  { id: 'prairie', lat: 0.26, lon: 1.24, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
-  { id: 'river', lat: 0.36, lon: 1.54, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
-  { id: 'campground', lat: 0.24, lon: 1.86, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
-  { id: 'bay', lat: 0.06, lon: 2.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
-  { id: 'seawall', lat: -0.14, lon: 2.50, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+  // ---- ZONE 2: THE EVERGLADES. Where a run starts and where it is learned.
+  { id: 'outfall', zone: 'glades', lat: -0.36, lon: 0.10, name: 'THE OUTFALL', sub: 'WHERE THE PIPE SPITS YOU OUT', x: 320, size: 1.0, diff: 0, intro: true },
+  { id: 'mangrove', zone: 'glades', lat: -0.22, lon: 0.42, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
+  { id: 'camp', zone: 'glades', lat: -0.06, lon: 0.72, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
+  { id: 'cypress', zone: 'glades', lat: 0.10, lon: 0.98, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
+  { id: 'prairie', zone: 'glades', lat: 0.26, lon: 1.24, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
+  { id: 'river', zone: 'glades', lat: 0.36, lon: 1.54, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
+  { id: 'campground', zone: 'glades', lat: 0.24, lon: 1.86, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
+  { id: 'bay', zone: 'glades', lat: 0.06, lon: 2.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
+  { id: 'seawall', zone: 'glades', lat: -0.14, lon: 2.50, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+  // ---- ZONE 1: THE SEWER NETWORK. Under the city, west of the lab.
+  { id: 'undercroft', zone: 'sewer', lat: -0.30, lon: 3.34, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 1.4, diff: 0.8, need: { reach: 2800 } },
+  { id: 'shaft', zone: 'sewer', lat: -0.12, lon: 3.62, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 2.1, diff: 1.6, need: { reach: 4200 } },
+  { id: 'junction', zone: 'sewer', lat: 0.06, lon: 3.92, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 3.0, diff: 2.4, need: { reach: 6100 } },
+  { id: 'gallery', zone: 'sewer', lat: 0.24, lon: 4.20, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 4.0, diff: 3.2, need: { reach: 7600 } },
+  { id: 'sump', zone: 'sewer', lat: 0.40, lon: 4.48, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
+  // ---- ZONE 3: THE OPEN OCEAN. Past the seawall, down the wall, into the dark.
+  { id: 'shelf', zone: 'ocean', lat: -0.34, lon: 5.10, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 4.4, diff: 3.0, need: { reach: 11000 } },
+  { id: 'reef', zone: 'ocean', lat: -0.14, lon: 5.40, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 5.6, diff: 3.8, need: { reach: 15300 } },
+  { id: 'wall', zone: 'ocean', lat: 0.08, lon: 5.72, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 7.2, diff: 4.5, need: { tier: 6 } },
+  { id: 'trench', zone: 'ocean', lat: 0.30, lon: 6.04, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
+// sites in the order they appear on the globe, grouped by zone
+const STAGES_BY_ZONE = {};
+for (const z of ZONES) STAGES_BY_ZONE[z.id] = STAGES.filter(st => st.zone === z.id);
+const zoneOf = st => ZONE_BY_ID[(st && st.zone) || 'glades'] || ZONES[1];
+// which of the three worlds a stretch of map belongs to
+const zoneAt = x => { for (const z of ZONES) if (x >= z.x0 && x < z.x1) return z; return ZONES[1]; };
 
 // Prime mutation: one lineage gene, free, chosen before the run starts.
 const PRIMES = [
@@ -6200,39 +6868,6 @@ class Structure extends Entity {
       case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16 * this.ss; this.deckY = -58; break; }
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
       case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6 * this.ss; break; }
-      case 'seawall': {
-        const w2 = this.w, dmg = 1 - clamp(this.hp / 260, 0, 1);
-        const face = '#6b6d74', faceL = '#8a8c92', faceD = '#43454c', cap = '#7d8088';
-        px(-w2 / 2, -30, w2, 32, face);
-        px(-w2 / 2, -30, w2, 2, faceL);
-        px(-w2 / 2, -2, w2, 3, faceD);
-        // panel joints and staining down the face
-        for (let i = -w2 / 2 + 10; i < w2 / 2; i += 20) { px(i, -30, 1, 32, faceD); px(i + 1, -30, 1, 12, faceL); }
-        for (let i = 0; i < 8; i++) { const sxx = -w2 / 2 + ihash(i, 51) * w2; px(sxx, -26, 1, 6 + ihash(i, 52) * 16, mixColor(face, '#2a3a30', 0.4)); }
-        // cracks appear as you work on it
-        if (dmg > 0.15) for (let i = 0; i < Math.round(dmg * 12); i++) { const cx2 = -w2 / 2 + ihash(i, 61) * w2, cy2 = -28 + ihash(i, 62) * 22; px(cx2, cy2, 1, 3 + ihash(i, 63) * 7, '#2a2c30'); px(cx2 + 1, cy2 + 2, 2, 1, '#2a2c30'); }
-        if (dmg > 0.5) { px(-w2 / 2 + w2 * 0.3, -30, w2 * 0.18, 6, 'rgba(0,0,0,0.55)'); }
-        // capping stone and railing
-        px(-w2 / 2 - 2, -34, w2 + 4, 4, cap);
-        px(-w2 / 2 - 2, -34, w2 + 4, 1, faceL);
-        for (let i = -w2 / 2; i <= w2 / 2; i += 9) px(i, -44, 1, 10, '#3f444a');
-        px(-w2 / 2, -45, w2, 2, '#4a5058');
-        px(-w2 / 2, -40, w2, 1, '#4a5058');
-        // harbour lamps looking out over the water
-        for (const lp of this.lamps) {
-          px(lp.ox - 1, -66, 2, 22, '#3a4046');
-          px(lp.ox - 4, -70, 8, 4, '#2e3338');
-          if (lp.on) {
-            px(lp.ox - 3, -68, 6, 2, '#ffe6a0');
-            ctx.globalCompositeOperation = 'lighter';
-            const g2 = ctx.createRadialGradient(lp.ox, -64, 2, lp.ox, -64, 46);
-            g2.addColorStop(0, 'rgba(255,230,160,0.26)'); g2.addColorStop(1, 'rgba(255,230,160,0)');
-            ctx.fillStyle = g2; ctx.fillRect(lp.ox - 46, -66, 92, 92);
-            ctx.globalCompositeOperation = 'source-over';
-          }
-        }
-        break;
-      }
       case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8 * this.ss; break; }
       case 'console': { this.name = 'CONSOLE'; this.hp = 26; this.r = 9 * this.ss; break; }
       case 'seawall': {
@@ -6245,11 +6880,20 @@ class Structure extends Entity {
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
       case 'shop': { this.name = 'BAIT SHOP'; this.hp = 300; this.deckY = -20; this.w = 96; this.r = 60 * this.ss; this.pilings = []; for (let i = 0; i < 5; i++) this.pilings.push({ ox: -40 + i * 20, hp: 60, dead: false }); break; }
       case 'campsite': { this.name = 'CAMPSITE'; this.hp = 90; this.r = 44 * this.ss; this.tent = Math.floor(this.seed * 3); break; }
+      case 'wreck': {
+        // a hull on the bottom: landmark, shelter and something to smash open
+        this.name = ['TRAWLER WRECK', 'FREIGHTER WRECK', 'SAILBOAT WRECK'][Math.floor(this.seed * 3)];
+        this.v = Math.floor(this.seed * 3); this.len = 70 + Math.round(this.seed * 90);
+        this.hp = 420 + this.len * 2; this.armor = 26; this.r = this.len * 0.6;
+        this.tilt = (ihash(Math.round(x), 77) - 0.5) * 0.62;
+        this.holed = false; this.ss = 1; this.siltT = 0;
+        break;
+      }
     }
     this.maxHp = this.hp;
     this.y = kind === 'crabtrap' ? World.surface(x) : kind === 'buoy' ? World.surface(x) : World.floorY(x);
     if (kind === 'dock' || kind === 'stilthouse' || kind === 'tower' || kind === 'campfire' || kind === 'shop' || kind === 'campsite' || kind === 'tank') this.y = World.floorY(x);
-    if (kind === 'grate') this.y = World.floorY(x);
+    if (kind === 'grate' || kind === 'wreck') this.y = World.floorY(x);
   }
   addOccupant(type, ox, oy, pose) { const sp = SPECIES[type] || SPECIES.tourist; this.occupants.push({ type, ox, oy, alive: true, t: rand(10), flash: 0, rig: rigOf(sp, randi(0, 7)), h: gsOf(sp), pose: pose || 'stand' }); }
   get alivePeople() { return this.occupants.filter(o => o.alive); }
@@ -6316,7 +6960,7 @@ class Structure extends Entity {
   collapse(P) {
     if (this.collapsed) return; this.collapsed = true; this.collapseT = 0; this.threat = 0;
     G.fx.splinters(this.x, this.y - 10, 40, 190); G.fx.splash(this.x, 2.2, 0); G.shake(14); SFX.splinter(this.pan); SFX.thud(this.pan); G.slowmo(0.4, 0.5);
-    G.fx.text(this.x, this.y - 40, this.kind === 'stilthouse' ? 'FISH CAMP DESTROYED!' : 'DOCK DESTROYED!', { color: '#ffd060', scale: 2, life: 1.8 });
+    G.fx.text(this.x, this.y - 40, (this.name || 'STRUCTURE') + ' DESTROYED!', { color: '#ffd060', scale: 2, life: 1.8 });
     for (const o of this.alivePeople) { const [px, py] = this.occPos(o); const h = new Human(px, py + 4, o.type); h.vx = rand(-70, 70); h.vy = -rand(30, 90); G.add(h); o.alive = false; }
     G.addScore(1200); Meta.event('structure');
     if (P) { G.stats.structures = (G.stats.structures || 0) + 1; Missions.onWreck(); }
@@ -6327,6 +6971,13 @@ class Structure extends Entity {
     this.lightOn = night > 0.45;
     if (this.collapsed) { this.collapseT += dt; if (this.collapseT > 8) this.remove = true; if (chance(dt * 2)) G.fx.bubbles(this.x + rand(-20, 20), World.surface(this.x) + 6, 1, 4); return; }
     if (this.kind === 'crabtrap') { this.y = World.surface(this.x); }
+    if (this.kind === 'wreck') {
+      // a wreck breathes: silt lifting off the plates, bubbles out of the hold
+      this.siltT -= dt;
+      if (this.siltT <= 0) { this.siltT = rand(0.6, 2.2); G.fx.add({ type: 'bubble', x: this.x + rand(-8, 8), y: this.y - 16, vx: rand(-4, 4), vy: -22, s: 0.8, seed: rand(TAU), life: 2.6 }); }
+      if (chance(dt * 0.6)) G.fx.silt(this.x + rand(-this.len / 2, this.len / 2), this.y - 2, 2, 14);
+      if (!this.holed && this.hp < this.maxHp * 0.55) { this.holed = true; G.fx.silt(this.x, this.y - 10, 16, 70); SFX.splinter(this.pan); G.shake(5); G.fx.text(this.x, this.y - 34, 'HULL BREACHED', { color: '#ffd060', scale: 2, life: 1.6 }); }
+    }
     if (this.kind === 'buoy') { this.y = World.surface(this.x) - 4; }
     if ((this.kind === 'campfire' || this.kind === 'campsite') && chance(dt * 22)) G.fx.add({ type: 'smoke', x: this.x + rand(-2, 2) * this.ss, y: this.y - 6 * this.ss, vx: rand(-6, 6), vy: -rand(14, 28), s: rand(1.5, 3), color: '#6a6a6a', life: rand(0.8, 1.8), t: 0, maxLife: 1.4 });
     if ((this.kind === 'campfire' || this.kind === 'campsite') && this.lightOn) G.fx.glow(this.x + (this.kind === 'campsite' ? 41 * this.ss : 0), this.y - 4 * this.ss, (14 + Math.sin(this.t * 9) * 3) * this.ss, '#ff8020', 0.12);
@@ -6560,6 +7211,59 @@ class Structure extends Entity {
         if (f > 0.2) { ctx.strokeStyle = '#c8c8c0'; ctx.lineWidth = 1; for (let k = 0; k < f * 8; k++) { const a = ihash(k, 7) * TAU; ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(Math.cos(a) * 20 * f, -40 + Math.sin(a) * 26 * f); ctx.stroke(); } }
         break;
       }
+      case 'wreck': {
+        const L = this.len, hull = this.collapsed || this.holed ? 1 : 0;
+        const dmg = clamp(1 - this.hp / this.maxHp, 0, 1);
+        const HULL = [['#3d4a52', '#55666f', '#252e34'], ['#4a3f36', '#665a4c', '#2c2620'], ['#48504a', '#636b62', '#2a2e2b']][this.v % 3];
+        const rust = '#7a4620', crust = '#3f6a5e', crustL = '#5a9184';
+        ctx.rotate(this.tilt);
+        // keel and hull: a tapered box with a raked bow
+        px(-L / 2, -20, L, 20, HULL[0]);
+        px(-L / 2, -20, L, 2, HULL[1]);
+        px(-L / 2, -2, L, 3, HULL[2]);
+        for (let i = -L / 2; i < L / 2; i += 7) px(i, -19, 1, 18, HULL[2]);          // plate seams
+        // bow rake and stern transom
+        ctx.fillStyle = HULL[0];
+        ctx.beginPath(); ctx.moveTo(L / 2, -20); ctx.lineTo(L / 2 + 16, -10); ctx.lineTo(L / 2, 1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = HULL[1]; ctx.fillRect(Math.round(L / 2), -20, 2, 4);
+        px(-L / 2 - 5, -18, 5, 17, HULL[2]);
+        // rust runs and encrusting growth along the top edge
+        for (let i = 0; i < 14; i++) { const rx2 = -L / 2 + ihash(i, 31) * L; px(rx2, -19, 1, 3 + ihash(i, 32) * 11, rust); }
+        for (let i = 0; i < 22; i++) { const cx2 = -L / 2 + ihash(i, 41) * L, ch = 2 + ihash(i, 42) * 3; px(cx2, -20 - ch, 2, ch, ihash(i, 43) > 0.5 ? crust : crustL); }
+        // the hole: ribs and black hold, wider once you have worked on it
+        const holeW = 12 + dmg * 26;
+        px(-holeW / 2, -18, holeW, 17, '#050a0c');
+        for (let i = 0; i <= 4; i++) px(-holeW / 2 + i * holeW / 4, -18, 1, 17, HULL[2]);
+        for (let i = 0; i < 5; i++) { const bx2 = -holeW / 2 - 3 + ihash(i, 51) * (holeW + 6); px(bx2, -18, 1, 4 + ihash(i, 52) * 5, HULL[1]); }
+        // portholes, a couple still holding a pocket of light
+        for (let i = 0; i < 4; i++) {
+          const ox = -L / 2 + 10 + i * (L - 20) / 3;
+          if (Math.abs(ox) < holeW / 2 + 3) continue;
+          px(ox - 2, -14, 4, 4, '#141c1e'); px(ox - 2, -14, 4, 1, HULL[1]);
+          if (i % 2 === 0) px(ox - 1, -13, 2, 2, 'rgba(120,220,200,0.5)');
+        }
+        // superstructure, or what is left of it
+        if (this.v !== 2) {
+          const sw = 26, sh = 16;
+          px(-sw / 2 - 4, -20 - sh, sw, sh, HULL[1]);
+          px(-sw / 2 - 4, -20 - sh, sw, 1, mixColor(HULL[1], '#ffffff', 0.25));
+          for (let i = 0; i < 3; i++) px(-sw / 2 - 1 + i * 8, -18 - sh, 5, 5, '#0b1416');
+          px(-sw / 2 + 6, -20 - sh - 5, 3, 5, rust);
+        }
+        // mast / boom, leaning, with a rag of net still on it
+        const mh = this.v === 2 ? 54 : 34, lean = 0.4 + this.tilt * 0.4;
+        ctx.save(); ctx.translate(L * 0.12, -20); ctx.rotate(lean);
+        px(-1, -mh, 2, mh, HULL[2]); px(-1, -mh, 1, mh, rust);
+        px(-9, -mh + 6, 18, 1, HULL[2]);
+        ctx.globalAlpha = 0.45; ctx.fillStyle = '#9aa8a0';
+        for (let i = -8; i < 8; i += 2) for (let j = 0; j < 10; j += 2) if (((i + j) & 3) !== 3) ctx.fillRect(i, -mh + 7 + j, 1, 1);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        // silt skirt where the hull has settled into the bottom
+        ctx.globalAlpha = 0.55; px(-L / 2 - 8, -3, L + 26, 5, '#5f5a4c'); ctx.globalAlpha = 1;
+        if (hull) { ctx.globalAlpha = 0.3; px(-L / 2, -20, L, 20, '#000000'); ctx.globalAlpha = 1; }
+        break;
+      }
       case 'campfire': {
         ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-7, -2, 14, 3);
         ctx.fillStyle = '#4a3524'; ctx.fillRect(-6, -5, 5, 4); ctx.fillRect(1, -5, 5, 4);
@@ -6595,6 +7299,7 @@ function trySpawnStructure(x, rng, difficulty) {
     if (k === 'shop') return land && (deepAt(120) || deepAt(-120));
     if (k === 'stilthouse') return open && fy < 320;
     if (k === 'crabtrap' || k === 'buoy') return open;
+    if (k === 'wreck') return fy > 150 && World.floorY(x - 90) > 110 && World.floorY(x + 90) > 110;
     return land;
   });
   if (!table.length) return false;
@@ -6632,6 +7337,7 @@ function trySpawnStructure(x, rng, difficulty) {
     case 'boatramp': G.add(new Structure(x, 'boatramp')); return true;
     case 'crabtrap': G.add(new Structure(x, 'crabtrap')); return true;
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;
+    case 'wreck': G.add(new Structure(x, 'wreck')); return true;
     case 'seawall': { const st = new Structure(x, 'seawall'); G.add(st); return true; }
     case 'sign': case 'pipe': G.add(new Structure(x, 'sign')); return true;
   }
@@ -6666,6 +7372,26 @@ const ARTIFACTS = [
     boon: '+15% DEATH ROLL DAMAGE', col: '#cfc0a8', glyph: 'tooth', apply: P => { P.st.rollDmg *= 1.15; } },
   { id: 'core', stage: 'seawall', name: 'CONTAINMENT CORE', line: 'THE THING THEY GREW YOU AROUND. IT STILL HUMS.',
     boon: '+50% STAMINA', col: '#40f0c8', glyph: 'core', apply: P => { P.st.dashCharges += 1; } },
+  // ---- ZONE 1: the sewer network ----
+  { id: 'lamp', stage: 'undercroft', name: "THE DRIFTER'S LAMP", line: 'HE CARRIED IT FOR NINE YEARS DOWN HERE. IT OUTLASTED HIM.',
+    boon: 'YOU SEE IN THE DARK', col: '#ffbe50', glyph: 'lamp2', apply: P => { P.st.nightEyes = true; } },
+  { id: 'bolt', stage: 'shaft', name: 'SHAFT ANCHOR BOLT', line: 'IT HELD A HUNDRED TONNES OF CITY UP. NOW IT HOLDS YOU TOGETHER.',
+    boon: '+15% ARMOUR', col: '#9aa2a8', glyph: 'bolt', apply: P => { P.st.armor += 0.15; } },
+  { id: 'valve', stage: 'junction', name: 'JUNCTION 9 VALVE WHEEL', line: 'TURNED ONCE, IN 1974, AND NEVER AGAIN.',
+    boon: 'FILTH BUILDS HALF AS FAST', col: '#b4c840', glyph: 'valve', apply: P => { P.st.toxRes *= 2; } },
+  { id: 'rebar', stage: 'gallery', name: 'A LENGTH OF REBAR', line: 'PULLED OUT OF THE CROWN OF THE TRUNK MAIN, STILL BENT WHERE IT TORE.',
+    boon: 'BITES PIERCE ARMOUR', col: '#a86a3a', glyph: 'rebar', apply: P => { P.st.pierce = true; } },
+  { id: 'crown', stage: 'sump', name: 'THE SLUDGE CROWN', line: 'A RING OF HARDENED FILTH, GROWN AROUND SOMETHING THAT WORE IT.',
+    boon: 'TOXIC BLOOD, IMMUNE TO VENOM', col: '#8ba82a', glyph: 'crown', apply: P => { P.st.toxicBlood = true; P.st.venomImmune = true; } },
+  // ---- ZONE 3: the open ocean ----
+  { id: 'net', stage: 'shelf', name: 'A TORN TRAWL NET', line: 'IT TOOK EVERYTHING ON THIS SHELF FOR THIRTY YEARS. YOU TOOK IT.',
+    boon: '+25% LATCH DAMAGE', col: '#cfd4c0', glyph: 'net', apply: P => { P.st.latchMul *= 1.25; } },
+  { id: 'shell', stage: 'reef', name: 'NAUTILUS SHELL', line: 'A CHAMBERED SPIRAL, EMPTY. THE DESIGN IS 500 MILLION YEARS OLD.',
+    boon: '+12% MAX HEALTH', col: '#e8d6b4', glyph: 'shell', apply: P => { P.st.hpMul *= 1.12; } },
+  { id: 'plate', stage: 'wall', name: 'SUBMERSIBLE VIEWPORT', line: 'SIX INCHES OF ACRYLIC. WHATEVER LOOKED THROUGH IT DID NOT COME BACK.',
+    boon: 'RATED 60% DEEPER', col: '#8cd8ff', glyph: 'plate', apply: P => { P.st.crushDepth *= 1.6; } },
+  { id: 'esca', stage: 'trench', name: 'THE ESCA', line: 'STILL LIT. WHATEVER GREW IT DID NOT NEED THE REST OF ITSELF.',
+    boon: 'PREY COMES TO YOU IN THE DARK', col: '#7affda', glyph: 'esca', apply: P => { P.st.lure = 220; P.st.magnet = Math.max(P.st.magnet, 160); } },
 ];
 const ARTIFACT_BY_ID = {};
 for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
@@ -6681,6 +7407,74 @@ const MISSIONS = {
   campground: { title: 'HOLIDAY OVER', line: 'TAKE 10 PEOPLE', kind: 'human', target: 10 },
   bay:        { title: 'SALT AND TEETH', line: 'KILL 4 SHARKS', kind: 'shark', target: 4 },
   seawall:    { title: 'KAIJU PROTOCOL', line: 'WRECK 8 BOATS OR BUILDS', kind: 'wreck', target: 8 },
+  // ---- ZONE 1 ----
+  undercroft: { title: 'CLEAR THE UNDERCROFT', line: 'TAKE 6 PEOPLE', kind: 'human', target: 6 },
+  shaft:      { title: 'GO DOWN THE SHAFT', line: 'DIVE TO', kind: 'depth', target: 600, unit: 'M' },
+  junction:   { title: 'OPEN JUNCTION 9', line: 'KILL A BOSS', kind: 'boss', target: 1 },
+  gallery:    { title: 'RUN THE TRUNK MAIN', line: 'TRAVEL', kind: 'travel', target: 3000, unit: 'M' },
+  sump:       { title: 'THE END OF THE LINE', line: 'KILL 6 PREDATORS', kind: 'threat', target: 6 },
+  // ---- ZONE 3 ----
+  shelf:      { title: 'GRAZE THE MEADOW', line: 'TAKE 18 FISH', kind: 'fish', target: 18 },
+  reef:       { title: 'STRIP THE REEF', line: 'TAKE 24 FISH', kind: 'fish', target: 24 },
+  wall:       { title: 'OVER THE EDGE', line: 'KILL 4 SHARKS', kind: 'shark', target: 4 },
+  trench:     { title: 'PUT OUT THE LIGHT', line: 'KILL A BOSS', kind: 'boss', target: 1 },
+};
+
+// ---------------------------------------------------------------------------
+// The story is told on the radio. Every site carries four transmissions, fired
+// at the beats of its standing order: arrival, halfway, order complete, relic
+// in your teeth. Nobody is talking to you. You are what they are talking about.
+// ---------------------------------------------------------------------------
+const STORY = {
+  outfall: ['SUBJECT 11 IS OUT OF CONTAINMENT AND IN THE STORM SYSTEM.', 'IT IS TRACKING EAST. IT IS FOLLOWING THE WATER.',
+    'IT MADE OPEN AIR. LOG THE TIME.', 'IT KEPT ITS TAG. THAT IS NOT INSTINCT.'],
+  mangrove: ['THE ROOT LINE IS SHALLOW. IT WILL HAVE TO SURFACE TO CROSS.', 'IT IS NOT CROSSING. IT IS FEEDING.',
+    'SIXTY POUNDS OF SNOOK IN ELEVEN MINUTES.', 'THAT RING CAME OFF A DIVER WE NEVER FOUND.'],
+  camp: ['THERE ARE PEOPLE AT THAT CAMP. ADVISE THEM.', 'NOBODY IS ANSWERING AT THE CAMP.',
+    'THE CAMP IS IN THE WATER.', 'JOE BUILT THAT PLACE WITH HIS HANDS. YOU HAVE HIS HEAD.'],
+  cypress: ['TANNIC WATER. WE LOSE THE TRANSPONDER UNDER THE KNEES.', 'SOMETHING ELSE IS HUNTING IN THERE WITH IT.',
+    'WHATEVER WAS HUNTING IT IS NOT ANY MORE.', 'THE KNEE GREW AROUND A SURVEY STAKE. NOBODY SURVEYED THAT FAR IN.'],
+  prairie: ['SHEET FLOW. NO COVER FOR MILES. IT WILL TURN BACK.', 'IT IS NOT TURNING BACK.',
+    'IT CROSSED THE OPEN IN DAYLIGHT.', 'THAT BLADE WILL OPEN A MAN TO THE BONE. IT IS A LEAF.'],
+  river: ['THE CHANNEL IS DREDGED TO SIXTY FEET. IT CANNOT HOLD THE BOTTOM.', 'IT IS HOLDING THE BOTTOM.',
+    'THE CHANNEL IS ITS NOW.', 'WE PUT THAT PROP THROUGH IT IN MARCH. IT KEPT THE PROP.'],
+  campground: ['EVACUATE PARADISE. ALL LOOPS, ALL SITES.', 'THE EVACUATION IS NOT GOING WELL.',
+    'PARADISE IS CLOSED.', 'THE LANTERN WAS STILL BURNING WHEN YOU TOOK IT.'],
+  bay: ['OPEN SALT. IT SHOULD NOT TOLERATE THIS SALINITY.', 'SALINITY IS NOT SLOWING IT DOWN.',
+    'THE BULL SHARKS HAVE LEFT THE BAY.', 'NOTHING THAT SIZE HAS SWUM HERE IN SIX MILLION YEARS. IT HAS ITS TOOTH.'],
+  seawall: ['IT IS AT THE HARBOUR WALL. THE CITY IS BEHIND THE HARBOUR WALL.', 'IT IS TAKING THE WALL APART.',
+    'THE WALL IS GONE. GET EVERYBODY OUT.', 'THAT CORE IS WHAT WE BUILT IT AROUND. IT HAS COME BACK FOR IT.'],
+  // ---- ZONE 1 ----
+  undercroft: ['IT WENT WEST. WEST IS THE OLD SYSTEM. THERE IS NOTHING WEST.', 'THERE ARE PEOPLE LIVING IN THE UNDERCROFT. THERE SHOULD NOT BE.',
+    'THE UNDERCROFT IS QUIET NOW.', 'NINE YEARS OF LAMP OIL. HE KNEW SOMETHING WAS DOWN THERE WITH HIM.'],
+  shaft: ['SHAFT 4 DROPS SIX HUNDRED FEET INTO THE OLD RELIEF SYSTEM.', 'IT IS GOING DOWN THE SHAFT. VOLUNTARILY.',
+    'BOTTOM OF THE SHAFT. NO TELEMETRY. NO LIGHT.', 'THAT BOLT HELD THE CITY UP. IT PULLED IT OUT LIKE A TOOTH.'],
+  junction: ['NINE MAINS MEET AT JUNCTION 9. THE VAULT WAS SEALED IN 1974.', 'THE SEAL ON THE VAULT IS NOT HOLDING.',
+    'WHATEVER WE SEALED IN THERE IS DEAD. SO IS THE SEAL.', 'THEY TURNED THAT WHEEL ONCE AND THEN WELDED THE DOOR.'],
+  gallery: ['THE TRUNK MAIN RUNS ELEVEN MILES UNDER THE CITY.', 'IT IS HALFWAY UP THE MAIN AND IT HAS NOT SURFACED.',
+    'IT RAN THE WHOLE MAIN. IT KNOWS THE SYSTEM BETTER THAN WE DO.', 'THE CROWN OF THE MAIN IS COMING DOWN. IT TOOK A PIECE AS A SOUVENIR.'],
+  sump: ['THE SUMP IS THE END OF THE SYSTEM. EVERYTHING SETTLES THERE.', 'THERE IS SOMETHING IN THE SUMP THAT WE DID NOT PUT THERE.',
+    'THE SUMP IS CLEAR. GOD HELP US, THE SUMP IS CLEAR.', 'IT WAS WEARING THAT. SOMETHING DOWN HERE WAS WEARING A CROWN.'],
+  // ---- ZONE 3 ----
+  shelf: ['PAST THE WALL THE BOTTOM SHELVES OUT. TWENTY MILES OF SEAGRASS.', 'THE SHELF IS EMPTYING AHEAD OF IT.',
+    'NOTHING LEFT ON THE SHELF BUT SAND.', 'THIRTY YEARS OF THAT NET DRAGGING THIS BOTTOM. IT LASTED ONE AFTERNOON.'],
+  reef: ['THE REEF IS A PROTECTED SITE. IT IS ALSO A LARDER.', 'THE REEF FISH ARE STACKING UP AGAINST THE WALL.',
+    'THE REEF IS STRIPPED.', 'FIVE HUNDRED MILLION YEARS OF DESIGN, AND IT FITS IN YOUR MOUTH.'],
+  wall: ['THE WALL DROPS TWELVE HUNDRED FEET. BEYOND IT WE HAVE NO CHARTS.', 'IT IS HUNTING ALONG THE FACE OF THE WALL.',
+    'THE PELAGICS HAVE LEFT THE WALL.', 'THAT VIEWPORT CAME OFF ALVIN-CLASS. WE NEVER RECOVERED THE HULL.'],
+  trench: ['TRENCH FLOOR. NINETEEN HUNDRED FEET. NOTHING SHOULD HOLD TOGETHER DOWN THERE.', 'IT IS HOLDING TOGETHER DOWN THERE.',
+    'THE LIGHT IN THE TRENCH HAS GONE OUT.', 'IT IS STILL GLOWING IN ITS TEETH. THE PROJECT IS OVER.'],
+};
+const Story = {
+  begin(stage) { G.story = { id: stage && stage.id, said: [0, 0, 0, 0] }; this.say(0); },
+  say(i) {
+    const st = G.story; if (!st) return;
+    const lines = STORY[st.id]; if (!lines || !lines[i] || st.said[i]) return;
+    st.said[i] = 1;
+    G.dispatch = { text: lines[i], t: 0, life: 5.5 + lines[i].length * 0.03 };
+    SFX.ui && SFX.ui();
+  },
+  tick(dt) { const d = G.dispatch; if (!d) return; d.t += dt; if (d.t > d.life) G.dispatch = null; },
 };
 
 const Missions = {
@@ -6692,14 +7486,15 @@ const Missions = {
   },
   start(stage) {
     const def = stage && MISSIONS[stage.id];
-    if (!def) { G.mission = null; return; }
+    if (!def) { G.mission = null; G.story = null; G.dispatch = null; return; }
     const art = ARTIFACTS.find(a => a.stage === stage.id);
     // a site you have already stripped still plays, it just has nothing left on it
     const x0 = G.player.x;
     // a "reach" order is a place, not a distance: the span depends on where the
     // run actually starts, which for the outfall is back in the tank
     const target = def.atX !== undefined ? Math.max(60, Math.round(def.atX - x0)) : def.target;
-    G.mission = { id: stage.id, def, art, target, n: 0, done: this.has(art && art.id), claimed: this.has(art && art.id), relic: null, x0, flashT: 0 };
+    G.mission = { id: stage.id, def, art, target, n: 0, done: this.has(art && art.id), claimed: this.has(art && art.id), relic: null, x0, flashT: 0, halfSaid: false };
+    Story.begin(stage);
   },
   bump(kind, n = 1) {
     const m = G.mission; if (!m || m.done || m.def.kind !== kind) return;
@@ -6719,16 +7514,20 @@ const Missions = {
   },
   onWreck() { this.bump('wreck'); if (G.player && !G.player.dead) Trials.bump(G.player, 'wrecks'); },
   tick(dt) {
+    Story.tick(dt);
     const m = G.mission; if (!m) return;
     if (m.flashT > 0) m.flashT -= dt;
     if (m.done) return;
     const P = G.player;
     if (m.def.kind === 'reach') { m.n = clamp(P.x - m.x0, 0, m.target); if (m.n >= m.target) this.complete(); }
     if (m.def.kind === 'travel') { m.n = Math.max(m.n, clamp(Math.abs(P.x - m.x0), 0, m.target)); if (m.n >= m.target) this.complete(); }
+    if (m.def.kind === 'depth') { m.n = Math.max(m.n, clamp(P.y - World.surface(P.x), 0, m.target)); if (m.n >= m.target) this.complete(); }
+    if (!m.halfSaid && m.n >= m.target * 0.5) { m.halfSaid = true; Story.say(1); }
   },
   complete() {
     const m = G.mission; if (!m || m.done) return;
     m.done = true; m.n = m.target;
+    Story.say(2);
     G.addScore(4000);
     if (!m.art || this.has(m.art.id)) {
       G.banner = { text: 'ORDER COMPLETE', sub: m.def.title, t: 3.5, max: 3.5, color: '#ffd060' };
@@ -6736,9 +7535,11 @@ const Missions = {
     }
     // drop the relic in reachable water ahead of you, with a beacon on it
     const P = G.player, side = P.facing || 1;
+    // a relic dropped in the sewer has to be allowed to land in the sewer
+    const roofOk = World.isIndoor(P.x);
     let rx = null;
     for (const d of [220, 340, 460, 160, 620]) {
-      const x = World.findX(P.x + side * d, xx => World.floorY(xx) > 34 && !World.isIndoor(xx), 400, 20);
+      const x = World.findX(P.x + side * d, xx => World.floorY(xx) > 34 && (roofOk || !World.isIndoor(xx)), 400, 20);
       if (x !== null) { rx = x; break; }
     }
     if (rx === null) rx = P.x + side * 200;
@@ -6757,6 +7558,7 @@ const Missions = {
     const P = G.player;
     P.genePoints += 3; P.newPoints += 3;
     art.apply(P);
+    Story.say(3);
     G.addScore(6000);
     G.banner = { text: art.name, sub: art.boon, t: 5, max: 5, color: art.col };
     G.fx.text(P.x, P.y - 34 * P.vis, 'RELIC CLAIMED', { color: art.col, scale: 3, life: 2 });
@@ -6820,6 +7622,15 @@ function drawRelicGlyph(ctx, art, x, y, spin = 0, s = 1) {
     case 'prop': w(-6 + tilt, -1, 12, 2, c); w(-1 + tilt, -6, 2, 12, c); w(-1 + tilt, -1, 2, 2, l); w(4 + tilt, -1, 2, 2, d); w(-1 + tilt, 4, 2, 2, d); break;
     case 'lantern': w(-3 + tilt, -6, 6, 2, d); w(-4 + tilt, -4, 8, 8, c); w(-2 + tilt, -2, 4, 4, '#fff0a0'); w(-4 + tilt, 4, 8, 2, d); w(-1 + tilt, -8, 2, 2, d); break;
     case 'tooth': w(-4 + tilt, -6, 8, 4, c); w(-4 + tilt, -6, 8, 1, l); w(-3 + tilt, -2, 6, 3, c); w(-2 + tilt, 1, 4, 3, c); w(-1 + tilt, 4, 2, 3, c); w(2 + tilt, -2, 1, 3, d); break;
+    case 'lamp2': w(-1 + tilt, -8, 2, 2, d); w(-4 + tilt, -6, 8, 2, d); w(-3 + tilt, -4, 6, 7, c); w(-2 + tilt, -3, 4, 5, '#fff0b0'); w(-1 + tilt, -2, 2, 3, '#ffffff'); w(-4 + tilt, 3, 8, 2, d); break;
+    case 'bolt': w(-3 + tilt, -7, 6, 3, l); w(-2 + tilt, -4, 4, 10, c); w(-2 + tilt, -4, 1, 10, d); for (let i = -2; i < 5; i += 2) w(-2 + tilt, i, 4, 1, d); break;
+    case 'valve': w(-6 + tilt, -1, 12, 2, c); w(-1 + tilt, -6, 2, 12, c); w(-5 + tilt, -5, 10, 2, c); w(-5 + tilt, 3, 10, 2, c); w(-2 + tilt, -2, 4, 4, d); w(-1 + tilt, -1, 2, 2, l); break;
+    case 'rebar': w(-1 + tilt, -8, 2, 12, c); w(-1 + tilt, -8, 1, 12, l); w(0 + tilt, 4, 4, 2, c); for (let i = -7; i < 4; i += 3) w(-2 + tilt, i, 4, 1, d); break;
+    case 'crown': w(-6 + tilt, -1, 12, 5, c); w(-6 + tilt, -1, 12, 1, l); w(-6 + tilt, -5, 2, 4, c); w(-1 + tilt, -7, 2, 6, c); w(4 + tilt, -5, 2, 4, c); w(-1 + tilt, -8, 2, 2, l); w(-5 + tilt, 1, 1, 1, d); w(3 + tilt, 1, 1, 1, d); break;
+    case 'net': for (let i = -6; i <= 6; i += 3) w(i + tilt, -6, 1, 12, c); for (let j = -6; j <= 5; j += 3) w(-6 + tilt, j, 13, 1, c); w(-6 + tilt, -6, 13, 1, l); w(2 + tilt, 0, 4, 4, d); break;
+    case 'shell': w(-2 + tilt, -6, 5, 2, c); w(-5 + tilt, -4, 9, 2, c); w(-6 + tilt, -2, 11, 3, c); w(-5 + tilt, 1, 9, 2, c); w(-3 + tilt, 3, 6, 2, c); w(-2 + tilt, -4, 3, 1, l); w(-1 + tilt, -1, 3, 1, d); break;
+    case 'plate': w(-6 + tilt, -5, 12, 10, d); w(-5 + tilt, -4, 10, 8, c); w(-4 + tilt, -3, 7, 5, l); w(-4 + tilt, -3, 3, 2, '#ffffff'); break;
+    case 'esca': w(-1 + tilt, 1, 2, 5, d); w(-2 + tilt, -1, 4, 3, d); w(-3 + tilt, -6, 6, 5, c); w(-2 + tilt, -5, 4, 3, l); w(-1 + tilt, -8, 2, 2, l); break;
     default: w(-4 + tilt, -4, 8, 8, d); w(-3 + tilt, -3, 6, 6, c); w(-2 + tilt, -2, 4, 4, l); w(-1 + tilt, -6, 2, 2, c); w(-1 + tilt, 4, 2, 2, c); break;
   }
 }
@@ -6863,6 +7674,11 @@ const Boss = {
     if (want > e.bossPhase && e.bossPhase < e.bossMax) this.breakPhase(e, want);
     // the last sliver of health is not a health bar, it is an opening
     if (!e.staggered && !e.finisherDone && frac <= 0.13) this.stagger(e);
+    // a boss that makes its own light carries it everywhere: lure, wake, glow
+    if (e.bossGlow) {
+      G.fx.glow(e.x + Math.cos(G.t * 1.4) * 10 * e.size, e.y - 6 * e.size, 6 + Math.sin(G.t * 3) * 2, e.bossGlow, 0.5);
+      if (chance(dt * 8)) G.fx.glow(e.x + rand(-24, 24) * e.size, e.y + rand(-14, 14) * e.size, rand(1.5, 3.5), e.bossGlow, rand(0.3, 0.7));
+    }
     if (e.staggered) {
       e.staggerT -= dt;
       e.stun = Math.max(e.stun, 0.05);
@@ -7048,6 +7864,9 @@ class Player {
       swallow: 1, magnet: 0, autoEat: false, reflect: 0, barb: 0, lunge: 0, landSpeed: 1, hop: 1, landRegen: 0, scavenge: 0,
       hullMul: 1, ramMul: 1, turn: 1, bloodScent: false, woundMul: 1, nightEyes: false, airGrab: false, noEscape: false,
       quake: false, manEater: false, gibLife: 1, shockDmg: 1,
+      // environment tolerance: how fast filth and pressure accumulate, and how
+      // deep you can go before the water starts squeezing
+      toxRes: 1, crushRes: 1, crushDepth: 560,
     };
     this.traits = [];
     this.lastMax = this.maxHp; this.hp = this.maxHp; this.hunger = 100;
@@ -7061,6 +7880,7 @@ class Player {
     this.spliceGlow = 0; this.spliceCol = '#40f0c8';
     this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
+    this.toxin = 0; this.crush = 0; this.hazT = 0;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
@@ -7125,6 +7945,7 @@ class Player {
     if (this.st.regen > 0 && this.hunger > 25) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.regen * dt);
     if (this.st.landRegen > 0 && this.onLand) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.landRegen * dt);
     if (this.poisonT > 0) { this.poisonT -= dt; this.hp -= this.venomDps * dt; if (chance(dt * 6)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030']); if (this.hp <= 0) return this.die('POISONED'); }
+    if (this.hazards(dt)) return;
     // input
     let ix = inp.x, iy = inp.y; const mag = Math.hypot(ix, iy); if (mag > 1) { ix /= mag; iy /= mag; }
     this.moving = mag > 0.15;
@@ -7259,6 +8080,9 @@ class Player {
     const fy2 = World.floorY(this.x);
     if (this.y > fy2 - 5 * this.vis) { this.y = fy2 - 5 * this.vis; if (this.vy > 0) this.vy *= -0.15; if (fy2 < 0) this.onLand = true; }
     if (this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
+    // the system dead-ends on a concrete bulkhead; there is nothing west of it
+    const wall = MapData.x0 + 26 * this.vis;
+    if (this.x < wall) { this.x = wall; if (this.vx < 0) this.vx *= -0.2; }
     if (G.intro && G.intro.grate && !G.intro.grate.broken) { const gx = G.intro.grate.x - 26 * this.vis; if (this.x > gx) { this.x = gx; if (this.vx > 0) this.vx = 0; } }
     const roof = World.roofY(this.x);
     if (roof !== null) { const lim = roof + 6 * this.vis; if (this.y < lim) { this.y = lim; if (this.vy < 0) this.vy *= -0.2; } }
@@ -7486,6 +8310,44 @@ class Player {
   // BRACE: a short guard. Anything that lands in the first sliver of it is
   // turned back on whoever threw it; the rest of the window is only armour, so
   // pressing it early still costs you the cooldown.
+  // ---------- environment hazards ----------
+  // Two meters, both of them places rather than attacks. Filth builds while you
+  // are under polluted water and burns off in clean water or in air; pressure
+  // builds past the depth your body is rated for. Neither kills quickly — they
+  // make a stretch of map cost something to stay in.
+  hazards(dt) {
+    const B = Biome.at(this.x), surf = World.surface(this.x);
+    const under = this.y > surf + 2, depth = Math.max(0, this.y - surf);
+    // --- pollution ---
+    const tox = (B.toxic || 0) * (under ? 1 : 0);
+    if (tox > 0) this.toxin = Math.min(130, this.toxin + tox * 15 * dt / Math.max(0.2, this.st.toxRes));
+    else this.toxin = Math.max(0, this.toxin - (under ? 12 : 26) * dt);
+    if (this.toxin >= 100) {
+      this.hp -= this.maxHp * 0.028 * dt;
+      if (chance(dt * 7)) G.fx.blood(this.x + rand(-14, 14) * this.vis, this.y + rand(-8, 8) * this.vis, 1, 0, 0, 16, ['#8aa82a', '#5a7a18']);
+      if (chance(dt * 3)) G.fx.bubbles(this.x, this.y, 1, 8 * this.vis, 20);
+      if (this.hp <= 0) { this.die('DISSOLVED'); return true; }
+    }
+    // --- pressure ---
+    const lim = this.st.crushDepth * (this.st.leviathan ? 1.8 : 1) + this.size * 26;
+    const over = (B.pressure || 0) > 0 ? Math.max(0, depth - lim) : 0;
+    if (over > 0) this.crush = Math.min(130, this.crush + (0.6 + over / 240) * 16 * dt / Math.max(0.2, this.st.crushRes));
+    else this.crush = Math.max(0, this.crush - 30 * dt);
+    if (this.crush >= 100) {
+      this.hp -= this.maxHp * 0.035 * dt;
+      if (chance(dt * 5)) { G.fx.bubbles(this.x + rand(-16, 16) * this.vis, this.y, 2, 10 * this.vis, -30); G.shake(1.4); }
+      if (this.hp <= 0) { this.die('CRUSHED'); return true; }
+    }
+    // one warning bark each time a meter crosses into the red
+    this.hazT -= dt;
+    if (this.hazT <= 0 && (this.toxin > 72 || this.crush > 72)) {
+      this.hazT = 2.4;
+      const bad = this.crush > this.toxin;
+      G.fx.text(this.x, this.y - 30 * this.vis, bad ? 'HULL PRESSURE' : 'FILTH IN THE BLOOD', { color: bad ? '#8cd8ff' : '#b8e030', scale: 2, life: 1.4 });
+      SFX.warning && SFX.warning();
+    }
+    return false;
+  }
   brace() {
     if (this.braceCd > 0) return;
     this.braceCd = 1.5; this.braceT = 0.30;
@@ -8367,6 +9229,10 @@ const VIALS = [
     eff: '+2 GENE POINTS PER TIER, +1 STRAIN TOLERANCE', apply: P => { P.vialTierBonus = 2; P.strainBonus = (P.strainBonus || 0) + 1; } },
   { id: 'bile', name: 'DIGESTIVE BILE', col: '#7a9a20', line: 'DISSOLVES BONE, SHELL AND HULL.',
     eff: 'EAT ARMOURED PREY WHOLE, -10% BITE', apply: P => { P.st.ironStomach = true; P.st.swallow *= 1.3; P.st.bite *= 0.9; } },
+  { id: 'filter', name: 'HEPATIC FILTER CULTURE', col: '#8ab820', line: 'GROWN IN A SUMP. IT DRINKS WHAT WOULD KILL YOU.',
+    eff: 'FILTH BUILDS 70% SLOWER, -10% BITE', apply: P => { P.st.toxRes *= 3.2; P.st.bite *= 0.9; } },
+  { id: 'baro', name: 'BAROPHILIC MARROW', col: '#4a9ac8', line: 'TAKEN OFF SOMETHING DREDGED UP FROM A MILE DOWN.',
+    eff: 'RATED TWICE AS DEEP, -12% SPEED AT THE SURFACE', apply: P => { P.st.crushDepth *= 2.2; P.st.crushRes *= 1.8; P.st.speed *= 0.88; } },
 ];
 const VIAL_BY_ID = {};
 for (const v of VIALS) VIAL_BY_ID[v.id] = v;
@@ -9282,6 +10148,18 @@ const UI = {
     tab('#60ff60', P.poisonT > 0);
     tab('#ff5030', P.frenzyT > 0);
     tab('#ff6060', !!P.missingLimbs);
+    // environment meters only exist where the environment is trying to kill you
+    let hy2 = 39;
+    const haz = (label, v, col, warn) => {
+      if (v <= 0.5) return;
+      const f = clamp(v / 100, 0, 1), hot = f > 0.72;
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, hy2, 96, 11);
+      Font.draw(ctx, label, 9, hy2 + 3, { color: hot && Math.floor(t * 6) % 2 ? warn : '#7f9a90' });
+      this.meter(ctx, 44, hy2 + 3, 54, 5, f, hot && Math.floor(t * 6) % 2 ? warn : col, '#141c1a');
+      hy2 += 13;
+    };
+    haz('FILTH', P.toxin || 0, '#8ab820', '#e0ff40');
+    haz('PRESS', P.crush || 0, '#4a9ac8', '#a0e8ff');
     // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
     Font.draw(ctx, P.lengthFt.toFixed(1), W / 2 - 12, 6, { color: '#eaf2dc', align: 'right', scale: 2, outline: '#0a1a08' });
@@ -9352,6 +10230,25 @@ const UI = {
       Font.draw(ctx, mh.text, 14, my, { color: flash ? '#ffffff' : mh.col });
       ctx.fillStyle = '#16241f'; ctx.fillRect(10, my + 9, mw - 4, 1);
       ctx.fillStyle = mh.col; ctx.fillRect(10, my + 9, Math.round((mw - 4) * clamp(mh.frac, 0, 1)), 1);
+    }
+    // dispatch: the lab talking about you on an open channel, typed in
+    const dp = G.dispatch;
+    if (dp) {
+      const dy = H - 78, dw = Math.min(W - 24, Math.max(160, Font.width(dp.text, 1) + 34));
+      const fade = clamp(Math.min(dp.t * 3, (dp.life - dp.t) * 3), 0, 1);
+      ctx.globalAlpha = fade;
+      ctx.fillStyle = 'rgba(4,12,12,0.78)'; ctx.fillRect(12, dy, dw, 20);
+      ctx.fillStyle = '#2fd08a'; ctx.fillRect(12, dy, 2, 20);
+      // carrier light and a level meter that twitches while the voice runs
+      const live = dp.t < dp.life - 1.2;
+      ctx.fillStyle = live && Math.floor(t * 6) % 2 ? '#ff5030' : '#40201a';
+      ctx.fillRect(18, dy + 4, 3, 3);
+      for (let i = 0; i < 5; i++) { const lv = live ? Math.abs(Math.sin(t * (8 + i * 3) + i)) : 0; ctx.fillStyle = lv > 0.4 ? '#2fd08a' : '#17392c'; ctx.fillRect(24 + i * 3, dy + 6 - Math.round(lv * 2), 2, 2 + Math.round(lv * 2)); }
+      Font.draw(ctx, 'DISPATCH', 42, dy + 3, { color: '#4f7f74' });
+      const shown = dp.text.slice(0, Math.max(0, Math.floor(dp.t * 44)));
+      Font.draw(ctx, shown, 18, dy + 12, { color: '#d8e8de' });
+      if (shown.length < dp.text.length && Math.floor(t * 10) % 2) { ctx.fillStyle = '#2fd08a'; ctx.fillRect(18 + Font.width(shown, 1) + 1, dy + 12, 4, 7); }
+      ctx.globalAlpha = 1;
     }
     // a claimed-but-unreached relic gets an arrow, it is the point of the run
     if (G.mission && G.mission.relic && !G.mission.relic.remove) {
@@ -10117,6 +11014,72 @@ const UI = {
         px(-3, -3, 7, 1, dim('#20a040')); px(-2, -15, 1, 2, dim('#40ff60'));
         px(-11, 1, 22, 1, dim('#2a7a8a'));
         break;
+      // ---- zone 1: the sewer network ----
+      case 'undercroft':
+        px(-11, -14, 22, 3, dim('#5a6060')); px(-11, -11, 22, 1, dim('#33393a'));
+        px(-8, -10, 3, 10, dim('#3f4547')); px(5, -10, 3, 10, dim('#3f4547'));
+        px(-4, -6, 8, 6, dim('#7a4a22')); px(-4, -6, 8, 1, dim('#a06a30'));
+        px(-2, -9, 1, 3, dim('#ff9030')); px(0, -8, 1, 2, dim('#ffc060'));
+        px(-11, 0, 22, 2, dim('#2e3436'));
+        break;
+      case 'shaft':
+        px(-9, -15, 4, 16, dim('#4a5052')); px(5, -15, 4, 16, dim('#4a5052'));
+        px(-9, -15, 4, 1, dim('#757c7e')); px(5, -15, 4, 1, dim('#757c7e'));
+        for (let k = -13; k < 1; k += 4) { px(-5, k, 10, 1, dim('#252b2c')); }
+        px(-5, -15, 10, 15, dim('#101718'));
+        px(-2, -4, 4, 5, dim('#2a6a5a')); px(-2, -4, 4, 1, dim('#46a88a'));
+        break;
+      case 'junction':
+        px(-3, -14, 6, 15, dim('#3f4547'));
+        px(-12, -10, 24, 4, dim('#4a5052')); px(-12, -10, 24, 1, dim('#727a7c'));
+        px(-12, -3, 24, 4, dim('#4a5052')); px(-12, -3, 24, 1, dim('#727a7c'));
+        px(-10, -9, 2, 2, dim('#0c1212')); px(8, -9, 2, 2, dim('#0c1212'));
+        px(-10, -2, 2, 2, dim('#0c1212')); px(8, -2, 2, 2, dim('#0c1212'));
+        px(-2, -12, 4, 4, dim('#7a8a2a')); px(-1, -11, 2, 2, dim('#b4c840'));
+        break;
+      case 'gallery':
+        px(-12, -15, 24, 4, dim('#545a5c')); px(-12, -15, 24, 1, dim('#7c8486'));
+        for (let i = -10; i <= 9; i += 5) px(i, -11, 1, 12, dim('#3a4042'));
+        px(-12, -11, 24, 1, dim('#2a3032'));
+        px(-12, -2, 24, 3, dim('#3a5a2e')); px(-12, -2, 24, 1, dim('#587a3a'));
+        px(-6, -8, 3, 1, dim('#96b03a')); px(3, -6, 3, 1, dim('#96b03a'));
+        break;
+      case 'sump':
+        px(-12, -4, 24, 5, dim('#31401f')); px(-12, -4, 24, 1, dim('#5c7a2a'));
+        px(-9, -14, 5, 11, dim('#4a5052')); px(-9, -14, 5, 2, dim('#767e80'));
+        px(-8, -5, 3, 3, dim('#8ba82a'));
+        px(2, -9, 8, 3, dim('#3f4547')); px(2, -9, 8, 1, dim('#6a7274'));
+        px(4, -6, 1, 4, dim('#6a8a2a')); px(7, -6, 1, 3, dim('#6a8a2a'));
+        break;
+      // ---- zone 3: the open ocean ----
+      case 'shelf':
+        px(-12, -1, 24, 3, dim('#c8bc9a')); px(-12, -1, 24, 1, dim('#e4dcbc'));
+        for (let i = -10; i <= 10; i += 3) { const h = 5 + ((i + 12) % 4); px(i, -1 - h, 1, h, dim('#4a9a5a')); px(i + 1, -h, 1, h - 1, dim('#6ec07a')); }
+        px(-12, -15, 24, 1, dim('#8ad0e0'));
+        break;
+      case 'reef':
+        px(-12, 0, 24, 2, dim('#c0a884'));
+        for (const [ox, hh, c] of [[-9, 9, '#c4566e'], [-4, 13, '#cfa03a'], [2, 10, '#5a94bc'], [7, 12, '#a05aa8']]) {
+          px(ox, -hh, 3, hh, dim(c)); px(ox, -hh, 1, hh, dim(mixColor(c, '#ffffff', 0.35)));
+          px(ox - 2, -hh + 3, 2, 2, dim(c)); px(ox + 3, -hh + 5, 2, 2, dim(c));
+        }
+        px(-7, -14, 2, 1, dim('#ffe8a0'));
+        break;
+      case 'wall':
+        px(-12, -16, 11, 32, dim('#5a5246')); px(-12, -16, 11, 1, dim('#84796a'));
+        for (let k = -14; k < 14; k += 4) px(-12, k, 11, 1, dim('#3a352c'));
+        px(-1, -9, 2, 3, dim('#3a8a80')); px(-1, -2, 2, 3, dim('#3a8a80'));
+        px(4, -6, 8, 3, dim('#8a9aa6')); px(4, -6, 6, 1, dim('#d8e0e6'));
+        px(10, -7, 3, 2, dim('#5a6a76'));
+        break;
+      case 'trench':
+        px(-13, -2, 8, 18, dim('#34343a')); px(5, -5, 9, 21, dim('#34343a'));
+        px(-13, -2, 8, 1, dim('#585862')); px(5, -5, 9, 1, dim('#585862'));
+        px(-5, 2, 10, 14, dim('#050a10'));
+        px(-2, -8, 1, 6, dim('#c8c0a8')); px(-3, -10, 3, 2, dim('#8affe0'));
+        px(-4, -5, 6, 4, dim('#3a2a34')); px(-3, -4, 1, 1, dim('#ff6a6a'));
+        px(-1, -4, 3, 1, dim('#e0d8c0'));
+        break;
       case 'seawall':
         px(-11, -6, 22, 7, dim('#5e6068')); px(-11, -6, 22, 1, dim('#8a8c92'));
         for (const [ox, h, w] of [[-9, 14, 5], [-3, 20, 6], [4, 11, 4], [8, 17, 4]]) {
@@ -10172,7 +11135,8 @@ const UI = {
       const st = r.st, open = Stages.unlocked(st), sel = r.i === G.stageSel;
       if (!r.vis) continue;
       const fade = clamp(r.z * 2.4, 0, 1);
-      const col = st.kaiju ? '#ff7a40' : open ? '#7fffd8' : '#5f7f78';
+      const zc = zoneOf(st).col;
+      const col = st.kaiju ? '#ff7a40' : open ? zc : mixColor(zc, '#2a3a38', 0.65);
       ctx.globalAlpha = fade;
       if (sel) {
         const pr = 7 + Math.sin(t * 5) * 1.6;
@@ -10190,10 +11154,21 @@ const UI = {
 
     // --- readout column on the right: icon, name, two numbers, nothing else
     const cur = STAGES[G.stageSel] || STAGES[0], open = Stages.unlocked(cur);
-    const accent = cur.kaiju ? '#ff7a40' : open ? '#7fffd8' : '#a08070';
+    const Z = zoneOf(cur), zSites = STAGES_BY_ZONE[Z.id] || [cur], zIdx = zSites.indexOf(cur);
+    const accent = cur.kaiju ? '#ff7a40' : open ? Z.col : '#a08070';
     const px0 = W * 0.62, shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
+    // --- zone header: which of the three worlds this site belongs to
+    ctx.fillStyle = 'rgba(6,18,16,0.75)'; ctx.fillRect(10, 8, W * 0.46, 30);
+    this.bracket(ctx, 10, 8, W * 0.46, 30, rgba(Z.col, 0.35), 5);
+    for (const z of ZONES) {
+      const on = z.id === Z.id, bx = 16 + (z.n - 1) * 12;
+      ctx.fillStyle = on ? z.col : mixColor(z.col, '#0a1614', 0.7);
+      ctx.fillRect(bx, on ? 13 : 15, 8, on ? 20 : 16);
+    }
+    Font.draw(ctx, 'ZONE ' + Z.n, 58, 13, { color: Z.col, scale: 2, outline: '#04120e' });
+    Font.draw(ctx, Z.name, 58, 28, { color: '#c8d8d0' });
     Font.draw(ctx, 'RELEASE SITE', px0 + shake, 26, { color: '#4f7f74' });
-    Font.draw(ctx, String(G.stageSel + 1).padStart(2, '0') + ' / ' + String(STAGES.length).padStart(2, '0'), W - 22, 26, { color: '#4f7f74', align: 'right' });
+    Font.draw(ctx, String(zIdx + 1).padStart(2, '0') + ' / ' + String(zSites.length).padStart(2, '0'), W - 22, 26, { color: '#4f7f74', align: 'right' });
     ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(px0 + shake, 36, W - 22 - px0, 1);
     // the landmark icon, large, standing in for a paragraph of description
     const iw = 54;
@@ -10201,18 +11176,22 @@ const UI = {
     ctx.save(); ctx.translate(px0 + iw / 2 + shake, 46 + iw * 0.72); ctx.scale(1.7, 1.7);
     this.drawLandmark(ctx, cur.id, 0, 0, open);
     ctx.restore();
-    Font.draw(ctx, open ? cur.name : 'SEALED', px0 + iw + 10 + shake, 52, { color: accent, scale: 2, outline: '#04120e' });
+    // long site names drop to a single-height face rather than running off the panel
+    const nameX = px0 + iw + 10 + shake, nameW = W - 22 - nameX;
+    const nameStr = open ? cur.name : 'SEALED';
+    const nameSc = Font.width(nameStr, 2) <= nameW ? 2 : 1;
+    Font.draw(ctx, nameStr, nameX, nameSc === 2 ? 52 : 55, { color: accent, scale: nameSc, outline: '#04120e' });
     if (open) {
       Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 72, { color: '#c8d8d0' });
       for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 8 + shake), 84, 6, 6); }
     } else Font.draw(ctx, Stages.hint(cur.need), px0 + iw + 10 + shake, 72, { color: '#a08070' });
 
-    // --- the chain of sites as a strip of blips, so progress reads at a glance
+    // --- the chain of sites in this zone, so progress reads at a glance
     const sy2 = 122, sw2 = W - 22 - px0;
-    for (let i = 0; i < STAGES.length; i++) {
-      const st = STAGES[i], o2 = Stages.unlocked(st), on = i === G.stageSel;
-      const bx = px0 + (i + 0.5) * (sw2 / STAGES.length);
-      ctx.fillStyle = on ? accent : o2 ? '#3f6f66' : '#26332f';
+    for (let i = 0; i < zSites.length; i++) {
+      const st = zSites[i], o2 = Stages.unlocked(st), on = st === cur;
+      const bx = px0 + (i + 0.5) * (sw2 / zSites.length);
+      ctx.fillStyle = on ? accent : o2 ? mixColor(Z.col, '#12201e', 0.5) : '#26332f';
       ctx.fillRect(Math.round(bx - 3), sy2 + (on ? -2 : 0), 6, on ? 10 : 6);
     }
     ctx.fillStyle = 'rgba(120,220,200,0.2)'; ctx.fillRect(px0, sy2 + 14, sw2, 1);
@@ -10225,12 +11204,13 @@ const UI = {
       Font.draw(ctx, mdef.line, px0 + shake, 170, { color: '#7f9a90' });
     } else Font.draw(ctx, 'SEALED', px0 + shake, 158, { color: '#a08070' });
 
-    // --- the vault: nine relics, one per site, lit once carried out
+    // --- the vault: one relic per site in this zone, lit once carried out
+    const zArts = ARTIFACTS.filter(a2 => { const st = STAGE_BY_ID[a2.stage]; return st && st.zone === Z.id; });
     const got = Missions.owned().length;
     Font.draw(ctx, 'RELICS', px0 + shake, 190, { color: '#4f7f74' });
     Font.draw(ctx, got + '/' + ARTIFACTS.length, W - 22, 190, { color: got ? '#ffd060' : '#4f7f74', align: 'right' });
-    const slotW = sw2 / ARTIFACTS.length;
-    ARTIFACTS.forEach((a2, i) => {
+    const slotW = sw2 / Math.max(1, zArts.length);
+    zArts.forEach((a2, i) => {
       const bx = px0 + (i + 0.5) * slotW, byy = 212, have = Missions.has(a2.id), here = a2.stage === cur.id;
       ctx.fillStyle = have ? 'rgba(255,208,96,0.10)' : 'rgba(120,220,200,0.05)';
       ctx.fillRect(Math.round(bx - slotW / 2 + 1), byy - 11, Math.round(slotW - 2), 22);
@@ -10247,7 +11227,9 @@ const UI = {
     // --- prompt
     const okCol = open ? '#ffe060' : '#ff8060';
     Font.draw(ctx, open ? 'ENTER' : 'LOCKED', px0 + shake, H - 30, { color: okCol, scale: 2, outline: '#2a1a00' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A SITE' : 'ARROWS  SPIN', px0 + shake, H - 12, { color: '#4f7f74' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A SITE' : 'ARROWS  SITE      Q / E  ZONE', px0 + shake, H - 12, { color: '#4f7f74' });
+    // the zone's own line, under the globe, so each world gets a sentence
+    Font.draw(ctx, Z.sub, 14, H - 16, { color: rgba(Z.col, 0.7) });
   },
   // ---------- loadout: the splice bay, with you in the tank ----------
   loadoutCells() {
@@ -10730,6 +11712,32 @@ const UI = {
     if (G.white > 0.01) { ctx.fillStyle = `rgba(255,255,255,${Math.min(1, G.white).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     const P = G.player;
     if (P && !P.dead && P.hp / P.maxHp < 0.25 && G.state === 'play') { const a = 0.15 + 0.1 * Math.sin(G.t * 6); const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.8); g.addColorStop(0, 'rgba(120,0,0,0)'); g.addColorStop(1, `rgba(120,0,0,${a.toFixed(3)})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+    if (P && !P.dead) {
+      // filth stains the view green and greasy; pressure narrows it and shivers
+      const tx = clamp((P.toxin || 0) / 100, 0, 1);
+      if (tx > 0.12) {
+        ctx.globalAlpha = (tx - 0.12) * 0.34;
+        ctx.fillStyle = '#7a9a1a'; ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = (tx - 0.12) * 0.5;
+        // greasy motes drifting over the lens
+        for (let i = 0; i < 26; i++) {
+          const ph = i * 1.7 + G.t * (0.2 + (i % 5) * 0.05);
+          const px2 = (i * 97 + Math.sin(ph) * 30) % W, py2 = (i * 53 + G.t * 9 + Math.cos(ph * 0.7) * 20) % H;
+          ctx.fillStyle = i % 3 ? '#94b82a' : '#5a7414';
+          ctx.fillRect(Math.round(px2), Math.round(py2), 2 + (i % 2), 1 + (i % 2));
+        }
+        ctx.globalAlpha = 1;
+      }
+      const cr = clamp((P.crush || 0) / 100, 0, 1);
+      if (cr > 0.1) {
+        const k = (cr - 0.1) / 0.9, pulse = 0.5 + 0.5 * Math.sin(G.t * (3 + k * 6));
+        const g2 = ctx.createRadialGradient(W / 2, H / 2, H * (0.52 - k * 0.3), W / 2, H / 2, H * 0.9);
+        g2.addColorStop(0, 'rgba(4,14,24,0)');
+        g2.addColorStop(1, `rgba(4,14,24,${(0.35 + k * 0.5 * pulse).toFixed(3)})`);
+        ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+        if (k > 0.5) { ctx.globalAlpha = (k - 0.5) * 0.5 * pulse; ctx.fillStyle = '#8cd8ff'; for (let i = 0; i < 5; i++) ctx.fillRect(0, ((i * 71 + G.t * 130) % H) | 0, W, 1); ctx.globalAlpha = 1; }
+      }
+    }
   },
 };
 
@@ -10834,7 +11842,22 @@ const Input = {
   bracePressed() { return this.hit('KeyL', 'KeyV', 'ControlLeft') || this.touch.brace; },
 };
 
-const BOSSES = { 2: 'oldscar', 4: 'warboat', 6: 'python', 8: 'skunkape', 10: 'shark' };
+// Each zone keeps its own roster: two minis that turn up as you shed, and one
+// world boss that only comes for a full-grown animal. Which one you meet is
+// decided by where you are standing, not by a global schedule.
+const ZONE_BOSSES = {
+  sewer:  { mini: ['broodmother', 'gnasher'], world: 'sludgeking' },
+  glades: { mini: ['oldscar', 'warboat', 'python'], world: 'skunkape' },
+  ocean:  { mini: ['anvil', 'greenwall'], world: 'lantern' },
+};
+// the fish-shaped bosses are all the same job with different numbers
+const FISH_BOSS = {
+  gnasher:    { kind: 'mutantcat', name: 'THE GNASHER', size: 2.6, cls: 1.2, hp: 900, mass: 700, spd: 150, gibs: 6, depth: 70 },
+  sludgeking: { kind: 'sewereel', name: 'THE SLUDGE KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
+  anvil:      { kind: 'hammer', name: 'THE ANVIL', size: 2.2, cls: 1.35, hp: 1600, mass: 1500, spd: 200, gibs: 6, depth: 220 },
+  greenwall:  { kind: 'moray', name: 'THE GREEN WALL', size: 3.0, cls: 1.45, hp: 1400, mass: 1200, spd: 140, gibs: 6, depth: 300 },
+  lantern:    { kind: 'anglerfish', name: 'THE LANTERN', size: 4.2, cls: 1.9, hp: 2600, mass: 2400, spd: 155, gibs: 8, depth: 760, glow: '#7affda' },
+};
 // how many phase breaks a boss walks through, what it calls in, and the line
 // it gets on each break
 const BOSS_SPEC = {
@@ -10843,6 +11866,12 @@ const BOSS_SPEC = {
   python:   { phases: 3, hp: 1.5, adds: ['moccasin', 'moccasin'], cue: ['THE NEST WOKE UP', 'IT COILS TIGHTER'] },
   skunkape: { phases: 4, hp: 1.4, adds: ['boar', 'boar'], cue: ['IT STOPPED THROWING', 'THE TREES COME WITH IT', 'NOTHING HUMAN LEFT'] },
   shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
+  broodmother: { phases: 3, hp: 1.5, adds: ['rat', 'rat', 'bigrat'], cue: ['THE LITTER COMES WITH HER', 'SHE HAS NOWHERE TO RUN'] },
+  gnasher:  { phases: 3, hp: 1.4, adds: ['piranha', 'piranha'], cue: ['THE SHOAL TURNS WITH IT', 'IT STOPS PRETENDING TO BE A FISH'] },
+  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE GALLERY', 'THE SYSTEM IS ITS BODY'] },
+  anvil:    { phases: 3, hp: 1.5, adds: ['barracuda', 'barracuda'], cue: ['IT CIRCLES WIDER', 'IT HAS DECIDED'] },
+  greenwall: { phases: 3, hp: 1.5, adds: ['moray'], cue: ['IT COMES OUT OF THE HOLE', 'ALL OF IT COMES OUT'] },
+  lantern:  { phases: 4, hp: 1.7, adds: ['anglerfish', 'isopod'], cue: ['THE LIGHT GOES OUT', 'SOMETHING ELSE LIGHTS UP', 'IT WAS NEVER A FISH'] },
 };
 function weightedPick(table) { const t = table.filter(e => e[1] > 0); let tot = t.reduce((s, e) => s + e[1], 0), r = Math.random() * tot; for (const e of t) { r -= e[1]; if (r <= 0) return e[0]; } return t.length ? t[t.length - 1][0] : null; }
 
@@ -10855,7 +11884,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, drop: null, embryo: null, labSel: undefined, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, story: null, dispatch: null, finisher: null, morph: null, drop: null, embryo: null, labSel: undefined, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -11029,13 +12058,13 @@ const G = {
       if (Bx.indoor && rng() < 0.5) continue;
       const fy = World.floorY(x);
       if (fy < -3) { if (rng() < 0.6) this.spawnLand(x, D); continue; }
-      if (fy < 30) { if (!Bx.indoor && rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, Bx.id === 'outfall' || Bx.indoor ? 'roach' : 'crayfish')); continue; }
+      if (fy < 30) { if (!Bx.indoor && rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, Bx.indoor || Bx.id === 'outfall' ? 'roach' : 'crayfish')); continue; }
       if (Bx.indoor && !Bx.fish.length) continue;
       const kind = weightedPick(Bx.fish.concat(Bx.indoor ? [['bottom', 2]] : [['frog', 1.4], ['turtle', 1.4], ['bottom', 2], ['duck', 1]]));
       if (!kind) continue;
       if (kind === 'frog') this.add(new Frog(x, chance(0.3) ? 'pigfrog' : 'frog'));
       else if (kind === 'turtle') this.add(new Turtle(x, clamp(40 + rng() * 100, 10, fy - 15), choice(['turtle', 'slider', 'cooter'])));
-      else if (kind === 'bottom') this.add(new Bottom(x, B.id === 'outfall' ? 'roach' : choice(['crayfish', 'crab', 'snail', 'shrimp', 'fiddler'])));
+      else if (kind === 'bottom') this.add(new Bottom(x, B.indoor || B.id === 'outfall' ? (chance(0.7) ? 'roach' : 'crayfish') : choice(['crayfish', 'crab', 'snail', 'shrimp', 'fiddler'])));
       else if (kind === 'duck') Spawn.duck(x);
       else if (SPECIES[kind]) { const d = SPECIES[kind], band = d.band || [10, 200]; Spawn.school(x, d.nearFloor ? fy - 30 : clamp(rand(band[0], band[1]), 10, fy - 15), kind); }
     }
@@ -11122,7 +12151,7 @@ const G = {
         P.tier = t2; P.sheds++;
         P.hp = P.maxHp; P.lastMax = P.maxHp; P.hunger = Math.max(P.hunger, 55);
         P.genePoints += 2; P.newPoints += 2;
-        if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
+        { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
         if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t3 of Meta.checkUnlocks()) this.announceUnlock(t3); Meta.save(); }
         this.storeSave();
       },
@@ -11146,7 +12175,7 @@ const G = {
     this.banner = { text: 'NEW FORM: ' + TIERS[P.tier].name, sub: card.node.name, t: 3.5, max: 3.5, color: card.path ? PATHS[card.path].color : '#ffffff' };
     SFX.pick(); SFX.roar(P.size); this.whiteFlash(0.5); this.fx.glow(P.x, P.y, 60 * P.vis, '#ffffff', 0.8); this.addScore(500 * P.tier);
     if (card.node.evo) this.fx.text(P.x, P.y - 40 * P.size, 'EVOLVED!', { color: card.path ? PATHS[card.path].color : '#fff', scale: 3, life: 2 });
-    if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
+    { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
     if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
     this.storeSave();
   },
@@ -11206,7 +12235,8 @@ const G = {
     const k = weightedPick(table);
     if (!k) return;
     if (k === 'heron') this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis']), 'wade'));
-    else this.add(new LandAnimal(x, k));
+    else if (LAND[k]) this.add(new LandAnimal(x, k));
+    else if (BOTTOM[k]) this.add(new Bottom(x, k));
   },
   spawnPredator(D) {
     const P = this.player, halfW = this.W / this.cam.zoom / 2, side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(120, 320)), fy = World.floorY(x);
@@ -11238,6 +12268,14 @@ const G = {
     }
     if (warn) { this.banner = { text: warn, t: 2.5, max: 2.5, color: '#ff8060' }; SFX.growl(side); }
   },
+  // sheds 2/4/6 bring a mini out of the local roster; 8 and 10 bring the world
+  // boss of whichever zone you are standing in
+  bossFor(sheds, x) {
+    if (sheds < 2 || sheds % 2) return null;
+    const r = ZONE_BOSSES[zoneAt(x).id] || ZONE_BOSSES.glades;
+    if (sheds >= 8) return r.world;
+    return r.mini[(sheds / 2 - 1) % r.mini.length];
+  },
   spawnBoss(kind) {
     const P = this.player, halfW = this.W / this.cam.zoom / 2, side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + 220), fy = World.floorY(x);
     let boss = null;
@@ -11246,6 +12284,31 @@ const G = {
     else if (kind === 'python') { boss = this.add(new Snake(x, fy < 0 ? -10 : 6, 'python', Math.max(2.2, P.size * 0.8))); boss.isBoss = true; boss.persistent = true; boss.name = 'MOTHER PYTHON'; boss.hp = boss.maxHp = Math.round(boss.maxHp * 1.6); }
     else if (kind === 'skunkape') { const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
     else if (kind === 'shark') { const wx = World.findX(x, xx => World.floorY(xx) > 200, 1500, 40); if (wx !== null) { boss = this.add(new Fish(wx, clamp(150, 60, World.floorY(wx) - 40), 'shark')); boss.size = 2.2; boss.sizeClass = Math.max(10, P.size * 1.3); boss.hp = boss.maxHp = 1400; boss.mass = 1500; boss.name = 'BIG BULL'; boss.isBoss = true; boss.persistent = true; boss.speed = 200; boss.gibs = 6; } }
+    else if (kind === 'broodmother') {
+      // she does not swim: find her a dry ledge to come down off
+      const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 5000, 40);
+      if (bx !== null) {
+        boss = this.add(new LandAnimal(bx, 'bigrat'));
+        boss.size = 3.4; boss.groundOff *= boss.size; boss.r *= boss.size;
+        boss.sizeClass = Math.max(4, P.size * 1.05); boss.mass = 520;
+        boss.hp = boss.maxHp = 760; boss.name = 'THE BROODMOTHER'; boss.gibs = 7; boss.threat = 1;
+        boss.y = World.floorY(bx) - boss.groundOff;
+      }
+    }
+    else if (FISH_BOSS[kind]) {
+      const B2 = FISH_BOSS[kind];
+      const wx = World.findX(x, xx => World.floorY(xx) > B2.depth * 0.6 + 40, 2600, 45);
+      if (wx !== null) {
+        const fy2 = World.floorY(wx);
+        boss = this.add(new Fish(wx, clamp(B2.depth, 40, fy2 - 40), B2.kind));
+        boss.size = B2.size; boss.r *= B2.size;
+        boss.sizeClass = Math.max(B2.cls * 6, P.size * B2.cls);
+        boss.hp = boss.maxHp = B2.hp; boss.mass = B2.mass; boss.speed = B2.spd;
+        boss.name = B2.name; boss.gibs = B2.gibs; boss.threat = 1; boss.flee = 0;
+        boss.band = [Math.max(20, B2.depth * 0.4), Math.max(120, B2.depth * 1.6)];
+        if (B2.glow) boss.bossGlow = B2.glow;
+      }
+    }
     if (!boss) { this.director.bossT = 8; return; }
     Boss.init(boss, BOSS_SPEC[kind] || { phases: 3, hp: 1.3 });
     this.boss = boss; this.director.bossQueue = null;
@@ -11383,8 +12446,20 @@ const G = {
         if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
         const rows = UI.stageRows();
         if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }
-        if (Input.hit('ArrowLeft', 'KeyA', 'ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
-        if (Input.hit('ArrowRight', 'KeyD', 'ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
+        // arrows walk the sites inside the current zone; Q/E jump between zones
+        const zHere = zoneOf(list[this.stageSel]), zSites = STAGES_BY_ZONE[zHere.id] || list;
+        const stepSite = d => { const k = zSites.indexOf(list[this.stageSel]); const nx = zSites[(k + d + zSites.length) % zSites.length]; this.stageSel = list.indexOf(nx); SFX.ui(); };
+        const stepZone = d => {
+          const zi = ZONES.indexOf(zHere), nz = ZONES[(zi + d + ZONES.length) % ZONES.length];
+          const sites = STAGES_BY_ZONE[nz.id] || [];
+          let best = sites[0];
+          for (const st of sites) if (Stages.unlocked(st)) best = st;
+          if (best) { this.stageSel = list.indexOf(best); SFX.ui(); }
+        };
+        if (Input.hit('ArrowLeft', 'KeyA', 'ArrowUp', 'KeyW')) stepSite(-1);
+        if (Input.hit('ArrowRight', 'KeyD', 'ArrowDown', 'KeyS')) stepSite(1);
+        if (Input.hit('KeyQ')) stepZone(-1);
+        if (Input.hit('KeyE', 'Tab')) stepZone(1);
         const rowHit = Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
           const st = list[this.stageSel];
@@ -11666,10 +12741,12 @@ const G = {
     if (this.state === 'create') { Lab.draw(ctx); UI.drawCreate(ctx); return; }
     if (this.state === 'vialstore') { Lab.draw(ctx); UI.drawVialStore(ctx); return; }
     const indoor = World.isIndoor(cam.x);
-    if (indoor) World.drawIndoor(ctx, cam, day);
+    if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }
     World.drawWater(ctx, cam, day);
+    World.drawDeepScene(ctx, cam, day);
     World.drawTerrain(ctx, cam);
+    if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
     World.drawDecor(ctx, cam, 0, day);
     this.fx.drawClouds(ctx, cam);
@@ -11715,6 +12792,7 @@ const G = {
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
+    World.drawDeepGlow(ctx, cam, day);
     World.drawKaiju(ctx, cam, day);
     Cine.draw(ctx);
     UI.drawScreenFx(ctx);

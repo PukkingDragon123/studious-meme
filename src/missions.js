@@ -25,6 +25,26 @@ const ARTIFACTS = [
     boon: '+15% DEATH ROLL DAMAGE', col: '#cfc0a8', glyph: 'tooth', apply: P => { P.st.rollDmg *= 1.15; } },
   { id: 'core', stage: 'seawall', name: 'CONTAINMENT CORE', line: 'THE THING THEY GREW YOU AROUND. IT STILL HUMS.',
     boon: '+50% STAMINA', col: '#40f0c8', glyph: 'core', apply: P => { P.st.dashCharges += 1; } },
+  // ---- ZONE 1: the sewer network ----
+  { id: 'lamp', stage: 'undercroft', name: "THE DRIFTER'S LAMP", line: 'HE CARRIED IT FOR NINE YEARS DOWN HERE. IT OUTLASTED HIM.',
+    boon: 'YOU SEE IN THE DARK', col: '#ffbe50', glyph: 'lamp2', apply: P => { P.st.nightEyes = true; } },
+  { id: 'bolt', stage: 'shaft', name: 'SHAFT ANCHOR BOLT', line: 'IT HELD A HUNDRED TONNES OF CITY UP. NOW IT HOLDS YOU TOGETHER.',
+    boon: '+15% ARMOUR', col: '#9aa2a8', glyph: 'bolt', apply: P => { P.st.armor += 0.15; } },
+  { id: 'valve', stage: 'junction', name: 'JUNCTION 9 VALVE WHEEL', line: 'TURNED ONCE, IN 1974, AND NEVER AGAIN.',
+    boon: 'FILTH BUILDS HALF AS FAST', col: '#b4c840', glyph: 'valve', apply: P => { P.st.toxRes *= 2; } },
+  { id: 'rebar', stage: 'gallery', name: 'A LENGTH OF REBAR', line: 'PULLED OUT OF THE CROWN OF THE TRUNK MAIN, STILL BENT WHERE IT TORE.',
+    boon: 'BITES PIERCE ARMOUR', col: '#a86a3a', glyph: 'rebar', apply: P => { P.st.pierce = true; } },
+  { id: 'crown', stage: 'sump', name: 'THE SLUDGE CROWN', line: 'A RING OF HARDENED FILTH, GROWN AROUND SOMETHING THAT WORE IT.',
+    boon: 'TOXIC BLOOD, IMMUNE TO VENOM', col: '#8ba82a', glyph: 'crown', apply: P => { P.st.toxicBlood = true; P.st.venomImmune = true; } },
+  // ---- ZONE 3: the open ocean ----
+  { id: 'net', stage: 'shelf', name: 'A TORN TRAWL NET', line: 'IT TOOK EVERYTHING ON THIS SHELF FOR THIRTY YEARS. YOU TOOK IT.',
+    boon: '+25% LATCH DAMAGE', col: '#cfd4c0', glyph: 'net', apply: P => { P.st.latchMul *= 1.25; } },
+  { id: 'shell', stage: 'reef', name: 'NAUTILUS SHELL', line: 'A CHAMBERED SPIRAL, EMPTY. THE DESIGN IS 500 MILLION YEARS OLD.',
+    boon: '+12% MAX HEALTH', col: '#e8d6b4', glyph: 'shell', apply: P => { P.st.hpMul *= 1.12; } },
+  { id: 'plate', stage: 'wall', name: 'SUBMERSIBLE VIEWPORT', line: 'SIX INCHES OF ACRYLIC. WHATEVER LOOKED THROUGH IT DID NOT COME BACK.',
+    boon: 'RATED 60% DEEPER', col: '#8cd8ff', glyph: 'plate', apply: P => { P.st.crushDepth *= 1.6; } },
+  { id: 'esca', stage: 'trench', name: 'THE ESCA', line: 'STILL LIT. WHATEVER GREW IT DID NOT NEED THE REST OF ITSELF.',
+    boon: 'PREY COMES TO YOU IN THE DARK', col: '#7affda', glyph: 'esca', apply: P => { P.st.lure = 220; P.st.magnet = Math.max(P.st.magnet, 160); } },
 ];
 const ARTIFACT_BY_ID = {};
 for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
@@ -40,6 +60,74 @@ const MISSIONS = {
   campground: { title: 'HOLIDAY OVER', line: 'TAKE 10 PEOPLE', kind: 'human', target: 10 },
   bay:        { title: 'SALT AND TEETH', line: 'KILL 4 SHARKS', kind: 'shark', target: 4 },
   seawall:    { title: 'KAIJU PROTOCOL', line: 'WRECK 8 BOATS OR BUILDS', kind: 'wreck', target: 8 },
+  // ---- ZONE 1 ----
+  undercroft: { title: 'CLEAR THE UNDERCROFT', line: 'TAKE 6 PEOPLE', kind: 'human', target: 6 },
+  shaft:      { title: 'GO DOWN THE SHAFT', line: 'DIVE TO', kind: 'depth', target: 600, unit: 'M' },
+  junction:   { title: 'OPEN JUNCTION 9', line: 'KILL A BOSS', kind: 'boss', target: 1 },
+  gallery:    { title: 'RUN THE TRUNK MAIN', line: 'TRAVEL', kind: 'travel', target: 3000, unit: 'M' },
+  sump:       { title: 'THE END OF THE LINE', line: 'KILL 6 PREDATORS', kind: 'threat', target: 6 },
+  // ---- ZONE 3 ----
+  shelf:      { title: 'GRAZE THE MEADOW', line: 'TAKE 18 FISH', kind: 'fish', target: 18 },
+  reef:       { title: 'STRIP THE REEF', line: 'TAKE 24 FISH', kind: 'fish', target: 24 },
+  wall:       { title: 'OVER THE EDGE', line: 'KILL 4 SHARKS', kind: 'shark', target: 4 },
+  trench:     { title: 'PUT OUT THE LIGHT', line: 'KILL A BOSS', kind: 'boss', target: 1 },
+};
+
+// ---------------------------------------------------------------------------
+// The story is told on the radio. Every site carries four transmissions, fired
+// at the beats of its standing order: arrival, halfway, order complete, relic
+// in your teeth. Nobody is talking to you. You are what they are talking about.
+// ---------------------------------------------------------------------------
+const STORY = {
+  outfall: ['SUBJECT 11 IS OUT OF CONTAINMENT AND IN THE STORM SYSTEM.', 'IT IS TRACKING EAST. IT IS FOLLOWING THE WATER.',
+    'IT MADE OPEN AIR. LOG THE TIME.', 'IT KEPT ITS TAG. THAT IS NOT INSTINCT.'],
+  mangrove: ['THE ROOT LINE IS SHALLOW. IT WILL HAVE TO SURFACE TO CROSS.', 'IT IS NOT CROSSING. IT IS FEEDING.',
+    'SIXTY POUNDS OF SNOOK IN ELEVEN MINUTES.', 'THAT RING CAME OFF A DIVER WE NEVER FOUND.'],
+  camp: ['THERE ARE PEOPLE AT THAT CAMP. ADVISE THEM.', 'NOBODY IS ANSWERING AT THE CAMP.',
+    'THE CAMP IS IN THE WATER.', 'JOE BUILT THAT PLACE WITH HIS HANDS. YOU HAVE HIS HEAD.'],
+  cypress: ['TANNIC WATER. WE LOSE THE TRANSPONDER UNDER THE KNEES.', 'SOMETHING ELSE IS HUNTING IN THERE WITH IT.',
+    'WHATEVER WAS HUNTING IT IS NOT ANY MORE.', 'THE KNEE GREW AROUND A SURVEY STAKE. NOBODY SURVEYED THAT FAR IN.'],
+  prairie: ['SHEET FLOW. NO COVER FOR MILES. IT WILL TURN BACK.', 'IT IS NOT TURNING BACK.',
+    'IT CROSSED THE OPEN IN DAYLIGHT.', 'THAT BLADE WILL OPEN A MAN TO THE BONE. IT IS A LEAF.'],
+  river: ['THE CHANNEL IS DREDGED TO SIXTY FEET. IT CANNOT HOLD THE BOTTOM.', 'IT IS HOLDING THE BOTTOM.',
+    'THE CHANNEL IS ITS NOW.', 'WE PUT THAT PROP THROUGH IT IN MARCH. IT KEPT THE PROP.'],
+  campground: ['EVACUATE PARADISE. ALL LOOPS, ALL SITES.', 'THE EVACUATION IS NOT GOING WELL.',
+    'PARADISE IS CLOSED.', 'THE LANTERN WAS STILL BURNING WHEN YOU TOOK IT.'],
+  bay: ['OPEN SALT. IT SHOULD NOT TOLERATE THIS SALINITY.', 'SALINITY IS NOT SLOWING IT DOWN.',
+    'THE BULL SHARKS HAVE LEFT THE BAY.', 'NOTHING THAT SIZE HAS SWUM HERE IN SIX MILLION YEARS. IT HAS ITS TOOTH.'],
+  seawall: ['IT IS AT THE HARBOUR WALL. THE CITY IS BEHIND THE HARBOUR WALL.', 'IT IS TAKING THE WALL APART.',
+    'THE WALL IS GONE. GET EVERYBODY OUT.', 'THAT CORE IS WHAT WE BUILT IT AROUND. IT HAS COME BACK FOR IT.'],
+  // ---- ZONE 1 ----
+  undercroft: ['IT WENT WEST. WEST IS THE OLD SYSTEM. THERE IS NOTHING WEST.', 'THERE ARE PEOPLE LIVING IN THE UNDERCROFT. THERE SHOULD NOT BE.',
+    'THE UNDERCROFT IS QUIET NOW.', 'NINE YEARS OF LAMP OIL. HE KNEW SOMETHING WAS DOWN THERE WITH HIM.'],
+  shaft: ['SHAFT 4 DROPS SIX HUNDRED FEET INTO THE OLD RELIEF SYSTEM.', 'IT IS GOING DOWN THE SHAFT. VOLUNTARILY.',
+    'BOTTOM OF THE SHAFT. NO TELEMETRY. NO LIGHT.', 'THAT BOLT HELD THE CITY UP. IT PULLED IT OUT LIKE A TOOTH.'],
+  junction: ['NINE MAINS MEET AT JUNCTION 9. THE VAULT WAS SEALED IN 1974.', 'THE SEAL ON THE VAULT IS NOT HOLDING.',
+    'WHATEVER WE SEALED IN THERE IS DEAD. SO IS THE SEAL.', 'THEY TURNED THAT WHEEL ONCE AND THEN WELDED THE DOOR.'],
+  gallery: ['THE TRUNK MAIN RUNS ELEVEN MILES UNDER THE CITY.', 'IT IS HALFWAY UP THE MAIN AND IT HAS NOT SURFACED.',
+    'IT RAN THE WHOLE MAIN. IT KNOWS THE SYSTEM BETTER THAN WE DO.', 'THE CROWN OF THE MAIN IS COMING DOWN. IT TOOK A PIECE AS A SOUVENIR.'],
+  sump: ['THE SUMP IS THE END OF THE SYSTEM. EVERYTHING SETTLES THERE.', 'THERE IS SOMETHING IN THE SUMP THAT WE DID NOT PUT THERE.',
+    'THE SUMP IS CLEAR. GOD HELP US, THE SUMP IS CLEAR.', 'IT WAS WEARING THAT. SOMETHING DOWN HERE WAS WEARING A CROWN.'],
+  // ---- ZONE 3 ----
+  shelf: ['PAST THE WALL THE BOTTOM SHELVES OUT. TWENTY MILES OF SEAGRASS.', 'THE SHELF IS EMPTYING AHEAD OF IT.',
+    'NOTHING LEFT ON THE SHELF BUT SAND.', 'THIRTY YEARS OF THAT NET DRAGGING THIS BOTTOM. IT LASTED ONE AFTERNOON.'],
+  reef: ['THE REEF IS A PROTECTED SITE. IT IS ALSO A LARDER.', 'THE REEF FISH ARE STACKING UP AGAINST THE WALL.',
+    'THE REEF IS STRIPPED.', 'FIVE HUNDRED MILLION YEARS OF DESIGN, AND IT FITS IN YOUR MOUTH.'],
+  wall: ['THE WALL DROPS TWELVE HUNDRED FEET. BEYOND IT WE HAVE NO CHARTS.', 'IT IS HUNTING ALONG THE FACE OF THE WALL.',
+    'THE PELAGICS HAVE LEFT THE WALL.', 'THAT VIEWPORT CAME OFF ALVIN-CLASS. WE NEVER RECOVERED THE HULL.'],
+  trench: ['TRENCH FLOOR. NINETEEN HUNDRED FEET. NOTHING SHOULD HOLD TOGETHER DOWN THERE.', 'IT IS HOLDING TOGETHER DOWN THERE.',
+    'THE LIGHT IN THE TRENCH HAS GONE OUT.', 'IT IS STILL GLOWING IN ITS TEETH. THE PROJECT IS OVER.'],
+};
+const Story = {
+  begin(stage) { G.story = { id: stage && stage.id, said: [0, 0, 0, 0] }; this.say(0); },
+  say(i) {
+    const st = G.story; if (!st) return;
+    const lines = STORY[st.id]; if (!lines || !lines[i] || st.said[i]) return;
+    st.said[i] = 1;
+    G.dispatch = { text: lines[i], t: 0, life: 5.5 + lines[i].length * 0.03 };
+    SFX.ui && SFX.ui();
+  },
+  tick(dt) { const d = G.dispatch; if (!d) return; d.t += dt; if (d.t > d.life) G.dispatch = null; },
 };
 
 const Missions = {
@@ -51,14 +139,15 @@ const Missions = {
   },
   start(stage) {
     const def = stage && MISSIONS[stage.id];
-    if (!def) { G.mission = null; return; }
+    if (!def) { G.mission = null; G.story = null; G.dispatch = null; return; }
     const art = ARTIFACTS.find(a => a.stage === stage.id);
     // a site you have already stripped still plays, it just has nothing left on it
     const x0 = G.player.x;
     // a "reach" order is a place, not a distance: the span depends on where the
     // run actually starts, which for the outfall is back in the tank
     const target = def.atX !== undefined ? Math.max(60, Math.round(def.atX - x0)) : def.target;
-    G.mission = { id: stage.id, def, art, target, n: 0, done: this.has(art && art.id), claimed: this.has(art && art.id), relic: null, x0, flashT: 0 };
+    G.mission = { id: stage.id, def, art, target, n: 0, done: this.has(art && art.id), claimed: this.has(art && art.id), relic: null, x0, flashT: 0, halfSaid: false };
+    Story.begin(stage);
   },
   bump(kind, n = 1) {
     const m = G.mission; if (!m || m.done || m.def.kind !== kind) return;
@@ -78,16 +167,20 @@ const Missions = {
   },
   onWreck() { this.bump('wreck'); if (G.player && !G.player.dead) Trials.bump(G.player, 'wrecks'); },
   tick(dt) {
+    Story.tick(dt);
     const m = G.mission; if (!m) return;
     if (m.flashT > 0) m.flashT -= dt;
     if (m.done) return;
     const P = G.player;
     if (m.def.kind === 'reach') { m.n = clamp(P.x - m.x0, 0, m.target); if (m.n >= m.target) this.complete(); }
     if (m.def.kind === 'travel') { m.n = Math.max(m.n, clamp(Math.abs(P.x - m.x0), 0, m.target)); if (m.n >= m.target) this.complete(); }
+    if (m.def.kind === 'depth') { m.n = Math.max(m.n, clamp(P.y - World.surface(P.x), 0, m.target)); if (m.n >= m.target) this.complete(); }
+    if (!m.halfSaid && m.n >= m.target * 0.5) { m.halfSaid = true; Story.say(1); }
   },
   complete() {
     const m = G.mission; if (!m || m.done) return;
     m.done = true; m.n = m.target;
+    Story.say(2);
     G.addScore(4000);
     if (!m.art || this.has(m.art.id)) {
       G.banner = { text: 'ORDER COMPLETE', sub: m.def.title, t: 3.5, max: 3.5, color: '#ffd060' };
@@ -95,9 +188,11 @@ const Missions = {
     }
     // drop the relic in reachable water ahead of you, with a beacon on it
     const P = G.player, side = P.facing || 1;
+    // a relic dropped in the sewer has to be allowed to land in the sewer
+    const roofOk = World.isIndoor(P.x);
     let rx = null;
     for (const d of [220, 340, 460, 160, 620]) {
-      const x = World.findX(P.x + side * d, xx => World.floorY(xx) > 34 && !World.isIndoor(xx), 400, 20);
+      const x = World.findX(P.x + side * d, xx => World.floorY(xx) > 34 && (roofOk || !World.isIndoor(xx)), 400, 20);
       if (x !== null) { rx = x; break; }
     }
     if (rx === null) rx = P.x + side * 200;
@@ -116,6 +211,7 @@ const Missions = {
     const P = G.player;
     P.genePoints += 3; P.newPoints += 3;
     art.apply(P);
+    Story.say(3);
     G.addScore(6000);
     G.banner = { text: art.name, sub: art.boon, t: 5, max: 5, color: art.col };
     G.fx.text(P.x, P.y - 34 * P.vis, 'RELIC CLAIMED', { color: art.col, scale: 3, life: 2 });
@@ -179,6 +275,15 @@ function drawRelicGlyph(ctx, art, x, y, spin = 0, s = 1) {
     case 'prop': w(-6 + tilt, -1, 12, 2, c); w(-1 + tilt, -6, 2, 12, c); w(-1 + tilt, -1, 2, 2, l); w(4 + tilt, -1, 2, 2, d); w(-1 + tilt, 4, 2, 2, d); break;
     case 'lantern': w(-3 + tilt, -6, 6, 2, d); w(-4 + tilt, -4, 8, 8, c); w(-2 + tilt, -2, 4, 4, '#fff0a0'); w(-4 + tilt, 4, 8, 2, d); w(-1 + tilt, -8, 2, 2, d); break;
     case 'tooth': w(-4 + tilt, -6, 8, 4, c); w(-4 + tilt, -6, 8, 1, l); w(-3 + tilt, -2, 6, 3, c); w(-2 + tilt, 1, 4, 3, c); w(-1 + tilt, 4, 2, 3, c); w(2 + tilt, -2, 1, 3, d); break;
+    case 'lamp2': w(-1 + tilt, -8, 2, 2, d); w(-4 + tilt, -6, 8, 2, d); w(-3 + tilt, -4, 6, 7, c); w(-2 + tilt, -3, 4, 5, '#fff0b0'); w(-1 + tilt, -2, 2, 3, '#ffffff'); w(-4 + tilt, 3, 8, 2, d); break;
+    case 'bolt': w(-3 + tilt, -7, 6, 3, l); w(-2 + tilt, -4, 4, 10, c); w(-2 + tilt, -4, 1, 10, d); for (let i = -2; i < 5; i += 2) w(-2 + tilt, i, 4, 1, d); break;
+    case 'valve': w(-6 + tilt, -1, 12, 2, c); w(-1 + tilt, -6, 2, 12, c); w(-5 + tilt, -5, 10, 2, c); w(-5 + tilt, 3, 10, 2, c); w(-2 + tilt, -2, 4, 4, d); w(-1 + tilt, -1, 2, 2, l); break;
+    case 'rebar': w(-1 + tilt, -8, 2, 12, c); w(-1 + tilt, -8, 1, 12, l); w(0 + tilt, 4, 4, 2, c); for (let i = -7; i < 4; i += 3) w(-2 + tilt, i, 4, 1, d); break;
+    case 'crown': w(-6 + tilt, -1, 12, 5, c); w(-6 + tilt, -1, 12, 1, l); w(-6 + tilt, -5, 2, 4, c); w(-1 + tilt, -7, 2, 6, c); w(4 + tilt, -5, 2, 4, c); w(-1 + tilt, -8, 2, 2, l); w(-5 + tilt, 1, 1, 1, d); w(3 + tilt, 1, 1, 1, d); break;
+    case 'net': for (let i = -6; i <= 6; i += 3) w(i + tilt, -6, 1, 12, c); for (let j = -6; j <= 5; j += 3) w(-6 + tilt, j, 13, 1, c); w(-6 + tilt, -6, 13, 1, l); w(2 + tilt, 0, 4, 4, d); break;
+    case 'shell': w(-2 + tilt, -6, 5, 2, c); w(-5 + tilt, -4, 9, 2, c); w(-6 + tilt, -2, 11, 3, c); w(-5 + tilt, 1, 9, 2, c); w(-3 + tilt, 3, 6, 2, c); w(-2 + tilt, -4, 3, 1, l); w(-1 + tilt, -1, 3, 1, d); break;
+    case 'plate': w(-6 + tilt, -5, 12, 10, d); w(-5 + tilt, -4, 10, 8, c); w(-4 + tilt, -3, 7, 5, l); w(-4 + tilt, -3, 3, 2, '#ffffff'); break;
+    case 'esca': w(-1 + tilt, 1, 2, 5, d); w(-2 + tilt, -1, 4, 3, d); w(-3 + tilt, -6, 6, 5, c); w(-2 + tilt, -5, 4, 3, l); w(-1 + tilt, -8, 2, 2, l); break;
     default: w(-4 + tilt, -4, 8, 8, d); w(-3 + tilt, -3, 6, 6, c); w(-2 + tilt, -2, 4, 4, l); w(-1 + tilt, -6, 2, 2, c); w(-1 + tilt, 4, 2, 2, c); break;
   }
 }

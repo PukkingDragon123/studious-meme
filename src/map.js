@@ -4,8 +4,50 @@
 // shore and channel of one long swamp, split into named biomes that each carry
 // their own palette, plants, animals and human activity.
 // ---------------------------------------------------------------------------
+// The drowned municipal system west of the lab is authored as one table so the
+// floor and the ceiling can never drift apart: [x, floorY, roofY]. Headroom is
+// the whole design here — long tight runs you have to surface in, crawls that
+// squeeze, chambers that open overhead, and one shaft that drops away.
+const SEWER_SECTION = [
+  // ---- THE OUTFALL SUMP: a vaulted dead end, deep and still --------------
+  [-16000, 260, -210], [-15840, 300, -230], [-15660, 330, -200], [-15480, 280, -150],
+  [-15300, 210, -110], [-15120, 170, -86], [-14940, 120, -60], [-14760, 96, -44],
+  [-14580, 130, -70], [-14400, 180, -120],
+  // ---- THE DEEP GALLERY: the trunk main, with ledges and side vaults -----
+  [-14300, 150, -100], [-14160, 90, -64], [-14020, 40, -50],
+  [-13900, -26, -124], [-13800, -30, -128],                        // dry maintenance ledge
+  [-13700, 36, -60], [-13560, 110, -48], [-13420, 150, -40],     // low run, barely a hand of air
+  [-13280, 120, -54], [-13140, 170, -96],
+  [-13000, 240, -180], [-12840, 300, -250], [-12680, 330, -270], // the gallery vault
+  [-12520, 280, -210], [-12360, 200, -140], [-12200, 130, -80], [-12060, 60, -54],
+  [-11920, -28, -122], [-11820, -32, -126],                        // pump house floor
+  [-11720, 40, -56], [-11580, 110, -44], [-11440, 90, -34],      // the tightest crawl in the system
+  [-11300, 130, -58], [-11160, 180, -110], [-11020, 150, -90], [-10880, 100, -62],
+  [-10740, 140, -70], [-10600, 190, -120], [-10460, 160, -96],
+  // ---- JUNCTION 9: the hub, and the spokes running off it ---------------
+  [-10400, 140, -86], [-10260, 210, -160], [-10100, 300, -260],
+  [-9940, 360, -330], [-9780, 330, -300],                        // the junction vault
+  [-9620, 250, -200], [-9460, 150, -110], [-9320, 60, -70],
+  [-9200, -26, -136], [-9100, -30, -140],                         // side gallery, walkable
+  [-9000, 44, -72], [-8860, 120, -50], [-8720, 170, -42], [-8580, 140, -56],
+  [-8440, 200, -120], [-8300, 260, -190], [-8160, 220, -160], [-8020, 150, -96],
+  [-7880, 90, -60], [-7740, 130, -46], [-7600, 170, -54], [-7460, 210, -110],
+  // ---- THE DROP SHAFT: the system falls away under the city -------------
+  [-7400, 230, -140], [-7260, 300, -220], [-7120, 420, -360], [-6980, 560, -540],
+  [-6840, 700, -760], [-6700, 780, -820], [-6560, 720, -760],    // the shaft itself
+  [-6420, 600, -600], [-6280, 460, -430], [-6140, 330, -300], [-6000, 220, -190],
+  [-5860, 140, -110], [-5720, 90, -70], [-5580, 130, -56], [-5440, 180, -80],
+  [-5300, 150, -110],
+  // ---- THE UNDERCROFT: somebody lives down here -------------------------
+  [-5200, 120, -96], [-5060, 60, -120],
+  [-4920, -28, -150], [-4800, -36, -160], [-4680, -30, -150],    // the camp ledge
+  [-4560, 50, -120], [-4420, 120, -96], [-4280, 170, -130], [-4140, 140, -150],
+  [-4000, 80, -120], [-3860, 40, -100], [-3720, 90, -80], [-3580, 130, -70],
+  [-3440, 96, -90], [-3300, 40, -110], [-3220, -40, -130], [-3140, -58, -140],
+];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
+  ...SEWER_SECTION.map(p => [p[0], p[1]]),
   // containment lab: a dry concrete floor with the tank at the west end
   [-3000, -60], [-2700, -60], [-2500, -60], [-2380, -58], [-2300, -56],
   // sewer tunnel: a shallow flooded run east toward daylight
@@ -44,6 +86,31 @@ const MAP_PROFILE = [
   [15500, 780], [15800, 840], [16100, 880], [16400, 860], [16700, 800],
   [17000, 700], [17250, 520], [17450, 300], [17600, 90], [17700, -70],
   [17900, -96], [18200, -100], [18600, -98], [19000, -100],
+  // ===================== OPEN OCEAN =============================
+  // Past the seawall the bottom falls away: a sand shelf, then reef, then the
+  // wall, then blue water over a trench with caves cut into its sides.
+  [19300, -60], [19500, 40], [19700, 160], [19950, 280], [20200, 340],          // shelf, shelving out
+  [20500, 300], [20800, 360], [21100, 420], [21400, 380], [21700, 300],
+  [22000, 260], [22300, 320], [22600, 290], [22900, 220], [23200, 260],         // the reef: broken relief
+  [23500, 340], [23800, 300], [24100, 230], [24400, 280], [24700, 360],
+  [25000, 420], [25300, 560], [25600, 780], [25900, 1020], [26200, 1180],       // the wall
+  [26550, 1240], [26900, 1200], [27250, 1260], [27600, 1220], [27950, 1280],    // blue water
+  [28300, 1240], [28650, 1300], [29000, 1260], [29350, 1180], [29700, 1240],
+  [30050, 1420], [30400, 1620], [30750, 1780], [31100, 1860], [31450, 1820],    // the trench
+  [31800, 1900], [32150, 1960], [32500, 1900], [32850, 1840], [33200, 1880],
+  [33550, 1820], [33900, 1760], [34250, 1800], [34600, 1840], [35000, 1820],
+];
+// ---------------------------------------------------------------------------
+// Roof profile. Only the enclosed stretches have one: the sewer network the
+// whole way, and the ocean caves cut into the trench wall. Between control
+// points the roof is interpolated exactly like the floor, so a tunnel can
+// pinch to a crawl, open into a chamber, or rise into a shaft.
+// ---------------------------------------------------------------------------
+const ROOF_PROFILE = SEWER_SECTION.map(p => [p[0], p[2]]);
+const OCEAN_CAVES = [
+  // [x0, x1, roof] — overhangs and cave mouths in the trench wall
+  [26050, 26600, 420], [27400, 27900, 760], [29100, 29700, 900],
+  [30600, 31400, 1180], [32200, 32900, 1360],
 ];
 const MapData = {
   x0: MAP_PROFILE[0][0], x1: MAP_PROFILE[MAP_PROFILE.length - 1][0],
@@ -59,11 +126,85 @@ const MapData = {
     const wob = vnoise(x * 0.045, 11) * 6 - 3 + vnoise(x * 0.012, 3) * 10 - 5;
     return base + wob * (Math.abs(base) > 8 ? 1 : 0.35);
   },
+  // interpolated roof, or null where the sky is open
+  roofY(x) {
+    const R = ROOF_PROFILE;
+    // west of the first control point is the bulkhead the system dead-ends on
+    if (x < R[0][0] && x > R[0][0] - 3000) return R[0][1];
+    if (x >= R[0][0] && x <= R[R.length - 1][0]) {
+      let lo = 0, hi = R.length - 1;
+      while (lo < hi - 1) { const m = (lo + hi) >> 1; if (R[m][0] <= x) lo = m; else hi = m; }
+      const a = R[lo], b = R[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
+      const base = lerp(a[1], b[1], t * t * (3 - 2 * t));
+      return base + vnoise(x * 0.05, 31) * 8 - 4 + Math.sin(x * 0.021) * 3;
+    }
+    // ocean caves: an overhang that closes over the water for a stretch
+    for (const [cx0, cx1, r] of OCEAN_CAVES) {
+      if (x < cx0 || x > cx1) continue;
+      const u = (x - cx0) / (cx1 - cx0);
+      // the mouth flares open at both ends so it never reads as a hard wall
+      const flare = Math.min(1, Math.min(u, 1 - u) * 5);
+      if (flare <= 0.02) return null;
+      return r * flare + vnoise(x * 0.04, 41) * 14 - 7;
+    }
+    return null;
+  },
 };
 // ---------------------------------------------------------------------------
 // Biomes
 // ---------------------------------------------------------------------------
 const BIOMES = [
+  // ===================== SEWER NETWORK ==========================
+  {
+    id: 'sump', name: 'THE OUTFALL SUMP', x0: -16600, x1: -14300,
+    sky: ['#070d10', '#101a1e'], water: ['#41532c', '#25321a', '#0a0e07'], scum: '#7a8a2a', fog: '#101c1e',
+    parallax: ['block', 'pipe', 'block'], ground: ['#2e3438', '#22282c', '#161a1e'], grass: '#3a4a34',
+    indoor: true, roof: -200, dark: 0.72, toxic: 0.5, flora: '#6e7a2a', floraMix: 0.62,
+    plants: [['trash', 2.4], ['algae', 2.2], ['rubble', 1.8], ['pipe', 1.4], ['weed', 0.8]],
+    fish: [['cavefish', 3], ['sewereel', 2.2], ['sludgecarp', 2], ['piranha', 1.6], ['minnow', 1.4]],
+    land: [['bigrat', 3], ['rat', 4]],
+    structures: [], music: 0.9,
+  },
+  {
+    id: 'gallery', name: 'THE DEEP GALLERY', x0: -14300, x1: -10400,
+    sky: ['#08110f', '#131f1c'], water: ['#3f5a38', '#233420', '#0a110c'], scum: '#6a7a26', fog: '#121e1c',
+    parallax: ['block', 'block', 'pipe'], ground: ['#343a3a', '#262c2c', '#181c1c'], grass: '#3f5a3a',
+    indoor: true, roof: -180, dark: 0.66, toxic: 0.35, flora: '#6a7a2e', floraMix: 0.55,
+    plants: [['algae', 2.6], ['trash', 2], ['rubble', 2], ['pipe', 1.6], ['mushroom', 1.2], ['weed', 1]],
+    fish: [['piranha', 3], ['sludgecarp', 2.4], ['sewereel', 2], ['cavefish', 2], ['walkingcat', 2], ['snakehead', 1.4]],
+    land: [['bigrat', 4], ['rat', 4], ['opossum', 1.2]],
+    structures: [], music: 0.85,
+  },
+  {
+    id: 'junction', name: 'JUNCTION 9', x0: -10400, x1: -7400,
+    sky: ['#0a1412', '#16241f'], water: ['#3d6048', '#21402e', '#091713'], scum: '#6a7a30', fog: '#14211d',
+    parallax: ['pipe', 'block', 'pipe'], ground: ['#3a3f3c', '#2a2f2c', '#1b201e'], grass: '#4a6a3a',
+    indoor: true, roof: -220, dark: 0.58, toxic: 0.25, flora: '#728030', floraMix: 0.46,
+    plants: [['pipe', 2.4], ['rubble', 2], ['trash', 1.8], ['algae', 1.8], ['crate', 1.2], ['mushroom', 1]],
+    fish: [['piranha', 2.6], ['walkingcat', 2.4], ['sludgecarp', 2], ['sewereel', 1.8], ['mutantcat', 0.9], ['tilapia', 1.4]],
+    land: [['bigrat', 3], ['rat', 3], ['vagrant', 1.6]],
+    structures: [], music: 0.7,
+  },
+  {
+    id: 'shaft', name: 'THE DROP SHAFT', x0: -7400, x1: -5200,
+    sky: ['#0c1618', '#1a2a2c'], water: ['#2a5a5e', '#153a3e', '#04161a'], scum: '#4a6a4a', fog: '#16262a',
+    parallax: ['block', 'pipe', 'block'], ground: ['#33383c', '#252a2e', '#171b1f'], grass: '#3a5a44',
+    indoor: true, roof: -520, dark: 0.5, toxic: 0.15, flora: '#6a8a3e', floraMix: 0.36,
+    plants: [['algae', 2.2], ['pipe', 2], ['rubble', 1.8], ['moss', 1.6], ['vine', 1.4], ['mushroom', 1.2]],
+    fish: [['mutantcat', 1.4], ['piranha', 2.4], ['cavefish', 2.4], ['sewereel', 2], ['eel', 1.4], ['catfish', 1.6]],
+    land: [['bigrat', 2.4], ['vagrant', 1.2]],
+    structures: [], music: 0.75,
+  },
+  {
+    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3200,
+    sky: ['#0d1a1c', '#1a2a2c'], water: ['#40705c', '#20463a', '#0a1a16'], scum: '#5a7a3a', fog: '#1c2c2e',
+    parallax: ['block', 'pipe', 'block'], ground: ['#3d4342', '#2d3332', '#1e2322'], grass: '#456a44',
+    indoor: true, roof: -150, dark: 0.42, toxic: 0.08, flora: '#6f8a44', floraMix: 0.3,
+    plants: [['crate', 2], ['trash', 2], ['rubble', 1.6], ['algae', 1.6], ['pipe', 1.4], ['mushroom', 1.4], ['moss', 1.2]],
+    fish: [['walkingcat', 2.6], ['sludgecarp', 2], ['piranha', 1.6], ['cavefish', 1.6], ['tilapia', 1.6], ['minnow', 2]],
+    land: [['vagrant', 2.4], ['bigrat', 2.6], ['rat', 3], ['opossum', 1.4]],
+    structures: [], music: 0.55,
+  },
   {
     id: 'lab', name: 'CONTAINMENT', x0: -3200, x1: -2260,
     sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
@@ -166,7 +307,7 @@ const BIOMES = [
   },
   {
     // Endgame. A dredged harbour under a city that has finally noticed you.
-    id: 'seawall', name: 'THE SEAWALL', x0: 15300, x1: 99999,
+    id: 'seawall', name: 'THE SEAWALL', x0: 15300, x1: 19000,
     sky: ['#141c34', '#40506e'], water: ['#1d5c74', '#0c3346', '#02121c'], scum: '#3a5a5a', fog: '#5a6a86',
     parallax: ['tower', 'block', 'tower'], ground: ['#5e6068', '#43454c', '#2a2c32'], grass: '#4a5a4a',
     plants: [['rubble', 2.2], ['rock', 1.6], ['trash', 1.8], ['pipe', 1.4], ['algae', 1.2], ['shellbed', 1]],
@@ -174,6 +315,43 @@ const BIOMES = [
     land: [['ranger', 2], ['poacher', 2]],
     structures: [['seawall', 3], ['sign', 0.6]],
     town: true, kaiju: true, music: 1.2,
+  },
+  // ===================== OPEN OCEAN =============================
+  {
+    id: 'shelf', name: 'THE SHELF', x0: 19000, x1: 21800,
+    sky: ['#3a86c8', '#dceaf2'], water: ['#3aa8c0', '#1e6a86', '#0a2a3a'], scum: '#7a9a6a', fog: '#cfe4ee',
+    parallax: ['bluff', 'block', 'bluff'], ground: ['#c8bc9a', '#a89a78', '#7a6e54'], grass: '#7aa86a', open: 'coast',
+    plants: [['weed', 2.2], ['algae', 1.8], ['reed', 1.2], ['oyster', 1.4], ['rubble', 1]],
+    fish: [['mullet', 3], ['snapper', 2.6], ['ladyfish', 2], ['sheepshead', 2], ['redfish', 2], ['ray', 1.6], ['tarpon', 1.4]],
+    land: [], structures: [['buoy', 1.6], ['crabtrap', 1.2]],
+    music: 0.3,
+  },
+  {
+    id: 'reef', name: 'THE REEF', x0: 21800, x1: 25000,
+    sky: ['#2f7ec4', '#cfe8f4'], water: ['#2fb0b8', '#1a7a86', '#07303c'], scum: '#8aa85a', fog: '#c0e2ee',
+    parallax: ['bluff', 'bluff', 'block'], ground: ['#c0a884', '#9a8464', '#6e5c44'], grass: '#5ab0a0', open: 'reef',
+    plants: [['coral', 3.2], ['fan', 2.4], ['sponge', 2], ['weed', 1.6], ['algae', 1.4], ['oyster', 1.2]],
+    fish: [['parrotfish', 3], ['angelfish', 2.8], ['snapper', 2.4], ['lionfish', 1.6], ['barracuda', 1.4], ['grouper', 1], ['moray', 1.2], ['turtle', 1.2]],
+    land: [], structures: [['buoy', 1], ['wreck', 1.2]],
+    music: 0.35,
+  },
+  {
+    id: 'wall', name: 'THE WALL', x0: 25000, x1: 29800,
+    sky: ['#1e5e9e', '#9ac4dc'], water: ['#1f7a92', '#104a62', '#031824'], scum: '#5a7a5a', fog: '#8ab0c8',
+    parallax: ['bluff', 'block', 'bluff'], ground: ['#7a7060', '#5a5246', '#3a352c'], grass: '#3a8a80', open: 'rig',
+    plants: [['fan', 2.4], ['coral', 2], ['sponge', 1.8], ['kelp', 2.2], ['algae', 1.4]],
+    fish: [['tuna', 2.4], ['barracuda', 2.4], ['hammer', 1.2], ['shark', 1.4], ['grouper', 1.6], ['moray', 1.4], ['dolphin', 1.2], ['manatee', 0.8], ['sawfish', 1]],
+    land: [], structures: [['wreck', 1.4]],
+    dark: 0.2, flora: '#5a8a90', floraMix: 0.4, music: 0.7,
+  },
+  {
+    id: 'trench', name: 'THE TRENCH', x0: 29800, x1: 35400,
+    sky: ['#0a2436', '#245878'], water: ['#12465c', '#082a3a', '#010b12'], scum: '#3a5a4a', fog: '#123044',
+    parallax: ['bluff', 'bluff', 'block'], ground: ['#4a4a50', '#34343a', '#202024'], grass: '#2a6a70', open: 'deep',
+    plants: [['tubeworm', 3.2], ['sponge', 2], ['fan', 1.2], ['coral', 1], ['rubble', 2]],
+    fish: [['anglerfish', 2.4], ['oarfish', 1.2], ['isopod', 2.4], ['moray', 1.4], ['hammer', 1.4], ['grouper', 1.2], ['eel', 1.6]],
+    land: [], structures: [['wreck', 1.6]],
+    dark: 0.72, flora: '#7a8a96', floraMix: 0.6, pressure: 1, music: 0.95,
   },
 ];
 const Biome = {
@@ -196,6 +374,8 @@ const Biome = {
       scum: mixColor(a.scum, b.scum, t), fog: mixColor(a.fog, b.fog, t), grass: mixColor(a.grass, b.grass, t),
       ground: [mixColor(a.ground[0], b.ground[0], t), mixColor(a.ground[1], b.ground[1], t), mixColor(a.ground[2], b.ground[2], t)],
       parallax: t > 0.5 ? b.parallax : a.parallax, plants: a.plants, fish: a.fish, land: a.land, structures: a.structures,
+      flora: a.flora || b.flora || null, floraMix: lerp(a.floraMix || 0, b.floraMix || 0, t), open: t > 0.5 ? b.open : a.open,
+      toxic: lerp(a.toxic || 0, b.toxic || 0, t), pressure: lerp(a.pressure || 0, b.pressure || 0, t), indoor: t > 0.5 ? b.indoor : a.indoor,
     };
   },
   // decor for one strip of ground, chosen from the biome's plant table
@@ -225,7 +405,12 @@ const PLANT_RULES = {
   sunkbranch: { land: false, minD: 60, make: (o, x, y, r) => o.push({ type: 'sunkbranch', x, y, s: 0.9 + r() * 0.9, flip: r() < 0.5 }) },
   shellbed: { land: false, minD: 80, make: (o, x, y, r) => o.push({ type: 'shellbed', x, y, n: 3 + Math.floor(r() * 6) }) },
   oyster: { land: false, minD: 10, maxD: 120, make: (o, x, y, r) => o.push({ type: 'oyster', x, y, n: 3 + Math.floor(r() * 5) }) },
-  coral: { land: false, minD: 200, make: (o, x, y, r) => o.push({ type: 'coral', x, y, s: 0.8 + r() * 0.8, v: Math.floor(r() * 3) }) },
+  coral: { land: false, minD: 180, make: (o, x, y, r) => { if (r() < 0.45) return; o.push({ type: 'coral', x, y, s: 0.8 + r() * 1.1, v: Math.floor(r() * 4), ph: r() * TAU }); } },
+  // --- reef and deep-ocean growth ---
+  fan: { land: false, minD: 200, make: (o, x, y, r) => { if (r() < 0.4) return; o.push({ type: 'fan', x, y, s: 0.9 + r() * 1.0, v: Math.floor(r() * 3), lean: r() < 0.5 ? -1 : 1, ph: r() * TAU }); } },
+  sponge: { land: false, minD: 240, make: (o, x, y, r) => { if (r() < 0.35) return; o.push({ type: 'sponge', x, y, s: 0.8 + r() * 0.9, n: 1 + Math.floor(r() * 3), v: Math.floor(r() * 3), ph: r() * TAU }); } },
+  kelp: { land: false, minD: 200, maxD: 620, make: (o, x, y, r) => o.push({ type: 'kelp', x, y, h: 70 + r() * 150, ph: r() * TAU, v: r() < 0.5 ? 0 : 1 }) },
+  tubeworm: { land: false, minD: 700, make: (o, x, y, r) => o.push({ type: 'tubeworm', x, y, n: 3 + Math.floor(r() * 5), s: 0.8 + r() * 0.7, ph: r() * TAU }) },
   rock: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'rock', x, y, v: r() < 0.5 ? 0 : 1, s: 1.1 + r() * 1.8 }) },
   log: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'log', x, y, s: 1 + r() * 1.2 }) },
   trash: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'trash', x, y, v: Math.floor(r() * 4), s: 0.9 + r() * 0.6 }) },

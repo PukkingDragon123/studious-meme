@@ -43,15 +43,15 @@ function gene(o) { GENES.push(o); return o; }
       ['wraith', 'WRAITH', 'APEX: +50% stamina, +60% leap, time slows when you breach, afterimages.', p => { p.st.dashCharges += 1; p.st.dashDist *= 1.6; p.st.dashBite = true; p.st.leapMul *= 1.6; p.st.wraith = true; p.evo.phantom = true; }, L => { L.glow = '#c0e8ff'; L.eye = '#ffffff'; }, 'Barely there: -30% max HP.', p => { p.st.hpMul *= 0.7; }, 6],
     ],
     abyssal: [
-      ['venom', 'VENOM GLANDS', 'Bites poison: 40% extra damage over 3s, and poisoned prey crawls.', p => { p.st.venom += 0.4; }, L => { L.spots = '#40f0c8'; }, 'Glands where muscle was: -15% bite.', p => { p.st.bite *= 0.85; }, 2],
+      ['venom', 'VENOM GLANDS', 'Bites poison: 40% extra damage over 3s, and poisoned prey crawls. Filth builds half as fast.', p => { p.st.venom += 0.4; p.st.toxRes *= 2; }, L => { L.spots = '#40f0c8'; }, 'Glands where muscle was: -15% bite.', p => { p.st.bite *= 0.85; }, 2],
       ['regen', 'REGENERATION', 'Regenerate 2.5% HP a second while fed.', p => { p.st.regen += 0.025; }, L => { L.gills = true; }, 'Mending costs mass: -20% growth.', p => { p.st.growth *= 0.8; }, 3],
-      ['lure', 'BIOLUMINESCENT LURE', 'A glow draws small prey to your mouth.', p => { p.st.lure = 200; p.st.magnet = Math.max(p.st.magnet, 150); }, L => { L.glow = '#40f0c8'; }, 'An ambusher waits: -20% speed.', p => { p.st.speed *= 0.8; }, 4],
+      ['lure', 'BIOLUMINESCENT LURE', 'A glow draws small prey to your mouth, and you are rated 60% deeper.', p => { p.st.lure = 200; p.st.magnet = Math.max(p.st.magnet, 150); p.st.crushDepth *= 1.6; }, L => { L.glow = '#40f0c8'; }, 'An ambusher waits: -20% speed.', p => { p.st.speed *= 0.8; }, 4],
       ['leviathan', 'LEVIATHAN', 'APEX: every 6th bite unleashes a shockwave. Toxic blood, immune to venom.', p => { p.st.leviathan = true; p.st.toxicBlood = true; p.st.venomImmune = true; p.evo.abyssal = true; }, L => { L.glow = '#40f0c8'; L.spots = '#80fff0'; L.fin = '#40f0c8'; }, 'Soft between the plates: -25% armour.', p => { p.st.armor -= 0.25; }, 6],
     ],
     colossus: [
       ['gorge', 'GORGE', 'Meals grow you 30% more.', p => { p.st.growth *= 1.3; }, L => { L.belly = mixColor(L.belly, '#f0e8c0', 0.3); }, 'Always hungry: hunger drains 30% faster.', p => { p.st.hungerRate *= 1.3; }, 2],
       ['unhinged', 'UNHINGED JAW', 'Swallow prey up to 90% of your size whole.', p => { p.st.swallow *= 1.8; p.st.hungerRestore *= 1.25; }, L => { L.stripe2 = true; }, 'A loose jaw drags: -15% speed.', p => { p.st.speed *= 0.85; }, 3],
-      ['bulk', 'DENSE BULK', '+50% max HP and prey under 60% of your size flees in terror.', p => { p.st.hpMul *= 1.5; p.st.fearAura = true; }, L => { L.paddle = shade(L.mid, 0.8); }, 'Turns like a barge: -25% acceleration, -20% turn.', p => { p.st.accel *= 0.75; p.st.turn *= 0.8; }, 4],
+      ['bulk', 'DENSE BULK', '+50% max HP, prey under 60% of your size flees in terror, and pressure works on you slower.', p => { p.st.hpMul *= 1.5; p.st.fearAura = true; p.st.crushRes *= 1.7; }, L => { L.paddle = shade(L.mid, 0.8); }, 'Turns like a barge: -25% acceleration, -20% turn.', p => { p.st.accel *= 0.75; p.st.turn *= 0.8; }, 4],
       ['titan', 'TITAN', 'APEX: +40% growth again, bites shake the swamp, and you crush what you ram.', p => { p.st.growth *= 1.4; p.st.quake = true; p.st.bullRush = true; p.st.ramMul *= 1.5; p.evo.colossus = true; }, L => { L.spikes = 2; L.horn = true; }, 'Mass is not momentum: -30% speed.', p => { p.st.speed *= 0.7; }, 6],
     ],
     savage: [

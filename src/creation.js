@@ -91,6 +91,10 @@ const VIALS = [
     eff: '+2 GENE POINTS PER TIER, +1 STRAIN TOLERANCE', apply: P => { P.vialTierBonus = 2; P.strainBonus = (P.strainBonus || 0) + 1; } },
   { id: 'bile', name: 'DIGESTIVE BILE', col: '#7a9a20', line: 'DISSOLVES BONE, SHELL AND HULL.',
     eff: 'EAT ARMOURED PREY WHOLE, -10% BITE', apply: P => { P.st.ironStomach = true; P.st.swallow *= 1.3; P.st.bite *= 0.9; } },
+  { id: 'filter', name: 'HEPATIC FILTER CULTURE', col: '#8ab820', line: 'GROWN IN A SUMP. IT DRINKS WHAT WOULD KILL YOU.',
+    eff: 'FILTH BUILDS 70% SLOWER, -10% BITE', apply: P => { P.st.toxRes *= 3.2; P.st.bite *= 0.9; } },
+  { id: 'baro', name: 'BAROPHILIC MARROW', col: '#4a9ac8', line: 'TAKEN OFF SOMETHING DREDGED UP FROM A MILE DOWN.',
+    eff: 'RATED TWICE AS DEEP, -12% SPEED AT THE SURFACE', apply: P => { P.st.crushDepth *= 2.2; P.st.crushRes *= 1.8; P.st.speed *= 0.88; } },
 ];
 const VIAL_BY_ID = {};
 for (const v of VIALS) VIAL_BY_ID[v.id] = v;

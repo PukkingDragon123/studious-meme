@@ -7,9 +7,17 @@ const World = {
   floorY(x) { return MapData.floorY(x); },
   // inside the lab and sewer the world has a ceiling; elsewhere it is open sky
   roofY(x) {
+    // An authored roof beats a flat one: the sewer network and the ocean caves
+    // both want headroom that changes along their length — crawls, chambers,
+    // shafts — and a per-biome constant cannot express any of that.
+    const pr = MapData.roofY(x);
+    if (pr !== null) {
+      // the mouth of the storm drain flares open so daylight leaks in
+      if (x > -320 && x < 200) return pr - (x + 320) * 0.45;
+      return pr;
+    }
     const B = Biome.at(x); if (!B.indoor) return null;
     const r = B.roof + Math.sin(x * 0.02) * 3 + vnoise(x * 0.05, 21) * 6;
-    // the mouth of the tunnel flares open so daylight leaks in
     if (B.id === 'sewer' && x > -320) return r - (x + 320) * 0.45;
     return r;
   },
@@ -124,10 +132,101 @@ const World = {
     }
     ctx.globalAlpha = 1;
   },
+  // Open water has no treeline. Out past the seawall the horizon is empty
+  // except for what floats on it, so the parallax becomes shipping: hulls at
+  // three distances, a rig standing over the wall, and birds working a bait
+  // ball. Everything sits ON the waterline instead of behind a shore.
+  drawOceanHorizon(ctx, cam, day) {
+    const W = G.W, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
+    if (hy < -50) return;
+    const BP = Biome.mixPal(cam.x), mode = BP.open;
+    const haze = mixColor(sc.bot, BP.fog, 0.5);
+    // a low bank of haze sitting on the join, so the sea meets the sky softly
+    const g0 = ctx.createLinearGradient(0, hy - 26, 0, hy + 3);
+    g0.addColorStop(0, rgba(haze, 0)); g0.addColorStop(1, rgba(haze, 0.7));
+    ctx.fillStyle = g0; ctx.fillRect(0, hy - 26, W, 29);
+    // the last of the land, only while the shelf is still in sight
+    if (mode === 'coast') {
+      const col = mixColor(sc.bot, '#3c5a48', 0.2), ox = cam.x * 0.04;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(0, hy + 2);
+      for (let sx = 0; sx <= W; sx += 6) { const wx = ox + sx; const h = Math.max(0, fbm(wx * 0.0016, 3) - 0.42) * 90; ctx.lineTo(sx, hy - h); }
+      ctx.lineTo(W, hy + 2); ctx.closePath(); ctx.fill();
+    }
+    const SHIPS = [
+      { f: 0.06, s: 0.45, col: 0.68, dens: 1400 },
+      { f: 0.11, s: 0.7, col: 0.45, dens: 1100 },
+      { f: 0.2, s: 1, col: 0.22, dens: 900 },
+    ];
+    for (const L of SHIPS) {
+      const ox = cam.x * L.f, col = mixColor(haze, '#1c2c38', 1 - L.col);
+      for (let k = Math.floor(ox / L.dens) - 1; k <= Math.floor((ox + W) / L.dens) + 1; k++) {
+        const r = ihash(k, 401); if (r > 0.78) continue;
+        const sx = k * L.dens + ihash(k, 402) * L.dens - ox;
+        if (sx < -160 || sx > W + 160) continue;
+        const kind = r < 0.3 ? 'trawler' : r < 0.58 ? 'container' : 'sail';
+        const S = L.s, bob = Math.sin(t * 0.5 + k) * 0.8 * S;
+        const base = hy + bob;
+        ctx.fillStyle = col;
+        if (kind === 'sail') {
+          ctx.fillRect(Math.round(sx - 9 * S), Math.round(base - 3 * S), Math.round(18 * S), Math.round(3 * S));
+          ctx.beginPath(); ctx.moveTo(sx, base - 4 * S); ctx.lineTo(sx, base - 30 * S); ctx.lineTo(sx + 11 * S, base - 4 * S); ctx.closePath(); ctx.fill();
+        } else if (kind === 'trawler') {
+          ctx.fillRect(Math.round(sx - 16 * S), Math.round(base - 5 * S), Math.round(32 * S), Math.round(5 * S));
+          ctx.fillRect(Math.round(sx - 6 * S), Math.round(base - 12 * S), Math.round(11 * S), Math.round(7 * S));
+          ctx.fillRect(Math.round(sx - 2 * S), Math.round(base - 26 * S), Math.round(2 * S), Math.round(14 * S));
+          // derrick booms out over the water
+          ctx.fillRect(Math.round(sx - 16 * S), Math.round(base - 18 * S), Math.round(15 * S), Math.max(1, Math.round(S)));
+          if (night > 0.4) { ctx.fillStyle = mixColor(col, '#ffe2a0', 0.7); ctx.fillRect(Math.round(sx - 3 * S), Math.round(base - 27 * S), Math.max(1, Math.round(2 * S)), Math.max(1, Math.round(2 * S))); ctx.fillStyle = col; }
+        } else {
+          ctx.fillRect(Math.round(sx - 44 * S), Math.round(base - 7 * S), Math.round(88 * S), Math.round(7 * S));
+          ctx.fillRect(Math.round(sx + 20 * S), Math.round(base - 20 * S), Math.round(14 * S), Math.round(13 * S));
+          ctx.fillRect(Math.round(sx + 25 * S), Math.round(base - 30 * S), Math.round(3 * S), Math.round(10 * S));
+          // deck cargo, stacked in blocks
+          for (let q = 0; q < 7; q++) { const bw = 10 * S, bh = (5 + (ihash(k * 9 + q, 403) * 9)) * S; ctx.fillRect(Math.round(sx - 42 * S + q * 11 * S), Math.round(base - 7 * S - bh), Math.round(bw), Math.round(bh)); }
+        }
+      }
+    }
+    // the rig: a platform standing over the drop, legs going down into the blue
+    if (mode === 'rig' || mode === 'deep') {
+      const ox = cam.x * 0.16, dens = 2600, col = mixColor(haze, '#16242e', 0.82);
+      for (let k = Math.floor(ox / dens) - 1; k <= Math.floor((ox + W) / dens) + 1; k++) {
+        if (ihash(k, 411) > 0.55) continue;
+        const sx = k * dens + ihash(k, 412) * dens - ox;
+        if (sx < -180 || sx > W + 180) continue;
+        ctx.fillStyle = col;
+        ctx.fillRect(Math.round(sx - 34), Math.round(hy - 34), 68, 9);
+        for (const lx of [-26, -9, 9, 26]) { ctx.fillRect(Math.round(sx + lx), Math.round(hy - 25), 3, 27); }
+        for (let q = 0; q < 3; q++) ctx.fillRect(Math.round(sx - 30), Math.round(hy - 22 + q * 8), 60, 1);
+        ctx.fillRect(Math.round(sx - 20), Math.round(hy - 50), 15, 16);
+        ctx.fillRect(Math.round(sx + 12), Math.round(hy - 74), 4, 40);
+        // flare stack
+        const fl = 3 + Math.sin(t * 7 + k) * 1.5;
+        ctx.fillStyle = mixColor(col, '#ff9040', 0.75);
+        ctx.fillRect(Math.round(sx + 11), Math.round(hy - 74 - fl), 6, Math.round(fl));
+        if (night > 0.3) { ctx.fillStyle = mixColor(col, '#ffe2a0', 0.8); for (let q = 0; q < 5; q++) ctx.fillRect(Math.round(sx - 30 + q * 14), Math.round(hy - 32), 2, 2); }
+      }
+    }
+    // working birds over a bait ball
+    const bo = cam.x * 0.3;
+    for (let k = Math.floor(bo / 700) - 1; k <= Math.floor((bo + W) / 700) + 1; k++) {
+      if (ihash(k, 421) > 0.5) continue;
+      const cx = k * 700 + ihash(k, 422) * 700 - bo;
+      ctx.fillStyle = mixColor(haze, '#20303a', 0.8);
+      for (let q = 0; q < 9; q++) {
+        const a = t * 0.5 + q * 0.7 + k, bx = cx + Math.cos(a) * (30 + q * 3), by = hy - 26 - Math.abs(Math.sin(a * 1.3)) * 20 - q;
+        const flap = Math.sin(t * 9 + q * 2) > 0 ? 1 : -1;
+        ctx.fillRect(Math.round(bx), Math.round(by), 2, 1);
+        ctx.fillRect(Math.round(bx - 2), Math.round(by - flap), 2, 1);
+        ctx.fillRect(Math.round(bx + 2), Math.round(by - flap), 2, 1);
+      }
+    }
+  },
   drawParallax(ctx, cam, day) {
     const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
+    if (BP.open) { this.drawOceanHorizon(ctx, cam, day); return; }
     // furthest ridge: bare hills, no trees, barely separated from the sky
     {
       const col = mixColor(sc.bot, '#3c5a48', 0.26), ox = cam.x * 0.05;
@@ -274,20 +373,26 @@ const World = {
         ctx.restore();
       }
     }
-    // --- god rays: soft wedges falling from the surface
-    if (light > 0.3) {
+    // --- god rays: soft wedges falling from the surface. Under a concrete
+    // crown they are lamplight through the scum, not sun, so they go warm,
+    // short and sparse; in the deep there is nothing left to make them at all.
+    const roofed = this.isIndoor(cam.x);
+    const rays = roofed ? 3 : 6, rayCol = roofed ? [255, 226, 150] : [215, 255, 240];
+    const rayLen = roofed ? 0.55 : 1, rayA = roofed ? 0.7 : 1;
+    if (light > 0.3 || roofed) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      for (let i = 0; i < 6; i++) {
+      const lightK = roofed ? 1 : light;
+      for (let i = 0; i < rays; i++) {
         const seed = ihash(i, 55), sway = Math.sin(this.t * 0.28 + i * 1.7) * 14 * z;
         const bx = (((seed * 1400 - cam.x * 0.4 * z) % 1400) + 1400) % 1400 - 240 + sway;
-        const bw = (14 + ihash(i, 56) * 26) * z, len = (200 + ihash(i, 57) * 220) * z;
+        const bw = (14 + ihash(i, 56) * 26) * z, len = (200 + ihash(i, 57) * 220) * z * rayLen;
         const gy0 = hy, gy1 = hy + len;
         if (gy0 > H || gy1 < 0) continue;
         const gr = ctx.createLinearGradient(0, gy0, 0, gy1);
-        gr.addColorStop(0, `rgba(215,255,240,${(0.11 * light).toFixed(3)})`);
-        gr.addColorStop(0.45, `rgba(200,248,235,${(0.05 * light).toFixed(3)})`);
-        gr.addColorStop(1, 'rgba(190,240,230,0)');
+        gr.addColorStop(0, `rgba(${rayCol[0]},${rayCol[1]},${rayCol[2]},${(0.11 * lightK * rayA).toFixed(3)})`);
+        gr.addColorStop(0.45, `rgba(${rayCol[0]},${rayCol[1]},${rayCol[2]},${(0.05 * lightK * rayA).toFixed(3)})`);
+        gr.addColorStop(1, `rgba(${rayCol[0]},${rayCol[1]},${rayCol[2]},0)`);
         ctx.fillStyle = gr;
         ctx.beginPath();
         ctx.moveTo(bx, gy0); ctx.lineTo(bx + bw, gy0);
@@ -518,46 +623,247 @@ const World = {
     const W = G.W, H = G.H, z = cam.zoom, step = 4;
     if (!this.isIndoor(cam.toWorldX(W / 2)) && !this.isIndoor(cam.toWorldX(0)) && !this.isIndoor(cam.toWorldX(W))) return;
     const B = Biome.mixPal(cam.x);
-    // back wall behind everything
-    ctx.fillStyle = B.ground[2]; ctx.fillRect(0, 0, W, H);
+    // --- back wall: glazed brick, courses and pilasters -------------------
+    const wall = shade(B.ground[2], 1.2), wallD = shade(B.ground[2], 0.62), wallL = shade(B.ground[2], 1.55);
+    ctx.fillStyle = wall; ctx.fillRect(0, 0, W, H);
     for (let sx = 0; sx < W; sx += 8) {
       const wx = cam.toWorldX(sx), hcol = ihash(Math.floor(wx / 26), 5);
-      ctx.fillStyle = hcol < 0.3 ? shade(B.ground[2], 1.14) : hcol < 0.6 ? shade(B.ground[2], 0.9) : B.ground[2];
+      ctx.fillStyle = hcol < 0.3 ? shade(wall, 1.14) : hcol < 0.6 ? shade(wall, 0.88) : wall;
       ctx.fillRect(sx, 0, 8, H);
     }
-    // brick courses
-    ctx.globalAlpha = 0.25;
-    for (let sy = 0; sy < H; sy += Math.max(4, Math.round(9 * z))) {
-      ctx.fillStyle = shade(B.ground[2], 0.7); ctx.fillRect(0, sy, W, 1);
-      for (let sx = (Math.floor(sy / 9) % 2) * 12; sx < W; sx += Math.max(8, Math.round(24 * z))) ctx.fillRect(sx, sy, 1, Math.max(4, Math.round(9 * z)));
+    const course = Math.max(3, Math.round(7 * z));
+    ctx.globalAlpha = 0.42;
+    for (let sy = 0; sy < H; sy += course) {
+      ctx.fillStyle = wallD; ctx.fillRect(0, sy, W, 1);
+      const off = ((sy / course) | 0) % 2 ? Math.round(7 * z) : 0;
+      for (let sx = off; sx < W; sx += Math.max(6, Math.round(14 * z))) ctx.fillRect(sx, sy, 1, course);
     }
     ctx.globalAlpha = 1;
-    // ceiling slab
+    // pilasters: shallow piers standing off the wall every 150 units
+    const leftW = cam.toWorldX(-80), rightW = cam.toWorldX(W + 80);
+    for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
+      const [sx] = cam.toScreen(wx, 0), pw = Math.max(2, Math.round(9 * z));
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = wallD; ctx.fillRect(Math.round(sx - pw / 2), 0, pw, H);
+      ctx.fillStyle = wallL; ctx.fillRect(Math.round(sx - pw / 2), 0, Math.max(1, Math.round(z)), H);
+      ctx.globalAlpha = 1;
+    }
+    // damp streaks running down the brick
+    ctx.globalAlpha = 0.3;
+    for (let i = 0; i < 24; i++) {
+      const wx = leftW + ihash(i + Math.floor(leftW / 900) * 31, 77) * (rightW - leftW);
+      const [sx] = cam.toScreen(wx, 0);
+      ctx.fillStyle = mixColor(wallD, B.scum, 0.35);
+      ctx.fillRect(Math.round(sx), 0, Math.max(1, Math.round(1.6 * z)), H * (0.3 + ihash(i, 78) * 0.7));
+    }
+    ctx.globalAlpha = 1;
+    // --- the vault overhead ----------------------------------------------
+    const slab = shade(B.ground[0], 1.05), slabD = shade(B.ground[0], 0.5), slabL = shade(B.ground[0], 1.4);
     ctx.beginPath(); ctx.moveTo(-4, -10);
     for (let sx = -step; sx <= W + step; sx += step) { const wx = cam.toWorldX(sx), r = this.roofY(wx); ctx.lineTo(sx, r === null ? -20 : cam.toScreen(wx, r)[1]); }
     ctx.lineTo(W + 4, -10); ctx.closePath();
-    ctx.fillStyle = B.ground[0]; ctx.fill();
+    ctx.fillStyle = slab; ctx.fill();
+    // segment joints: short ticks up into the slab every 26 units of arch
+    for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
+      const r = this.roofY(wx); if (r === null) continue;
+      const [sx, sy] = cam.toScreen(wx, r);
+      ctx.fillStyle = slabD; ctx.fillRect(Math.round(sx), Math.round(sy - 12 * z), Math.max(1, Math.round(1.4 * z)), Math.round(12 * z));
+    }
+    // the arch edge itself, three bands so the vault has a soffit
     for (let sx = -step; sx <= W + step; sx += step) {
       const wx = cam.toWorldX(sx), r = this.roofY(wx); if (r === null) continue;
       const sy = cam.toScreen(wx, r)[1];
-      ctx.fillStyle = shade(B.ground[0], 0.55); ctx.fillRect(sx, Math.round(sy) - Math.max(1, Math.round(2 * z)), step, Math.max(1, Math.round(2 * z)));
-      ctx.fillStyle = shade(B.ground[0], 1.2); ctx.fillRect(sx, Math.round(sy) - Math.max(2, Math.round(4 * z)), step, Math.max(1, Math.round(z)));
+      ctx.fillStyle = slabL; ctx.fillRect(sx, Math.round(sy) - Math.max(2, Math.round(5 * z)), step, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = slab; ctx.fillRect(sx, Math.round(sy) - Math.max(1, Math.round(3 * z)), step, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = slabD; ctx.fillRect(sx, Math.round(sy) - Math.max(1, Math.round(1.4 * z)), step, Math.max(1, Math.round(1.6 * z)));
+      // soot and scum where the water once stood against the crown
+      if (ihash(Math.floor(wx / 7), 91) < 0.3) { ctx.globalAlpha = 0.35; ctx.fillStyle = B.scum; ctx.fillRect(sx, Math.round(sy) - Math.round(2 * z), step, Math.max(1, Math.round(z))); ctx.globalAlpha = 1; }
     }
     // ribs, hanging lamps and dripping pipes
-    const left = cam.toWorldX(-60), right = cam.toWorldX(W + 60);
-    for (let wx = Math.floor(left / 150) * 150; wx < right; wx += 150) {
+    for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
       const r = this.roofY(wx); if (r === null) continue;
       const [sx, sy] = cam.toScreen(wx, r), fy = cam.toScreen(wx, this.floorY(wx))[1];
       ctx.fillStyle = shade(B.ground[0], 0.75); ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy), Math.round(6 * z), Math.round(fy - sy));
       ctx.fillStyle = shade(B.ground[0], 1.1); ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy), Math.max(1, Math.round(z)), Math.round(fy - sy));
+      // conduit slung along the crown between the ribs
+      const nx = wx + 150, nr = this.roofY(nx);
+      if (nr !== null) {
+        const [nsx, nsy] = cam.toScreen(nx, nr);
+        const sag = 5 * z;
+        ctx.strokeStyle = shade(B.ground[0], 0.55); ctx.lineWidth = Math.max(1, Math.round(1.6 * z));
+        ctx.beginPath(); ctx.moveTo(sx, sy + 4 * z); ctx.quadraticCurveTo((sx + nsx) / 2, (sy + nsy) / 2 + sag, nsx, nsy + 4 * z); ctx.stroke();
+      }
       // lamp
       const lx = wx + 75, lr = this.roofY(lx); if (lr === null) continue;
       const [lsx, lsy] = cam.toScreen(lx, lr);
       const on = ihash(Math.floor(lx / 150), 9) > 0.25 || Math.sin(this.t * 9 + lx) > 0;
       ctx.fillStyle = '#2a2e30'; ctx.fillRect(Math.round(lsx - z), Math.round(lsy), Math.max(1, Math.round(2 * z)), Math.round(5 * z));
+      ctx.fillStyle = '#3a3f42'; ctx.fillRect(Math.round(lsx - 6 * z), Math.round(lsy + 4 * z), Math.round(12 * z), Math.max(1, Math.round(2 * z)));
       ctx.fillStyle = on ? '#ffe8a0' : '#3a3a34'; ctx.fillRect(Math.round(lsx - 5 * z), Math.round(lsy + 5 * z), Math.round(10 * z), Math.round(3 * z));
       if (on) { ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(lsx, lsy + 6 * z, 2, lsx, lsy + 6 * z, 70 * z); g.addColorStop(0, 'rgba(255,224,150,0.22)'); g.addColorStop(1, 'rgba(255,224,150,0)'); ctx.fillStyle = g; ctx.fillRect(lsx - 70 * z, lsy, 140 * z, 150 * z); ctx.globalCompositeOperation = 'source-over'; }
       if (chance(0.02)) G.fx.add({ type: 'drop', x: lx + rand(-30, 30), y: lr + 8, vx: 0, vy: 20, s: 1, color: '#9ab0b8', life: 3 });
+    }
+  },
+  // The deep is not an empty black rectangle. Below the light there is marine
+  // snow drifting down forever, the far side of the canyon showing as a flat
+  // silhouette, and things that make their own light.
+  drawDeepScene(ctx, cam, day) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    const depth = cam.y;
+    if (depth < 240) return;
+    const B = Biome.mixPal(cam.x);
+    const k = clamp((depth - 240) / 700, 0, 1);
+    // --- the far side of the canyon, two layers of flat strata ----------
+    // Anchored to the seabed rather than to the camera: a distant wall does
+    // not slide up and down as you swim, it only slides sideways.
+    if (B.open || B.pressure) {
+      const bed = this.floorY(cam.x);
+      const WALLS = [
+        { f: 0.24, mix: 0.22, amp: 190, rise: 560, sc: 0.0011, seed: 61, a: 0.5 },
+        { f: 0.44, mix: 0.1, amp: 260, rise: 380, sc: 0.0007, seed: 83, a: 0.62 },
+      ];
+      for (const L of WALLS) {
+        const col = mixColor(B.water[1], B.fog, L.mix);
+        const ox = cam.x * L.f;
+        const crest = cam.toScreen(0, Math.max(160, bed - L.rise))[1];
+        ctx.globalAlpha = L.a * (0.35 + k * 0.65);
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.moveTo(-4, H + 8);
+        let minY = H;
+        for (let sx = -8; sx <= W + 8; sx += 8) {
+          const wx = ox + sx / z;
+          const h = (fbm(wx * L.sc, L.seed) * 0.85 + 0.15) * L.amp * z;
+          const yy = crest - h; if (yy < minY) minY = yy;
+          ctx.lineTo(sx, yy);
+        }
+        ctx.lineTo(W + 4, H + 8); ctx.closePath(); ctx.fill();
+        // horizontal bedding planes so the rock has grain at this distance
+        ctx.save(); ctx.clip();
+        ctx.fillStyle = shade(col, 0.72);
+        for (let yy = Math.max(0, minY); yy < H; yy += Math.max(3, Math.round(11 * z))) ctx.fillRect(0, Math.round(yy), W, Math.max(1, Math.round(1.4 * z)));
+        ctx.fillStyle = shade(col, 1.25);
+        for (let yy = Math.max(0, minY); yy < H; yy += Math.max(6, Math.round(23 * z))) ctx.fillRect(0, Math.round(yy), W, Math.max(1, Math.round(z)));
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+    }
+    // --- marine snow: three drifting layers, denser the deeper you go ----
+    const t = this.t;
+    ctx.globalAlpha = 1;
+    for (let L = 0; L < 3; L++) {
+      const f = 0.35 + L * 0.3, cell = 34 - L * 8, fall = 9 + L * 7;
+      const ox = cam.x * f, oy = cam.y * f + t * fall;
+      const sz = Math.max(1, Math.round((L === 2 ? 2 : 1) * z * 0.7));
+      ctx.fillStyle = rgba(mixColor('#dfeef0', B.water[0], 0.3), (0.1 + L * 0.07) * (0.35 + k * 0.65));
+      const i0 = Math.floor(ox / cell) - 1, i1 = Math.floor((ox + W / z) / cell) + 1;
+      const j0 = Math.floor(oy / cell) - 1, j1 = Math.floor((oy + H / z) / cell) + 1;
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const h = ihash(i * 733 + j * 91, 17 + L); if (h > 0.55) continue;
+        const wx = i * cell + ihash(i + j * 7, 23 + L) * cell;
+        const wy = j * cell + ihash(i * 3 + j, 29 + L) * cell;
+        const sx = (wx - ox) * z + Math.sin(t * 0.5 + j) * 2 * z, sy = (wy - oy) * z;
+        if (sx < -4 || sx > W + 4 || sy < -4 || sy > H + 4) continue;
+        ctx.fillRect(Math.round(sx), Math.round(sy), sz, sz);
+      }
+    }
+  },
+  // Bioluminescence rides on top of the night pass: these are the only lights
+  // down here, so nothing is allowed to dim them.
+  drawDeepGlow(ctx, cam, day) {
+    const W = G.W, H = G.H, z = cam.zoom, t = this.t;
+    const k = clamp((cam.y - 240) / 700, 0, 1);
+    if (k <= 0.45) return;
+    const B = Biome.mixPal(cam.x);
+    if (!B.open && !B.pressure) return;
+    ctx.globalCompositeOperation = 'lighter';
+    const cell = 70, ox = cam.x * 0.9, oy = cam.y * 0.9;
+    const i0 = Math.floor(ox / cell) - 1, i1 = Math.floor((ox + W / z) / cell) + 1;
+    const j0 = Math.floor(oy / cell) - 1, j1 = Math.floor((oy + H / z) / cell) + 1;
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+      const h = ihash(i * 977 + j * 131, 53); if (h > 0.5) continue;
+      const ph = h * 40 + i * 0.7 + j * 1.3;
+      const pulse = Math.max(0, Math.sin(t * (0.6 + h) + ph));
+      if (pulse < 0.12) continue;
+      const wx = i * cell + ihash(i + j * 5, 57) * cell, wy = j * cell + ihash(i * 5 + j, 59) * cell;
+      const sx = (wx - ox) * z + Math.sin(t * 0.3 + j) * 7 * z, sy = (wy - oy) * z + Math.cos(t * 0.24 + i) * 6 * z;
+      if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
+      const col = h < 0.18 ? '#6affd8' : h < 0.34 ? '#58c8ff' : '#c08cff';
+      const a0 = pulse * (k - 0.45) / 0.55;
+      ctx.globalAlpha = a0 * 0.9; ctx.fillStyle = col;
+      ctx.fillRect(Math.round(sx), Math.round(sy), Math.max(1, Math.round(1.4 * z)), Math.max(1, Math.round(1.4 * z)));
+      ctx.globalAlpha = a0 * 0.34;
+      ctx.fillRect(Math.round(sx) - Math.round(z), Math.round(sy) - Math.round(z), Math.max(3, Math.round(4 * z)), Math.max(3, Math.round(4 * z)));
+      ctx.globalAlpha = a0 * 0.1;
+      ctx.fillRect(Math.round(sx) - Math.round(3 * z), Math.round(sy) - Math.round(3 * z), Math.max(6, Math.round(9 * z)), Math.max(6, Math.round(9 * z)));
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  // Concrete dressing for the drowned system: a hard capping course on every
+  // invert, expansion joints, slime at the waterline and outfall pipes set into
+  // the back wall. Runs after the terrain so it sits on top of the soil.
+  drawTunnelFloor(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom, step = Math.max(2, Math.round(3 * z));
+    const B = Biome.mixPal(cam.x);
+    const cap = shade(B.ground[0], 1.18), capD = shade(B.ground[0], 0.62), joint = shade(B.ground[2], 0.7);
+    const slime = mixColor(B.scum, '#1a2a12', 0.35);
+    for (let sx = 0; sx <= W; sx += step) {
+      const wx = cam.toWorldX(sx), r = this.roofY(wx); if (r === null) continue;
+      const fy = this.floorY(wx), su = this.surface(wx);
+      const [, sy] = cam.toScreen(wx, fy);
+      if (sy < -20 || sy > H + 10) continue;
+      ctx.fillStyle = cap; ctx.fillRect(sx, Math.round(sy), step, Math.max(1, Math.round(1.6 * z)));
+      ctx.fillStyle = capD; ctx.fillRect(sx, Math.round(sy + 1.6 * z), step, Math.max(1, Math.round(2.4 * z)));
+      // expansion joints every 120 units, cut down into the invert
+      const cell = Math.floor(wx / 120);
+      if (Math.abs(wx - cell * 120) < 3) { ctx.fillStyle = joint; ctx.fillRect(sx, Math.round(sy), Math.max(1, Math.round(1.4 * z)), Math.round(9 * z)); }
+      // slime band where the water has stood against the concrete
+      if (fy < su + 26 && fy > su - 40) {
+        const [, wy] = cam.toScreen(wx, su);
+        ctx.globalAlpha = 0.6; ctx.fillStyle = slime;
+        ctx.fillRect(sx, Math.round(wy - 1.5 * z), step, Math.max(1, Math.round(4 * z)));
+        ctx.globalAlpha = 1;
+      }
+    }
+  },
+  // Pipe mouths punched through the back wall. The system is a network, and a
+  // network has to visibly go somewhere other than left and right.
+  drawTunnelPipes(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    const B = Biome.mixPal(cam.x);
+    const left = cam.toWorldX(-140), right = cam.toWorldX(W + 140);
+    const rim = shade(B.ground[0], 0.9), rimL = shade(B.ground[0], 1.25), bore = shade(B.ground[2], 0.34);
+    for (let wx = Math.floor(left / 260) * 260; wx < right; wx += 260) {
+      const h = ihash(Math.floor(wx / 260), 313);
+      if (h > 0.72) continue;
+      const r0 = this.roofY(wx); if (r0 === null) continue;
+      const fy = this.floorY(wx), su = this.surface(wx);
+      // set into the wall between the ceiling and the invert
+      const rad = (14 + h * 22);
+      const wy = lerp(r0 + rad + 8, fy - rad - 6, 0.25 + ihash(Math.floor(wx / 260), 317) * 0.55);
+      if (wy - rad < r0 || wy + rad > fy) continue;
+      const [sx, sy] = cam.toScreen(wx, wy);
+      Shape.oct(ctx, sx, sy, (rad + 4) * z, rim);
+      Shape.oct(ctx, sx, sy, (rad + 2) * z, rimL);
+      Shape.oct(ctx, sx, sy, rad * z, bore);
+      Shape.oct(ctx, sx, sy, rad * z * 0.72, '#04080a');
+      // brickwork ring
+      for (let a = 0; a < 8; a++) {
+        const an = a / 8 * TAU + 0.4;
+        ctx.fillStyle = a % 2 ? rim : shade(rim, 0.8);
+        ctx.fillRect(Math.round(sx + Math.cos(an) * (rad + 3) * z), Math.round(sy + Math.sin(an) * (rad + 3) * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z)));
+      }
+      // a live one still runs
+      if (h < 0.3) {
+        const fall = Math.min(fy, su) - wy;
+        if (fall > 0) {
+          ctx.globalAlpha = 0.5; ctx.fillStyle = mixColor(B.water[0], '#d8e8e0', 0.5);
+          ctx.fillRect(Math.round(sx - 2 * z), Math.round(sy), Math.max(1, Math.round(4 * z)), Math.round(fall * z));
+          ctx.globalAlpha = 0.25; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy), Math.max(1, Math.round(8 * z)), Math.round(fall * z * 0.7));
+          ctx.globalAlpha = 1;
+          if (chance(0.25)) G.fx.add({ type: 'drop', x: wx + rand(-4, 4), y: wy + 6, vx: rand(-6, 6), vy: 90, s: 1, color: '#a8c4c0', life: 1.6 });
+        }
+      } else if (chance(0.02)) G.fx.add({ type: 'drop', x: wx + rand(-6, 6), y: wy, vx: 0, vy: 30, s: 1, color: '#8aa4a8', life: 2.4 });
     }
   },
   // Aerial perspective under water. Fading toward the deep water colour keeps the
@@ -628,6 +934,11 @@ const World = {
     };
     // ambient current: everything under water leans the same way and breathes
     const flowAt = (wx) => Math.sin(t * 0.55 + wx * 0.008) * 3.4 + Water.velocity(wx) * 0.035 + Water.wind * 4;
+    // Biome tint for growing things. Nothing in a storm drain is the green of a
+    // sawgrass prairie; the same weed painter has to read sickly down there and
+    // lush out in the glades, so the palette is pulled toward the biome's own.
+    const BP = Biome.mixPal(cam.x), fc = BP.flora, fk = BP.floraMix || 0;
+    const fl = fc && fk > 0 ? (c) => mixColor(c, fc, fk) : (c) => c;
     const AO_W = { bush: 15, oak: 30, palm: 9, cypress: 12, mangrove: 20, fern: 9, sawgrass: 8, palmetto: 12,
       crate: 10, cooler: 9, firewood: 10, post: 4, stump: 9, log: 20, rock: 10, mushroom: 4, flower: 3, fallen: 20 };
     for (const d of this.decor) {
@@ -644,10 +955,10 @@ const World = {
       }
       switch (d.type) {
         case 'seagrass': if (layer !== 0) break; {
-          const fl = flowAt(d.x), dk = d.v ? '#1f4a38' : '#26543f', md = d.v ? '#3f8a6a' : '#4f9a72', lt = d.v ? '#6fc79a' : '#7fd6a6';
+          const fw = flowAt(d.x), dk = fl(d.v ? '#1f4a38' : '#26543f'), md = fl(d.v ? '#3f8a6a' : '#4f9a72'), lt = fl(d.v ? '#6fc79a' : '#7fd6a6');
           for (let b = -3; b <= 3; b++) {
             const bl = d.h * (0.66 + ihash(Math.floor(d.x) * 7 + b, 71) * 0.42);
-            const sway = (Math.sin(t * 1.1 + d.ph + b * 0.5) * 4 + fl + (d.bend || 0) * 5) * z;
+            const sway = (Math.sin(t * 1.1 + d.ph + b * 0.5) * 4 + fw + (d.bend || 0) * 5) * z;
             const bx = sx + b * 2.1 * z, ty = sy - bl * z;
             blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.55, 1.7 * z, dk, md, lt);
           }
@@ -658,8 +969,126 @@ const World = {
             ctx.fillStyle = '#b0aa9a'; ctx.fillRect(Math.round(sx + ox), Math.round(sy - 4 * z - oy), Math.max(1, Math.round(z)), Math.max(1, Math.round(2 * z))); }
           break; }
         case 'coral': if (layer !== 0) break; {
-          const cols = [['#c86a7a', '#e08a98'], ['#c8a050', '#e0c070'], ['#7a9ac0', '#9ab8d8']][d.v % 3];
-          for (let b = -1; b <= 1; b++) { const hh = (7 + Math.abs(b) * -2 + 6) * d.s * z; ctx.fillStyle = cols[0]; ctx.fillRect(Math.round(sx + b * 4 * d.s * z), Math.round(sy - hh), Math.max(1, Math.round(3 * d.s * z)), Math.round(hh)); ctx.fillStyle = cols[1]; ctx.fillRect(Math.round(sx + b * 4 * d.s * z), Math.round(sy - hh), Math.max(1, Math.round(z)), Math.round(hh * 0.5)); }
+          // branching stag coral. Three generations of tapering limbs, each
+          // segment a chunky pixel block with a lit edge and a pale polyp tip.
+          const CP = [['#8e3a52', '#c4566e', '#eb92a4'], ['#986a1e', '#cfa03a', '#f2d879'],
+            ['#37678e', '#5a94bc', '#93c4e2'], ['#6d3474', '#a05aa8', '#d295d6']][d.v % 4];
+          const s2 = d.s * z, seed = Math.floor(d.x), fl = flowAt(d.x) * 0.012;
+          const limb = (bx, by, ang, len, w, gen) => {
+            const steps = Math.max(2, Math.round(len / 2.4));
+            let x0 = bx, y0 = by, a = ang;
+            for (let i = 0; i < steps; i++) {
+              a += (ihash(seed + gen * 37 + i, 17) - 0.5) * 0.26 + fl;
+              const x1 = x0 + Math.sin(a) * 2.4 * s2, y1 = y0 - Math.cos(a) * 2.4 * s2;
+              const ww = Math.max(1, Math.round(w * (1 - i / steps * 0.5) * s2));
+              const top = Math.min(y0, y1), hh = Math.abs(y1 - y0) + 1.2 * s2;
+              ctx.fillStyle = CP[0]; ctx.fillRect(Math.round((x0 + x1) / 2 - ww / 2), Math.round(top), ww, Math.max(1, Math.round(hh)));
+              ctx.fillStyle = CP[1]; ctx.fillRect(Math.round((x0 + x1) / 2 - ww / 2), Math.round(top), Math.max(1, Math.round(ww * 0.45)), Math.max(1, Math.round(hh)));
+              x0 = x1; y0 = y1;
+            }
+            ctx.fillStyle = CP[2];
+            ctx.fillRect(Math.round(x0 - 0.9 * s2), Math.round(y0 - 1.4 * s2), Math.max(1, Math.round(1.9 * s2)), Math.max(1, Math.round(1.9 * s2)));
+            if (gen < 2) {
+              limb(x0, y0, ang - 0.46 - ihash(seed + gen, 23) * 0.34, len * 0.6, w * 0.72, gen + 1);
+              limb(x0, y0, ang + 0.46 + ihash(seed + gen, 29) * 0.34, len * 0.56, w * 0.72, gen + 1);
+            }
+          };
+          // rubble foot so it is rooted rather than floating on the sand
+          ctx.fillStyle = '#7e7462'; ctx.fillRect(Math.round(sx - 4 * s2), Math.round(sy - 1.5 * s2), Math.round(8 * s2), Math.max(1, Math.round(2.5 * s2)));
+          const trunks = 2 + (seed & 1);
+          for (let k = 0; k < trunks; k++) limb(sx + (k - (trunks - 1) / 2) * 4 * s2, sy, (k - (trunks - 1) / 2) * 0.34, 13 + ihash(seed + k, 43) * 7, 3.2, 0);
+          break; }
+        case 'fan': if (layer !== 0) break; {
+          // gorgonian sea fan: a stem, radiating ribs and cross-links, leaning
+          // into the current and breathing with it
+          const FP = [['#8a2f3e', '#c4515f', '#e0868f'], ['#7a4a18', '#b8842c', '#dcb35c'], ['#5a2f6a', '#8f4fa0', '#c087cf']][d.v % 3];
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          const sway = (Math.sin(t * 0.8 + d.ph) * 0.1 + flowAt(d.x) * 0.02) * d.lean;
+          const H = 22 * s2, base = 0.28 * d.lean + sway;
+          ctx.save(); ctx.translate(sx, sy); ctx.rotate(base);
+          ctx.fillStyle = FP[0]; ctx.fillRect(Math.round(-1 * s2), Math.round(-7 * s2), Math.max(1, Math.round(2.2 * s2)), Math.round(7.4 * s2));
+          const RIBS = 7;
+          for (let r0 = 0; r0 < RIBS; r0++) {
+            const a0 = (r0 / (RIBS - 1) - 0.5) * 1.5;
+            const rl = H * (0.62 + 0.38 * Math.cos(a0 * 1.1));
+            let px0 = 0, py0 = -6 * s2;
+            for (let i = 1; i <= 6; i++) {
+              const u = i / 6, bend = a0 * (0.7 + u * 0.6);
+              const px1 = Math.sin(bend) * rl * u, py1 = -6 * s2 - Math.cos(bend) * rl * u;
+              ctx.fillStyle = i > 4 ? FP[2] : FP[1];
+              ctx.fillRect(Math.round((px0 + px1) / 2 - 0.6 * s2), Math.round(Math.min(py0, py1)), Math.max(1, Math.round(1.4 * s2)), Math.max(1, Math.round(Math.abs(py1 - py0) + s2)));
+              // web between neighbouring ribs
+              if (r0 > 0 && i % 2 === 0) { ctx.fillStyle = FP[0]; ctx.globalAlpha = 0.65; ctx.fillRect(Math.round(px1 - 2.6 * s2), Math.round(py1), Math.max(1, Math.round(2.6 * s2)), Math.max(1, Math.round(s2))); ctx.globalAlpha = 1; }
+              px0 = px1; py0 = py1;
+            }
+            ctx.fillStyle = FP[2]; ctx.fillRect(Math.round(px0 - 0.6 * s2), Math.round(py0 - s2), Math.max(1, Math.round(1.6 * s2)), Math.max(1, Math.round(1.6 * s2)));
+          }
+          ctx.restore();
+          ctx.fillStyle = '#6e6a5c'; ctx.fillRect(Math.round(sx - 3 * s2), Math.round(sy - s2), Math.round(6 * s2), Math.max(1, Math.round(2 * s2)));
+          break; }
+        case 'sponge': if (layer !== 0) break; {
+          // barrel sponges: thick mottled tubes with a dark mouth on top
+          const SPP = [['#9a5a2a', '#c07a3a', '#5a3418'], ['#8a4a5a', '#b06a78', '#4a2430'], ['#6a7a3a', '#90a250', '#36401c']][d.v % 3];
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          for (let i = 0; i < d.n; i++) {
+            const ox = (ihash(i, seed) - 0.5) * 20 * s2;
+            const hh = (9 + ihash(i, seed + 7) * 13) * s2, ww = (6 + ihash(i, seed + 11) * 4) * s2;
+            const bx = sx + ox, top = sy - hh;
+            ctx.fillStyle = SPP[0]; ctx.fillRect(Math.round(bx - ww / 2), Math.round(top), Math.round(ww), Math.round(hh + s2));
+            ctx.fillStyle = SPP[1]; ctx.fillRect(Math.round(bx - ww / 2), Math.round(top), Math.max(1, Math.round(ww * 0.35)), Math.round(hh));
+            // pitted surface
+            for (let k = 0; k < 6; k++) { const px2 = bx - ww / 2 + ihash(k, seed + i * 3) * ww, py2 = top + 2 * s2 + ihash(k, seed + i * 5) * (hh - 3 * s2);
+              ctx.fillStyle = SPP[2]; ctx.fillRect(Math.round(px2), Math.round(py2), Math.max(1, Math.round(s2)), Math.max(1, Math.round(s2))); }
+            // mouth, breathing a slow exhalation
+            ctx.fillStyle = SPP[2]; ctx.fillRect(Math.round(bx - ww * 0.32), Math.round(top), Math.round(ww * 0.64), Math.max(1, Math.round(2 * s2)));
+            if (chance(0.01) && layer === 0) G.fx.add({ type: 'bubble', x: d.x + ox / z, y: d.y - hh / z, vx: 0, vy: -14, s: 0.7, seed: rand(TAU), life: 2 });
+          }
+          break; }
+        case 'kelp': if (layer !== 0) break; {
+          // a stipe that runs most of the way to the light, with blades down it
+          const dk = fl(d.v ? '#2a4418' : '#33421c'), md = fl(d.v ? '#4a6e26' : '#567a2c'), lt = fl(d.v ? '#7ea84a' : '#8cb455');
+          const fw = flowAt(d.x), top = sy - d.h * z;
+          const swayTop = (Math.sin(t * 0.62 + d.ph) * 16 + fw * 2.2 + (d.bend || 0) * 8) * z;
+          blade(sx, sy, sx + swayTop, top, sx + swayTop * 0.18, sy - d.h * z * 0.55, 2.4 * z, dk, md, lt);
+          // broad ribbon blades, alternating down the stipe, each one a tapered
+          // strap rather than a twig — a bare stalk reads as bamboo, not kelp
+          const N = Math.max(4, Math.round(d.h / 17));
+          for (let i = 1; i <= N; i++) {
+            const u = i / (N + 1), bx = sx + swayTop * u * u, by = sy - d.h * z * u;
+            const dir = i % 2 ? 1 : -1, bl = (17 + ihash(i, Math.floor(d.x)) * 15) * z * (0.6 + u * 0.6);
+            const lean = Math.sin(t * 0.9 + d.ph + i) * 3 * z;
+            const segs = 6, bh = (7 + ihash(i, 71) * 4) * z;
+            for (let q = 0; q < segs; q++) {
+              const uq = q / segs, taper = Math.sin((1 - uq) * 1.9) ;
+              const bxq = bx + dir * bl * uq + lean * uq * uq;
+              const byq = by - bl * 0.28 * uq + Math.sin(t * 1.1 + d.ph + i + uq * 2.4) * 2 * z * uq;
+              ctx.fillStyle = q < 2 ? dk : md;
+              ctx.fillRect(Math.round(bxq), Math.round(byq - bh * taper * 0.5), Math.max(1, Math.round(bl / segs + z)), Math.max(1, Math.round(bh * taper)));
+              if (q > 0) { ctx.fillStyle = lt; ctx.fillRect(Math.round(bxq), Math.round(byq - bh * taper * 0.5), Math.max(1, Math.round(bl / segs + z)), Math.max(1, Math.round(z))); }
+            }
+            // gas bladder at the base of the blade
+            ctx.fillStyle = dk; ctx.fillRect(Math.round(bx + dir * z), Math.round(by - 2 * z), Math.max(1, Math.round(2.4 * z)), Math.max(1, Math.round(3.4 * z)));
+          }
+          break; }
+        case 'tubeworm': if (layer !== 0) break; {
+          // vent worms: pale calcified tubes, red plumes that flinch back in
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          for (let i = 0; i < d.n; i++) {
+            const ox = (ihash(i, seed) - 0.5) * 26 * s2, hh = (10 + ihash(i, seed + 3) * 20) * s2;
+            const lean = Math.sin(t * 0.4 + d.ph + i) * 1.6 * s2;
+            const bx = sx + ox, top = sy - hh;
+            ctx.fillStyle = '#b8b2a4'; ctx.fillRect(Math.round(bx - 1.6 * s2), Math.round(top), Math.max(1, Math.round(3.2 * s2)), Math.round(hh + s2));
+            ctx.fillStyle = '#e0dccc'; ctx.fillRect(Math.round(bx - 1.6 * s2), Math.round(top), Math.max(1, Math.round(s2)), Math.round(hh));
+            ctx.fillStyle = '#8a8478'; for (let k = 1; k * 4 * s2 < hh; k++) ctx.fillRect(Math.round(bx - 1.6 * s2), Math.round(top + k * 4 * s2), Math.max(1, Math.round(3.2 * s2)), Math.max(1, Math.round(s2)));
+            // plume: out most of the time, snapped in on a slow cycle
+            const out = 0.35 + 0.65 * clamp(Math.sin(t * 0.5 + d.ph + i * 1.7) * 2.2, 0, 1);
+            const pl = 5 * s2 * out;
+            if (pl > 0.6) {
+              ctx.fillStyle = '#8e1c22'; ctx.fillRect(Math.round(bx - 1.8 * s2 + lean), Math.round(top - pl), Math.max(1, Math.round(3.6 * s2)), Math.max(1, Math.round(pl)));
+              ctx.fillStyle = '#d8343a'; ctx.fillRect(Math.round(bx - 1.2 * s2 + lean), Math.round(top - pl), Math.max(1, Math.round(1.4 * s2)), Math.max(1, Math.round(pl * 0.8)));
+              ctx.fillStyle = '#f06a6a'; ctx.fillRect(Math.round(bx - 2.2 * s2 + lean), Math.round(top - pl), Math.max(1, Math.round(s2)), Math.max(1, Math.round(s2)));
+            }
+          }
           break; }
         case 'trash': if (layer !== 0) break; {
           const s2 = d.s * z;
@@ -716,10 +1145,10 @@ const World = {
           break; }
 
         case 'weed': if (layer !== 0) break; {
-          const fl = flowAt(d.x), dk = d.v ? '#1b3f24' : '#25492a', md = d.v ? '#2f6a3a' : '#3f7a44', lt = d.v ? '#5f9c58' : '#6fae62';
+          const fw = flowAt(d.x), dk = fl(d.v ? '#1b3f24' : '#25492a'), md = fl(d.v ? '#2f6a3a' : '#3f7a44'), lt = fl(d.v ? '#5f9c58' : '#6fae62');
           for (let b = -2; b <= 2; b++) {
             const bl = d.h * (0.6 + ihash(Math.floor(d.x) * 5 + b, 73) * 0.5);
-            const sway = (Math.sin(t * 1.3 + d.ph + b) * 3.4 + fl * 0.8 + (d.bend || 0) * 5) * z;
+            const sway = (Math.sin(t * 1.3 + d.ph + b) * 3.4 + fw * 0.8 + (d.bend || 0) * 5) * z;
             const bx = sx + b * 2 * z, ty = sy - bl * z;
             blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.6, 1.4 * z, dk, md, lt);
             // a few leaflets so it is not a bare stalk
@@ -732,7 +1161,7 @@ const World = {
         case 'lily': if (layer !== 1) break; { const s = SPR.lily[d.v]; const wy = cam.toScreen(d.x, this.surface(d.x))[1]; drawSpr(ctx, s, sx, wy - 1 * z, 0, z, z, s.w / 2, s.h - 1); break; }
         case 'reed': if (layer !== 0) break; {
           const top = cam.toScreen(d.x, d.top)[1]; const sway = (Math.sin(t * 1.1 + d.ph) * 3 + (d.bend || 0) * 4) * z;
-          blade(sx, sy, sx + sway, top, sx + sway * 0.3, (sy + top) / 2, 1.8 * z, '#2a4a20', '#4f7a3a', '#7aa85a');
+          blade(sx, sy, sx + sway, top, sx + sway * 0.3, (sy + top) / 2, 1.8 * z, fl('#2a4a20'), fl('#4f7a3a'), fl('#7aa85a'));
           if (d.v) { ctx.fillStyle = '#6b4a2e'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 8 * z), Math.max(1, Math.round(2 * z)), Math.max(2, Math.round(7 * z))); }
           else { ctx.strokeStyle = '#7fae5f'; ctx.beginPath(); ctx.moveTo(sx + sway, top); ctx.lineTo(sx + sway + 4 * z, top - 6 * z); ctx.stroke(); }
           break; }
@@ -770,7 +1199,7 @@ const World = {
           if (d.bloom) { ctx.fillStyle = '#b28ae0'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(3 * z))); ctx.fillStyle = '#e0d060'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(z))); }
           break; }
         case 'algae': if (layer !== 0) break; {
-          ctx.strokeStyle = d.v ? 'rgba(90,150,90,0.5)' : 'rgba(120,170,110,0.42)'; ctx.lineWidth = Math.max(1, 2 * z);
+          ctx.strokeStyle = rgba(fl(d.v ? '#5a965a' : '#78aa6e'), d.v ? 0.5 : 0.42); ctx.lineWidth = Math.max(1, 2 * z);
           for (let b = -1; b <= 1; b++) {
             ctx.beginPath(); ctx.moveTo(sx + b * 3 * z, sy);
             for (let k = 1; k <= 4; k++) { const kk = k / 4, yy = sy - d.h * z * kk, xx = sx + b * 3 * z + Math.sin(t * 0.8 + d.ph + kk * 3) * 7 * z * kk; ctx.lineTo(xx, yy); }

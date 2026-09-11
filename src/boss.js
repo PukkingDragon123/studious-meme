@@ -36,6 +36,11 @@ const Boss = {
     if (want > e.bossPhase && e.bossPhase < e.bossMax) this.breakPhase(e, want);
     // the last sliver of health is not a health bar, it is an opening
     if (!e.staggered && !e.finisherDone && frac <= 0.13) this.stagger(e);
+    // a boss that makes its own light carries it everywhere: lure, wake, glow
+    if (e.bossGlow) {
+      G.fx.glow(e.x + Math.cos(G.t * 1.4) * 10 * e.size, e.y - 6 * e.size, 6 + Math.sin(G.t * 3) * 2, e.bossGlow, 0.5);
+      if (chance(dt * 8)) G.fx.glow(e.x + rand(-24, 24) * e.size, e.y + rand(-14, 14) * e.size, rand(1.5, 3.5), e.bossGlow, rand(0.3, 0.7));
+    }
     if (e.staggered) {
       e.staggerT -= dt;
       e.stun = Math.max(e.stun, 0.05);

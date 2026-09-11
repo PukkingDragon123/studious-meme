@@ -26,39 +26,6 @@ class Structure extends Entity {
       case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16 * this.ss; this.deckY = -58; break; }
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
       case 'buoy': { this.name = 'CHANNEL MARKER'; this.hp = 40; this.r = 6 * this.ss; break; }
-      case 'seawall': {
-        const w2 = this.w, dmg = 1 - clamp(this.hp / 260, 0, 1);
-        const face = '#6b6d74', faceL = '#8a8c92', faceD = '#43454c', cap = '#7d8088';
-        px(-w2 / 2, -30, w2, 32, face);
-        px(-w2 / 2, -30, w2, 2, faceL);
-        px(-w2 / 2, -2, w2, 3, faceD);
-        // panel joints and staining down the face
-        for (let i = -w2 / 2 + 10; i < w2 / 2; i += 20) { px(i, -30, 1, 32, faceD); px(i + 1, -30, 1, 12, faceL); }
-        for (let i = 0; i < 8; i++) { const sxx = -w2 / 2 + ihash(i, 51) * w2; px(sxx, -26, 1, 6 + ihash(i, 52) * 16, mixColor(face, '#2a3a30', 0.4)); }
-        // cracks appear as you work on it
-        if (dmg > 0.15) for (let i = 0; i < Math.round(dmg * 12); i++) { const cx2 = -w2 / 2 + ihash(i, 61) * w2, cy2 = -28 + ihash(i, 62) * 22; px(cx2, cy2, 1, 3 + ihash(i, 63) * 7, '#2a2c30'); px(cx2 + 1, cy2 + 2, 2, 1, '#2a2c30'); }
-        if (dmg > 0.5) { px(-w2 / 2 + w2 * 0.3, -30, w2 * 0.18, 6, 'rgba(0,0,0,0.55)'); }
-        // capping stone and railing
-        px(-w2 / 2 - 2, -34, w2 + 4, 4, cap);
-        px(-w2 / 2 - 2, -34, w2 + 4, 1, faceL);
-        for (let i = -w2 / 2; i <= w2 / 2; i += 9) px(i, -44, 1, 10, '#3f444a');
-        px(-w2 / 2, -45, w2, 2, '#4a5058');
-        px(-w2 / 2, -40, w2, 1, '#4a5058');
-        // harbour lamps looking out over the water
-        for (const lp of this.lamps) {
-          px(lp.ox - 1, -66, 2, 22, '#3a4046');
-          px(lp.ox - 4, -70, 8, 4, '#2e3338');
-          if (lp.on) {
-            px(lp.ox - 3, -68, 6, 2, '#ffe6a0');
-            ctx.globalCompositeOperation = 'lighter';
-            const g2 = ctx.createRadialGradient(lp.ox, -64, 2, lp.ox, -64, 46);
-            g2.addColorStop(0, 'rgba(255,230,160,0.26)'); g2.addColorStop(1, 'rgba(255,230,160,0)');
-            ctx.fillStyle = g2; ctx.fillRect(lp.ox - 46, -66, 92, 92);
-            ctx.globalCompositeOperation = 'source-over';
-          }
-        }
-        break;
-      }
       case 'sign': { this.name = 'WARNING SIGN'; this.hp = 20; this.r = 8 * this.ss; break; }
       case 'console': { this.name = 'CONSOLE'; this.hp = 26; this.r = 9 * this.ss; break; }
       case 'seawall': {
@@ -71,11 +38,20 @@ class Structure extends Entity {
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
       case 'shop': { this.name = 'BAIT SHOP'; this.hp = 300; this.deckY = -20; this.w = 96; this.r = 60 * this.ss; this.pilings = []; for (let i = 0; i < 5; i++) this.pilings.push({ ox: -40 + i * 20, hp: 60, dead: false }); break; }
       case 'campsite': { this.name = 'CAMPSITE'; this.hp = 90; this.r = 44 * this.ss; this.tent = Math.floor(this.seed * 3); break; }
+      case 'wreck': {
+        // a hull on the bottom: landmark, shelter and something to smash open
+        this.name = ['TRAWLER WRECK', 'FREIGHTER WRECK', 'SAILBOAT WRECK'][Math.floor(this.seed * 3)];
+        this.v = Math.floor(this.seed * 3); this.len = 70 + Math.round(this.seed * 90);
+        this.hp = 420 + this.len * 2; this.armor = 26; this.r = this.len * 0.6;
+        this.tilt = (ihash(Math.round(x), 77) - 0.5) * 0.62;
+        this.holed = false; this.ss = 1; this.siltT = 0;
+        break;
+      }
     }
     this.maxHp = this.hp;
     this.y = kind === 'crabtrap' ? World.surface(x) : kind === 'buoy' ? World.surface(x) : World.floorY(x);
     if (kind === 'dock' || kind === 'stilthouse' || kind === 'tower' || kind === 'campfire' || kind === 'shop' || kind === 'campsite' || kind === 'tank') this.y = World.floorY(x);
-    if (kind === 'grate') this.y = World.floorY(x);
+    if (kind === 'grate' || kind === 'wreck') this.y = World.floorY(x);
   }
   addOccupant(type, ox, oy, pose) { const sp = SPECIES[type] || SPECIES.tourist; this.occupants.push({ type, ox, oy, alive: true, t: rand(10), flash: 0, rig: rigOf(sp, randi(0, 7)), h: gsOf(sp), pose: pose || 'stand' }); }
   get alivePeople() { return this.occupants.filter(o => o.alive); }
@@ -142,7 +118,7 @@ class Structure extends Entity {
   collapse(P) {
     if (this.collapsed) return; this.collapsed = true; this.collapseT = 0; this.threat = 0;
     G.fx.splinters(this.x, this.y - 10, 40, 190); G.fx.splash(this.x, 2.2, 0); G.shake(14); SFX.splinter(this.pan); SFX.thud(this.pan); G.slowmo(0.4, 0.5);
-    G.fx.text(this.x, this.y - 40, this.kind === 'stilthouse' ? 'FISH CAMP DESTROYED!' : 'DOCK DESTROYED!', { color: '#ffd060', scale: 2, life: 1.8 });
+    G.fx.text(this.x, this.y - 40, (this.name || 'STRUCTURE') + ' DESTROYED!', { color: '#ffd060', scale: 2, life: 1.8 });
     for (const o of this.alivePeople) { const [px, py] = this.occPos(o); const h = new Human(px, py + 4, o.type); h.vx = rand(-70, 70); h.vy = -rand(30, 90); G.add(h); o.alive = false; }
     G.addScore(1200); Meta.event('structure');
     if (P) { G.stats.structures = (G.stats.structures || 0) + 1; Missions.onWreck(); }
@@ -153,6 +129,13 @@ class Structure extends Entity {
     this.lightOn = night > 0.45;
     if (this.collapsed) { this.collapseT += dt; if (this.collapseT > 8) this.remove = true; if (chance(dt * 2)) G.fx.bubbles(this.x + rand(-20, 20), World.surface(this.x) + 6, 1, 4); return; }
     if (this.kind === 'crabtrap') { this.y = World.surface(this.x); }
+    if (this.kind === 'wreck') {
+      // a wreck breathes: silt lifting off the plates, bubbles out of the hold
+      this.siltT -= dt;
+      if (this.siltT <= 0) { this.siltT = rand(0.6, 2.2); G.fx.add({ type: 'bubble', x: this.x + rand(-8, 8), y: this.y - 16, vx: rand(-4, 4), vy: -22, s: 0.8, seed: rand(TAU), life: 2.6 }); }
+      if (chance(dt * 0.6)) G.fx.silt(this.x + rand(-this.len / 2, this.len / 2), this.y - 2, 2, 14);
+      if (!this.holed && this.hp < this.maxHp * 0.55) { this.holed = true; G.fx.silt(this.x, this.y - 10, 16, 70); SFX.splinter(this.pan); G.shake(5); G.fx.text(this.x, this.y - 34, 'HULL BREACHED', { color: '#ffd060', scale: 2, life: 1.6 }); }
+    }
     if (this.kind === 'buoy') { this.y = World.surface(this.x) - 4; }
     if ((this.kind === 'campfire' || this.kind === 'campsite') && chance(dt * 22)) G.fx.add({ type: 'smoke', x: this.x + rand(-2, 2) * this.ss, y: this.y - 6 * this.ss, vx: rand(-6, 6), vy: -rand(14, 28), s: rand(1.5, 3), color: '#6a6a6a', life: rand(0.8, 1.8), t: 0, maxLife: 1.4 });
     if ((this.kind === 'campfire' || this.kind === 'campsite') && this.lightOn) G.fx.glow(this.x + (this.kind === 'campsite' ? 41 * this.ss : 0), this.y - 4 * this.ss, (14 + Math.sin(this.t * 9) * 3) * this.ss, '#ff8020', 0.12);
@@ -386,6 +369,59 @@ class Structure extends Entity {
         if (f > 0.2) { ctx.strokeStyle = '#c8c8c0'; ctx.lineWidth = 1; for (let k = 0; k < f * 8; k++) { const a = ihash(k, 7) * TAU; ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(Math.cos(a) * 20 * f, -40 + Math.sin(a) * 26 * f); ctx.stroke(); } }
         break;
       }
+      case 'wreck': {
+        const L = this.len, hull = this.collapsed || this.holed ? 1 : 0;
+        const dmg = clamp(1 - this.hp / this.maxHp, 0, 1);
+        const HULL = [['#3d4a52', '#55666f', '#252e34'], ['#4a3f36', '#665a4c', '#2c2620'], ['#48504a', '#636b62', '#2a2e2b']][this.v % 3];
+        const rust = '#7a4620', crust = '#3f6a5e', crustL = '#5a9184';
+        ctx.rotate(this.tilt);
+        // keel and hull: a tapered box with a raked bow
+        px(-L / 2, -20, L, 20, HULL[0]);
+        px(-L / 2, -20, L, 2, HULL[1]);
+        px(-L / 2, -2, L, 3, HULL[2]);
+        for (let i = -L / 2; i < L / 2; i += 7) px(i, -19, 1, 18, HULL[2]);          // plate seams
+        // bow rake and stern transom
+        ctx.fillStyle = HULL[0];
+        ctx.beginPath(); ctx.moveTo(L / 2, -20); ctx.lineTo(L / 2 + 16, -10); ctx.lineTo(L / 2, 1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = HULL[1]; ctx.fillRect(Math.round(L / 2), -20, 2, 4);
+        px(-L / 2 - 5, -18, 5, 17, HULL[2]);
+        // rust runs and encrusting growth along the top edge
+        for (let i = 0; i < 14; i++) { const rx2 = -L / 2 + ihash(i, 31) * L; px(rx2, -19, 1, 3 + ihash(i, 32) * 11, rust); }
+        for (let i = 0; i < 22; i++) { const cx2 = -L / 2 + ihash(i, 41) * L, ch = 2 + ihash(i, 42) * 3; px(cx2, -20 - ch, 2, ch, ihash(i, 43) > 0.5 ? crust : crustL); }
+        // the hole: ribs and black hold, wider once you have worked on it
+        const holeW = 12 + dmg * 26;
+        px(-holeW / 2, -18, holeW, 17, '#050a0c');
+        for (let i = 0; i <= 4; i++) px(-holeW / 2 + i * holeW / 4, -18, 1, 17, HULL[2]);
+        for (let i = 0; i < 5; i++) { const bx2 = -holeW / 2 - 3 + ihash(i, 51) * (holeW + 6); px(bx2, -18, 1, 4 + ihash(i, 52) * 5, HULL[1]); }
+        // portholes, a couple still holding a pocket of light
+        for (let i = 0; i < 4; i++) {
+          const ox = -L / 2 + 10 + i * (L - 20) / 3;
+          if (Math.abs(ox) < holeW / 2 + 3) continue;
+          px(ox - 2, -14, 4, 4, '#141c1e'); px(ox - 2, -14, 4, 1, HULL[1]);
+          if (i % 2 === 0) px(ox - 1, -13, 2, 2, 'rgba(120,220,200,0.5)');
+        }
+        // superstructure, or what is left of it
+        if (this.v !== 2) {
+          const sw = 26, sh = 16;
+          px(-sw / 2 - 4, -20 - sh, sw, sh, HULL[1]);
+          px(-sw / 2 - 4, -20 - sh, sw, 1, mixColor(HULL[1], '#ffffff', 0.25));
+          for (let i = 0; i < 3; i++) px(-sw / 2 - 1 + i * 8, -18 - sh, 5, 5, '#0b1416');
+          px(-sw / 2 + 6, -20 - sh - 5, 3, 5, rust);
+        }
+        // mast / boom, leaning, with a rag of net still on it
+        const mh = this.v === 2 ? 54 : 34, lean = 0.4 + this.tilt * 0.4;
+        ctx.save(); ctx.translate(L * 0.12, -20); ctx.rotate(lean);
+        px(-1, -mh, 2, mh, HULL[2]); px(-1, -mh, 1, mh, rust);
+        px(-9, -mh + 6, 18, 1, HULL[2]);
+        ctx.globalAlpha = 0.45; ctx.fillStyle = '#9aa8a0';
+        for (let i = -8; i < 8; i += 2) for (let j = 0; j < 10; j += 2) if (((i + j) & 3) !== 3) ctx.fillRect(i, -mh + 7 + j, 1, 1);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        // silt skirt where the hull has settled into the bottom
+        ctx.globalAlpha = 0.55; px(-L / 2 - 8, -3, L + 26, 5, '#5f5a4c'); ctx.globalAlpha = 1;
+        if (hull) { ctx.globalAlpha = 0.3; px(-L / 2, -20, L, 20, '#000000'); ctx.globalAlpha = 1; }
+        break;
+      }
       case 'campfire': {
         ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-7, -2, 14, 3);
         ctx.fillStyle = '#4a3524'; ctx.fillRect(-6, -5, 5, 4); ctx.fillRect(1, -5, 5, 4);
@@ -421,6 +457,7 @@ function trySpawnStructure(x, rng, difficulty) {
     if (k === 'shop') return land && (deepAt(120) || deepAt(-120));
     if (k === 'stilthouse') return open && fy < 320;
     if (k === 'crabtrap' || k === 'buoy') return open;
+    if (k === 'wreck') return fy > 150 && World.floorY(x - 90) > 110 && World.floorY(x + 90) > 110;
     return land;
   });
   if (!table.length) return false;
@@ -458,6 +495,7 @@ function trySpawnStructure(x, rng, difficulty) {
     case 'boatramp': G.add(new Structure(x, 'boatramp')); return true;
     case 'crabtrap': G.add(new Structure(x, 'crabtrap')); return true;
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;
+    case 'wreck': G.add(new Structure(x, 'wreck')); return true;
     case 'seawall': { const st = new Structure(x, 'seawall'); G.add(st); return true; }
     case 'sign': case 'pipe': G.add(new Structure(x, 'sign')); return true;
   }

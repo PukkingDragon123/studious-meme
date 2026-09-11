@@ -4,19 +4,48 @@
 // once you have reached a stretch of the swamp you can drop straight into it,
 // bigger and against a harder table. The last stage is the city.
 // ---------------------------------------------------------------------------
+// Three zones. The globe carries every release site; the zone decides which
+// face of it you are looking at, what the water does to you, and what is
+// waiting at the bottom of it.
+const ZONES = [
+  { id: 'sewer', n: 1, name: 'THE SEWER NETWORK', sub: 'A DROWNED CITY SYSTEM. NO SKY, NO WAY BACK UP.', col: '#8ab820', x0: -16600, x1: -3200 },
+  { id: 'glades', n: 2, name: 'THE EVERGLADES', sub: 'OPEN WATER, OPEN SEASON. THE MAP THEY RELEASED YOU INTO.', col: '#7fffd8', x0: -3200, x1: 19000 },
+  { id: 'ocean', n: 3, name: 'THE OPEN OCEAN', sub: 'PAST THE SEAWALL. SALT, DEPTH, AND NOTHING TO HOLD ON TO.', col: '#60a8ff', x0: 19000, x1: 99999 },
+];
+const ZONE_BY_ID = {};
+for (const z of ZONES) ZONE_BY_ID[z.id] = z;
+
 const STAGES = [
-  { id: 'outfall', lat: -0.36, lon: 0.10, name: 'THE OUTFALL', sub: 'WHERE THE PIPE SPITS YOU OUT', x: 320, size: 1.0, diff: 0, intro: true },
-  { id: 'mangrove', lat: -0.22, lon: 0.42, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
-  { id: 'camp', lat: -0.06, lon: 0.72, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
-  { id: 'cypress', lat: 0.10, lon: 0.98, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
-  { id: 'prairie', lat: 0.26, lon: 1.24, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
-  { id: 'river', lat: 0.36, lon: 1.54, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
-  { id: 'campground', lat: 0.24, lon: 1.86, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
-  { id: 'bay', lat: 0.06, lon: 2.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
-  { id: 'seawall', lat: -0.14, lon: 2.50, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+  // ---- ZONE 2: THE EVERGLADES. Where a run starts and where it is learned.
+  { id: 'outfall', zone: 'glades', lat: -0.36, lon: 0.10, name: 'THE OUTFALL', sub: 'WHERE THE PIPE SPITS YOU OUT', x: 320, size: 1.0, diff: 0, intro: true },
+  { id: 'mangrove', zone: 'glades', lat: -0.22, lon: 0.42, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
+  { id: 'camp', zone: 'glades', lat: -0.06, lon: 0.72, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
+  { id: 'cypress', zone: 'glades', lat: 0.10, lon: 0.98, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
+  { id: 'prairie', zone: 'glades', lat: 0.26, lon: 1.24, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
+  { id: 'river', zone: 'glades', lat: 0.36, lon: 1.54, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
+  { id: 'campground', zone: 'glades', lat: 0.24, lon: 1.86, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
+  { id: 'bay', zone: 'glades', lat: 0.06, lon: 2.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
+  { id: 'seawall', zone: 'glades', lat: -0.14, lon: 2.50, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+  // ---- ZONE 1: THE SEWER NETWORK. Under the city, west of the lab.
+  { id: 'undercroft', zone: 'sewer', lat: -0.30, lon: 3.34, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 1.4, diff: 0.8, need: { reach: 2800 } },
+  { id: 'shaft', zone: 'sewer', lat: -0.12, lon: 3.62, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 2.1, diff: 1.6, need: { reach: 4200 } },
+  { id: 'junction', zone: 'sewer', lat: 0.06, lon: 3.92, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 3.0, diff: 2.4, need: { reach: 6100 } },
+  { id: 'gallery', zone: 'sewer', lat: 0.24, lon: 4.20, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 4.0, diff: 3.2, need: { reach: 7600 } },
+  { id: 'sump', zone: 'sewer', lat: 0.40, lon: 4.48, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
+  // ---- ZONE 3: THE OPEN OCEAN. Past the seawall, down the wall, into the dark.
+  { id: 'shelf', zone: 'ocean', lat: -0.34, lon: 5.10, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 4.4, diff: 3.0, need: { reach: 11000 } },
+  { id: 'reef', zone: 'ocean', lat: -0.14, lon: 5.40, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 5.6, diff: 3.8, need: { reach: 15300 } },
+  { id: 'wall', zone: 'ocean', lat: 0.08, lon: 5.72, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 7.2, diff: 4.5, need: { tier: 6 } },
+  { id: 'trench', zone: 'ocean', lat: 0.30, lon: 6.04, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
+// sites in the order they appear on the globe, grouped by zone
+const STAGES_BY_ZONE = {};
+for (const z of ZONES) STAGES_BY_ZONE[z.id] = STAGES.filter(st => st.zone === z.id);
+const zoneOf = st => ZONE_BY_ID[(st && st.zone) || 'glades'] || ZONES[1];
+// which of the three worlds a stretch of map belongs to
+const zoneAt = x => { for (const z of ZONES) if (x >= z.x0 && x < z.x1) return z; return ZONES[1]; };
 
 // Prime mutation: one lineage gene, free, chosen before the run starts.
 const PRIMES = [

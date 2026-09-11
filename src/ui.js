@@ -49,6 +49,18 @@ const UI = {
     tab('#60ff60', P.poisonT > 0);
     tab('#ff5030', P.frenzyT > 0);
     tab('#ff6060', !!P.missingLimbs);
+    // environment meters only exist where the environment is trying to kill you
+    let hy2 = 39;
+    const haz = (label, v, col, warn) => {
+      if (v <= 0.5) return;
+      const f = clamp(v / 100, 0, 1), hot = f > 0.72;
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, hy2, 96, 11);
+      Font.draw(ctx, label, 9, hy2 + 3, { color: hot && Math.floor(t * 6) % 2 ? warn : '#7f9a90' });
+      this.meter(ctx, 44, hy2 + 3, 54, 5, f, hot && Math.floor(t * 6) % 2 ? warn : col, '#141c1a');
+      hy2 += 13;
+    };
+    haz('FILTH', P.toxin || 0, '#8ab820', '#e0ff40');
+    haz('PRESS', P.crush || 0, '#4a9ac8', '#a0e8ff');
     // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
     Font.draw(ctx, P.lengthFt.toFixed(1), W / 2 - 12, 6, { color: '#eaf2dc', align: 'right', scale: 2, outline: '#0a1a08' });
@@ -119,6 +131,25 @@ const UI = {
       Font.draw(ctx, mh.text, 14, my, { color: flash ? '#ffffff' : mh.col });
       ctx.fillStyle = '#16241f'; ctx.fillRect(10, my + 9, mw - 4, 1);
       ctx.fillStyle = mh.col; ctx.fillRect(10, my + 9, Math.round((mw - 4) * clamp(mh.frac, 0, 1)), 1);
+    }
+    // dispatch: the lab talking about you on an open channel, typed in
+    const dp = G.dispatch;
+    if (dp) {
+      const dy = H - 78, dw = Math.min(W - 24, Math.max(160, Font.width(dp.text, 1) + 34));
+      const fade = clamp(Math.min(dp.t * 3, (dp.life - dp.t) * 3), 0, 1);
+      ctx.globalAlpha = fade;
+      ctx.fillStyle = 'rgba(4,12,12,0.78)'; ctx.fillRect(12, dy, dw, 20);
+      ctx.fillStyle = '#2fd08a'; ctx.fillRect(12, dy, 2, 20);
+      // carrier light and a level meter that twitches while the voice runs
+      const live = dp.t < dp.life - 1.2;
+      ctx.fillStyle = live && Math.floor(t * 6) % 2 ? '#ff5030' : '#40201a';
+      ctx.fillRect(18, dy + 4, 3, 3);
+      for (let i = 0; i < 5; i++) { const lv = live ? Math.abs(Math.sin(t * (8 + i * 3) + i)) : 0; ctx.fillStyle = lv > 0.4 ? '#2fd08a' : '#17392c'; ctx.fillRect(24 + i * 3, dy + 6 - Math.round(lv * 2), 2, 2 + Math.round(lv * 2)); }
+      Font.draw(ctx, 'DISPATCH', 42, dy + 3, { color: '#4f7f74' });
+      const shown = dp.text.slice(0, Math.max(0, Math.floor(dp.t * 44)));
+      Font.draw(ctx, shown, 18, dy + 12, { color: '#d8e8de' });
+      if (shown.length < dp.text.length && Math.floor(t * 10) % 2) { ctx.fillStyle = '#2fd08a'; ctx.fillRect(18 + Font.width(shown, 1) + 1, dy + 12, 4, 7); }
+      ctx.globalAlpha = 1;
     }
     // a claimed-but-unreached relic gets an arrow, it is the point of the run
     if (G.mission && G.mission.relic && !G.mission.relic.remove) {
@@ -884,6 +915,72 @@ const UI = {
         px(-3, -3, 7, 1, dim('#20a040')); px(-2, -15, 1, 2, dim('#40ff60'));
         px(-11, 1, 22, 1, dim('#2a7a8a'));
         break;
+      // ---- zone 1: the sewer network ----
+      case 'undercroft':
+        px(-11, -14, 22, 3, dim('#5a6060')); px(-11, -11, 22, 1, dim('#33393a'));
+        px(-8, -10, 3, 10, dim('#3f4547')); px(5, -10, 3, 10, dim('#3f4547'));
+        px(-4, -6, 8, 6, dim('#7a4a22')); px(-4, -6, 8, 1, dim('#a06a30'));
+        px(-2, -9, 1, 3, dim('#ff9030')); px(0, -8, 1, 2, dim('#ffc060'));
+        px(-11, 0, 22, 2, dim('#2e3436'));
+        break;
+      case 'shaft':
+        px(-9, -15, 4, 16, dim('#4a5052')); px(5, -15, 4, 16, dim('#4a5052'));
+        px(-9, -15, 4, 1, dim('#757c7e')); px(5, -15, 4, 1, dim('#757c7e'));
+        for (let k = -13; k < 1; k += 4) { px(-5, k, 10, 1, dim('#252b2c')); }
+        px(-5, -15, 10, 15, dim('#101718'));
+        px(-2, -4, 4, 5, dim('#2a6a5a')); px(-2, -4, 4, 1, dim('#46a88a'));
+        break;
+      case 'junction':
+        px(-3, -14, 6, 15, dim('#3f4547'));
+        px(-12, -10, 24, 4, dim('#4a5052')); px(-12, -10, 24, 1, dim('#727a7c'));
+        px(-12, -3, 24, 4, dim('#4a5052')); px(-12, -3, 24, 1, dim('#727a7c'));
+        px(-10, -9, 2, 2, dim('#0c1212')); px(8, -9, 2, 2, dim('#0c1212'));
+        px(-10, -2, 2, 2, dim('#0c1212')); px(8, -2, 2, 2, dim('#0c1212'));
+        px(-2, -12, 4, 4, dim('#7a8a2a')); px(-1, -11, 2, 2, dim('#b4c840'));
+        break;
+      case 'gallery':
+        px(-12, -15, 24, 4, dim('#545a5c')); px(-12, -15, 24, 1, dim('#7c8486'));
+        for (let i = -10; i <= 9; i += 5) px(i, -11, 1, 12, dim('#3a4042'));
+        px(-12, -11, 24, 1, dim('#2a3032'));
+        px(-12, -2, 24, 3, dim('#3a5a2e')); px(-12, -2, 24, 1, dim('#587a3a'));
+        px(-6, -8, 3, 1, dim('#96b03a')); px(3, -6, 3, 1, dim('#96b03a'));
+        break;
+      case 'sump':
+        px(-12, -4, 24, 5, dim('#31401f')); px(-12, -4, 24, 1, dim('#5c7a2a'));
+        px(-9, -14, 5, 11, dim('#4a5052')); px(-9, -14, 5, 2, dim('#767e80'));
+        px(-8, -5, 3, 3, dim('#8ba82a'));
+        px(2, -9, 8, 3, dim('#3f4547')); px(2, -9, 8, 1, dim('#6a7274'));
+        px(4, -6, 1, 4, dim('#6a8a2a')); px(7, -6, 1, 3, dim('#6a8a2a'));
+        break;
+      // ---- zone 3: the open ocean ----
+      case 'shelf':
+        px(-12, -1, 24, 3, dim('#c8bc9a')); px(-12, -1, 24, 1, dim('#e4dcbc'));
+        for (let i = -10; i <= 10; i += 3) { const h = 5 + ((i + 12) % 4); px(i, -1 - h, 1, h, dim('#4a9a5a')); px(i + 1, -h, 1, h - 1, dim('#6ec07a')); }
+        px(-12, -15, 24, 1, dim('#8ad0e0'));
+        break;
+      case 'reef':
+        px(-12, 0, 24, 2, dim('#c0a884'));
+        for (const [ox, hh, c] of [[-9, 9, '#c4566e'], [-4, 13, '#cfa03a'], [2, 10, '#5a94bc'], [7, 12, '#a05aa8']]) {
+          px(ox, -hh, 3, hh, dim(c)); px(ox, -hh, 1, hh, dim(mixColor(c, '#ffffff', 0.35)));
+          px(ox - 2, -hh + 3, 2, 2, dim(c)); px(ox + 3, -hh + 5, 2, 2, dim(c));
+        }
+        px(-7, -14, 2, 1, dim('#ffe8a0'));
+        break;
+      case 'wall':
+        px(-12, -16, 11, 32, dim('#5a5246')); px(-12, -16, 11, 1, dim('#84796a'));
+        for (let k = -14; k < 14; k += 4) px(-12, k, 11, 1, dim('#3a352c'));
+        px(-1, -9, 2, 3, dim('#3a8a80')); px(-1, -2, 2, 3, dim('#3a8a80'));
+        px(4, -6, 8, 3, dim('#8a9aa6')); px(4, -6, 6, 1, dim('#d8e0e6'));
+        px(10, -7, 3, 2, dim('#5a6a76'));
+        break;
+      case 'trench':
+        px(-13, -2, 8, 18, dim('#34343a')); px(5, -5, 9, 21, dim('#34343a'));
+        px(-13, -2, 8, 1, dim('#585862')); px(5, -5, 9, 1, dim('#585862'));
+        px(-5, 2, 10, 14, dim('#050a10'));
+        px(-2, -8, 1, 6, dim('#c8c0a8')); px(-3, -10, 3, 2, dim('#8affe0'));
+        px(-4, -5, 6, 4, dim('#3a2a34')); px(-3, -4, 1, 1, dim('#ff6a6a'));
+        px(-1, -4, 3, 1, dim('#e0d8c0'));
+        break;
       case 'seawall':
         px(-11, -6, 22, 7, dim('#5e6068')); px(-11, -6, 22, 1, dim('#8a8c92'));
         for (const [ox, h, w] of [[-9, 14, 5], [-3, 20, 6], [4, 11, 4], [8, 17, 4]]) {
@@ -939,7 +1036,8 @@ const UI = {
       const st = r.st, open = Stages.unlocked(st), sel = r.i === G.stageSel;
       if (!r.vis) continue;
       const fade = clamp(r.z * 2.4, 0, 1);
-      const col = st.kaiju ? '#ff7a40' : open ? '#7fffd8' : '#5f7f78';
+      const zc = zoneOf(st).col;
+      const col = st.kaiju ? '#ff7a40' : open ? zc : mixColor(zc, '#2a3a38', 0.65);
       ctx.globalAlpha = fade;
       if (sel) {
         const pr = 7 + Math.sin(t * 5) * 1.6;
@@ -957,10 +1055,21 @@ const UI = {
 
     // --- readout column on the right: icon, name, two numbers, nothing else
     const cur = STAGES[G.stageSel] || STAGES[0], open = Stages.unlocked(cur);
-    const accent = cur.kaiju ? '#ff7a40' : open ? '#7fffd8' : '#a08070';
+    const Z = zoneOf(cur), zSites = STAGES_BY_ZONE[Z.id] || [cur], zIdx = zSites.indexOf(cur);
+    const accent = cur.kaiju ? '#ff7a40' : open ? Z.col : '#a08070';
     const px0 = W * 0.62, shake = G.menuShake > 0 ? Math.sin(t * 60) * 3 : 0;
+    // --- zone header: which of the three worlds this site belongs to
+    ctx.fillStyle = 'rgba(6,18,16,0.75)'; ctx.fillRect(10, 8, W * 0.46, 30);
+    this.bracket(ctx, 10, 8, W * 0.46, 30, rgba(Z.col, 0.35), 5);
+    for (const z of ZONES) {
+      const on = z.id === Z.id, bx = 16 + (z.n - 1) * 12;
+      ctx.fillStyle = on ? z.col : mixColor(z.col, '#0a1614', 0.7);
+      ctx.fillRect(bx, on ? 13 : 15, 8, on ? 20 : 16);
+    }
+    Font.draw(ctx, 'ZONE ' + Z.n, 58, 13, { color: Z.col, scale: 2, outline: '#04120e' });
+    Font.draw(ctx, Z.name, 58, 28, { color: '#c8d8d0' });
     Font.draw(ctx, 'RELEASE SITE', px0 + shake, 26, { color: '#4f7f74' });
-    Font.draw(ctx, String(G.stageSel + 1).padStart(2, '0') + ' / ' + String(STAGES.length).padStart(2, '0'), W - 22, 26, { color: '#4f7f74', align: 'right' });
+    Font.draw(ctx, String(zIdx + 1).padStart(2, '0') + ' / ' + String(zSites.length).padStart(2, '0'), W - 22, 26, { color: '#4f7f74', align: 'right' });
     ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(px0 + shake, 36, W - 22 - px0, 1);
     // the landmark icon, large, standing in for a paragraph of description
     const iw = 54;
@@ -968,18 +1077,22 @@ const UI = {
     ctx.save(); ctx.translate(px0 + iw / 2 + shake, 46 + iw * 0.72); ctx.scale(1.7, 1.7);
     this.drawLandmark(ctx, cur.id, 0, 0, open);
     ctx.restore();
-    Font.draw(ctx, open ? cur.name : 'SEALED', px0 + iw + 10 + shake, 52, { color: accent, scale: 2, outline: '#04120e' });
+    // long site names drop to a single-height face rather than running off the panel
+    const nameX = px0 + iw + 10 + shake, nameW = W - 22 - nameX;
+    const nameStr = open ? cur.name : 'SEALED';
+    const nameSc = Font.width(nameStr, 2) <= nameW ? 2 : 1;
+    Font.draw(ctx, nameStr, nameX, nameSc === 2 ? 52 : 55, { color: accent, scale: nameSc, outline: '#04120e' });
     if (open) {
       Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 72, { color: '#c8d8d0' });
       for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 8 + shake), 84, 6, 6); }
     } else Font.draw(ctx, Stages.hint(cur.need), px0 + iw + 10 + shake, 72, { color: '#a08070' });
 
-    // --- the chain of sites as a strip of blips, so progress reads at a glance
+    // --- the chain of sites in this zone, so progress reads at a glance
     const sy2 = 122, sw2 = W - 22 - px0;
-    for (let i = 0; i < STAGES.length; i++) {
-      const st = STAGES[i], o2 = Stages.unlocked(st), on = i === G.stageSel;
-      const bx = px0 + (i + 0.5) * (sw2 / STAGES.length);
-      ctx.fillStyle = on ? accent : o2 ? '#3f6f66' : '#26332f';
+    for (let i = 0; i < zSites.length; i++) {
+      const st = zSites[i], o2 = Stages.unlocked(st), on = st === cur;
+      const bx = px0 + (i + 0.5) * (sw2 / zSites.length);
+      ctx.fillStyle = on ? accent : o2 ? mixColor(Z.col, '#12201e', 0.5) : '#26332f';
       ctx.fillRect(Math.round(bx - 3), sy2 + (on ? -2 : 0), 6, on ? 10 : 6);
     }
     ctx.fillStyle = 'rgba(120,220,200,0.2)'; ctx.fillRect(px0, sy2 + 14, sw2, 1);
@@ -992,12 +1105,13 @@ const UI = {
       Font.draw(ctx, mdef.line, px0 + shake, 170, { color: '#7f9a90' });
     } else Font.draw(ctx, 'SEALED', px0 + shake, 158, { color: '#a08070' });
 
-    // --- the vault: nine relics, one per site, lit once carried out
+    // --- the vault: one relic per site in this zone, lit once carried out
+    const zArts = ARTIFACTS.filter(a2 => { const st = STAGE_BY_ID[a2.stage]; return st && st.zone === Z.id; });
     const got = Missions.owned().length;
     Font.draw(ctx, 'RELICS', px0 + shake, 190, { color: '#4f7f74' });
     Font.draw(ctx, got + '/' + ARTIFACTS.length, W - 22, 190, { color: got ? '#ffd060' : '#4f7f74', align: 'right' });
-    const slotW = sw2 / ARTIFACTS.length;
-    ARTIFACTS.forEach((a2, i) => {
+    const slotW = sw2 / Math.max(1, zArts.length);
+    zArts.forEach((a2, i) => {
       const bx = px0 + (i + 0.5) * slotW, byy = 212, have = Missions.has(a2.id), here = a2.stage === cur.id;
       ctx.fillStyle = have ? 'rgba(255,208,96,0.10)' : 'rgba(120,220,200,0.05)';
       ctx.fillRect(Math.round(bx - slotW / 2 + 1), byy - 11, Math.round(slotW - 2), 22);
@@ -1014,7 +1128,9 @@ const UI = {
     // --- prompt
     const okCol = open ? '#ffe060' : '#ff8060';
     Font.draw(ctx, open ? 'ENTER' : 'LOCKED', px0 + shake, H - 30, { color: okCol, scale: 2, outline: '#2a1a00' });
-    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A SITE' : 'ARROWS  SPIN', px0 + shake, H - 12, { color: '#4f7f74' });
+    Font.draw(ctx, (G.touchUI || Input.touch.active) ? 'TAP A SITE' : 'ARROWS  SITE      Q / E  ZONE', px0 + shake, H - 12, { color: '#4f7f74' });
+    // the zone's own line, under the globe, so each world gets a sentence
+    Font.draw(ctx, Z.sub, 14, H - 16, { color: rgba(Z.col, 0.7) });
   },
   // ---------- loadout: the splice bay, with you in the tank ----------
   loadoutCells() {
@@ -1497,5 +1613,31 @@ const UI = {
     if (G.white > 0.01) { ctx.fillStyle = `rgba(255,255,255,${Math.min(1, G.white).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     const P = G.player;
     if (P && !P.dead && P.hp / P.maxHp < 0.25 && G.state === 'play') { const a = 0.15 + 0.1 * Math.sin(G.t * 6); const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.8); g.addColorStop(0, 'rgba(120,0,0,0)'); g.addColorStop(1, `rgba(120,0,0,${a.toFixed(3)})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+    if (P && !P.dead) {
+      // filth stains the view green and greasy; pressure narrows it and shivers
+      const tx = clamp((P.toxin || 0) / 100, 0, 1);
+      if (tx > 0.12) {
+        ctx.globalAlpha = (tx - 0.12) * 0.34;
+        ctx.fillStyle = '#7a9a1a'; ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = (tx - 0.12) * 0.5;
+        // greasy motes drifting over the lens
+        for (let i = 0; i < 26; i++) {
+          const ph = i * 1.7 + G.t * (0.2 + (i % 5) * 0.05);
+          const px2 = (i * 97 + Math.sin(ph) * 30) % W, py2 = (i * 53 + G.t * 9 + Math.cos(ph * 0.7) * 20) % H;
+          ctx.fillStyle = i % 3 ? '#94b82a' : '#5a7414';
+          ctx.fillRect(Math.round(px2), Math.round(py2), 2 + (i % 2), 1 + (i % 2));
+        }
+        ctx.globalAlpha = 1;
+      }
+      const cr = clamp((P.crush || 0) / 100, 0, 1);
+      if (cr > 0.1) {
+        const k = (cr - 0.1) / 0.9, pulse = 0.5 + 0.5 * Math.sin(G.t * (3 + k * 6));
+        const g2 = ctx.createRadialGradient(W / 2, H / 2, H * (0.52 - k * 0.3), W / 2, H / 2, H * 0.9);
+        g2.addColorStop(0, 'rgba(4,14,24,0)');
+        g2.addColorStop(1, `rgba(4,14,24,${(0.35 + k * 0.5 * pulse).toFixed(3)})`);
+        ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+        if (k > 0.5) { ctx.globalAlpha = (k - 0.5) * 0.5 * pulse; ctx.fillStyle = '#8cd8ff'; for (let i = 0; i < 5; i++) ctx.fillRect(0, ((i * 71 + G.t * 130) % H) | 0, W, 1); ctx.globalAlpha = 1; }
+      }
+    }
   },
 };

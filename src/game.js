@@ -98,7 +98,22 @@ const Input = {
   bracePressed() { return this.hit('KeyL', 'KeyV', 'ControlLeft') || this.touch.brace; },
 };
 
-const BOSSES = { 2: 'oldscar', 4: 'warboat', 6: 'python', 8: 'skunkape', 10: 'shark' };
+// Each zone keeps its own roster: two minis that turn up as you shed, and one
+// world boss that only comes for a full-grown animal. Which one you meet is
+// decided by where you are standing, not by a global schedule.
+const ZONE_BOSSES = {
+  sewer:  { mini: ['broodmother', 'gnasher'], world: 'sludgeking' },
+  glades: { mini: ['oldscar', 'warboat', 'python'], world: 'skunkape' },
+  ocean:  { mini: ['anvil', 'greenwall'], world: 'lantern' },
+};
+// the fish-shaped bosses are all the same job with different numbers
+const FISH_BOSS = {
+  gnasher:    { kind: 'mutantcat', name: 'THE GNASHER', size: 2.6, cls: 1.2, hp: 900, mass: 700, spd: 150, gibs: 6, depth: 70 },
+  sludgeking: { kind: 'sewereel', name: 'THE SLUDGE KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
+  anvil:      { kind: 'hammer', name: 'THE ANVIL', size: 2.2, cls: 1.35, hp: 1600, mass: 1500, spd: 200, gibs: 6, depth: 220 },
+  greenwall:  { kind: 'moray', name: 'THE GREEN WALL', size: 3.0, cls: 1.45, hp: 1400, mass: 1200, spd: 140, gibs: 6, depth: 300 },
+  lantern:    { kind: 'anglerfish', name: 'THE LANTERN', size: 4.2, cls: 1.9, hp: 2600, mass: 2400, spd: 155, gibs: 8, depth: 760, glow: '#7affda' },
+};
 // how many phase breaks a boss walks through, what it calls in, and the line
 // it gets on each break
 const BOSS_SPEC = {
@@ -107,6 +122,12 @@ const BOSS_SPEC = {
   python:   { phases: 3, hp: 1.5, adds: ['moccasin', 'moccasin'], cue: ['THE NEST WOKE UP', 'IT COILS TIGHTER'] },
   skunkape: { phases: 4, hp: 1.4, adds: ['boar', 'boar'], cue: ['IT STOPPED THROWING', 'THE TREES COME WITH IT', 'NOTHING HUMAN LEFT'] },
   shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
+  broodmother: { phases: 3, hp: 1.5, adds: ['rat', 'rat', 'bigrat'], cue: ['THE LITTER COMES WITH HER', 'SHE HAS NOWHERE TO RUN'] },
+  gnasher:  { phases: 3, hp: 1.4, adds: ['piranha', 'piranha'], cue: ['THE SHOAL TURNS WITH IT', 'IT STOPS PRETENDING TO BE A FISH'] },
+  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE GALLERY', 'THE SYSTEM IS ITS BODY'] },
+  anvil:    { phases: 3, hp: 1.5, adds: ['barracuda', 'barracuda'], cue: ['IT CIRCLES WIDER', 'IT HAS DECIDED'] },
+  greenwall: { phases: 3, hp: 1.5, adds: ['moray'], cue: ['IT COMES OUT OF THE HOLE', 'ALL OF IT COMES OUT'] },
+  lantern:  { phases: 4, hp: 1.7, adds: ['anglerfish', 'isopod'], cue: ['THE LIGHT GOES OUT', 'SOMETHING ELSE LIGHTS UP', 'IT WAS NEVER A FISH'] },
 };
 function weightedPick(table) { const t = table.filter(e => e[1] > 0); let tot = t.reduce((s, e) => s + e[1], 0), r = Math.random() * tot; for (const e of t) { r -= e[1]; if (r <= 0) return e[0]; } return t.length ? t[t.length - 1][0] : null; }
 
@@ -119,7 +140,7 @@ const G = {
     toWorldX(sx) { return (sx - G.W / 2 - G.shakeX) / this.zoom + this.x; },
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
-  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, finisher: null, morph: null, drop: null, embryo: null, labSel: undefined, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
+  player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, story: null, dispatch: null, finisher: null, morph: null, drop: null, embryo: null, labSel: undefined, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
   engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.32, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
@@ -293,13 +314,13 @@ const G = {
       if (Bx.indoor && rng() < 0.5) continue;
       const fy = World.floorY(x);
       if (fy < -3) { if (rng() < 0.6) this.spawnLand(x, D); continue; }
-      if (fy < 30) { if (!Bx.indoor && rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, Bx.id === 'outfall' || Bx.indoor ? 'roach' : 'crayfish')); continue; }
+      if (fy < 30) { if (!Bx.indoor && rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, Bx.indoor || Bx.id === 'outfall' ? 'roach' : 'crayfish')); continue; }
       if (Bx.indoor && !Bx.fish.length) continue;
       const kind = weightedPick(Bx.fish.concat(Bx.indoor ? [['bottom', 2]] : [['frog', 1.4], ['turtle', 1.4], ['bottom', 2], ['duck', 1]]));
       if (!kind) continue;
       if (kind === 'frog') this.add(new Frog(x, chance(0.3) ? 'pigfrog' : 'frog'));
       else if (kind === 'turtle') this.add(new Turtle(x, clamp(40 + rng() * 100, 10, fy - 15), choice(['turtle', 'slider', 'cooter'])));
-      else if (kind === 'bottom') this.add(new Bottom(x, B.id === 'outfall' ? 'roach' : choice(['crayfish', 'crab', 'snail', 'shrimp', 'fiddler'])));
+      else if (kind === 'bottom') this.add(new Bottom(x, B.indoor || B.id === 'outfall' ? (chance(0.7) ? 'roach' : 'crayfish') : choice(['crayfish', 'crab', 'snail', 'shrimp', 'fiddler'])));
       else if (kind === 'duck') Spawn.duck(x);
       else if (SPECIES[kind]) { const d = SPECIES[kind], band = d.band || [10, 200]; Spawn.school(x, d.nearFloor ? fy - 30 : clamp(rand(band[0], band[1]), 10, fy - 15), kind); }
     }
@@ -386,7 +407,7 @@ const G = {
         P.tier = t2; P.sheds++;
         P.hp = P.maxHp; P.lastMax = P.maxHp; P.hunger = Math.max(P.hunger, 55);
         P.genePoints += 2; P.newPoints += 2;
-        if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
+        { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
         if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t3 of Meta.checkUnlocks()) this.announceUnlock(t3); Meta.save(); }
         this.storeSave();
       },
@@ -410,7 +431,7 @@ const G = {
     this.banner = { text: 'NEW FORM: ' + TIERS[P.tier].name, sub: card.node.name, t: 3.5, max: 3.5, color: card.path ? PATHS[card.path].color : '#ffffff' };
     SFX.pick(); SFX.roar(P.size); this.whiteFlash(0.5); this.fx.glow(P.x, P.y, 60 * P.vis, '#ffffff', 0.8); this.addScore(500 * P.tier);
     if (card.node.evo) this.fx.text(P.x, P.y - 40 * P.size, 'EVOLVED!', { color: card.path ? PATHS[card.path].color : '#fff', scale: 3, life: 2 });
-    if (BOSSES[P.sheds]) { this.director.bossQueue = BOSSES[P.sheds]; this.director.bossT = 9; }
+    { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
     if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
     this.storeSave();
   },
@@ -470,7 +491,8 @@ const G = {
     const k = weightedPick(table);
     if (!k) return;
     if (k === 'heron') this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis']), 'wade'));
-    else this.add(new LandAnimal(x, k));
+    else if (LAND[k]) this.add(new LandAnimal(x, k));
+    else if (BOTTOM[k]) this.add(new Bottom(x, k));
   },
   spawnPredator(D) {
     const P = this.player, halfW = this.W / this.cam.zoom / 2, side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(120, 320)), fy = World.floorY(x);
@@ -502,6 +524,14 @@ const G = {
     }
     if (warn) { this.banner = { text: warn, t: 2.5, max: 2.5, color: '#ff8060' }; SFX.growl(side); }
   },
+  // sheds 2/4/6 bring a mini out of the local roster; 8 and 10 bring the world
+  // boss of whichever zone you are standing in
+  bossFor(sheds, x) {
+    if (sheds < 2 || sheds % 2) return null;
+    const r = ZONE_BOSSES[zoneAt(x).id] || ZONE_BOSSES.glades;
+    if (sheds >= 8) return r.world;
+    return r.mini[(sheds / 2 - 1) % r.mini.length];
+  },
   spawnBoss(kind) {
     const P = this.player, halfW = this.W / this.cam.zoom / 2, side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + 220), fy = World.floorY(x);
     let boss = null;
@@ -510,6 +540,31 @@ const G = {
     else if (kind === 'python') { boss = this.add(new Snake(x, fy < 0 ? -10 : 6, 'python', Math.max(2.2, P.size * 0.8))); boss.isBoss = true; boss.persistent = true; boss.name = 'MOTHER PYTHON'; boss.hp = boss.maxHp = Math.round(boss.maxHp * 1.6); }
     else if (kind === 'skunkape') { const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
     else if (kind === 'shark') { const wx = World.findX(x, xx => World.floorY(xx) > 200, 1500, 40); if (wx !== null) { boss = this.add(new Fish(wx, clamp(150, 60, World.floorY(wx) - 40), 'shark')); boss.size = 2.2; boss.sizeClass = Math.max(10, P.size * 1.3); boss.hp = boss.maxHp = 1400; boss.mass = 1500; boss.name = 'BIG BULL'; boss.isBoss = true; boss.persistent = true; boss.speed = 200; boss.gibs = 6; } }
+    else if (kind === 'broodmother') {
+      // she does not swim: find her a dry ledge to come down off
+      const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 5000, 40);
+      if (bx !== null) {
+        boss = this.add(new LandAnimal(bx, 'bigrat'));
+        boss.size = 3.4; boss.groundOff *= boss.size; boss.r *= boss.size;
+        boss.sizeClass = Math.max(4, P.size * 1.05); boss.mass = 520;
+        boss.hp = boss.maxHp = 760; boss.name = 'THE BROODMOTHER'; boss.gibs = 7; boss.threat = 1;
+        boss.y = World.floorY(bx) - boss.groundOff;
+      }
+    }
+    else if (FISH_BOSS[kind]) {
+      const B2 = FISH_BOSS[kind];
+      const wx = World.findX(x, xx => World.floorY(xx) > B2.depth * 0.6 + 40, 2600, 45);
+      if (wx !== null) {
+        const fy2 = World.floorY(wx);
+        boss = this.add(new Fish(wx, clamp(B2.depth, 40, fy2 - 40), B2.kind));
+        boss.size = B2.size; boss.r *= B2.size;
+        boss.sizeClass = Math.max(B2.cls * 6, P.size * B2.cls);
+        boss.hp = boss.maxHp = B2.hp; boss.mass = B2.mass; boss.speed = B2.spd;
+        boss.name = B2.name; boss.gibs = B2.gibs; boss.threat = 1; boss.flee = 0;
+        boss.band = [Math.max(20, B2.depth * 0.4), Math.max(120, B2.depth * 1.6)];
+        if (B2.glow) boss.bossGlow = B2.glow;
+      }
+    }
     if (!boss) { this.director.bossT = 8; return; }
     Boss.init(boss, BOSS_SPEC[kind] || { phases: 3, hp: 1.3 });
     this.boss = boss; this.director.bossQueue = null;
@@ -647,8 +702,20 @@ const G = {
         if (Input.hit('Escape', 'KeyH')) { this.state = 'title'; SFX.ui(); break; }
         const rows = UI.stageRows();
         if (Input.mouse.moved || Input.mouse.clicked) { for (let i = 0; i < rows.length; i++) { const r = rows[i]; if (Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h) this.stageSel = i; } }
-        if (Input.hit('ArrowLeft', 'KeyA', 'ArrowUp', 'KeyW')) { this.stageSel = (this.stageSel + list.length - 1) % list.length; SFX.ui(); }
-        if (Input.hit('ArrowRight', 'KeyD', 'ArrowDown', 'KeyS')) { this.stageSel = (this.stageSel + 1) % list.length; SFX.ui(); }
+        // arrows walk the sites inside the current zone; Q/E jump between zones
+        const zHere = zoneOf(list[this.stageSel]), zSites = STAGES_BY_ZONE[zHere.id] || list;
+        const stepSite = d => { const k = zSites.indexOf(list[this.stageSel]); const nx = zSites[(k + d + zSites.length) % zSites.length]; this.stageSel = list.indexOf(nx); SFX.ui(); };
+        const stepZone = d => {
+          const zi = ZONES.indexOf(zHere), nz = ZONES[(zi + d + ZONES.length) % ZONES.length];
+          const sites = STAGES_BY_ZONE[nz.id] || [];
+          let best = sites[0];
+          for (const st of sites) if (Stages.unlocked(st)) best = st;
+          if (best) { this.stageSel = list.indexOf(best); SFX.ui(); }
+        };
+        if (Input.hit('ArrowLeft', 'KeyA', 'ArrowUp', 'KeyW')) stepSite(-1);
+        if (Input.hit('ArrowRight', 'KeyD', 'ArrowDown', 'KeyS')) stepSite(1);
+        if (Input.hit('KeyQ')) stepZone(-1);
+        if (Input.hit('KeyE', 'Tab')) stepZone(1);
         const rowHit = Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
           const st = list[this.stageSel];
@@ -930,10 +997,12 @@ const G = {
     if (this.state === 'create') { Lab.draw(ctx); UI.drawCreate(ctx); return; }
     if (this.state === 'vialstore') { Lab.draw(ctx); UI.drawVialStore(ctx); return; }
     const indoor = World.isIndoor(cam.x);
-    if (indoor) World.drawIndoor(ctx, cam, day);
+    if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }
     World.drawWater(ctx, cam, day);
+    World.drawDeepScene(ctx, cam, day);
     World.drawTerrain(ctx, cam);
+    if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
     World.drawDecor(ctx, cam, 0, day);
     this.fx.drawClouds(ctx, cam);
@@ -979,6 +1048,7 @@ const G = {
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
+    World.drawDeepGlow(ctx, cam, day);
     World.drawKaiju(ctx, cam, day);
     Cine.draw(ctx);
     UI.drawScreenFx(ctx);

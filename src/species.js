@@ -100,6 +100,31 @@ def('moccasin', { name: 'WATER MOCCASIN', ft: 3, lb: 2.5, rig: 'snake', cat: 'sn
 def('python', { name: 'BURMESE PYTHON', ft: 15, lb: 200, rig: 'snake', cat: 'snake', base: '#c8a86a', band: '#5a3a20', belly: '#e8d8a8', dark: '#3a2410', eye: '#101010', pattern: 'blotch', n: 22, hp: 110, speed: 60, constrict: 7 });
 def('indigo', { name: 'EASTERN INDIGO SNAKE', ft: 7, lb: 8, rig: 'snake', cat: 'snake', base: '#1e2238', band: '#2a2e48', belly: '#6a5a4a', dark: '#0c0e18', eye: '#3a3a3a', pattern: 'plain', n: 16, hp: 24, speed: 90 });
 def('ratsnake', { name: 'YELLOW RAT SNAKE', ft: 5, lb: 3, rig: 'snake', cat: 'snake', base: '#c8b060', band: '#7a6a30', belly: '#e8e0b0', dark: '#3a3010', eye: '#3a3a3a', pattern: 'bands', n: 14, hp: 16, speed: 85 });
+// ---------------------------------------------------------------------------
+// SEWER NETWORK. Things that live in a pipe: blind, pale, fast, or numerous.
+// ---------------------------------------------------------------------------
+F('piranha', 'RED-BELLIED PIRANHA', 1.1, 3, { len: 44, h: 0.42, snout: 'blunt', tail: 'fork', back: '#4a4a44', mid: '#7a7268', belly: '#c04030', dark: '#22201c', pattern: 'speck', dorsal: 'soft', teeth: true }, { speed: 130, band: [10, 260], school: [4, 9], flee: 0, pred: 3 });
+F('cavefish', 'BLIND CAVE FISH', 0.8, 1, { len: 40, h: 0.26, snout: 'blunt', tail: 'round', back: '#cfc6bc', mid: '#e8e0d6', belly: '#f4efe8', dark: '#a89e94', dorsal: 'soft' }, { speed: 60, band: [20, 400], school: [3, 7], flee: 60 });
+F('sewereel', 'SWAMP EEL', 2.6, 5, { len: 72, h: 0.13, snout: 'point', tail: 'eel', back: '#3a2e22', mid: '#6a5638', belly: '#b09868', dark: '#1a1208', dorsal: 'none' }, { speed: 90, band: [10, 500], nearFloor: true, school: [1, 2], flee: 70, pred: 4 });
+F('sludgecarp', 'SLUDGE CARP', 3.4, 40, { len: 70, h: 0.4, snout: 'blunt', tail: 'fork', back: '#4a4a2a', mid: '#7a7a44', belly: '#b8b47c', dark: '#242414', pattern: 'blotch', dorsal: 'soft', barbels: true }, { speed: 65, band: [20, 400], school: [1, 3], flee: 90 });
+F('mutantcat', 'MUTANT CATFISH', 6, 140, { len: 82, h: 0.34, snout: 'blunt', tail: 'eel', back: '#2e3a2a', mid: '#4e6244', belly: '#9aa878', dark: '#141a12', pattern: 'blotch', dorsal: 'sail', barbels: true, teeth: true }, { speed: 95, band: [20, 600], school: [1, 1], flee: 0, pred: 14 });
+Q('bigrat', 'BLOATED RAT', 2.0, 14, { len: 36, h: 0.52, legs: 0.26, snout: 0.9, ears: 'long', tail: 'long', tailCol: '#b08878', body: '#4a3e34', belly: '#8a7a64', dark: '#1e1812', eye: '#e8d030', pattern: 'blotch' }, { speed: 120, flee: 40, gibs: 3, pred: 2 });
+P('vagrant', 'DRIFTER', 5.7, 150, { skin: '#c0a088', shirt: '#4a4438', pants: '#3a3630', hair: '#2a2420' }, { speed: 80, flee: 150 });
+
+// ---------------------------------------------------------------------------
+// OPEN OCEAN. Reef, wall and trench.
+// ---------------------------------------------------------------------------
+F('parrotfish', 'RAINBOW PARROTFISH', 2.6, 18, { len: 58, h: 0.42, snout: 'blunt', tail: 'lunate', back: '#2a7a6a', mid: '#3aa8b8', belly: '#8ad8c0', dark: '#123a38', pattern: 'speck', dorsal: 'soft' }, { speed: 80, band: [20, 240], school: [2, 5], flee: 110 });
+F('angelfish', 'QUEEN ANGELFISH', 1.4, 4, { len: 46, h: 0.58, snout: 'point', tail: 'round', back: '#2a5aa8', mid: '#e8c840', belly: '#f0e090', dark: '#14285a', pattern: 'stripe', dorsal: 'spiny' }, { speed: 70, band: [20, 220], school: [2, 6], flee: 100 });
+F('barracuda', 'GREAT BARRACUDA', 5, 60, { len: 82, h: 0.19, snout: 'point', tail: 'lunate', back: '#5a6a72', mid: '#b8c4c8', belly: '#e8eef0', dark: '#22303a', pattern: 'bar', dorsal: 'spiny', teeth: true }, { speed: 190, band: [20, 500], school: [1, 2], flee: 0, pred: 12 });
+F('moray', 'GREEN MORAY', 6, 60, { len: 84, h: 0.16, snout: 'point', tail: 'eel', back: '#3a5a2a', mid: '#6a8a3a', belly: '#b0c070', dark: '#1a2a10', dorsal: 'none', teeth: true }, { speed: 70, band: [200, 900], nearFloor: true, school: [1, 1], flee: 0, pred: 11 });
+F('lionfish', 'LIONFISH', 1.2, 3, { len: 44, h: 0.46, snout: 'point', tail: 'round', back: '#8a2a20', mid: '#e8e0d0', belly: '#f0e8dc', dark: '#3a1008', pattern: 'bar', dorsal: 'spiny' }, { speed: 45, band: [20, 400], school: [1, 2], flee: 50, venom: 8 });
+F('tuna', 'BLUEFIN TUNA', 8, 600, { len: 80, h: 0.34, snout: 'point', tail: 'lunate', back: '#1e3a6a', mid: '#7a9ab8', belly: '#e0e8ee', dark: '#0c1a34', dorsal: 'soft' }, { speed: 240, band: [40, 700], school: [1, 4], flee: 200 });
+F('hammer', 'HAMMERHEAD', 11, 500, { len: 88, h: 0.26, snout: 'blunt', tail: 'lunate', back: '#6a7a80', mid: '#a8b8bc', belly: '#dde4e4', dark: '#26343a', dorsal: 'sail', teeth: true }, { speed: 185, band: [60, 900], school: [1, 1], flee: 0, pred: 26 });
+F('oarfish', 'OARFISH', 16, 300, { len: 92, h: 0.12, snout: 'blunt', tail: 'eel', back: '#8a94a0', mid: '#c8d4dc', belly: '#eef2f6', dark: '#3a444e', dorsal: 'sail' }, { speed: 60, band: [500, 1200], school: [1, 1], flee: 120 });
+F('anglerfish', 'ABYSSAL ANGLER', 3.4, 30, { len: 60, h: 0.52, snout: 'blunt', tail: 'round', back: '#241c2a', mid: '#3a2e42', belly: '#5a4a62', dark: '#100a14', dorsal: 'spiny', teeth: true }, { speed: 45, band: [600, 1300], nearFloor: true, school: [1, 1], flee: 0, pred: 9 });
+F('isopod', 'GIANT ISOPOD', 1.6, 6, { len: 40, h: 0.5, snout: 'blunt', tail: 'round', back: '#a89880', mid: '#c8b8a0', belly: '#e0d4c0', dark: '#5a4c3c', pattern: 'bar', dorsal: 'none' }, { speed: 30, band: [700, 1300], nearFloor: true, school: [1, 3], flee: 40 });
+
 def('skunkape', { name: 'THE SKUNK APE', ft: 7.5, lb: 500, rig: 'biped', cat: 'boss', len: 60, skin: '#3a2a20', shirt: '#2a1e14', pants: '#2a1e14', hair: '#1a1410', boots: '#3a2a20' });
 // ------------------------------------------------------------ turtles, frogs, crustaceans, rays
 def('turtle', { name: 'SNAPPING TURTLE', ft: 1.5, lb: 30, rig: 'turtle', cat: 'turtle', len: 40, shell: '#4a5a34', skin: '#7d8a48', belly: '#c8b080', dark: '#1e2a14', hooked: true, armor: 12, hp: 40 });

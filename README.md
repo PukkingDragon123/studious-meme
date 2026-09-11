@@ -1,14 +1,16 @@
 # CHOMPERS
 
-A 2D pixel-art, side-scrolling **eater roguelike** set in the Florida Everglades. You are Subject 7:
-a lab-made crocodile spliced with the genes of every animal alive. You break your tank, take the storm
-sewer out, and surface in the swamp with the whole genome to spend.
+A 2D pixel-art, side-scrolling **eater roguelike**. You are Subject 7: a lab-made crocodile spliced
+with the genes of every animal alive. You break your tank, take the storm sewer out, and surface in the
+swamp with the whole genome to spend — then go back down into the city's drowned pipework, or east
+past the seawall and over the edge of the shelf.
 
 Eat anything that fits in your jaws. Every meal pays **gene points**, and you spend them whenever you
 like on a hexagonal **gene tree** of six lineages. How you hunt builds affinity, so the lineage that
 matches your style keeps getting cheaper, and specialising far enough down one branch unlocks its apex
-gene. Inspired by the *Hungry Shark* games, with roguelike runs, a hand-authored map of named biomes,
-simulated water, mud and weather, and a cartoon cast of ninety animals that come apart when bitten.
+gene. Inspired by the *Hungry Shark* games, with roguelike runs, a hand-authored map of three zones and
+twenty named biomes, simulated water, mud and weather, and a cast of a hundred and eleven animals that
+come apart when bitten.
 
 ## The Science Center
 
@@ -110,6 +112,7 @@ as a fragment for hosts that supply their own document shell).
 | Steer with the mouse | hold left mouse | - |
 | Pause / settings | `P` / `ESC` | `II` button |
 | Gene tree | `G` / `E` / `TAB` | tap the gene chip |
+| Site select: change site / change zone | arrows / `Q` and `E` | tap a pin |
 | Trait codex | `C` | via pause |
 | Break the tank | mash `SPACE` | tap |
 | Help | `H` | via pause |
@@ -130,7 +133,8 @@ input is mapped through the rotation. The touch pads can be switched off in the 
 - **Predators** hunt you while you are small and flee when you are big.
 - **Speed up** by holding the speed button: a sustained run that drinks stamina. Aim **up** and press it instead and it becomes a leap — same pool, so opening the throttle costs you the jump.
 - **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
-- **Bosses** arrive after certain sheds: Old Scar, the Poacher Warboat, Mother Python, the Skunk Ape, and Big Bull. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
+- **Bosses** arrive after certain sheds, and which one comes is decided by the zone you are standing in — the sewer sends the Broodmother and the Gnasher before the Sludge King, the glades send Old Scar and the Poacher Warboat before the Skunk Ape, the ocean sends the Anvil and the Green Wall before the Lantern. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
+- **The water itself is a hazard** in two of the three zones. Sewer water fills a **FILTH** meter that eventually starts eating health and smears the screen greasy green; past the depth your body is rated for, a **PRESSURE** meter fills, the view closes in and shivers, and the hull starts to give. Genes, relics and two of the vials raise both ratings.
 - **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight cuts to an **execution**: bars close in, the camera frames the pair, and three to five prompts come up on big key caps with a bar draining under each. You get three whole misses, and landing one prompt is enough. Every hit is a held impact frame with a blood wash over the lens.
 - **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run from the splice bay.
 - Death is permanent, but the traits and relics you unlock are not.
@@ -227,8 +231,32 @@ which lists every trait and your progress toward the locked ones.
 
 ## The map
 
-The world is authored, not shuffled. One long swamp runs west to east through named places, each with
-its own palette, plants, animals and human activity:
+The world is authored, not shuffled. One continuous map runs from a drowned city system in the far
+west, out through the swamp, and off the edge of the continental shelf into the dark. It is split into
+**three zones**, and the zone decides what the water does to you as much as what lives in it.
+
+### Zone 1 — The Sewer Network
+
+West of the lab is a municipal system nobody has opened since 1974. Floor and ceiling are authored
+together, so headroom is the level design: long low runs where you have to surface between breaths,
+crawls that pinch down to a hand of air, vaulted chambers, dry maintenance ledges to haul out on, and
+one shaft that drops eight hundred feet under the city. The concrete is dressed with capping courses,
+expansion joints, slime at the standing waterline and pipe mouths punched through the back wall —
+some of them still running. The water is toxic, and it builds a **FILTH** meter that eventually starts
+taking health. Lamplight, not sunlight, comes down through the scum.
+
+| Site | What it is |
+| --- | --- |
+| **The Undercroft** | brick vault under the city, lit by wall lamps, with people living in the pipes |
+| **The Drop Shaft** | the system falls away: a vertical chamber down to six hundred feet |
+| **Junction 9** | nine mains meet at a sealed vault. Something is in the vault |
+| **The Deep Gallery** | eleven miles of trunk main, ledges, side chambers, mutant catfish |
+| **The Outfall Sump** | the dead end. Everything the city ever flushed has settled here |
+
+### Zone 2 — The Everglades
+
+The map they released you into, west to east through named places, each with its own palette, plants,
+animals and human activity:
 
 | Biome | What it is |
 | --- | --- |
@@ -242,6 +270,26 @@ its own palette, plants, animals and human activity:
 | **The Deep Cut** | a fast cut channel with tarpon, bull sharks and undercut banks |
 | **Paradise Campground** | tents, fire rings, coolers, campers who did not read the sign |
 | **Florida Bay** | open deep water, dolphins, sawfish, manatees, a far shore you never reach |
+| **The Seawall** | a dredged harbour under a city that has finally noticed you |
+
+### Zone 3 — The Open Ocean
+
+Past the seawall the bottom falls away. There is no treeline out here: the horizon is shipping —
+trawlers, container ships and sails at three parallax distances, a rig standing over the drop, and
+birds working a bait ball. Below, the sand shelves out into reef, the reef ends at a wall that drops
+twelve hundred feet, and under that is a trench with caves cut into its sides. Past the depth your
+body is rated for, a **PRESSURE** meter fills and the view narrows and shivers.
+
+| Site | What it is |
+| --- | --- |
+| **The Shelf** | twenty miles of seagrass meadow over clean sand, the last of the light |
+| **The Reef** | coral bommies, sea fans, barrel sponges, parrotfish, lionfish, a sunken hull |
+| **The Wall** | kelp on the face, tuna and hammerheads working it, nothing below |
+| **The Trench** | nineteen hundred feet down. Tube worms, marine snow and things that make their own light |
+
+Down there the dark is furnished rather than empty: marine snow drifts on three parallax layers, the
+far side of the canyon shows as banded strata anchored to the seabed, and bioluminescence pulses in
+cyan, blue and violet — drawn above the night pass, because those are the only lights there are.
 
 The ecosystem runs with or without you. Ospreys and pelicans plunge for fish, anhingas chase them
 underwater, vultures land on carrion, panthers stalk raccoons along the banks, herons spear hatchlings
@@ -275,6 +323,33 @@ the vault on the globe screen and apply to every run afterwards.
 | Paradise Campground | take 10 people | Camp Lantern | prey lured from further off |
 | Florida Bay | kill 4 sharks | Megalodon Tooth | +15% death roll damage |
 | The Seawall | wreck 8 boats or builds | Containment Core | +1 dash charge |
+| The Undercroft | take 6 people | The Drifter's Lamp | you see in the dark |
+| The Drop Shaft | dive to 600m | Shaft Anchor Bolt | +15% armour |
+| Junction 9 | kill a boss | Junction 9 Valve Wheel | filth builds half as fast |
+| The Deep Gallery | travel 3000m | A Length of Rebar | bites pierce armour |
+| The Outfall Sump | kill 6 predators | The Sludge Crown | toxic blood, immune to venom |
+| The Shelf | take 18 fish | A Torn Trawl Net | +25% latch damage |
+| The Reef | take 24 fish | Nautilus Shell | +12% max health |
+| The Wall | kill 4 sharks | Submersible Viewport | rated 60% deeper |
+| The Trench | kill a boss | The Esca | prey comes to you in the dark |
+
+### Bosses
+
+Each zone keeps its own roster: two mini-bosses that turn up as you shed, and one world boss that only
+comes for a full-grown animal. Which one you meet is decided by where you are standing.
+
+| Zone | Mini-bosses | World boss |
+| --- | --- | --- |
+| The Sewer Network | The Broodmother, The Gnasher | The Sludge King |
+| The Everglades | Old Scar, the war boat, Mother Python | The Skunk Ape |
+| The Open Ocean | The Anvil, The Green Wall | The Lantern |
+
+### Dispatch
+
+The story is told on the radio. Every site carries four transmissions, fired at the beats of its
+standing order — arrival, halfway, order complete, relic in your teeth — typed into a carrier strip at
+the bottom of the screen with a level meter that twitches while the voice runs. Nobody is talking to
+you. You are what they are talking about.
 
 ## Wet, dust and bone
 

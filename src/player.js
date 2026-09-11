@@ -21,6 +21,9 @@ class Player {
       swallow: 1, magnet: 0, autoEat: false, reflect: 0, barb: 0, lunge: 0, landSpeed: 1, hop: 1, landRegen: 0, scavenge: 0,
       hullMul: 1, ramMul: 1, turn: 1, bloodScent: false, woundMul: 1, nightEyes: false, airGrab: false, noEscape: false,
       quake: false, manEater: false, gibLife: 1, shockDmg: 1,
+      // environment tolerance: how fast filth and pressure accumulate, and how
+      // deep you can go before the water starts squeezing
+      toxRes: 1, crushRes: 1, crushDepth: 560,
     };
     this.traits = [];
     this.lastMax = this.maxHp; this.hp = this.maxHp; this.hunger = 100;
@@ -34,6 +37,7 @@ class Player {
     this.spliceGlow = 0; this.spliceCol = '#40f0c8';
     this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
+    this.toxin = 0; this.crush = 0; this.hazT = 0;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
@@ -98,6 +102,7 @@ class Player {
     if (this.st.regen > 0 && this.hunger > 25) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.regen * dt);
     if (this.st.landRegen > 0 && this.onLand) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.landRegen * dt);
     if (this.poisonT > 0) { this.poisonT -= dt; this.hp -= this.venomDps * dt; if (chance(dt * 6)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030']); if (this.hp <= 0) return this.die('POISONED'); }
+    if (this.hazards(dt)) return;
     // input
     let ix = inp.x, iy = inp.y; const mag = Math.hypot(ix, iy); if (mag > 1) { ix /= mag; iy /= mag; }
     this.moving = mag > 0.15;
@@ -232,6 +237,9 @@ class Player {
     const fy2 = World.floorY(this.x);
     if (this.y > fy2 - 5 * this.vis) { this.y = fy2 - 5 * this.vis; if (this.vy > 0) this.vy *= -0.15; if (fy2 < 0) this.onLand = true; }
     if (this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
+    // the system dead-ends on a concrete bulkhead; there is nothing west of it
+    const wall = MapData.x0 + 26 * this.vis;
+    if (this.x < wall) { this.x = wall; if (this.vx < 0) this.vx *= -0.2; }
     if (G.intro && G.intro.grate && !G.intro.grate.broken) { const gx = G.intro.grate.x - 26 * this.vis; if (this.x > gx) { this.x = gx; if (this.vx > 0) this.vx = 0; } }
     const roof = World.roofY(this.x);
     if (roof !== null) { const lim = roof + 6 * this.vis; if (this.y < lim) { this.y = lim; if (this.vy < 0) this.vy *= -0.2; } }
@@ -459,6 +467,44 @@ class Player {
   // BRACE: a short guard. Anything that lands in the first sliver of it is
   // turned back on whoever threw it; the rest of the window is only armour, so
   // pressing it early still costs you the cooldown.
+  // ---------- environment hazards ----------
+  // Two meters, both of them places rather than attacks. Filth builds while you
+  // are under polluted water and burns off in clean water or in air; pressure
+  // builds past the depth your body is rated for. Neither kills quickly — they
+  // make a stretch of map cost something to stay in.
+  hazards(dt) {
+    const B = Biome.at(this.x), surf = World.surface(this.x);
+    const under = this.y > surf + 2, depth = Math.max(0, this.y - surf);
+    // --- pollution ---
+    const tox = (B.toxic || 0) * (under ? 1 : 0);
+    if (tox > 0) this.toxin = Math.min(130, this.toxin + tox * 15 * dt / Math.max(0.2, this.st.toxRes));
+    else this.toxin = Math.max(0, this.toxin - (under ? 12 : 26) * dt);
+    if (this.toxin >= 100) {
+      this.hp -= this.maxHp * 0.028 * dt;
+      if (chance(dt * 7)) G.fx.blood(this.x + rand(-14, 14) * this.vis, this.y + rand(-8, 8) * this.vis, 1, 0, 0, 16, ['#8aa82a', '#5a7a18']);
+      if (chance(dt * 3)) G.fx.bubbles(this.x, this.y, 1, 8 * this.vis, 20);
+      if (this.hp <= 0) { this.die('DISSOLVED'); return true; }
+    }
+    // --- pressure ---
+    const lim = this.st.crushDepth * (this.st.leviathan ? 1.8 : 1) + this.size * 26;
+    const over = (B.pressure || 0) > 0 ? Math.max(0, depth - lim) : 0;
+    if (over > 0) this.crush = Math.min(130, this.crush + (0.6 + over / 240) * 16 * dt / Math.max(0.2, this.st.crushRes));
+    else this.crush = Math.max(0, this.crush - 30 * dt);
+    if (this.crush >= 100) {
+      this.hp -= this.maxHp * 0.035 * dt;
+      if (chance(dt * 5)) { G.fx.bubbles(this.x + rand(-16, 16) * this.vis, this.y, 2, 10 * this.vis, -30); G.shake(1.4); }
+      if (this.hp <= 0) { this.die('CRUSHED'); return true; }
+    }
+    // one warning bark each time a meter crosses into the red
+    this.hazT -= dt;
+    if (this.hazT <= 0 && (this.toxin > 72 || this.crush > 72)) {
+      this.hazT = 2.4;
+      const bad = this.crush > this.toxin;
+      G.fx.text(this.x, this.y - 30 * this.vis, bad ? 'HULL PRESSURE' : 'FILTH IN THE BLOOD', { color: bad ? '#8cd8ff' : '#b8e030', scale: 2, life: 1.4 });
+      SFX.warning && SFX.warning();
+    }
+    return false;
+  }
   brace() {
     if (this.braceCd > 0) return;
     this.braceCd = 1.5; this.braceT = 0.30;
