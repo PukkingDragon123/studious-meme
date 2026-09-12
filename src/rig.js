@@ -482,7 +482,14 @@ function buildQuad(s) {
   { // head: round skull, snout blob, ears, big eye, nose
     const sn = Math.round(hs * (0.5 + (s.snout || 0.4) * 1.15)), hc = s.head || s.body, o = R.mk(hs * 2 + sn + 8, hs * 2 + 12), hx = 3 + hs, hy = 8 + hs;
     const el = s.ears === 'none' ? 0 : s.ears === 'long' ? hs * 0.8 : hs * 0.45;
-    if (el) { R.blob(o, hx - hs * 0.35, hy - hs - el * 0.3, Math.max(1.5, hs * 0.22), el * 0.6, hc, { hl: false }); R.blob(o, hx + hs * 0.25, hy - hs - el * 0.25, Math.max(1.5, hs * 0.22), el * 0.55, hc, { hl: false }); R.px(o, hx - hs * 0.35, hy - hs - el * 0.3, R.hi(s.belly || hc), 1, el * 0.35); }
+    // A rat's ear is a thin round cup standing off the side of the skull, not a
+    // pricked triangle. Draw it as a disc with a paler inner cup.
+    if (s.ears === 'round') {
+      for (const [ox, oy, rr] of [[-hs * 0.34, -hs * 0.72, hs * 0.44], [hs * 0.22, -hs * 0.66, hs * 0.40]]) {
+        R.disc(o, hx + ox, hy + oy, rr, R.lo(hc));
+        R.disc(o, hx + ox, hy + oy, rr * 0.66, mixColor(s.inner || '#c08878', hc, 0.35));
+      }
+    } else if (el) { R.blob(o, hx - hs * 0.35, hy - hs - el * 0.3, Math.max(1.5, hs * 0.22), el * 0.6, hc, { hl: false }); R.blob(o, hx + hs * 0.25, hy - hs - el * 0.25, Math.max(1.5, hs * 0.22), el * 0.55, hc, { hl: false }); R.px(o, hx - hs * 0.35, hy - hs - el * 0.3, R.hi(s.belly || hc), 1, el * 0.35); }
     if (s.antlers) { const ac = '#7a5a34'; for (const ox of [-hs * 0.4, hs * 0.1]) { R.px(o, hx + ox, hy - hs - 6, ac, 1, 7); R.px(o, hx + ox - 2, hy - hs - 5, ac, 5, 1); R.px(o, hx + ox - 2, hy - hs - 7, ac, 1, 3); R.px(o, hx + ox + 2, hy - hs - 8, ac, 1, 4); } }
     if (s.horns) { R.px(o, hx - hs * 0.5, hy - hs - 3, '#d8c8a0', 3, 4); R.px(o, hx + hs * 0.3, hy - hs - 3, '#d8c8a0', 3, 4); }
     R.blob(o, hx, hy, hs, hs, hc, { tex: s.coat || 'fur', seed: hs * 5 + 3 });
@@ -491,7 +498,14 @@ function buildQuad(s) {
     R.disc(o, hx + hs * 0.7 + sn * 0.6, hy + hs * 0.05, Math.max(1, hs * 0.16), '#1a1410');           // nose
     R.px(o, hx + hs * 0.7 + sn * 0.3, hy + hs * 0.5, R.lo2(hc), sn * 0.5, 1);                          // mouth
     if (s.tusks) { R.px(o, hx + hs * 0.7 + sn * 0.5, hy + hs * 0.45, '#f4f0e0', 1, 3); R.px(o, hx + hs * 0.7 + sn * 0.5 - 1, hy + hs * 0.45 + 2, '#f4f0e0', 1, 2); }
-    R.eye(o, hx + hs * 0.4, hy - hs * 0.34, Math.max(1.1, hs * 0.15), { ring: OL, iris: s.eye });
+    // a rat's eye is a bead of black oil: no white, barely a catchlight
+    R.eye(o, hx + hs * (s.rodent ? 0.52 : 0.4), hy - hs * (s.rodent ? 0.18 : 0.34), Math.max(1, hs * (s.rodent ? 0.11 : 0.15)),
+      s.rodent ? { ring: OL, iris: s.eye || '#181210', pupil: '#0a0806', glint: mixColor(s.eye || '#181210', '#ffffff', 0.3) } : { ring: OL, iris: s.eye });
+    // whiskers: three hairs off the muzzle, which is most of what says rodent
+    if (s.rodent) {
+      const wx = hx + hs * 0.7 + sn * 0.5, wy = hy + hs * 0.12, wc = mixColor(hc, '#ffffff', 0.34), wl = clamp(Math.round(sn * 0.45), 2, 4);
+      for (const k of [-1, 1]) for (let i = 1; i <= wl; i++) R.px(o, wx + i, wy + k + Math.round(i * k * 0.5), wc);
+    }
     R.outline(o, OL);
     parts.head = R.part(o, hx - hs * 0.5, hy + hs * 0.55);   // pivot at the base of the skull
   }
@@ -521,9 +535,9 @@ function buildQuad(s) {
     if (!s.hoof) { R.px(o, cxFoot - pw / 2 - 1, fy, foot, pw + 1, 1); R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), 1, 1); R.px(o, cxFoot - pw / 2 + 2, fy + 1, R.lo2(foot), 1, 1); }
     else R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), pw, 1);
     R.outline(o, OL); parts.leg = R.part(o, cx, 1); }
-  { const tl = s.tail === 'long' || s.tail === 'bushy' ? Math.round(L * 0.5) : s.tail === 'none' ? 0 : Math.round(L * 0.14), tc = s.tailCol || s.body;
+  { const tl = s.tail === 'long' || s.tail === 'bushy' || s.tail === 'naked' ? Math.round(L * (s.tail === 'naked' ? 0.62 : 0.5)) : s.tail === 'none' ? 0 : Math.round(L * 0.14), tc = s.tailCol || s.body;
     if (tl) {
-      const bushy = s.tail === 'bushy', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.2 : 1.5;
+      const bushy = s.tail === 'bushy', naked = s.tail === 'naked', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.2 : naked ? 1.15 : 1.5;
       const lit = R.hi(tc), shd = R.lo(tc);
       for (let i = 0; i < tl; i++) {
         const u = (i + 1) / (tl + 1);
@@ -534,6 +548,7 @@ function buildQuad(s) {
         R.px(o, 1 + i, o.h / 2 - hh, lit, 1, Math.max(1, hh * 0.5));
         R.px(o, 1 + i, o.h / 2 + hh - Math.max(1, hh * 0.45), shd, 1, Math.max(1, hh * 0.45));
         if (bushy && ihash(i * 13, 91) > 0.65) R.px(o, 1 + i, o.h / 2 - hh - 1, col, 1, 1);
+        if (naked && i % 3 === 0) R.px(o, 1 + i, o.h / 2 - hh, R.lo2(col), 1, Math.max(1, hh * 2));   // scale rings
       }
       R.outline(o, OL); parts.tail = R.part(o, tl + 1, o.h / 2);
     }
@@ -544,7 +559,7 @@ function buildQuad(s) {
     const hipY = H * 0.34, bob = Math.abs(Math.sin(ph)) * -1.5 * sp, gait = a => Math.sin(ph + a) * 0.6 * sp;
     out.push({ p: P.leg, x: -L * 0.32, y: hipY + bob, a: gait(Math.PI), alpha: 0.75, id: 'leg2', kind: 'leg' });
     out.push({ p: P.leg, x: L * 0.3, y: hipY + bob, a: gait(0), alpha: 0.75, id: 'leg3', kind: 'leg' });
-    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.15 + bob, a: (s.tail === 'long' ? 0.95 : -0.25) + Math.sin(ph * 0.7) * 0.2, id: 'tail', kind: 'tail' });
+    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.15 + bob, a: (s.tail === 'naked' ? 0.24 : s.tail === 'long' ? 0.95 : -0.25) + Math.sin(ph * 0.7) * (s.tail === 'naked' ? 0.1 : 0.2), id: 'tail', kind: 'tail' });
     out.push({ p: P.body, x: 0, y: bob, a: 0, id: 'body', kind: 'body' });
     out.push({ p: P.leg, x: -L * 0.3, y: hipY + bob, a: gait(0), id: 'leg0', kind: 'leg' });
     out.push({ p: P.leg, x: L * 0.34, y: hipY + bob, a: gait(Math.PI), id: 'leg1', kind: 'leg' });
@@ -591,10 +606,15 @@ function buildBiped(s) {
     if (hs !== 'bald') { R.blob(o, hx - 1, hy - hr * 0.55, hr * 0.95, hr * 0.55, hair, { hl: false }); if (hs === 'long') { R.px(o, hx - hr - 1, hy - hr * 0.5, hair, 2, hr * 1.4); R.px(o, hx - hr * 0.6, hy + hr * 0.3, hair, 1, hr * 0.7); } if (hs === 'bun') R.disc(o, hx - hr * 0.7, hy - hr * 0.9, Math.max(1.5, hr * 0.35), hair); if (hs === 'mohawk') R.px(o, hx - 1, hy - hr * 1.7, hair, 3, hr * 0.8); if (hs === 'curly') { R.disc(o, hx - hr * 0.8, hy - hr * 0.5, hr * 0.4, hair); R.disc(o, hx + hr * 0.6, hy - hr * 0.6, hr * 0.4, hair); } }
     if (s.beard) R.blob(o, hx + hr * 0.15, hy + hr * 0.62, hr * 0.62, hr * 0.42, hair, { hl: false });
     // eyes: big, wide apart; scared = wider with tiny pupils
-    const er = Math.max(1.3, hr * 0.2), ey = hy - hr * 0.02;
-    R.eye(o, hx + hr * 0.5, ey, er, { ring: OL, look: [0.3, 0.15], scared, toon: true });
-    R.eye(o, hx - hr * 0.2, ey, er * 0.9, { ring: OL, look: [0.4, 0.15], scared, toon: true });
-    if (s.glasses) { R.px(o, hx - hr * 0.2 - er - 1, ey - er, '#1c1410', hr * 0.7 + er * 2 + 2, 1); R.px(o, hx + hr * 0.5 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
+    const er = Math.max(1.1, hr * 0.15), ey = hy - hr * 0.06;
+    R.eye(o, hx + hr * 0.52, ey, er, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
+    R.eye(o, hx + hr * 0.04, ey, er * 0.92, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
+    // a brow over each, which is what a face reads as at this size
+    if (hr >= 4) {
+      R.px(o, hx - hr * 0.04, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
+      R.px(o, hx + hr * 0.46, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
+    }
+    if (s.glasses) { R.px(o, hx + hr * 0.04 - er - 1, ey - er, '#1c1410', hr * 0.48 + er * 2 + 2, 1); R.px(o, hx + hr * 0.52 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
     // mouth
     if (scared) R.blob(o, hx + hr * 0.3, hy + hr * 0.6, Math.max(1.5, hr * 0.28), Math.max(1.5, hr * 0.3), '#3a0a0a', { hl: false, shade: '#3a0a0a' });
     else { R.px(o, hx + hr * 0.1, hy + hr * 0.55, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.6, hy + hr * 0.45, R.lo2(skin), 1, 1); }

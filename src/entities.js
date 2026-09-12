@@ -431,7 +431,51 @@ class LandAnimal extends Entity {
         this.x += this.vx * dt; if (this.muzzle > 0) this.muzzle -= dt;
         return;
       }
-      if (seesP && dP <= 76) { this.panicked = true; SFX.scream(this.pan); }   // too close: break and run
+      if (seesP && dP <= 76 && !this.canHandle(P)) { this.panicked = true; SFX.scream(this.pan); }
+    }
+    // ---- hands on ---------------------------------------------------------
+    // A man who has seen you and can see how small you are does not run and
+    // does not shoot past his own boots. He wades in. If he can lift you he
+    // lifts you; if he cannot, he hits you until you let go of whatever you
+    // have got hold of.
+    if (d.human && !P.dead && !this.panicked && !this.carrying && this.onAlert() && this.canHandle(P)) {
+      const reach = 22 + 8 * P.vis, near = P.nearestDist(this.x, this.y);
+      const lift = this.canLift(P);
+      if (dP < 150 && this.state !== 'shoot') { this.state = lift ? 'grab' : 'punch'; this.facing = sign(P.x - this.x) || this.facing; }
+      if (this.state === 'grab' || this.state === 'punch') {
+        this.swingCd = (this.swingCd || 0) - dt;
+        const dir = sign(P.x - this.x) || this.facing;
+        this.facing = dir;
+        // they will wade in to their waist, but they will not swim after you
+        const wade = World.floorY(this.x + dir * 16) < 26;
+        this.vx = approach(this.vx, near < reach ? 0 : (wade ? dir * d.speed * 0.85 : 0), 520 * dt);
+        this.x += this.vx * dt;
+        if (near < reach && (this.swingCd || 0) <= 0) {
+          if (lift) { P.hauled(this); this.state = 'haul'; this.haulTo = this.x + (World.floorY(this.x - dir * 200) < -2 ? -1 : 1) * 260; }
+          else {
+            this.swingCd = 1.05; this.punchT = 0.22;
+            const dmg = 7 + (this.armed ? 5 : 0);
+            P.hurt(dmg, this, 'crush');
+            P.vx += dir * 210; P.vy -= 90;
+            SFX.thud(this.pan); G.shake(5);
+            G.fx.sparks(P.x, P.y - 4 * P.vis, 4);
+            G.fx.text(P.x, P.y - 18 * P.vis, 'PUNCHED', { color: '#ff8060', life: 1 });
+          }
+        }
+        if (this.punchT > 0) this.punchT -= dt;
+        if (!this.onAlert() && dP > 200) this.state = 'idle';
+        return;
+      }
+    }
+    // carrying you off: he walks for the crate and does not look back
+    if (this.carrying) {
+      const dir = sign((this.haulTo || this.x) - this.x) || this.facing;
+      this.facing = dir;
+      this.vx = approach(this.vx, dir * d.speed * 0.7, 400 * dt);
+      this.x += this.vx * dt;
+      this.y = World.floorY(this.x) - this.groundOff;
+      if (this.carrying.haulT <= 0) { this.carrying = null; this.state = 'flee'; this.stateT = 3; }
+      return;
     }
     if (this.muzzle > 0) this.muzzle -= dt;
     if (this.state !== 'charge' && sees && (P.size > this.sizeClass * 0.45 || d.human)) { if (this.state !== 'flee') { this.state = 'flee'; if (d.human) SFX.yell(this.pan); } this.stateT = 2; }
@@ -514,6 +558,10 @@ class LandAnimal extends Entity {
       this.vx = approach(this.vx, 0, 400 * dt);
     }
   }
+  // can this person do anything to you by hand at all
+  canHandle(P) { return P.size < 2.6 && P.y > this.y - 60 && World.floorY(P.x) < 90; }
+  // and can they get their arms under you and stand up with it
+  canLift(P) { return P.size <= 1.25; }
   // has this one worked out you are there
   onAlert() { return (this.alertT || 0) > 1.5 || Alarm.level > 0.62; }
 

@@ -10,6 +10,7 @@ class Player {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
+    this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -51,7 +52,9 @@ class Player {
   // visual/geometric scale: the same compression every other creature uses, so a 27 ft croc is drawn 27 ft long
   get vis() { return Math.pow(this.size, 0.58); }
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
-  get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1); }
+  // The exponent is what makes a bull's bite matter; the floor under it is what
+  // stops a hatchling needing ten chews to open a minnow.
+  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1); }
   get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
@@ -96,9 +99,56 @@ class Player {
     }
     if (this.netT <= 0) this.die('CAPTURED', this.netBy);
   }
+  // ---- picked up ---------------------------------------------------------
+  // Small enough to lift, and a man who has decided to lift you will. He does
+  // not stop to fight: he gets a grip under the belly, tucks you under an arm
+  // and walks. Where he is walking is a crate, and the crate is the end of the
+  // run. Mash to buck out of his hands before he gets there.
+  hauled(by) {
+    if (this.dead || this.haulT > 0 || this.netT > 0) return;
+    this.haulT = 6.0; this.haulHp = 5 + Math.round(this.size * 6); this.haulBy = by || null; this.haulHeld = false;
+    this.grabbed = false;
+    G.shake(10); SFX.thud && SFX.thud(0); SFX.yell && SFX.yell(0);
+    Alarm.notice && Alarm.notice(0.5, by, 'THEY HAVE YOU');
+    G.fx.text(this.x, this.y - 20 * this.vis, 'GRABBED - MASH', { color: '#ff6040', life: 2 });
+    G.banner = { text: 'PICKED UP', sub: 'BUCK OUT OR THEY BAG YOU', t: 2.4, max: 2.4, color: '#ff4030' };
+  }
+  updateHaul(dt, inp) {
+    const by = this.haulBy;
+    this.haulT -= dt;
+    if (!by || by.dead || by.remove) {                      // he dropped you
+      this.haulT = 0; this.vy = 40; this.invuln = Math.max(this.invuln, 0.8); return;
+    }
+    // carried under the arm, head forward, thrashing
+    by.carrying = this;
+    this.x = by.x + by.facing * 6;
+    this.y = by.y - (by.worldLen || 24) * 0.42;
+    this.vx = by.vx; this.vy = 0;
+    this.angle = Math.sin(this.t * 22) * 0.22;
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0);
+    this.jaw = 0.3 + Math.abs(Math.sin(this.t * 16)) * 0.6;
+    if (chance(dt * 6)) G.fx.print && G.fx.print(by.x, World.floorY(by.x) - 1, 3, by.facing);
+    if (inp && (inp.bite || inp.dash || inp.brace)) {
+      if (!this.haulHeld) {
+        this.haulHeld = true; this.haulHp -= 1; G.shake(3);
+        SFX.bite && SFX.bite(this.size, 0);
+        by.hp -= this.biteDmg * 0.35; by.flash = 0.1;
+        G.fx.blood(by.x, by.y - (by.worldLen || 24) * 0.4, 2, 0, 0, 24);
+      }
+    } else this.haulHeld = false;
+    if (this.haulHp <= 0 || by.hp <= 0) {                   // bucked out of his arms
+      this.haulT = 0; by.carrying = null; by.panicked = true; by.hurtCd = 1.2;
+      this.vy = -120; this.vx = -by.facing * 180; this.invuln = Math.max(this.invuln, 1.2);
+      G.fx.text(this.x, this.y - 22 * this.vis, 'BUCKED OUT', { color: '#7affda', life: 1.6 });
+      SFX.levelup && SFX.levelup(); SFX.scream && SFX.scream(by.pan);
+      return;
+    }
+    if (this.haulT <= 0) { by.carrying = null; this.die('TAKEN', by); }
+  }
   update(dt, inp) {
     if (this.dead) { this.updateDead(dt); return; }
     if (this.netT > 0) { this.updateNet(dt, inp); return; }
+    if (this.haulT > 0) { this.updateHaul(dt, inp); return; }
     if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
@@ -433,7 +483,11 @@ class Player {
     if (e.onBite) { e.onBite(this, sx, sy, dx, dy); return; }
     // a gharial takes fish whole whatever the size: that is the whole animal
     const fishy = e.type === 'fish' && this.st.fishSwallow;
-    if ((fishy && e.edible) || (e.sizeClass <= this.size * 0.5 * this.st.swallow && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
+    // What goes down whole. A crocodile swallows anything it can get past its
+    // own head, and a hatchling's head is small but so is a minnow — the flat
+    // term is what keeps the first ten minutes of a run edible.
+    const maw = (this.size * 0.62 + 0.2) * this.st.swallow;
+    if ((fishy && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
     if (this.st.fishSlayer > 1 && e.type === 'fish') dmg *= this.st.fishSlayer;
     if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= this.st.ambushMul; crit = true; this.lastKillHow = 'ambush'; Trials.bump(this, 'ambush'); }

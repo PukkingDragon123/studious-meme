@@ -78,10 +78,10 @@ Q('fox', 'GRAY FOX', 3, 10, { len: 46, h: 0.38, legs: 0.6, snout: 0.8, ears: 'lo
 Q('rabbit', 'MARSH RABBIT', 1.3, 3, { len: 30, h: 0.55, legs: 0.5, snout: 0.3, ears: 'long', tail: 'short', body: '#6a5a44', belly: '#a09080', dark: '#2a2418' }, { speed: 160, flee: 130, gibs: 2 });
 Q('opossum', 'VIRGINIA OPOSSUM', 2.5, 8, { len: 44, h: 0.42, legs: 0.3, snout: 1, ears: 'short', tail: 'long', tailCol: '#d0b0a0', body: '#8a8a88', belly: '#c0c0bc', dark: '#3a3a38', head: '#e8e8e4' }, { speed: 80, flee: 70, gibs: 3, night: true });
 Q('otter', 'RIVER OTTER', 3.5, 20, { len: 60, h: 0.3, legs: 0.2, snout: 0.5, ears: 'short', tail: 'long', body: '#5a3e2a', belly: '#8a6a4a', dark: '#2a1c12' }, { speed: 150, flee: 180, gibs: 3, swims: true, band: [5, 120] });
-Q('nutria', 'NUTRIA', 2, 15, { len: 46, h: 0.44, legs: 0.2, snout: 0.6, ears: 'short', tail: 'long', tailCol: '#3a2a1a', body: '#6a4a2a', belly: '#8a6a4a', dark: '#2a1a0a' }, { speed: 110, flee: 150, gibs: 3, swims: true, band: [4, 60] });
+Q('nutria', 'NUTRIA', 1.3, 9, { len: 30, h: 0.44, legs: 0.18, snout: 0.8, headK: 0.42, ears: 'round', inner: '#9a7050', rodent: true, tail: 'naked', tailCol: '#3a2a1a', body: '#6a4a2a', belly: '#8a6a4a', dark: '#2a1a0a', eye: '#1a1208' }, { speed: 110, flee: 150, gibs: 2, swims: true, band: [4, 60] });
 Q('iguana', 'GREEN IGUANA', 4, 10, { len: 50, h: 0.3, legs: 0.3, snout: 0.5, ears: 'none', tail: 'long', tailCol: '#5a7a3a', body: '#7aaa4a', belly: '#a8c870', dark: '#3a5a20', pattern: 'bands', mane: '#5a7a3a' }, { speed: 120, flee: 110, gibs: 3 });
 Q('cow', 'FLORIDA CRACKER COW', 8, 900, { len: 76, h: 0.55, legs: 0.8, snout: 0.7, ears: 'short', horns: true, tail: 'long', body: '#8a6a4a', belly: '#c0a888', dark: '#3a2a1a', pattern: 'spots', spot: '#f0e8e0', hoof: '#2a2018' }, { speed: 90, flee: 60, gibs: 6 });
-Q('rat', 'SEWER RAT', 0.9, 0.8, { len: 20, h: 0.5, legs: 0.25, snout: 0.9, ears: 'long', tail: 'long', tailCol: '#c09080', body: '#6a5a50', belly: '#9a8a80', dark: '#2a2420', eye: '#e03030' }, { speed: 130, flee: 70, gibs: 2 });
+Q('rat', 'SEWER RAT', 0.5, 0.6, { len: 12, h: 0.4, legs: 0.16, snout: 1.25, headK: 0.38, ears: 'round', inner: '#c08a80', rodent: true, tail: 'naked', tailCol: '#c8a094', body: '#5b4e44', belly: '#8d8074', dark: '#241d18', eye: '#181210' }, { speed: 150, flee: 70, gibs: 1 });
 Q('dog', 'CAMP DOG', 3, 60, { len: 48, h: 0.42, legs: 0.7, snout: 0.7, ears: 'short', tail: 'long', body: '#c0a060', belly: '#e8d8b0', dark: '#4a3a20' }, { speed: 200, flee: 90, gibs: 4 });
 
 // ------------------------------------------------------------ people
@@ -108,7 +108,7 @@ F('cavefish', 'BLIND CAVE FISH', 0.8, 1, { len: 40, h: 0.26, snout: 'blunt', tai
 F('sewereel', 'SWAMP EEL', 2.6, 5, { len: 72, h: 0.13, snout: 'point', tail: 'eel', back: '#3a2e22', mid: '#6a5638', belly: '#b09868', dark: '#1a1208', dorsal: 'none' }, { speed: 90, band: [10, 500], nearFloor: true, school: [1, 2], flee: 70, pred: 4 });
 F('sludgecarp', 'SLUDGE CARP', 3.4, 40, { len: 70, h: 0.4, snout: 'blunt', tail: 'fork', back: '#4a4a2a', mid: '#7a7a44', belly: '#b8b47c', dark: '#242414', pattern: 'blotch', dorsal: 'soft', barbels: true }, { speed: 65, band: [20, 400], school: [1, 3], flee: 90 });
 F('mutantcat', 'MUTANT CATFISH', 6, 140, { len: 82, h: 0.34, snout: 'blunt', tail: 'eel', back: '#2e3a2a', mid: '#4e6244', belly: '#9aa878', dark: '#141a12', pattern: 'blotch', dorsal: 'sail', barbels: true, teeth: true }, { speed: 95, band: [20, 600], school: [1, 1], flee: 0, pred: 14 });
-Q('bigrat', 'BLOATED RAT', 2.0, 14, { len: 36, h: 0.52, legs: 0.26, snout: 0.9, ears: 'long', tail: 'long', tailCol: '#b08878', body: '#4a3e34', belly: '#8a7a64', dark: '#1e1812', eye: '#e8d030', pattern: 'blotch' }, { speed: 120, flee: 40, gibs: 3, pred: 2 });
+Q('bigrat', 'BLOATED RAT', 1.1, 5, { len: 22, h: 0.46, legs: 0.18, snout: 1.15, headK: 0.4, ears: 'round', inner: '#a87a70', rodent: true, tail: 'naked', tailCol: '#ab8478', body: '#463a31', belly: '#83745f', dark: '#1e1812', eye: '#1a1410', pattern: 'blotch' }, { speed: 130, flee: 40, gibs: 2, pred: 2 });
 P('vagrant', 'DRIFTER', 5.7, 150, { skin: '#c0a088', shirt: '#4a4438', pants: '#3a3630', hair: '#2a2420' }, { speed: 80, flee: 150 });
 
 // ---------------------------------------------------------------------------

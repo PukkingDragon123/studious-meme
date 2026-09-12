@@ -1476,7 +1476,14 @@ function buildQuad(s) {
   { // head: round skull, snout blob, ears, big eye, nose
     const sn = Math.round(hs * (0.5 + (s.snout || 0.4) * 1.15)), hc = s.head || s.body, o = R.mk(hs * 2 + sn + 8, hs * 2 + 12), hx = 3 + hs, hy = 8 + hs;
     const el = s.ears === 'none' ? 0 : s.ears === 'long' ? hs * 0.8 : hs * 0.45;
-    if (el) { R.blob(o, hx - hs * 0.35, hy - hs - el * 0.3, Math.max(1.5, hs * 0.22), el * 0.6, hc, { hl: false }); R.blob(o, hx + hs * 0.25, hy - hs - el * 0.25, Math.max(1.5, hs * 0.22), el * 0.55, hc, { hl: false }); R.px(o, hx - hs * 0.35, hy - hs - el * 0.3, R.hi(s.belly || hc), 1, el * 0.35); }
+    // A rat's ear is a thin round cup standing off the side of the skull, not a
+    // pricked triangle. Draw it as a disc with a paler inner cup.
+    if (s.ears === 'round') {
+      for (const [ox, oy, rr] of [[-hs * 0.34, -hs * 0.72, hs * 0.44], [hs * 0.22, -hs * 0.66, hs * 0.40]]) {
+        R.disc(o, hx + ox, hy + oy, rr, R.lo(hc));
+        R.disc(o, hx + ox, hy + oy, rr * 0.66, mixColor(s.inner || '#c08878', hc, 0.35));
+      }
+    } else if (el) { R.blob(o, hx - hs * 0.35, hy - hs - el * 0.3, Math.max(1.5, hs * 0.22), el * 0.6, hc, { hl: false }); R.blob(o, hx + hs * 0.25, hy - hs - el * 0.25, Math.max(1.5, hs * 0.22), el * 0.55, hc, { hl: false }); R.px(o, hx - hs * 0.35, hy - hs - el * 0.3, R.hi(s.belly || hc), 1, el * 0.35); }
     if (s.antlers) { const ac = '#7a5a34'; for (const ox of [-hs * 0.4, hs * 0.1]) { R.px(o, hx + ox, hy - hs - 6, ac, 1, 7); R.px(o, hx + ox - 2, hy - hs - 5, ac, 5, 1); R.px(o, hx + ox - 2, hy - hs - 7, ac, 1, 3); R.px(o, hx + ox + 2, hy - hs - 8, ac, 1, 4); } }
     if (s.horns) { R.px(o, hx - hs * 0.5, hy - hs - 3, '#d8c8a0', 3, 4); R.px(o, hx + hs * 0.3, hy - hs - 3, '#d8c8a0', 3, 4); }
     R.blob(o, hx, hy, hs, hs, hc, { tex: s.coat || 'fur', seed: hs * 5 + 3 });
@@ -1485,7 +1492,14 @@ function buildQuad(s) {
     R.disc(o, hx + hs * 0.7 + sn * 0.6, hy + hs * 0.05, Math.max(1, hs * 0.16), '#1a1410');           // nose
     R.px(o, hx + hs * 0.7 + sn * 0.3, hy + hs * 0.5, R.lo2(hc), sn * 0.5, 1);                          // mouth
     if (s.tusks) { R.px(o, hx + hs * 0.7 + sn * 0.5, hy + hs * 0.45, '#f4f0e0', 1, 3); R.px(o, hx + hs * 0.7 + sn * 0.5 - 1, hy + hs * 0.45 + 2, '#f4f0e0', 1, 2); }
-    R.eye(o, hx + hs * 0.4, hy - hs * 0.34, Math.max(1.1, hs * 0.15), { ring: OL, iris: s.eye });
+    // a rat's eye is a bead of black oil: no white, barely a catchlight
+    R.eye(o, hx + hs * (s.rodent ? 0.52 : 0.4), hy - hs * (s.rodent ? 0.18 : 0.34), Math.max(1, hs * (s.rodent ? 0.11 : 0.15)),
+      s.rodent ? { ring: OL, iris: s.eye || '#181210', pupil: '#0a0806', glint: mixColor(s.eye || '#181210', '#ffffff', 0.3) } : { ring: OL, iris: s.eye });
+    // whiskers: three hairs off the muzzle, which is most of what says rodent
+    if (s.rodent) {
+      const wx = hx + hs * 0.7 + sn * 0.5, wy = hy + hs * 0.12, wc = mixColor(hc, '#ffffff', 0.34), wl = clamp(Math.round(sn * 0.45), 2, 4);
+      for (const k of [-1, 1]) for (let i = 1; i <= wl; i++) R.px(o, wx + i, wy + k + Math.round(i * k * 0.5), wc);
+    }
     R.outline(o, OL);
     parts.head = R.part(o, hx - hs * 0.5, hy + hs * 0.55);   // pivot at the base of the skull
   }
@@ -1515,9 +1529,9 @@ function buildQuad(s) {
     if (!s.hoof) { R.px(o, cxFoot - pw / 2 - 1, fy, foot, pw + 1, 1); R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), 1, 1); R.px(o, cxFoot - pw / 2 + 2, fy + 1, R.lo2(foot), 1, 1); }
     else R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), pw, 1);
     R.outline(o, OL); parts.leg = R.part(o, cx, 1); }
-  { const tl = s.tail === 'long' || s.tail === 'bushy' ? Math.round(L * 0.5) : s.tail === 'none' ? 0 : Math.round(L * 0.14), tc = s.tailCol || s.body;
+  { const tl = s.tail === 'long' || s.tail === 'bushy' || s.tail === 'naked' ? Math.round(L * (s.tail === 'naked' ? 0.62 : 0.5)) : s.tail === 'none' ? 0 : Math.round(L * 0.14), tc = s.tailCol || s.body;
     if (tl) {
-      const bushy = s.tail === 'bushy', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.2 : 1.5;
+      const bushy = s.tail === 'bushy', naked = s.tail === 'naked', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.2 : naked ? 1.15 : 1.5;
       const lit = R.hi(tc), shd = R.lo(tc);
       for (let i = 0; i < tl; i++) {
         const u = (i + 1) / (tl + 1);
@@ -1528,6 +1542,7 @@ function buildQuad(s) {
         R.px(o, 1 + i, o.h / 2 - hh, lit, 1, Math.max(1, hh * 0.5));
         R.px(o, 1 + i, o.h / 2 + hh - Math.max(1, hh * 0.45), shd, 1, Math.max(1, hh * 0.45));
         if (bushy && ihash(i * 13, 91) > 0.65) R.px(o, 1 + i, o.h / 2 - hh - 1, col, 1, 1);
+        if (naked && i % 3 === 0) R.px(o, 1 + i, o.h / 2 - hh, R.lo2(col), 1, Math.max(1, hh * 2));   // scale rings
       }
       R.outline(o, OL); parts.tail = R.part(o, tl + 1, o.h / 2);
     }
@@ -1538,7 +1553,7 @@ function buildQuad(s) {
     const hipY = H * 0.34, bob = Math.abs(Math.sin(ph)) * -1.5 * sp, gait = a => Math.sin(ph + a) * 0.6 * sp;
     out.push({ p: P.leg, x: -L * 0.32, y: hipY + bob, a: gait(Math.PI), alpha: 0.75, id: 'leg2', kind: 'leg' });
     out.push({ p: P.leg, x: L * 0.3, y: hipY + bob, a: gait(0), alpha: 0.75, id: 'leg3', kind: 'leg' });
-    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.15 + bob, a: (s.tail === 'long' ? 0.95 : -0.25) + Math.sin(ph * 0.7) * 0.2, id: 'tail', kind: 'tail' });
+    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.15 + bob, a: (s.tail === 'naked' ? 0.24 : s.tail === 'long' ? 0.95 : -0.25) + Math.sin(ph * 0.7) * (s.tail === 'naked' ? 0.1 : 0.2), id: 'tail', kind: 'tail' });
     out.push({ p: P.body, x: 0, y: bob, a: 0, id: 'body', kind: 'body' });
     out.push({ p: P.leg, x: -L * 0.3, y: hipY + bob, a: gait(0), id: 'leg0', kind: 'leg' });
     out.push({ p: P.leg, x: L * 0.34, y: hipY + bob, a: gait(Math.PI), id: 'leg1', kind: 'leg' });
@@ -1585,10 +1600,15 @@ function buildBiped(s) {
     if (hs !== 'bald') { R.blob(o, hx - 1, hy - hr * 0.55, hr * 0.95, hr * 0.55, hair, { hl: false }); if (hs === 'long') { R.px(o, hx - hr - 1, hy - hr * 0.5, hair, 2, hr * 1.4); R.px(o, hx - hr * 0.6, hy + hr * 0.3, hair, 1, hr * 0.7); } if (hs === 'bun') R.disc(o, hx - hr * 0.7, hy - hr * 0.9, Math.max(1.5, hr * 0.35), hair); if (hs === 'mohawk') R.px(o, hx - 1, hy - hr * 1.7, hair, 3, hr * 0.8); if (hs === 'curly') { R.disc(o, hx - hr * 0.8, hy - hr * 0.5, hr * 0.4, hair); R.disc(o, hx + hr * 0.6, hy - hr * 0.6, hr * 0.4, hair); } }
     if (s.beard) R.blob(o, hx + hr * 0.15, hy + hr * 0.62, hr * 0.62, hr * 0.42, hair, { hl: false });
     // eyes: big, wide apart; scared = wider with tiny pupils
-    const er = Math.max(1.3, hr * 0.2), ey = hy - hr * 0.02;
-    R.eye(o, hx + hr * 0.5, ey, er, { ring: OL, look: [0.3, 0.15], scared, toon: true });
-    R.eye(o, hx - hr * 0.2, ey, er * 0.9, { ring: OL, look: [0.4, 0.15], scared, toon: true });
-    if (s.glasses) { R.px(o, hx - hr * 0.2 - er - 1, ey - er, '#1c1410', hr * 0.7 + er * 2 + 2, 1); R.px(o, hx + hr * 0.5 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
+    const er = Math.max(1.1, hr * 0.15), ey = hy - hr * 0.06;
+    R.eye(o, hx + hr * 0.52, ey, er, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
+    R.eye(o, hx + hr * 0.04, ey, er * 0.92, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
+    // a brow over each, which is what a face reads as at this size
+    if (hr >= 4) {
+      R.px(o, hx - hr * 0.04, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
+      R.px(o, hx + hr * 0.46, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
+    }
+    if (s.glasses) { R.px(o, hx + hr * 0.04 - er - 1, ey - er, '#1c1410', hr * 0.48 + er * 2 + 2, 1); R.px(o, hx + hr * 0.52 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
     // mouth
     if (scared) R.blob(o, hx + hr * 0.3, hy + hr * 0.6, Math.max(1.5, hr * 0.28), Math.max(1.5, hr * 0.3), '#3a0a0a', { hl: false, shade: '#3a0a0a' });
     else { R.px(o, hx + hr * 0.1, hy + hr * 0.55, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.6, hy + hr * 0.45, R.lo2(skin), 1, 1); }
@@ -2375,10 +2395,10 @@ Q('fox', 'GRAY FOX', 3, 10, { len: 46, h: 0.38, legs: 0.6, snout: 0.8, ears: 'lo
 Q('rabbit', 'MARSH RABBIT', 1.3, 3, { len: 30, h: 0.55, legs: 0.5, snout: 0.3, ears: 'long', tail: 'short', body: '#6a5a44', belly: '#a09080', dark: '#2a2418' }, { speed: 160, flee: 130, gibs: 2 });
 Q('opossum', 'VIRGINIA OPOSSUM', 2.5, 8, { len: 44, h: 0.42, legs: 0.3, snout: 1, ears: 'short', tail: 'long', tailCol: '#d0b0a0', body: '#8a8a88', belly: '#c0c0bc', dark: '#3a3a38', head: '#e8e8e4' }, { speed: 80, flee: 70, gibs: 3, night: true });
 Q('otter', 'RIVER OTTER', 3.5, 20, { len: 60, h: 0.3, legs: 0.2, snout: 0.5, ears: 'short', tail: 'long', body: '#5a3e2a', belly: '#8a6a4a', dark: '#2a1c12' }, { speed: 150, flee: 180, gibs: 3, swims: true, band: [5, 120] });
-Q('nutria', 'NUTRIA', 2, 15, { len: 46, h: 0.44, legs: 0.2, snout: 0.6, ears: 'short', tail: 'long', tailCol: '#3a2a1a', body: '#6a4a2a', belly: '#8a6a4a', dark: '#2a1a0a' }, { speed: 110, flee: 150, gibs: 3, swims: true, band: [4, 60] });
+Q('nutria', 'NUTRIA', 1.3, 9, { len: 30, h: 0.44, legs: 0.18, snout: 0.8, headK: 0.42, ears: 'round', inner: '#9a7050', rodent: true, tail: 'naked', tailCol: '#3a2a1a', body: '#6a4a2a', belly: '#8a6a4a', dark: '#2a1a0a', eye: '#1a1208' }, { speed: 110, flee: 150, gibs: 2, swims: true, band: [4, 60] });
 Q('iguana', 'GREEN IGUANA', 4, 10, { len: 50, h: 0.3, legs: 0.3, snout: 0.5, ears: 'none', tail: 'long', tailCol: '#5a7a3a', body: '#7aaa4a', belly: '#a8c870', dark: '#3a5a20', pattern: 'bands', mane: '#5a7a3a' }, { speed: 120, flee: 110, gibs: 3 });
 Q('cow', 'FLORIDA CRACKER COW', 8, 900, { len: 76, h: 0.55, legs: 0.8, snout: 0.7, ears: 'short', horns: true, tail: 'long', body: '#8a6a4a', belly: '#c0a888', dark: '#3a2a1a', pattern: 'spots', spot: '#f0e8e0', hoof: '#2a2018' }, { speed: 90, flee: 60, gibs: 6 });
-Q('rat', 'SEWER RAT', 0.9, 0.8, { len: 20, h: 0.5, legs: 0.25, snout: 0.9, ears: 'long', tail: 'long', tailCol: '#c09080', body: '#6a5a50', belly: '#9a8a80', dark: '#2a2420', eye: '#e03030' }, { speed: 130, flee: 70, gibs: 2 });
+Q('rat', 'SEWER RAT', 0.5, 0.6, { len: 12, h: 0.4, legs: 0.16, snout: 1.25, headK: 0.38, ears: 'round', inner: '#c08a80', rodent: true, tail: 'naked', tailCol: '#c8a094', body: '#5b4e44', belly: '#8d8074', dark: '#241d18', eye: '#181210' }, { speed: 150, flee: 70, gibs: 1 });
 Q('dog', 'CAMP DOG', 3, 60, { len: 48, h: 0.42, legs: 0.7, snout: 0.7, ears: 'short', tail: 'long', body: '#c0a060', belly: '#e8d8b0', dark: '#4a3a20' }, { speed: 200, flee: 90, gibs: 4 });
 
 // ------------------------------------------------------------ people
@@ -2405,7 +2425,7 @@ F('cavefish', 'BLIND CAVE FISH', 0.8, 1, { len: 40, h: 0.26, snout: 'blunt', tai
 F('sewereel', 'SWAMP EEL', 2.6, 5, { len: 72, h: 0.13, snout: 'point', tail: 'eel', back: '#3a2e22', mid: '#6a5638', belly: '#b09868', dark: '#1a1208', dorsal: 'none' }, { speed: 90, band: [10, 500], nearFloor: true, school: [1, 2], flee: 70, pred: 4 });
 F('sludgecarp', 'SLUDGE CARP', 3.4, 40, { len: 70, h: 0.4, snout: 'blunt', tail: 'fork', back: '#4a4a2a', mid: '#7a7a44', belly: '#b8b47c', dark: '#242414', pattern: 'blotch', dorsal: 'soft', barbels: true }, { speed: 65, band: [20, 400], school: [1, 3], flee: 90 });
 F('mutantcat', 'MUTANT CATFISH', 6, 140, { len: 82, h: 0.34, snout: 'blunt', tail: 'eel', back: '#2e3a2a', mid: '#4e6244', belly: '#9aa878', dark: '#141a12', pattern: 'blotch', dorsal: 'sail', barbels: true, teeth: true }, { speed: 95, band: [20, 600], school: [1, 1], flee: 0, pred: 14 });
-Q('bigrat', 'BLOATED RAT', 2.0, 14, { len: 36, h: 0.52, legs: 0.26, snout: 0.9, ears: 'long', tail: 'long', tailCol: '#b08878', body: '#4a3e34', belly: '#8a7a64', dark: '#1e1812', eye: '#e8d030', pattern: 'blotch' }, { speed: 120, flee: 40, gibs: 3, pred: 2 });
+Q('bigrat', 'BLOATED RAT', 1.1, 5, { len: 22, h: 0.46, legs: 0.18, snout: 1.15, headK: 0.4, ears: 'round', inner: '#a87a70', rodent: true, tail: 'naked', tailCol: '#ab8478', body: '#463a31', belly: '#83745f', dark: '#1e1812', eye: '#1a1410', pattern: 'blotch' }, { speed: 130, flee: 40, gibs: 2, pred: 2 });
 P('vagrant', 'DRIFTER', 5.7, 150, { skin: '#c0a088', shirt: '#4a4438', pants: '#3a3630', hair: '#2a2420' }, { speed: 80, flee: 150 });
 
 // ---------------------------------------------------------------------------
@@ -6271,7 +6291,51 @@ class LandAnimal extends Entity {
         this.x += this.vx * dt; if (this.muzzle > 0) this.muzzle -= dt;
         return;
       }
-      if (seesP && dP <= 76) { this.panicked = true; SFX.scream(this.pan); }   // too close: break and run
+      if (seesP && dP <= 76 && !this.canHandle(P)) { this.panicked = true; SFX.scream(this.pan); }
+    }
+    // ---- hands on ---------------------------------------------------------
+    // A man who has seen you and can see how small you are does not run and
+    // does not shoot past his own boots. He wades in. If he can lift you he
+    // lifts you; if he cannot, he hits you until you let go of whatever you
+    // have got hold of.
+    if (d.human && !P.dead && !this.panicked && !this.carrying && this.onAlert() && this.canHandle(P)) {
+      const reach = 22 + 8 * P.vis, near = P.nearestDist(this.x, this.y);
+      const lift = this.canLift(P);
+      if (dP < 150 && this.state !== 'shoot') { this.state = lift ? 'grab' : 'punch'; this.facing = sign(P.x - this.x) || this.facing; }
+      if (this.state === 'grab' || this.state === 'punch') {
+        this.swingCd = (this.swingCd || 0) - dt;
+        const dir = sign(P.x - this.x) || this.facing;
+        this.facing = dir;
+        // they will wade in to their waist, but they will not swim after you
+        const wade = World.floorY(this.x + dir * 16) < 26;
+        this.vx = approach(this.vx, near < reach ? 0 : (wade ? dir * d.speed * 0.85 : 0), 520 * dt);
+        this.x += this.vx * dt;
+        if (near < reach && (this.swingCd || 0) <= 0) {
+          if (lift) { P.hauled(this); this.state = 'haul'; this.haulTo = this.x + (World.floorY(this.x - dir * 200) < -2 ? -1 : 1) * 260; }
+          else {
+            this.swingCd = 1.05; this.punchT = 0.22;
+            const dmg = 7 + (this.armed ? 5 : 0);
+            P.hurt(dmg, this, 'crush');
+            P.vx += dir * 210; P.vy -= 90;
+            SFX.thud(this.pan); G.shake(5);
+            G.fx.sparks(P.x, P.y - 4 * P.vis, 4);
+            G.fx.text(P.x, P.y - 18 * P.vis, 'PUNCHED', { color: '#ff8060', life: 1 });
+          }
+        }
+        if (this.punchT > 0) this.punchT -= dt;
+        if (!this.onAlert() && dP > 200) this.state = 'idle';
+        return;
+      }
+    }
+    // carrying you off: he walks for the crate and does not look back
+    if (this.carrying) {
+      const dir = sign((this.haulTo || this.x) - this.x) || this.facing;
+      this.facing = dir;
+      this.vx = approach(this.vx, dir * d.speed * 0.7, 400 * dt);
+      this.x += this.vx * dt;
+      this.y = World.floorY(this.x) - this.groundOff;
+      if (this.carrying.haulT <= 0) { this.carrying = null; this.state = 'flee'; this.stateT = 3; }
+      return;
     }
     if (this.muzzle > 0) this.muzzle -= dt;
     if (this.state !== 'charge' && sees && (P.size > this.sizeClass * 0.45 || d.human)) { if (this.state !== 'flee') { this.state = 'flee'; if (d.human) SFX.yell(this.pan); } this.stateT = 2; }
@@ -6354,6 +6418,10 @@ class LandAnimal extends Entity {
       this.vx = approach(this.vx, 0, 400 * dt);
     }
   }
+  // can this person do anything to you by hand at all
+  canHandle(P) { return P.size < 2.6 && P.y > this.y - 60 && World.floorY(P.x) < 90; }
+  // and can they get their arms under you and stand up with it
+  canLift(P) { return P.size <= 1.25; }
   // has this one worked out you are there
   onAlert() { return (this.alertT || 0) > 1.5 || Alarm.level > 0.62; }
 
@@ -8456,6 +8524,7 @@ class Player {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
+    this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -8497,7 +8566,9 @@ class Player {
   // visual/geometric scale: the same compression every other creature uses, so a 27 ft croc is drawn 27 ft long
   get vis() { return Math.pow(this.size, 0.58); }
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
-  get biteDmg() { return 5 * Math.pow(this.size, 1.3) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1); }
+  // The exponent is what makes a bull's bite matter; the floor under it is what
+  // stops a hatchling needing ten chews to open a minnow.
+  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1); }
   get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
@@ -8542,9 +8613,56 @@ class Player {
     }
     if (this.netT <= 0) this.die('CAPTURED', this.netBy);
   }
+  // ---- picked up ---------------------------------------------------------
+  // Small enough to lift, and a man who has decided to lift you will. He does
+  // not stop to fight: he gets a grip under the belly, tucks you under an arm
+  // and walks. Where he is walking is a crate, and the crate is the end of the
+  // run. Mash to buck out of his hands before he gets there.
+  hauled(by) {
+    if (this.dead || this.haulT > 0 || this.netT > 0) return;
+    this.haulT = 6.0; this.haulHp = 5 + Math.round(this.size * 6); this.haulBy = by || null; this.haulHeld = false;
+    this.grabbed = false;
+    G.shake(10); SFX.thud && SFX.thud(0); SFX.yell && SFX.yell(0);
+    Alarm.notice && Alarm.notice(0.5, by, 'THEY HAVE YOU');
+    G.fx.text(this.x, this.y - 20 * this.vis, 'GRABBED - MASH', { color: '#ff6040', life: 2 });
+    G.banner = { text: 'PICKED UP', sub: 'BUCK OUT OR THEY BAG YOU', t: 2.4, max: 2.4, color: '#ff4030' };
+  }
+  updateHaul(dt, inp) {
+    const by = this.haulBy;
+    this.haulT -= dt;
+    if (!by || by.dead || by.remove) {                      // he dropped you
+      this.haulT = 0; this.vy = 40; this.invuln = Math.max(this.invuln, 0.8); return;
+    }
+    // carried under the arm, head forward, thrashing
+    by.carrying = this;
+    this.x = by.x + by.facing * 6;
+    this.y = by.y - (by.worldLen || 24) * 0.42;
+    this.vx = by.vx; this.vy = 0;
+    this.angle = Math.sin(this.t * 22) * 0.22;
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0);
+    this.jaw = 0.3 + Math.abs(Math.sin(this.t * 16)) * 0.6;
+    if (chance(dt * 6)) G.fx.print && G.fx.print(by.x, World.floorY(by.x) - 1, 3, by.facing);
+    if (inp && (inp.bite || inp.dash || inp.brace)) {
+      if (!this.haulHeld) {
+        this.haulHeld = true; this.haulHp -= 1; G.shake(3);
+        SFX.bite && SFX.bite(this.size, 0);
+        by.hp -= this.biteDmg * 0.35; by.flash = 0.1;
+        G.fx.blood(by.x, by.y - (by.worldLen || 24) * 0.4, 2, 0, 0, 24);
+      }
+    } else this.haulHeld = false;
+    if (this.haulHp <= 0 || by.hp <= 0) {                   // bucked out of his arms
+      this.haulT = 0; by.carrying = null; by.panicked = true; by.hurtCd = 1.2;
+      this.vy = -120; this.vx = -by.facing * 180; this.invuln = Math.max(this.invuln, 1.2);
+      G.fx.text(this.x, this.y - 22 * this.vis, 'BUCKED OUT', { color: '#7affda', life: 1.6 });
+      SFX.levelup && SFX.levelup(); SFX.scream && SFX.scream(by.pan);
+      return;
+    }
+    if (this.haulT <= 0) { by.carrying = null; this.die('TAKEN', by); }
+  }
   update(dt, inp) {
     if (this.dead) { this.updateDead(dt); return; }
     if (this.netT > 0) { this.updateNet(dt, inp); return; }
+    if (this.haulT > 0) { this.updateHaul(dt, inp); return; }
     if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
@@ -8879,7 +8997,11 @@ class Player {
     if (e.onBite) { e.onBite(this, sx, sy, dx, dy); return; }
     // a gharial takes fish whole whatever the size: that is the whole animal
     const fishy = e.type === 'fish' && this.st.fishSwallow;
-    if ((fishy && e.edible) || (e.sizeClass <= this.size * 0.5 * this.st.swallow && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
+    // What goes down whole. A crocodile swallows anything it can get past its
+    // own head, and a hatchling's head is small but so is a minnow — the flat
+    // term is what keeps the first ten minutes of a run edible.
+    const maw = (this.size * 0.62 + 0.2) * this.st.swallow;
+    if ((fishy && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
     if (this.st.fishSlayer > 1 && e.type === 'fish') dmg *= this.st.fishSlayer;
     if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= this.st.ambushMul; crit = true; this.lastKillHow = 'ambush'; Trials.bump(this, 'ambush'); }
