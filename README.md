@@ -26,8 +26,8 @@ fluid with something half dissolved propped in it, bubbling and fuming, fed by
 a drip line that has been eating a stain into the concrete for years. In the
 middle of the room, a containment column with a specimen suspended in it.
 
-The menu is the furniture. Three stations, three plates, no tabs and no blurb:
-walk the selection along the room and whichever one you are standing at gets a
+The menu is the furniture. Two stations, two plates, no tabs and no blurb: walk
+the selection along the room and whichever one you are standing at gets a
 targeting bracket. Choosing one cuts to it: the picture is squeezed to a lit
 line and let back out, the way a tube set changes channel.
 
@@ -37,9 +37,8 @@ a drain on it in silhouette. They are painted, not laid over the title room as a
 scrim: while they were, the whole lab behind them — the walking staff, the
 containment column, the signage — ghosted through everything drawn on top.
 
-- **RESEARCH** — the sequencer and monitor bank on the left wall
-- **HABITAT** — the enclosures down the middle of the floor
-- **LAB** — the vial rack and the DNA wall on the right
+- **HABITAT** — where animals are made and raised
+- **LAB** — the bench: what you take out, what is being funded, what you brought back
 
 **Doc Croc** walks the floor between them, and follows you into whichever bay
 you open — he comes on from the wing, says his piece a line at a time, and then
@@ -55,12 +54,12 @@ stays away.
 
 A new save owns nothing at all — no animal, no colour, no map but the one
 outside the door — so the first thing that happens is that Doc walks you
-through making a crocodile. Six steps, on a rail: each one names a single
+through making a crocodile. Five steps, on a rail: each one names a single
 control, lights it with a pulsing frame and a bobbing arrow, and refuses every
 other control until you use it.
 
-> RESEARCH → the **creation bay** → grow a crocodile → feed it → release it →
-> pick where it goes in the water
+> HABITAT → grow a crocodile → feed it → release it → pick where it goes in
+> the water
 
 He talks in a bar along the foot of the screen — his face in a box, what he
 said, and the one thing to do about it, with six pips showing how far along you
@@ -76,24 +75,24 @@ everything costs DATA, and DATA comes out of the water.
 A save with history in it — runs on the clock, animals in the tanks, anything
 funded — is never put back through the induction.
 
-## The creation bay
+## The habitat — the creation menu
 
-At the head of the research rack, above the five programmes, is the bay where
-animals are actually made. It is a projector on a plate throwing a live
-crocodile into the air above it: scanlined, jittered, doubled, tinted to that
-stock's own colour, and running its own attack loop — idle, coil, lunge,
-strike, recover — with the phase called out in the corner like a readout.
+Clicking HABITAT does not open a wall of glass you then have to click through.
+It opens the bench where crocodiles are made and raised, in one screen:
 
-Arrows either side step through the stock library. A dossier on the left gives
-the animal's name, its binomial, its signature and five bars; a column on the
-right gives which enclosure it will go into, what it costs, and what you hold.
-A stock research has not funded shows **NO SAMPLE ON FILE** and an empty stage.
-
-## The habitat
-
-Six enclosures with water in them. Each one is a window onto a real animal, at
-its real size, wearing its real hide — you choose what to play by looking at
-crocodiles, not by reading a list of them.
+- **Six slots along the top**, each showing the animal in it swimming, or a
+  plus if it is empty.
+- **The stage in the middle**: a projector on a plate throwing your animal into
+  the air above it, scanlined and jittered and doubled and tinted to its
+  stock's own colour. On an empty slot it runs the stock library instead —
+  arrows either side, the specimen running its own attack loop (idle, coil,
+  lunge, strike, recover) with the phase called out like a readout, and a stock
+  research has not funded showing **NO SAMPLE ON FILE**.
+- **The papers on the left**: tag, species, signature, level, how far into the
+  next one, spare points, runs survived.
+- **Everything you can do on the right**: FEED, the three upgrade tracks, and
+  the button that sends it out.
+- **The build along the foot**: length, girth and the nine hides, as swatches.
 
 An animal here is a **character**, not a loadout slot. It has a species with a
 signature, a tag, a level it grew to by being fed, three tracks you can put
@@ -103,7 +102,7 @@ comes back — a run feeds it, and it grows.
 - **FEED** it a slab of meat for DATA. Enough meat is a level; a level is a point.
 - **BODY / JAWS / BLOOD** — where the points go, as three rows of notches.
 - **LENGTH / GIRTH / HIDE** — its build, and every grade is a research line item.
-- **HATCH** more of them in the creation bay, one per empty enclosure.
+- **GROW** more of them on the stage, one per empty slot.
 
 ### Every species is a different animal
 
@@ -163,24 +162,31 @@ globe.
 
 ## The laboratory
 
-Two benches, and almost no writing on either of them.
+One station, three benches. Research used to be its own door across the room;
+there was no reason for two.
 
-**VIALS** is a rack. Every substance the project has drawn is a glass tube on a
-steel shelf — full, lit and bubbling if biochemistry has isolated it, empty and
-dusty if it has not. Each tube wears a label with two arrows: green up for what
-it gives you, red down for what it costs. Loading one is picking a tube up.
+**BUILD** is what you take out. A rack of glass tubes on a steel shelf — full,
+lit and bubbling if biochemistry has isolated it, empty and dusty if it has not,
+each wearing a label with two arrows, green up for what it gives you and red
+down for what it costs. Under it, the **prime mutation** you go out carrying.
+That used to be asked in a splice bay between the map and the water, which was
+one screen too many; it is part of the build now.
 
-**DNA** is a wall of culture jars in six shelves, one per lineage, each jar
-holding a strand of that gene drifting in solution. A lit jar is a gene on a line
-Gene Therapy has funded; a dark one with a padlock is a line nobody has paid for.
+**RESEARCH** is the programme board, described above.
+
+**RELICS** is the vault: every artifact in the game as a slot, lit and holding
+its own animated glyph once you have carried it out, sealed and grey until then,
+with the site it comes from written under it and what it gives you along the
+foot. Eighteen slots, and the count in the corner is the game's long score.
 
 ## The drop
 
-Releasing plays it. A transport helicopter crosses the site with a containment
-crate slung under it, holds at fifty feet while the rotor wash flattens the
-water and the reeds, drops the crate, and the crate breaks open. The site card
-types itself on, the pilot talks, and the camera hands over to gameplay when
-the animal swims out. `ESC` skips it.
+Picking a site on the map puts you in the water, and the way you get there is
+the helicopter. A transport crosses the site with a containment crate slung
+under it, holds at fifty feet while the rotor wash flattens the water and the
+reeds, drops the crate, and the crate breaks open. The site card types itself
+on, the pilot talks, and the camera hands over to gameplay when the animal
+swims out. `ESC` skips it. There is nothing between the map and the helicopter.
 
 ## Play
 
@@ -248,7 +254,7 @@ simulates and renders an entire swamp behind a screen that paints over it.
 - **Bosses** arrive after certain sheds, and which one comes is decided by the zone you are standing in — the sewer sends the Broodmother and the Gnasher before the Sludge King, the glades send Old Scar and the Poacher Warboat before the Skunk Ape, the ocean sends the Anvil and the Green Wall before the Lantern. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
 - **The water itself is a hazard** in two of the three zones. Sewer water fills a **FILTH** meter that eventually starts eating health and smears the screen greasy green; past the depth your body is rated for, a **PRESSURE** meter fills, the view closes in and shivers, and the hull starts to give. Genes, relics and two research treatments raise both ratings.
 - **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight cuts to an **execution**: bars close in, the camera frames the pair, and three to five prompts come up on big key caps with a bar draining under each. You get three whole misses, and landing one prompt is enough. Every hit is a held impact frame with a blood wash over the lens.
-- **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run from the splice bay.
+- **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run.
 - Death is permanent, but the traits and relics you unlock are not.
 
 ## The gene network
@@ -350,7 +356,9 @@ west, out through the swamp, and off the edge of the continental shelf into the 
 You pick where you go in on a **globe you turn with your thumb** — drag it, let go and it keeps
 spinning, and it settles on whatever you last chose. Only the zone you are looking at puts markers on
 the sphere, each one a staff and a diamond head carrying that site's own landmark, standing taller on
-the near face than the far. The sites are scattered across their region rather than stepped evenly
+the near face than the far. A pin leans out along the surface it is planted in — upright in the middle
+of the disc where the ground faces you, tipped right over at the limb — because drawing every staff
+straight up the screen made the ones near the edge look pasted on over it rather than standing in it. The sites are scattered across their region rather than stepped evenly
 along it, so a zone reads as a place with locations in it and not as a string of beads round the
 equator. A site you have not earned is a sealed grey pin.
 
@@ -549,6 +557,18 @@ drawing routines, creatures are toon rigs built from a species catalogue and pos
 crocodile is a segment chain, terrain is an authored profile of control points, water is a bouncy
 spring-mass surface, mud is a pressure field, gore is real rig parts plus organs, and all audio is
 synthesized with WebAudio.
+
+**Resolution.** The game is authored at 640x360 and drawn through one integer transform into a
+backing store that is a whole multiple of it, so every rect of art still lands exactly on the grid —
+this is sharper output, not a second layout. Where the canvas is being blown up anyway it renders at
+2x, which on a tablet means the browser upscales from 1280x720 rather than from 640x360. It costs
+fill rate, so a rolling mean of frame time watches it: about a second of sustained sub-45fps and it
+steps back down to 1x and stays there, because hunting between two costs looks worse than either.
+
+**Overdraw.** The room behind every front-end screen never changes and was being laid down from
+scratch every frame — some three hundred rects and three gradients before anything you came to look
+at was drawn. The wall, the floor and the title room's floor are each baked once, at the resolution
+being rendered into, and blitted.
 
 ```
 index.html

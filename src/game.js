@@ -145,13 +145,13 @@ const G = {
     toWorld(sx, sy) { return [this.toWorldX(sx), (sy - G.H / 2 - G.shakeY) / this.zoom + this.y]; },
   },
   player: null, ents: [], fx: null, score: 0, stats: null, save: null, boss: null, mission: null, story: null, dispatch: null, labWipe: null, wipeIn: 0, finisher: null, morph: null, drop: null, embryo: null, labSel: undefined, shedPending: false, shedCards: null, shedSel: 0, shedT: 0, shedUiT: 0, shedTier: 0,
-  engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.3, stageSel: undefined, pendingStage: null, loadRow: 0, loadCol: 0, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
+  engineNear: 0, menuT: 0, menuShake: 0, globeSpin: 0, globeTilt: 0.3, stageSel: undefined, pendingStage: null, loadout: { prime: 'none', hide: 'wild' }, settings: { gore: true, shake: true, mouseMove: true }, director: null, banner: null, deathInfo: null, deadT: 0, dyingT: 0, titleT: 0, lastTs: 0, prevState: 'title', fpsT: 0, frames: 0, fps: 60,
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
     Meta.load(); this.loadSave(); Tutor.adopt();
     this.touchUI = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    this.scale = 1; this.rotated = false;
+    this.scale = 1; this.rotated = false; this.rs = 1; this.rsLocked = false; this.slowFrames = 0; this.frameAvg = 0;
     World.onChunkLoad = (ch, rng) => this.onChunkLoad(ch, rng);
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -159,6 +159,27 @@ const G = {
     this.startRun(true);
     this.state = 'title';
     requestAnimationFrame(ts => this.loop(ts));
+  },
+  // How many device pixels of canvas we draw each game pixel into. Everything
+  // is authored at 640x360 and drawn through one integer transform, so the art
+  // stays exactly on the grid — this is sharper output, not a new layout. It
+  // costs fill rate, so it steps back down if the frame rate cannot hold it.
+  setRenderScale(rs) {
+    rs = clamp(Math.round(rs), 1, 3);
+    if (rs === this.rs) return;
+    this.rs = rs;
+    this.canvas.width = this.W * rs;
+    this.canvas.height = this.H * rs;
+    this.ctx.imageSmoothingEnabled = false;
+  },
+  // Drop a step if the machine is visibly missing frames, and never climb back
+  // inside the same session: hunting between two costs looks worse than either
+  // of them. Judged on a rolling mean so one long frame does not decide it.
+  watchFrameRate(raw) {
+    if (this.rs <= 1 || this.rsLocked) return;
+    this.frameAvg = this.frameAvg ? this.frameAvg * 0.94 + raw * 0.06 : raw;
+    this.slowFrames = this.frameAvg > 0.022 ? (this.slowFrames || 0) + 1 : 0;
+    if (this.slowFrames > 50) { this.rsLocked = true; this.setRenderScale(1); this.resize(); }
   },
   resize() {
     const vw = window.innerWidth, vh = window.innerHeight, c = this.canvas;
@@ -174,6 +195,9 @@ const G = {
     }
     c.style.width = Math.round(this.W * this.scale) + 'px';
     c.style.height = Math.round(this.H * this.scale) + 'px';
+    // draw at 2x wherever the canvas is being blown up anyway; there is nothing
+    // to gain from it when the screen is already showing one pixel per pixel
+    if (!this.rsLocked) this.setRenderScale(this.scale > 1.05 ? 2 : 1);
   },
   // client (page) coordinates -> virtual 640x360 canvas coordinates
   toCanvas(clientX, clientY) {
@@ -220,7 +244,7 @@ const G = {
     if (!demo) {
       this.runs++; this.save.runs++;
       const P = this.player;
-      // the loadout is cosmetic plus one free gene; the stage sets where and how big
+      // the prime picked on the build bench is one free gene, or a spare point
       if (load) {
         P.hide = load.hide || 'wild';
         const pg = Stages.primeGene(load.prime);
@@ -235,8 +259,7 @@ const G = {
       P.recomputeStats();
       this.stage = stage || STAGES[0];
       this.storeSave();
-      if (this.stage.intro) this.beginIntro();
-      else this.beginAtStage(this.stage);
+      this.beginAtStage(this.stage);
       Missions.start(this.stage);
     }
   },
@@ -343,22 +366,19 @@ const G = {
     }
   },
   // the creation bay and the research lab, both reached from the lab floor
-  openResearch() { this.state = 'research'; this.menuT = 0; Tutor.pass('toresearch'); if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; } if (!Tutor.on()) Doc.say('research'); SFX.ui(); },
-  // the bay at the head of the research rack, where animals are grown
-  openCreate() {
-    this.state = 'create'; this.menuT = 0; Doc.scene = null;
-    if (this.createSel === undefined) this.createSel = 0;
-    SFX.ui();
-  },
-  openLabBench() {
+  openResearch() { this.openLabBench('research'); },
+
+  openLabBench(tab) {
     this.state = 'bench'; this.menuT = 0;
-    if (!this.benchTab) this.benchTab = 'vial';
-    if (!Tutor.on()) Doc.say('bench');
+    this.benchTab = tab || this.benchTab || 'build';
+    if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; }
+    if (!Tutor.on() && this.benchTab !== 'research') Doc.say('bench');
     if (this.benchSel === undefined) this.benchSel = 0;
     SFX.ui();
   },
   openHabitat() {
-    this.state = 'habitat'; this.menuT = 0;
+    this.state = 'habitat'; this.menuT = 0; Tutor.pass('tohabitat');
+    if (this.createSel === undefined) this.createSel = 0;
     Habitat.ensure();
     if (!Tutor.on()) Doc.say('habitat');
     if (this.habSel === undefined) this.habSel = Habitat.runnerIndex();
@@ -366,6 +386,42 @@ const G = {
     if (this.habHatch === undefined) this.habHatch = 0;
     SFX.ui();
   },
+  // the research programme, one of the three benches in the lab
+  updateResearch(raw) {
+
+        // he is mid-sentence: a tap on the bubble moves him along
+        {
+          const br = Doc.sceneBubbleRect();
+          if (br && Input.mouse.clicked && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.sceneNext(); SFX.ui(); return; }
+          if (br && Input.hit('KeyT')) { Doc.sceneNext(); SFX.ui(); return; }
+        }
+        const cats = UI.resCatRects();
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.resCat = (this.resCat + cats.length - 1) % cats.length; this.resNode = 0; SFX.ui(); }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.resCat = (this.resCat + 1) % cats.length; this.resNode = 0; SFX.ui(); }
+        let rows = UI.resNodeRects();
+        if (Input.hit('ArrowUp', 'KeyW')) { this.resNode = (this.resNode + rows.length - 1) % rows.length; SFX.ui(); }
+        if (Input.hit('ArrowDown', 'KeyS')) { this.resNode = (this.resNode + 1) % rows.length; SFX.ui(); }
+        // pointing at a programme switches to it; pointing at a node selects it,
+        // and pointing at the one already selected funds it
+        let fund = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
+        if (Input.mouse.clicked) {
+          const inRect = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
+          let took = false;
+          for (const r of cats) if (inRect(r)) { if (this.resCat !== r.i) { this.resCat = r.i; this.resNode = 0; SFX.ui(); } took = true; }
+          if (!took) { rows = UI.resNodeRects(); for (const r of rows) if (inRect(r)) { if (this.resNode === r.i) fund = true; else { this.resNode = r.i; SFX.ui(); } took = true; } }
+        }
+        rows = UI.resNodeRects();
+        const cur = rows[clamp(this.resNode || 0, 0, rows.length - 1)];
+        if (fund && cur) {
+          if (Research.buy(cur.nd)) {
+            Doc.note('fund');
+            if (cur.nd.grant && cur.nd.grant.zone) Doc.note('zone');
+            SFX.levelup(); this.whiteFlash(0.25);
+            this.banner = { text: 'FUNDED', sub: cur.nd.name, t: 2.6, max: 2.6, color: cur.nd.cat.col };
+          } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+        }
+        if (this.menuShake > 0) this.menuShake -= raw;
+          },
   openStages() {
     this.state = 'stages'; this.menuT = 0; this.menuShake = 0;
     if (this.stageSel === undefined) {
@@ -374,11 +430,6 @@ const G = {
       this.stageSel = best;
       this.globeSpin = STAGES[best].lon;
     }
-    SFX.ui();
-  },
-  openLoadout(st) {
-    this.pendingStage = st; this.state = 'loadout'; this.menuT = 0;
-    this.loadRow = 0; this.loadCol = Math.max(0, PRIMES.findIndex(p => p.id === this.loadout.prime));
     SFX.ui();
   },
   openGenes() { this.state = 'genes'; this.geneUiT = 0; if (!this.geneSel) this.geneSel = 'core'; this.player.newPoints = 0; SFX.ui(); },
@@ -627,6 +678,7 @@ const G = {
     this.timeScale = lerp(this.timeScale, this.slowT > 0 ? this.slowScale : 1, 0.2);
     let dt = raw * this.timeScale;
     if (this.hitstopT > 0) { this.hitstopT -= raw; dt = 0; }
+    this.watchFrameRate(raw);
     this.update(dt, raw);
     this.render();
     Input.endFrame();
@@ -646,9 +698,8 @@ const G = {
       wp.t += raw;
       if (!wp.gone && wp.t >= wp.dur * 0.5) {
         wp.gone = true;
-        if (wp.id === 'habitat') this.openHabitat();
-        else if (wp.id === 'lab') this.openLabBench();
-        else this.openResearch();
+        if (wp.id === 'lab') this.openLabBench();
+        else this.openHabitat();
         this.wipeIn = 0.28;
       }
       if (wp.t >= wp.dur) this.labWipe = null;
@@ -696,34 +747,39 @@ const G = {
       }
       case 'bench': {
         this.menuT += raw; Lab.update(raw);
-        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
+        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; Doc.scene = null; SFX.ui(); break; }
         const inR = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
         const tabs = UI.benchTabs();
-        if (Input.hit('Tab', 'KeyQ', 'KeyE')) { this.benchTab = this.benchTab === 'vial' ? 'dna' : 'vial'; this.benchSel = 0; SFX.ui(); break; }
-        if (Input.mouse.clicked) for (const b of tabs) if (inR(b) && this.benchTab !== b.id) { this.benchTab = b.id; this.benchSel = 0; SFX.ui(); }
-        if (this.benchTab === 'vial') {
+        const goTab = id => { if (this.benchTab === id) return; this.benchTab = id; this.benchSel = 0; if (id !== 'research') Doc.say('bench'); else Doc.scene = null; SFX.ui(); };
+        if (Input.hit('Tab', 'KeyE')) goTab(tabs[(tabs.findIndex(b2 => b2.id === this.benchTab) + 1) % tabs.length].id);
+        if (Input.hit('KeyQ')) goTab(tabs[(tabs.findIndex(b2 => b2.id === this.benchTab) + tabs.length - 1) % tabs.length].id);
+        if (Input.mouse.clicked) for (const b2 of tabs) if (inR(b2)) { goTab(b2.id); break; }
+        if (this.benchTab === 'research') { this.updateResearch(raw); break; }
+        if (this.benchTab === 'relics') {
+          const cells = UI.relicCells();
+          const step = d => { this.benchSel = ((this.benchSel || 0) + d + cells.length) % cells.length; SFX.ui(); };
+          if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
+          if (Input.hit('ArrowRight', 'KeyD')) step(1);
+          if (Input.hit('ArrowUp', 'KeyW')) step(-6);
+          if (Input.hit('ArrowDown', 'KeyS')) step(6);
+          if (Input.mouse.clicked) for (const c of cells) if (inR(c) && this.benchSel !== c.i) { this.benchSel = c.i; SFX.ui(); }
+          break;
+        }
+        // ---- BUILD: the tube you take out, and the prime you go out carrying
+        {
           const rects = UI.vialRects();
           if (Input.hit('ArrowLeft', 'KeyA')) { this.benchSel = (this.benchSel + rects.length - 1) % rects.length; SFX.ui(); }
           if (Input.hit('ArrowRight', 'KeyD')) { this.benchSel = (this.benchSel + 1) % rects.length; SFX.ui(); }
           let take = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
-          if (Input.mouse.clicked) for (const r of rects) if (inR(r)) { if (this.benchSel === r.i) take = true; else { this.benchSel = r.i; SFX.ui(); } }
+          if (Input.mouse.clicked) {
+            for (const c of UI.buildPrimes()) if (inR(c)) { this.loadout.prime = c.p.id; this.storeSave(); SFX.pick(); take = false; }
+            for (const r of rects) if (inR(r)) { if (this.benchSel === r.i) take = true; else { this.benchSel = r.i; SFX.ui(); } }
+          }
           if (take) {
             const v = VIALS[clamp(this.benchSel, 0, VIALS.length - 1)];
             if (LabBench.have(v)) { LabBench.load(v.id); Doc.note('vial'); SFX.pick(); }
             else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
           }
-        } else {
-          const jars = UI.dnaJars();
-          if (!jars.length) break;
-          const perRow = {};
-          for (const j of jars) perRow[j.row] = Math.max(perRow[j.row] || 0, j.i);
-          const cur = jars[clamp(this.benchSel, 0, jars.length - 1)];
-          const goTo = (row, i) => { const k = jars.findIndex(j => j.row === row && j.i === Math.min(i, perRow[row] || 0)); if (k >= 0) { this.benchSel = k; SFX.ui(); } };
-          if (Input.hit('ArrowLeft', 'KeyA')) goTo(cur.row, Math.max(0, cur.i - 1));
-          if (Input.hit('ArrowRight', 'KeyD')) goTo(cur.row, cur.i + 1);
-          if (Input.hit('ArrowUp', 'KeyW')) goTo((cur.row + 5) % 6, cur.i);
-          if (Input.hit('ArrowDown', 'KeyS')) goTo((cur.row + 1) % 6, cur.i);
-          if (Input.mouse.clicked) for (let k = 0; k < jars.length; k++) if (inR(jars[k])) { this.benchSel = k; SFX.ui(); }
         }
         if (this.menuShake > 0) this.menuShake -= raw;
         break;
@@ -733,41 +789,45 @@ const G = {
         Habitat.ensure();
         const L = Habitat.list();
         const sel = clamp(this.habSel || 0, 0, HAB_SLOTS - 1), cur = L[sel];
-        const tanks = UI.habTanks();
         const inR = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
         if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
-        // clicking an enclosure always moves the selection there
-        if (Input.mouse.clicked) for (const k of tanks) if (inR(k)) { if (this.habSel !== k.i) { this.habSel = k.i; this.habRow = 0; this.habHatch = 0; SFX.ui(); } }
+        // the roster along the top always moves the selection
+        if (Input.mouse.clicked) for (const k of UI.habRoster()) if (inR(k)) { if (this.habSel !== k.i) { this.habSel = k.i; this.habRow = 0; SFX.ui(); } }
+        if (Input.hit('ArrowUp', 'KeyW') && !cur) { this.habSel = (sel + HAB_SLOTS - 1) % HAB_SLOTS; this.habRow = 0; SFX.ui(); break; }
+        if (Input.hit('ArrowDown', 'KeyS') && !cur) { this.habSel = (sel + 1) % HAB_SLOTS; this.habRow = 0; SFX.ui(); break; }
         if (!cur) {
-          // ---- an empty enclosure: pick something to put in it
-          const rects = UI.habHatchRects();
-          if (Input.hit('ArrowLeft', 'KeyA')) { this.habHatch = (this.habHatch + rects.length - 1) % rects.length; SFX.ui(); }
-          if (Input.hit('ArrowRight', 'KeyD')) { this.habHatch = (this.habHatch + 1) % rects.length; SFX.ui(); }
-          if (Input.hit('ArrowUp', 'KeyW')) { this.habSel = (sel + HAB_SLOTS - 1) % HAB_SLOTS; break; }
-          if (Input.hit('ArrowDown', 'KeyS')) { this.habSel = (sel + 1) % HAB_SLOTS; break; }
-          let go = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
-          if (Input.mouse.clicked) for (const r of rects) if (inR(r)) { if (this.habHatch === r.i) go = true; else { this.habHatch = r.i; SFX.ui(); } }
-          if (go && !Tutor.allowHabHatch()) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; go = false; }
-          if (go) {
-            const spId = BASE_SPECIES[clamp(this.habHatch, 0, BASE_SPECIES.length - 1)].id;
-            if (Habitat.hatch(sel, spId)) {
-              Habitat.select(sel); Doc.note('hatch');
-              SFX.hatch && SFX.hatch(); SFX.levelup(); this.whiteFlash(0.35);
-              this.banner = { text: 'HATCHED', sub: Habitat.tag(L[sel]), t: 2.6, max: 2.6, color: '#7affda' };
+          // ---- an empty slot: the stock library is on the stage
+          const n2 = BASE_SPECIES.length;
+          const stepSp = d => { this.createSel = ((this.createSel || 0) + d + n2) % n2; SFX.ui(); };
+          if (Input.hit('ArrowLeft', 'KeyA')) stepSp(-1);
+          if (Input.hit('ArrowRight', 'KeyD')) stepSp(1);
+          let grow = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
+          if (Input.mouse.clicked) {
+            for (const a2 of UI.createArrows()) if (inR(a2)) { stepSp(a2.id); grow = false; }
+            for (const r of UI.createTicks()) if (inR(r) && r.i !== this.createSel) { this.createSel = r.i; SFX.ui(); grow = false; }
+            if (inR(UI.createGoRect())) grow = true;
+          }
+          if (grow && !Tutor.allowHabHatch()) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; grow = false; }
+          if (grow) {
+            const sp2 = BASE_SPECIES[clamp(this.createSel || 0, 0, n2 - 1)];
+            if (Habitat.hatch(sel, sp2.id)) {
+              Habitat.select(sel); Doc.note('hatch'); Tutor.pass('hatch');
+              this.habRow = 0;
+              SFX.hatch && SFX.hatch(); SFX.levelup(); this.whiteFlash(0.4);
+              this.banner = { text: 'GROWN', sub: Habitat.tag(L[sel]), t: 2.6, max: 2.6, color: sp2.holo || '#7affda' };
             } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
           }
           if (this.menuShake > 0) this.menuShake -= raw;
           break;
         }
-        // ---- an occupied enclosure: raise the animal in it
+        // ---- a living animal: raise it, dress it, send it out
         const rows = UI.habRows();
         const row = clamp(this.habRow || 0, 0, rows.length - 1);
         const step = d => { this.habRow = (row + d + rows.length) % rows.length; SFX.ui(); };
-        if (Input.hit('ArrowLeft', 'KeyA')) step(-1);
-        if (Input.hit('ArrowRight', 'KeyD')) step(1);
-        // up and down walk the enclosures, so the animals stay one axis apart
-        if (Input.hit('ArrowUp', 'KeyW')) { this.habSel = (sel + HAB_SLOTS - 1) % HAB_SLOTS; this.habRow = 0; SFX.ui(); break; }
-        if (Input.hit('ArrowDown', 'KeyS')) { this.habSel = (sel + 1) % HAB_SLOTS; this.habRow = 0; SFX.ui(); break; }
+        if (Input.hit('ArrowUp', 'KeyW')) step(-1);
+        if (Input.hit('ArrowDown', 'KeyS')) step(1);
+        if (Input.hit('ArrowLeft', 'KeyA')) { this.habSel = (sel + HAB_SLOTS - 1) % HAB_SLOTS; this.habRow = 0; SFX.ui(); break; }
+        if (Input.hit('ArrowRight', 'KeyD')) { this.habSel = (sel + 1) % HAB_SLOTS; this.habRow = 0; SFX.ui(); break; }
         let act = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
         if (Input.mouse.clicked) for (let i2 = 0; i2 < rows.length; i2++) if (inR(rows[i2])) { if (row === i2) act = true; else { this.habRow = i2; SFX.ui(); } }
         if (act) {
@@ -780,80 +840,6 @@ const G = {
           else if (res === 'up') { Doc.note('point'); SFX.pick(); }
           else if (res === 'fed') { Tutor.pass('feed'); Doc.note('feed'); SFX.ui(); }
           else SFX.ui();
-        }
-        if (this.menuShake > 0) this.menuShake -= raw;
-        break;
-      }
-      case 'research': {
-        this.menuT += raw; Lab.update(raw);
-        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; Doc.scene = null; SFX.ui(); break; }
-        // he is mid-sentence: a tap on the bubble moves him along
-        {
-          const br = Doc.sceneBubbleRect();
-          if (br && Input.mouse.clicked && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.sceneNext(); SFX.ui(); break; }
-          if (br && Input.hit('KeyT')) { Doc.sceneNext(); SFX.ui(); break; }
-        }
-        // the creation bay at the head of the rack
-        {
-          const b2 = UI.resBayRect();
-          const onBay = Input.mouse.clicked && Input.mouse.x > b2.x && Input.mouse.x < b2.x + b2.w && Input.mouse.y > b2.y && Input.mouse.y < b2.y + b2.h;
-          if ((onBay || Input.hit('KeyN')) && Tutor.allowBay()) { Tutor.pass('bay'); this.openCreate(); break; }
-          if (onBay) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; break; }
-        }
-        if (!Tutor.allowResearchRow()) { if (this.menuShake > 0) this.menuShake -= raw; break; }
-        const cats = UI.resCatRects();
-        if (Input.hit('ArrowLeft', 'KeyA')) { this.resCat = (this.resCat + cats.length - 1) % cats.length; this.resNode = 0; SFX.ui(); }
-        if (Input.hit('ArrowRight', 'KeyD')) { this.resCat = (this.resCat + 1) % cats.length; this.resNode = 0; SFX.ui(); }
-        let rows = UI.resNodeRects();
-        if (Input.hit('ArrowUp', 'KeyW')) { this.resNode = (this.resNode + rows.length - 1) % rows.length; SFX.ui(); }
-        if (Input.hit('ArrowDown', 'KeyS')) { this.resNode = (this.resNode + 1) % rows.length; SFX.ui(); }
-        // pointing at a programme switches to it; pointing at a node selects it,
-        // and pointing at the one already selected funds it
-        let fund = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
-        if (Input.mouse.clicked) {
-          const inRect = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
-          let took = false;
-          for (const r of cats) if (inRect(r)) { if (this.resCat !== r.i) { this.resCat = r.i; this.resNode = 0; SFX.ui(); } took = true; }
-          if (!took) { rows = UI.resNodeRects(); for (const r of rows) if (inRect(r)) { if (this.resNode === r.i) fund = true; else { this.resNode = r.i; SFX.ui(); } took = true; } }
-        }
-        rows = UI.resNodeRects();
-        const cur = rows[clamp(this.resNode || 0, 0, rows.length - 1)];
-        if (fund && cur) {
-          if (Research.buy(cur.nd)) {
-            Doc.note('fund');
-            if (cur.nd.grant && cur.nd.grant.zone) Doc.note('zone');
-            SFX.levelup(); this.whiteFlash(0.25);
-            this.banner = { text: 'FUNDED', sub: cur.nd.name, t: 2.6, max: 2.6, color: cur.nd.cat.col };
-          } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
-        }
-        if (this.menuShake > 0) this.menuShake -= raw;
-        break;
-      }
-      case 'create': {
-        this.menuT += raw; Lab.update(raw);
-        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { if (!Tutor.at('hatch')) { this.state = 'research'; SFX.ui(); } break; }
-        const ticks = UI.createTicks(), n2 = BASE_SPECIES.length;
-        const stepSp = d => { this.createSel = ((this.createSel || 0) + d + n2) % n2; SFX.ui(); };
-        if (Input.hit('ArrowLeft', 'KeyA')) stepSp(-1);
-        if (Input.hit('ArrowRight', 'KeyD')) stepSp(1);
-        let grow = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
-        if (Input.mouse.clicked) {
-          const inR2 = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
-          for (const a of UI.createArrows()) if (inR2(a)) { stepSp(a.id); grow = false; }
-          for (const r of ticks) if (inR2(r) && r.i !== this.createSel) { this.createSel = r.i; SFX.ui(); grow = false; }
-          if (inR2(UI.createGoRect())) grow = true;
-        }
-        if (grow) {
-          const sp2 = BASE_SPECIES[clamp(this.createSel || 0, 0, n2 - 1)];
-          const slot = UI.createSlot();
-          if (slot >= 0 && Habitat.hatch(slot, sp2.id)) {
-            Habitat.select(slot); Doc.note('hatch');
-            SFX.hatch && SFX.hatch(); SFX.levelup(); this.whiteFlash(0.4);
-            this.banner = { text: 'GROWN', sub: Habitat.tag(Habitat.at(slot)), t: 2.6, max: 2.6, color: sp2.holo || '#7affda' };
-            // the induction hands you straight over to the animal you just made
-            if (Tutor.at('hatch')) { Tutor.pass('hatch'); this.habSel = slot; this.habRow = 0; this.openHabitat(); }
-            else { this.state = 'research'; }
-          } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
         }
         if (this.menuShake > 0) this.menuShake -= raw;
         break;
@@ -921,37 +907,9 @@ const G = {
         const goHit = Input.mouse.clicked && Input.mouse.x > gr.x && Input.mouse.x < gr.x + gr.w && Input.mouse.y > gr.y && Input.mouse.y < gr.y + gr.h;
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit || goHit) {
           const st = list[this.stageSel];
-          if (Stages.unlocked(st)) { Tutor.pass('site'); this.openLoadout(st); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+          if (Stages.unlocked(st)) { Tutor.pass('site'); SFX.pick(); this.startRun(false, st, this.loadout); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
         }
         if (this.menuShake > 0) this.menuShake -= raw;
-        break;
-      }
-      case 'loadout': {
-        this.menuT += raw;
-        if (Input.hit('Escape') || UI.exitHit()) { this.state = 'stages'; SFX.ui(); break; }
-        const cells = UI.loadoutCells();
-        if (Input.mouse.moved || Input.mouse.clicked) {
-          for (const c of cells) if (Input.mouse.x > c.x && Input.mouse.x < c.x + c.w && Input.mouse.y > c.y && Input.mouse.y < c.y + c.h) { this.loadRow = c.row; this.loadCol = c.i; }
-        }
-        const openPrimes = PRIMES.filter(p => p.id === 'none' || Research.lineageOpen(p.id));
-        const n0 = (this.loadRow || 0) === 0 ? openPrimes.length : HIDES.length;
-        if (Input.hit('ArrowLeft', 'KeyA')) { this.loadCol = (this.loadCol + n0 - 1) % n0; SFX.ui(); }
-        if (Input.hit('ArrowRight', 'KeyD')) { this.loadCol = (this.loadCol + 1) % n0; SFX.ui(); }
-        if (Input.hit('ArrowUp', 'KeyW') || Input.hit('ArrowDown', 'KeyS')) {
-          // jump to the row's current pick rather than resetting it to the first cell
-          this.loadRow = (this.loadRow || 0) === 0 ? 1 : 0;
-          this.loadCol = this.loadRow === 0
-            ? Math.max(0, openPrimes.findIndex(x2 => x2.id === this.loadout.prime))
-            : Math.max(0, HIDES.findIndex(x2 => x2.id === this.loadout.hide));
-          SFX.ui();
-        }
-        // read the row after the arrows, and never select a locked morph
-        const row = this.loadRow || 0;
-        if (row === 0) this.loadout.prime = openPrimes[clamp(this.loadCol, 0, openPrimes.length - 1)].id;
-        else { const h = HIDES[clamp(this.loadCol, 0, HIDES.length - 1)]; if (Stages.met(h.need)) this.loadout.hide = h.id; }
-        const go = UI.loadoutGoRect();
-        const goHit = Input.mouse.clicked && Input.mouse.x > go.x && Input.mouse.x < go.x + go.w && Input.mouse.y > go.y && Input.mouse.y < go.y + go.h;
-        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || goHit) { SFX.ui(); this.startRun(false, this.pendingStage, this.loadout); }
         break;
       }
       case 'intro': {
@@ -1195,18 +1153,16 @@ const G = {
   // ---------- render ----------
   render() {
     const ctx = this.ctx, cam = this.cam, day = this.day, P = this.player;
+    ctx.setTransform(this.rs, 0, 0, this.rs, 0, 0);
     ctx.imageSmoothingEnabled = false;
     // The front end is a room, not a camera on the swamp. Only the title shows
     // the lab floor itself; the three stations paint their own wall over the
     // top of it, so drawing it under them was both wasted and, while the wall
     // was a scrim, visible as the whole room ghosting through the screen.
     if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'research') { UI.drawResearch(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'habitat') { UI.drawHabitat(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'create') { UI.drawCreate(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'bench') { UI.drawLabBench(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); Tutor.draw(ctx); return; }
-    if (this.state === 'loadout') { UI.drawLoadout(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }
@@ -1266,7 +1222,6 @@ const G = {
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
       case 'stages': UI.drawStages(ctx); Tutor.draw(ctx); break;
-      case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
       case 'morph': Morph.drawUI(ctx); break;

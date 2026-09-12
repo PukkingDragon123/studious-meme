@@ -78,7 +78,8 @@ const Lab = {
     this.leftBank(ctx, t);
     this.rightBank(ctx, t);
     this.tank(ctx, W / 2, t);           // the centrepiece
-    this.floor(ctx, t);
+    // the floor is the one layer of this room with nothing alive in it
+    ctx.drawImage(UI.bake('labfloor', o => this.floor(o, 0)), 0, 0, G.W, G.H);
     this.acidBath(ctx, t);              // cut into the floor, so painted over it
     // staff walk between the machines and the railing
     for (const s of this.staff) this.drawStaff(ctx, s);

@@ -7,15 +7,13 @@
 // making a crocodile, and until it is made there is nothing else to press.
 //
 // This is not the optional course he teaches later. It is a rail: each step
-// names one control, lights it, and refuses the others until you use it. Six
+// names one control, lights it, and refuses the others until you use it. Five
 // steps and you are in the water.
 // ---------------------------------------------------------------------------
 const TUTOR_STEPS = [
-  { id: 'toresearch', room: 'title', icon: 'flask',
-    line: 'EVERY TANK IN HERE IS EMPTY.', hint: 'OPEN RESEARCH' },
-  { id: 'bay', room: 'research', icon: 'egg',
-    line: 'WE GROW THEM. TOP OF THE RACK.', hint: 'OPEN THE CREATION BAY' },
-  { id: 'hatch', room: 'create', icon: 'egg',
+  { id: 'tohabitat', room: 'title', icon: 'egg',
+    line: 'EVERY TANK IN HERE IS EMPTY.', hint: 'OPEN THE HABITAT' },
+  { id: 'hatch', room: 'habitat', icon: 'egg',
     line: 'PICK A STOCK. THE FIRST ONE IS ON THE PROJECT.', hint: 'GROW IT' },
   { id: 'feed', room: 'habitat', icon: 'meat',
     line: 'IT IS ALIVE, AND IT IS SMALL.', hint: 'FEED IT' },
@@ -55,15 +53,8 @@ const Tutor = {
   // Each of these answers "may I press that yet". Anything not named by the
   // step you are on says no, which is what makes it a tutorial and not a hint.
   // which door the induction will let you through right now
-  wantStation() {
-    const s = this.step(); if (!s) return null;
-    if (s.id === 'toresearch' || s.id === 'bay' || s.id === 'hatch') return 'research';
-    if (s.id === 'feed' || s.id === 'release' || s.id === 'site') return 'habitat';
-    return null;
-  },
+  wantStation() { return this.on() ? 'habitat' : null; },
   allowStation(id) { const w = this.on() && this.wantStation(); return !w || id === w; },
-  allowResearchRow() { return !this.on() || (!this.at('bay') && !this.at('toresearch')); },
-  allowBay() { return !this.on() || this.at('bay'); },
   allowHabRow(kind) {
     if (!this.on()) return true;
     if (this.at('feed')) return kind === 'feed';
@@ -72,7 +63,7 @@ const Tutor = {
   },
   // an empty enclosure has its own hatch panel; during the induction the only
   // way to make an animal is the bay, or the rail has a hole in it
-  allowHabHatch() { return !this.on(); },
+  allowHabHatch() { return !this.on() || this.at('hatch'); },
   // ---------- the dialogue box ----------
   barRect() { return { x: 0, y: G.H - 42, w: G.W, h: 42 }; },
   // a bouncing chevron over whatever you are supposed to press
