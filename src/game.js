@@ -149,7 +149,7 @@ const G = {
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
-    Meta.load(); this.loadSave(); Tutor.adopt();
+    Meta.load(); this.loadSave();
     this.touchUI = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     this.scale = 1; this.rotated = false; this.rs = 1; this.rsLocked = false; this.slowFrames = 0; this.frameAvg = 0;
     World.onChunkLoad = (ch, rng) => this.onChunkLoad(ch, rng);
@@ -226,7 +226,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -281,7 +281,6 @@ const G = {
     this.banner = null;
     this.placeLandmark(st);
     Labyrinth.begin(st);
-    Tutor.enterField();
     // Nobody flies a specimen out to a municipal trunk main. The sewer gets
     // wheeled down a corridor and tipped into a hatch.
     if (st && st.zone === 'sewer') Delivery.begin(st); else Drop.begin(st);
@@ -350,7 +349,6 @@ const G = {
     P.chain.reset(P.x, P.y, -0.3);
     this.cam.x = TANK; this.cam.y = World.floorY(TANK) - 46; this.cam.zoom = 2.6;
     this.state = 'intro'; this.banner = null;
-    Tutor.enterField();
     SFX.peep();
   },
   crackTank() {
@@ -401,6 +399,24 @@ const G = {
         }
       }
     }
+    // ---- what already died here -----------------------------------------
+    // A small crocodile does not hunt its way up: it finds. Every stretch of
+    // map carries a few carcasses, thickest in the system where everything
+    // that dies upstream ends up on the floor.
+    {
+      const Bc = Biome.at(ch.x0);
+      const n = Bc.indoor ? (rng() < 0.7 ? 1 + Math.floor(rng() * 2) : 0) : (rng() < 0.35 ? 1 : 0);
+      const pool = Bc.indoor ? ['rat', 'rat', 'bigrat'] : ['mullet', 'rat', 'mullet', 'bass'];
+      for (let k = 0; k < n; k++) {
+        const cx2 = ch.x0 + rng() * World.CHUNK;
+        if (Math.abs(cx2 - P.x) < 200) continue;
+        const fy2 = World.floorY(cx2); if (fy2 < 2) continue;
+        const kind = pool[Math.floor(rng() * pool.length)];
+        if (!SPECIES[kind]) continue;
+        const c = new Carrion(cx2, fy2 - 6, kind);
+        this.add(c);
+      }
+    }
     const B = Biome.at(ch.x0);
     for (let k = 0; k < 5; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
@@ -426,15 +442,13 @@ const G = {
     this.state = 'bench'; this.menuT = 0;
     this.benchTab = tab || this.benchTab || 'build';
     if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; }
-    if (!Tutor.on() && this.benchTab !== 'research') Doc.say('bench');
     if (this.benchSel === undefined) this.benchSel = 0;
     SFX.ui();
   },
   openHabitat() {
-    this.state = 'habitat'; this.menuT = 0; Tutor.pass('tohabitat');
+    this.state = 'habitat'; this.menuT = 0;
     if (this.createSel === undefined) this.createSel = 0;
     Habitat.ensure();
-    if (!Tutor.on()) Doc.say('habitat');
     if (this.habSel === undefined) this.habSel = Habitat.runnerIndex();
     if (this.habRow === undefined) this.habRow = 0;
     if (this.habHatch === undefined) this.habHatch = 0;
@@ -443,12 +457,6 @@ const G = {
   // the research programme, one of the three benches in the lab
   updateResearch(raw) {
 
-        // he is mid-sentence: a tap on the bubble moves him along
-        {
-          const br = Doc.sceneBubbleRect();
-          if (br && Input.mouse.clicked && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.sceneNext(); SFX.ui(); return; }
-          if (br && Input.hit('KeyT')) { Doc.sceneNext(); SFX.ui(); return; }
-        }
         const cats = UI.resCatRects();
         if (Input.hit('ArrowLeft', 'KeyA')) { this.resCat = (this.resCat + cats.length - 1) % cats.length; this.resNode = 0; SFX.ui(); }
         if (Input.hit('ArrowRight', 'KeyD')) { this.resCat = (this.resCat + 1) % cats.length; this.resNode = 0; SFX.ui(); }
@@ -468,8 +476,6 @@ const G = {
         const cur = rows[clamp(this.resNode || 0, 0, rows.length - 1)];
         if (fund && cur) {
           if (Research.buy(cur.nd)) {
-            Doc.note('fund');
-            if (cur.nd.grant && cur.nd.grant.zone) Doc.note('zone');
             SFX.levelup(); this.whiteFlash(0.25);
             this.banner = { text: 'FUNDED', sub: cur.nd.name, t: 2.6, max: 2.6, color: cur.nd.cat.col };
           } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
@@ -530,6 +536,8 @@ const G = {
   },
   onBossKilled(e) {
     this.stats.bosses++; this.addScore(10000);
+    // its stretch is quiet from here on: nothing else moves in
+    if (typeof Lairs !== 'undefined') Lairs.clear(e.lairId);
     this.banner = { text: e.name + ' DEFEATED', sub: '+10,000', t: 4, max: 4, color: '#ffd060' };
     this.slowmo(0.2, 1.2); this.zoomPunch(1.15); SFX.roar(3); SFX.levelup(); this.whiteFlash(0.6);
     if (this.boss === e) this.boss = null;
@@ -561,7 +569,6 @@ const G = {
         P.tier = t2; P.sheds++;
         P.hp = P.maxHp; P.lastMax = P.maxHp; P.hunger = Math.max(P.hunger, 55);
         P.genePoints += 2; P.newPoints += 2;
-        { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
         if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t3 of Meta.checkUnlocks()) this.announceUnlock(t3); Meta.save(); }
         this.storeSave();
       },
@@ -585,7 +592,6 @@ const G = {
     this.banner = { text: 'NEW FORM: ' + TIERS[P.tier].name, sub: card.node.name, t: 3.5, max: 3.5, color: card.path ? PATHS[card.path].color : '#ffffff' };
     SFX.pick(); SFX.roar(P.size); this.whiteFlash(0.5); this.fx.glow(P.x, P.y, 60 * P.vis, '#ffffff', 0.8); this.addScore(500 * P.tier);
     if (card.node.evo) this.fx.text(P.x, P.y - 40 * P.size, 'EVOLVED!', { color: card.path ? PATHS[card.path].color : '#fff', scale: 3, life: 2 });
-    { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
     if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
     this.storeSave();
   },
@@ -595,7 +601,6 @@ const G = {
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
     d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(26 - D * 2.6, 7, 26) * rand(0.8, 1.25); this.spawnPredator(D); }
     d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
-    if (d.bossQueue && !this.boss) { d.bossT -= dt; if (d.bossT <= 0) this.spawnBoss(d.bossQueue); }
     // hard cap
     if (this.ents.length > 220) { let n = 0; for (const e of this.ents) if (e.type === 'gib' && n++ > 40) e.remove = true; }
   },
@@ -678,25 +683,21 @@ const G = {
     }
     if (warn) { this.banner = { text: warn, t: 2.5, max: 2.5, color: '#ff8060' }; SFX.growl(side); }
   },
-  // sheds 2/4/6 bring a mini out of the local roster; 8 and 10 bring the world
-  // boss of whichever zone you are standing in
-  bossFor(sheds, x) {
-    if (sheds < 2 || sheds % 2) return null;
-    const r = ZONE_BOSSES[zoneAt(x).id] || ZONE_BOSSES.glades;
-    if (sheds >= 8) return r.world;
-    return r.mini[(sheds / 2 - 1) % r.mini.length];
-  },
-  spawnBoss(kind) {
-    const P = this.player, halfW = this.W / this.cam.zoom / 2, side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + 220), fy = World.floorY(x);
+  // Bosses are places now, not events: see src/lairs.js. Nothing queues one.
+  // A boss is spawned where it lives. atX is its lair; without one it comes in
+  // off the edge of the screen, which is only used by the debug harnesses now.
+  spawnBoss(kind, atX) {
+    const P = this.player, halfW = this.W / this.cam.zoom / 2, side = (atX !== undefined ? (atX >= P.x ? 1 : -1) : (chance(0.5) ? 1 : -1));
+    const x = atX !== undefined ? atX : P.x + side * (halfW + 220), fy = World.floorY(x);
     let boss = null;
     if (kind === 'oldscar') { const wx = World.findX(x, xx => World.floorY(xx) > 80, 900, 30); if (wx !== null) boss = Spawn.gator(wx, clamp(80, 10, World.floorY(wx) - 20), Math.max(1.6, P.size * 1.35), true); }
     else if (kind === 'warboat') { const wx = World.findX(x, xx => World.floorY(xx) > 60, 900, 30); if (wx !== null) boss = Spawn.boat(wx, 'warboat', -side); }
     else if (kind === 'python') { boss = this.add(new Snake(x, fy < 0 ? -10 : 6, 'python', Math.max(2.2, P.size * 0.8))); boss.isBoss = true; boss.persistent = true; boss.name = 'MOTHER PYTHON'; boss.hp = boss.maxHp = Math.round(boss.maxHp * 1.6); }
-    else if (kind === 'skunkape') { const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
+    else if (kind === 'skunkape') { const bx = World.findX(x, xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
     else if (kind === 'shark') { const wx = World.findX(x, xx => World.floorY(xx) > 200, 1500, 40); if (wx !== null) { boss = this.add(new Fish(wx, clamp(150, 60, World.floorY(wx) - 40), 'shark')); boss.size = 2.2; boss.sizeClass = Math.max(10, P.size * 1.3); boss.hp = boss.maxHp = 1400; boss.mass = 1500; boss.name = 'BIG BULL'; boss.isBoss = true; boss.persistent = true; boss.speed = 200; boss.gibs = 6; } }
     else if (kind === 'broodmother') {
       // she does not swim: find her a dry ledge to come down off
-      const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 5000, 40);
+      const bx = World.findX(x, xx => World.floorY(xx) < -8, 5000, 40);
       if (bx !== null) {
         boss = this.add(new LandAnimal(bx, 'bigrat'));
         boss.size = 3.4; boss.groundOff *= boss.size; boss.r *= boss.size;
@@ -719,10 +720,11 @@ const G = {
         if (B2.glow) boss.bossGlow = B2.glow;
       }
     }
-    if (!boss) { this.director.bossT = 8; return; }
+    if (!boss) { if (typeof Lairs !== 'undefined' && atX !== undefined) Lairs.woken[kind] = 0; return; }
     Boss.init(boss, BOSS_SPEC[kind] || { phases: 3, hp: 1.3 });
-    this.boss = boss; this.director.bossQueue = null;
-    this.banner = { text: 'WARNING', sub: boss.name + ' APPROACHES', t: 4, max: 4, color: '#ff3030' }; SFX.warning(); this.shake(6);
+    boss.lairId = kind;
+    this.boss = boss;
+    this.banner = { text: 'ITS TERRITORY', sub: boss.name + ' IS AWAKE', t: 4, max: 4, color: '#ff3030' }; SFX.warning(); this.shake(6);
   },
   // ---------- update ----------
   loop(ts) {
@@ -739,7 +741,6 @@ const G = {
     requestAnimationFrame(t => this.loop(t));
   },
   update(dt, raw) {
-    Tutor.update(raw);
     // global keys
     if (Input.hit('KeyM')) { const m = SFX.toggleMute(); if (!SFX.ctx) { SFX.init(); if (m) SFX.master && (SFX.master.gain.value = 0); } }
     // The bay shutter outlives the screen that started it. It comes down over
@@ -778,20 +779,11 @@ const G = {
             if (inRoom || onPlate) hit = i;
           }
         }
-        // his bubble is a button: tap it to send him away, tap where he stood
-        // to call him back. Nobody has to be taught anything.
-        if (Input.mouse.clicked) {
-          const br = Doc.bubbleRect();
-          if (br && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.dismiss(); SFX.ui(); break; }
-        }
-        if (Input.hit('KeyT')) { if (Doc.off()) Doc.recall(); else Doc.dismiss(); SFX.ui(); break; }
         if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; break; }
         if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; break; }
         const use = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || (hit >= 0 && hit === this.labSel);
         if (hit >= 0 && hit !== this.labSel) { this.labSel = hit; SFX.ui(); break; }
-        // on a first run the induction holds you to one door
-        { const want = Tutor.on() && Tutor.wantStation(); if (want) { const k = stn.findIndex(s3 => s3.id === want); if (k >= 0) this.labSel = k; } }
-        if (use && !this.labWipe && Tutor.allowStation(stn[this.labSel].id)) {
+        if (use && !this.labWipe) {
           SFX.init(); SFX.resume(); SFX.ui();
           const st2 = stn[this.labSel];
           this.labWipe = { t: 0, dur: 0.44, id: st2.id, x: st2.x + st2.w / 2, y: st2.y + st2.h / 2, gone: false };
@@ -801,10 +793,10 @@ const G = {
       }
       case 'bench': {
         this.menuT += raw; Lab.update(raw);
-        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; Doc.scene = null; SFX.ui(); break; }
+        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
         const inR = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
         const tabs = UI.benchTabs();
-        const goTab = id => { if (this.benchTab === id) return; this.benchTab = id; this.benchSel = 0; if (id !== 'research') Doc.say('bench'); else Doc.scene = null; SFX.ui(); };
+        const goTab = id => { if (this.benchTab === id) return; this.benchTab = id; this.benchSel = 0; SFX.ui(); };
         if (Input.hit('Tab', 'KeyE')) goTab(tabs[(tabs.findIndex(b2 => b2.id === this.benchTab) + 1) % tabs.length].id);
         if (Input.hit('KeyQ')) goTab(tabs[(tabs.findIndex(b2 => b2.id === this.benchTab) + tabs.length - 1) % tabs.length].id);
         if (Input.mouse.clicked) for (const b2 of tabs) if (inR(b2)) { goTab(b2.id); break; }
@@ -831,7 +823,7 @@ const G = {
           }
           if (take) {
             const v = VIALS[clamp(this.benchSel, 0, VIALS.length - 1)];
-            if (LabBench.have(v)) { LabBench.load(v.id); Doc.note('vial'); SFX.pick(); }
+            if (LabBench.have(v)) { LabBench.load(v.id); SFX.pick(); }
             else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
           }
         }
@@ -861,11 +853,10 @@ const G = {
             for (const r of UI.createTicks()) if (inR(r) && r.i !== this.createSel) { this.createSel = r.i; SFX.ui(); grow = false; }
             if (inR(UI.createGoRect())) grow = true;
           }
-          if (grow && !Tutor.allowHabHatch()) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; grow = false; }
           if (grow) {
             const sp2 = BASE_SPECIES[clamp(this.createSel || 0, 0, n2 - 1)];
             if (Habitat.hatch(sel, sp2.id)) {
-              Habitat.select(sel); Doc.note('hatch'); Tutor.pass('hatch');
+              Habitat.select(sel);
               this.habRow = 0;
               SFX.hatch && SFX.hatch(); SFX.levelup(); this.whiteFlash(0.4);
               this.banner = { text: 'GROWN', sub: Habitat.tag(L[sel]), t: 2.6, max: 2.6, color: sp2.holo || '#7affda' };
@@ -886,13 +877,10 @@ const G = {
         if (Input.mouse.clicked) for (let i2 = 0; i2 < rows.length; i2++) if (inR(rows[i2])) { if (row === i2) act = true; else { this.habRow = i2; SFX.ui(); } }
         if (act) {
           const r = rows[clamp(this.habRow || 0, 0, rows.length - 1)];
-          if (!Tutor.allowHabRow(r.kind)) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; break; }
           const res = UI.habApply(r, cur, sel);
           if (!res) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
-          else if (res === 'go') { Tutor.pass('release'); SFX.pick(); this.openStages(); }
-          else if (res === 'level') { Tutor.pass('feed'); Doc.note('feed'); SFX.levelup(); this.whiteFlash(0.3); this.banner = { text: 'GREW', sub: Habitat.tag(cur) + '  LV ' + cur.lv, t: 2.2, max: 2.2, color: '#8ab820' }; }
-          else if (res === 'up') { Doc.note('point'); SFX.pick(); }
-          else if (res === 'fed') { Tutor.pass('feed'); Doc.note('feed'); SFX.ui(); }
+          else if (res === 'go') { SFX.pick(); this.openStages(); }
+          else if (res === 'up') { SFX.pick(); }
           else SFX.ui();
         }
         if (this.menuShake > 0) this.menuShake -= raw;
@@ -961,7 +949,7 @@ const G = {
         const goHit = Input.mouse.clicked && Input.mouse.x > gr.x && Input.mouse.x < gr.x + gr.w && Input.mouse.y > gr.y && Input.mouse.y < gr.y + gr.h;
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit || goHit) {
           const st = list[this.stageSel];
-          if (Stages.unlocked(st)) { Tutor.pass('site'); SFX.pick(); this.startRun(false, st, this.loadout); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+          if (Stages.unlocked(st)) { SFX.pick(); this.startRun(false, st, this.loadout); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
         }
         if (this.menuShake > 0) this.menuShake -= raw;
         break;
@@ -1078,7 +1066,6 @@ const G = {
           // hold the old body so a big splice can grow into the new one on screen
           const wasParts = P.parts, wasLook = P.look;
           if (g && Genome.buy(P, g)) {
-            Doc.note('gene');
             const col = g.lin ? LINEAGES[g.lin].color : '#ffffff';
             if (g.apex || g.chimera) {
               const newParts = P.parts, newLook = P.look;
@@ -1166,7 +1153,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -1181,7 +1168,13 @@ const G = {
   updateCamera(dt) {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
-    c.zoom = lerp(c.zoom, tz, 1 - Math.exp(-2.5 * dt));
+    // The zoom used to be a live float that moved a hair every frame. Every
+    // background layer is a pattern locked to camera * zoom, so a zoom that
+    // never settles makes the grain crawl, the strata shimmer and the whole
+    // backdrop look like it is boiling. Track it smoothly, but snap what the
+    // renderer actually uses to a fixed ladder so a still camera is still.
+    c.zoomRaw = lerp(c.zoomRaw === undefined ? c.zoom : c.zoomRaw, tz, 1 - Math.exp(-2.5 * dt));
+    c.zoom = Math.round(c.zoomRaw * 32) / 32;
     let tx = P.x + P.vx * 0.22, ty = P.y + P.vy * 0.12;
     // an execution is framed on both of them, so the boss never leaves the shot
     if (this.finisher && this.finisher.e && !this.finisher.e.dead) {
@@ -1192,6 +1185,10 @@ const G = {
     const k = 1 - Math.exp(-5 * dt);
     c.x = lerp(c.x, tx, k); c.y = lerp(c.y, ty, k);
     c.y = Math.max(c.y, -(this.H / 2) / c.zoom + 30);
+    // and land the camera on a whole device pixel, so the ground, its grain and
+    // everything standing on it share one grid instead of sliding against it
+    const q = Math.max(0.001, c.zoom * (this.rs || 1));
+    if (isFinite(c.x) && isFinite(c.y)) { c.x = Math.round(c.x * q) / q; c.y = Math.round(c.y * q) / q; }
   },
   drawEgg(ctx) {
     const e = this.egg; if (!e || e.hatched) return;
@@ -1215,10 +1212,10 @@ const G = {
     // the lab floor itself; the three stations paint their own wall over the
     // top of it, so drawing it under them was both wasted and, while the wall
     // was a scrim, visible as the whole room ghosting through the screen.
-    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'habitat') { UI.drawHabitat(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'bench') { UI.drawLabBench(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'stages') { UI.drawStages(ctx); Tutor.draw(ctx); return; }
+    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'stages') { UI.drawStages(ctx); return; }
     // the delivery is its own picture: the world is not in shot yet
     if (this.state === 'delivery') { Delivery.draw(ctx); UI.drawWipe(ctx); return; }
     const indoor = World.isIndoor(cam.x);
@@ -1281,9 +1278,9 @@ const G = {
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
-      case 'stages': UI.drawStages(ctx); Tutor.draw(ctx); break;
+      case 'stages': UI.drawStages(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
-      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); if (Tutor.inField()) Tutor.draw(ctx); break;
+      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
       case 'morph': Morph.drawUI(ctx); break;
       case 'drop': Drop.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;

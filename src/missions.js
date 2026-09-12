@@ -212,7 +212,6 @@ const Missions = {
     P.genePoints += 3; P.newPoints += 3;
     art.apply(P);
     Story.say(3);
-    if (typeof Doc !== 'undefined') Doc.note('relic');
     G.addScore(6000);
     G.banner = { text: art.name, sub: art.boon, t: 5, max: 5, color: art.col };
     G.fx.text(P.x, P.y - 34 * P.vis, 'RELIC CLAIMED', { color: art.col, scale: 3, life: 2 });

@@ -72,19 +72,8 @@ const Habitat = {
     G.storeSave();
     return true;
   },
-  // like the first animal, the first meal is on the project — otherwise the
-  // induction tells a brand new save to feed something it cannot pay for
-  feedCost(c) {
-    if (typeof Tutor !== 'undefined' && Tutor.at('feed')) return 0;
-    return c ? 1 + Math.floor(c.lv / 3) : 1;
-  },
-  feedXp(c) { return 12 + c.lv * 3; },
-  canFeed(c) { return !!c && c.lv < this.MAX_LV && Research.data() >= this.feedCost(c); },
-  feed(c) {
-    if (!this.canFeed(c)) return 0;
-    G.save.data -= this.feedCost(c);
-    return this.addXp(c, this.feedXp(c));
-  },
+  // There is no feeding it here. An animal in the enclosure grows by being
+  // taken out and used — what it eats, it eats in the field.
   // returns how many levels it gained
   addXp(c, n) {
     if (!c) return 0;

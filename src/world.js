@@ -86,7 +86,11 @@ const World = {
   light(day) { return clamp(0.5 + 0.62 * Math.cos((day - 0.25) * TAU), 0.08, 1) * (1 - 0.45 * (Weather ? Weather.rain : 0)); },
   drawSky(ctx, cam, day) {
     const W = G.W, H = G.H, sc = this.skyColors(day);
-    const hy = cam.toScreen(0, 0)[1];
+    // a camera that has gone non-finite for a frame (a teleport, a bad spawn)
+    // used to throw out of the gradient and leave the backdrop unpainted
+    const hy0 = cam.toScreen(0, 0)[1];
+    const hy = isFinite(hy0) ? clamp(hy0, -4000, 4000) : H * 0.4;
+    ctx.fillStyle = sc.bot; ctx.fillRect(0, 0, W, H);
     const g = ctx.createLinearGradient(0, Math.min(hy - 220 * cam.zoom, 0), 0, hy);
     g.addColorStop(0, sc.top); g.addColorStop(1, sc.bot);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, Math.max(0, hy));

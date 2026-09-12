@@ -2287,21 +2287,49 @@ function drawCroc(ctx, chain, parts, worldSize, opts = {}) {
   if (opts.alpha !== undefined) ctx.globalAlpha = opts.alpha;
   const white = opts.flash > 0;
   const img = p => (white ? spriteWhite(p).c : p.c);
+  // A crocodile is not a swimming log. The legs paddle, plant and tuck; the
+  // body breathes; the head shakes what it has just bitten.
+  const tuck = clamp(opts.legTuck || 0, 0, 1);        // 1 = held flat against the flank
+  const swing = opts.legSwing || 0;                    // radians of fore/aft throw
+  const breath = opts.breath || 0;
   for (let i = CROC_LEN - 1; i >= 1; i--) {
     const s = n[i], part = i <= 5 ? parts.body[i - 1] : parts.tail[i - 6];
-    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a); ctx.scale(size, sy);
+    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
+    // the ribcage lifts a touch on the breath, the tail does not
+    const bs = i <= 4 ? 1 + breath * 0.05 : 1;
+    ctx.scale(size, sy * bs);
     if (i === 1 || i === 4) {
-      const lp = opts.legPhase || 0, f = Math.sin(lp + (i === 1 ? 0 : Math.PI)) > 0 ? 0 : 1;
+      const lp = (opts.legPhase || 0) + (i === 1 ? 0 : Math.PI);
+      const f = Math.sin(lp) > 0 ? 0 : 1;
       const leg = parts.legs[f];
-      ctx.drawImage(img(leg), -leg.ox - 4, 4); ctx.drawImage(img(leg), -leg.ox + 6, 4);
+      // each of the pair swings out of phase with the other, and both fold
+      // back and up against the body the faster the animal is moving
+      for (const [ox, ph] of [[-4, 0], [6, 1.9]]) {
+        const a2 = Math.sin(lp + ph) * swing * (1 - tuck);
+        const lift = Math.max(0, Math.sin(lp + ph)) * 1.4 * (1 - tuck);
+        ctx.save();
+        ctx.translate(ox, 3);
+        ctx.rotate(a2 - tuck * 0.85);
+        ctx.drawImage(img(leg), -leg.ox, 1 - lift);
+        ctx.restore();
+      }
     }
     ctx.drawImage(img(part), -part.ox, -part.oy);
     ctx.restore();
   }
   const h = n[0];
-  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a); ctx.scale(size, sy);
+  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a + (opts.headShake || 0)); ctx.scale(size, sy);
   ctx.save(); ctx.translate(0, parts.jawY); ctx.rotate(jaw * 0.8); ctx.drawImage(img(parts.jaw), 0, 0); ctx.restore();
   ctx.drawImage(img(parts.head), -parts.head.ox, -parts.head.oy);
+  // blood on the teeth after a kill, drying off over a few seconds
+  if (opts.gore > 0 && !white) {
+    ctx.globalAlpha = clamp(opts.gore, 0, 1) * 0.85;
+    ctx.fillStyle = '#8a1410';
+    ctx.fillRect(parts.head.eyeX - parts.head.ox + 2, parts.jawY - 2, 7, 2);
+    ctx.fillStyle = '#c02018';
+    ctx.fillRect(parts.head.eyeX - parts.head.ox + 3, parts.jawY - 1, 4, 1);
+    ctx.globalAlpha = opts.alpha !== undefined ? opts.alpha : 1;
+  }
   if (parts.look.glow && !white) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = rgba(parts.look.glow, 0.55); ctx.fillRect(parts.head.eyeX - parts.head.ox - 1, parts.head.eyeY - parts.head.oy - 1, 3, 3);
@@ -3569,7 +3597,11 @@ const World = {
   light(day) { return clamp(0.5 + 0.62 * Math.cos((day - 0.25) * TAU), 0.08, 1) * (1 - 0.45 * (Weather ? Weather.rain : 0)); },
   drawSky(ctx, cam, day) {
     const W = G.W, H = G.H, sc = this.skyColors(day);
-    const hy = cam.toScreen(0, 0)[1];
+    // a camera that has gone non-finite for a frame (a teleport, a bad spawn)
+    // used to throw out of the gradient and leave the backdrop unpainted
+    const hy0 = cam.toScreen(0, 0)[1];
+    const hy = isFinite(hy0) ? clamp(hy0, -4000, 4000) : H * 0.4;
+    ctx.fillStyle = sc.bot; ctx.fillRect(0, 0, W, H);
     const g = ctx.createLinearGradient(0, Math.min(hy - 220 * cam.zoom, 0), 0, hy);
     g.addColorStop(0, sc.top); g.addColorStop(1, sc.bot);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, Math.max(0, hy));
@@ -5310,10 +5342,11 @@ const TIERS = [
 ];
 const SIZE_FLOOR3 = 0.027;                       // 0.3 cubed: the hatchling
 // The divisor is the whole difficulty of growing. At 15 a run walked up the
-// ladder; at 27 every rung is most of a hunt, and the top of the ladder is a
-// campaign rather than an afternoon.
-const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 27);
-const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 27;
+// ladder. At 44 a rung is a campaign: you are a hand-long animal in a system
+// full of things that are not, and the only way up is everything you can find,
+// chewed down one mouthful at a time.
+const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 44);
+const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 44;
 function tierFor(size) { let t = 0; for (let i = 0; i < TIERS.length; i++) if (size >= TIERS[i].size - 1e-6) t = i; return t; }
 
 /* ===== src/genome.js ===== */
@@ -5684,9 +5717,9 @@ const RESEARCH = [
   {
     id: 'field', name: 'FIELD SURVEY', col: '#60a8ff', icon: 'globe', line: 'WHERE THEY WILL DROP YOU',
     nodes: [
-      { id: 'f.sewer', name: 'MUNICIPAL SURVEY', cost: 6, line: 'OPENS THE SEWER NETWORK', grant: { zone: ['sewer'] } },
-      { id: 'f.ocean', name: 'OFFSHORE SURVEY', cost: 10, line: 'OPENS THE OPEN OCEAN', grant: { zone: ['ocean'] } },
-      { id: 'f.deep', name: 'DEEP SOUNDING', cost: 16, need: ['f.sewer', 'f.ocean'], line: 'OPENS THE SUMP AND THE TRENCH', grant: { site: ['sump', 'trench'] } },
+      { id: 'f.glades', name: 'OUTFALL SURVEY', cost: 4, line: 'OPENS THE EVERGLADES', grant: { zone: ['glades'] } },
+      { id: 'f.ocean', name: 'OFFSHORE SURVEY', cost: 7, need: ['f.glades'], line: 'OPENS THE OPEN OCEAN', grant: { zone: ['ocean'] } },
+      { id: 'f.deep', name: 'DEEP SOUNDING', cost: 11, need: ['f.ocean'], line: 'OPENS THE SUMP AND THE TRENCH', grant: { site: ['sump', 'trench'] } },
     ],
   },
 ];
@@ -5722,7 +5755,7 @@ const Research = {
   // Two gene lineages are native to the animal. The other four are surgery.
   lineageOpen(lin) { return lin === 'ripper' || lin === 'bulwark' || this.granted('lineage').has(lin); },
   hybridsOpen() { return this.has('g.hybrid'); },
-  zoneOpen(id) { return id === 'glades' || this.granted('zone').has(id); },
+  zoneOpen(id) { return id === 'sewer' || this.granted('zone').has(id); },
   siteOpen(id) { return this.granted('site').has(id); },
   // the standing treatments, stamped onto every new animal
   applyTo(P) { for (const id of this.done()) { const n = RES_NODE[id]; if (n && n.perk) n.perk(P); } },
@@ -5758,35 +5791,35 @@ const Research = {
 // face of it you are looking at, what the water does to you, and what is
 // waiting at the bottom of it.
 const ZONES = [
-  { id: 'sewer', n: 1, name: 'THE SEWER NETWORK', sub: 'A DROWNED CITY SYSTEM. NO SKY, NO WAY BACK UP.', col: '#8ab820', x0: -16600, x1: -3200 },
-  { id: 'glades', n: 2, name: 'THE EVERGLADES', sub: 'OPEN WATER, OPEN SEASON. THE MAP THEY RELEASED YOU INTO.', col: '#7fffd8', x0: -3200, x1: 19000 },
+  { id: 'sewer', n: 1, name: 'THE SEWER NETWORK', sub: 'WHERE YOU WOKE UP. NO SKY, NO WAY BACK UP.', col: '#8ab820', x0: -16600, x1: -120 },
+  { id: 'glades', n: 2, name: 'THE EVERGLADES', sub: 'PAST THE GRATE. OPEN WATER, OPEN SEASON.', col: '#7fffd8', x0: -120, x1: 19000 },
   { id: 'ocean', n: 3, name: 'THE OPEN OCEAN', sub: 'PAST THE SEAWALL. SALT, DEPTH, AND NOTHING TO HOLD ON TO.', col: '#60a8ff', x0: 19000, x1: 99999 },
 ];
 const ZONE_BY_ID = {};
 for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
-  // ---- ZONE 2: THE EVERGLADES. Where a run starts and where it is learned.
-  { id: 'outfall', zone: 'glades', lat: -0.30, lon: 0.34, name: 'THE OUTFALL', sub: 'BREAK CONTAINMENT AND FIND THE PIPE', x: -2800, size: 0.3, diff: 0, intro: true },
-  { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 1100 } },
-  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 2800 } },
-  { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 1.25, diff: 1.5, need: { reach: 4200 } },
-  { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 1.7, diff: 2.0, need: { reach: 6100 } },
-  { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 2.3, diff: 2.5, need: { reach: 7600 } },
-  { id: 'campground', zone: 'glades', lat: 0.02, lon: 1.30, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 3.0, diff: 3.0, need: { reach: 9400 } },
-  { id: 'bay', zone: 'glades', lat: -0.62, lon: 1.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 4.0, diff: 3.6, need: { reach: 11000 } },
-  { id: 'seawall', zone: 'glades', lat: 0.30, lon: 1.44, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 8.0, diff: 4.6, kaiju: true, need: { tier: 7 } },
-  // ---- ZONE 1: THE SEWER NETWORK. Under the city, west of the lab.
-  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 0.45, diff: 0.8, need: { reach: 2800 } },
-  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 0.8, diff: 1.6, need: { reach: 4200 } },
-  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 1.4, diff: 2.4, need: { reach: 6100 } },
-  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 2.2, diff: 3.2, need: { reach: 7600 } },
-  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 3.4, diff: 4.2, need: { tier: 5 } },
+  // ---- ZONE 1: THE SEWER NETWORK. Where you wake up and where it is learned.
+  { id: 'outfall', zone: 'sewer', lat: 0.14, lon: 2.68, name: 'THE STORM DRAIN', sub: 'BREAK THE TANK. GET OUT OF THE ROOM.', x: -2800, size: 0.22, diff: 0, intro: true },
+  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 0.4, diff: 0.8, need: { deep: 2200 } },
+  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 0.7, diff: 1.6, need: { deep: 4000 } },
+  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 1.2, diff: 2.4, need: { deep: 5400 } },
+  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 2.0, diff: 3.2, need: { deep: 7200 } },
+  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 3.0, diff: 4.2, need: { deep: 10000 } },
+  // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
+  { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
+  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },
+  { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 1.25, diff: 1.5, need: { reach: 3000 } },
+  { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 1.7, diff: 2.0, need: { reach: 4200 } },
+  { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 2.3, diff: 2.5, need: { reach: 5400 } },
+  { id: 'campground', zone: 'glades', lat: 0.02, lon: 1.30, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 3.0, diff: 3.0, need: { reach: 6800 } },
+  { id: 'bay', zone: 'glades', lat: -0.62, lon: 1.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 4.0, diff: 3.6, need: { reach: 8200 } },
+  { id: 'seawall', zone: 'glades', lat: 0.30, lon: 1.44, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 8.0, diff: 4.6, kaiju: true, need: { tier: 6 } },
   // ---- ZONE 3: THE OPEN OCEAN. Past the seawall, down the wall, into the dark.
-  { id: 'shelf', zone: 'ocean', lat: -0.20, lon: 4.58, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 2.0, diff: 3.0, need: { reach: 11000 } },
-  { id: 'reef', zone: 'ocean', lat: -0.58, lon: 4.98, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 2.9, diff: 3.8, need: { reach: 15300 } },
-  { id: 'wall', zone: 'ocean', lat: 0.26, lon: 5.02, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 4.4, diff: 4.5, need: { tier: 6 } },
-  { id: 'trench', survey: true, zone: 'ocean', lat: -0.12, lon: 5.46, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 7.6, diff: 5.4, kaiju: true, need: { tier: 8 } },
+  { id: 'shelf', zone: 'ocean', lat: -0.20, lon: 4.58, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 2.0, diff: 3.0, need: { reach: 8200 } },
+  { id: 'reef', zone: 'ocean', lat: -0.58, lon: 4.98, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 2.9, diff: 3.8, need: { reach: 11000 } },
+  { id: 'wall', zone: 'ocean', lat: 0.26, lon: 5.02, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 4.4, diff: 4.5, need: { tier: 5 } },
+  { id: 'trench', survey: true, zone: 'ocean', lat: -0.12, lon: 5.46, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 7.6, diff: 5.4, kaiju: true, need: { tier: 7 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
@@ -5826,6 +5859,8 @@ const Stages = {
     if (!need) return true;
     const s = G.save || {};
     if (need.reach !== undefined && (s.reach || 0) < need.reach) return false;
+    // the system runs west, so distance into it is its own counter
+    if (need.deep !== undefined && (s.deep || 0) < need.deep) return false;
     if (need.tier !== undefined && (s.bestTier || 0) < need.tier) return false;
     if (need.runs !== undefined && (s.runs || 0) < need.runs) return false;
     if (need.kills !== undefined && (s.kills || 0) < need.kills) return false;
@@ -5855,6 +5890,10 @@ const Stages = {
       const b = Biome.at(need.reach);
       return 'REACH ' + (b ? b.name : Math.round(need.reach) + 'M');
     }
+    if (need.deep !== undefined) {
+      const b = Biome.at(-need.deep);
+      return 'REACH ' + (b ? b.name : Math.round(need.deep) + 'M DEEP');
+    }
     if (need.tier !== undefined) return 'GROW TO ' + (TIERS[need.tier] ? TIERS[need.tier].name : 'TIER ' + need.tier);
     if (need.runs !== undefined) return 'FINISH ' + need.runs + ' RUNS';
     if (need.kills !== undefined) return 'TAKE ' + need.kills + ' KILLS';
@@ -5864,6 +5903,7 @@ const Stages = {
   noteProgress(P) {
     const s = G.save;
     s.reach = Math.max(s.reach || 0, Math.round(P.x));
+    s.deep = Math.max(s.deep || 0, Math.round(-P.x));
     s.bestTier = Math.max(s.bestTier || 0, P.tier);
   },
   primeGene(id) {
@@ -6080,6 +6120,50 @@ class Gib extends Entity {
     const p = this.p; ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot); ctx.scale(this.size * this.facing, this.size);
     ctx.globalAlpha = this.life < 2 ? this.life / 2 : 1;
     ctx.drawImage(this.src.c, p.sx, p.sy, p.sw, p.sh, -p.sw / 2, -p.sh / 2, p.sw, p.sh); ctx.restore(); ctx.globalAlpha = 1;
+  }
+}
+// ---------------------------------------------------------------------------
+// CARRION.
+//
+// Something died here before you turned up. It is face down in the silt with
+// its own flies over it, it does not fight, and it is most of what a small
+// crocodile eats. Scavenging is not a sideline at this size: it is the job.
+class Carrion extends Entity {
+  constructor(x, y, kind = 'rat', mass) {
+    super(x, y);
+    this.useSpecies(kind);
+    this.type = 'carrion'; this.name = (this.name || 'MEAT') + ' CARCASS';
+    this.edible = true; this.mass = mass !== undefined ? mass : Math.max(0.8, this.mass * 0.6);
+    this.hp = this.maxHp = 1; this.sizeClass = Math.min(this.sizeClass * 0.5, 0.6);
+    this.threat = 0; this.bleeds = true; this.gibs = 2; this.layer = -1; this.latchable = false;
+    this.rot = rand(-0.3, 0.3) + Math.PI;                     // belly up
+    this.life = rand(70, 140); this.aware = false;
+    this.anim.mode = 'dead'; this.anim.speed = 0;
+    this.settled = false;
+  }
+  update(dt) {
+    this.tick(dt); this.life -= dt; if (this.life <= 0) this.remove = true;
+    if (this.inWater) { this.drag(dt, 2.2); this.vy += 22 * dt; }
+    else { this.vy += 600 * dt; }
+    this.move(dt);
+    const fy = World.floorY(this.x), rr = this.r * this.size * 0.4;
+    if (this.y > fy - rr) {
+      if (!this.settled && this.vy > 30) { G.fx.silt(this.x, fy, 3, 18); this.settled = true; }
+      this.y = fy - rr; this.vy = 0; this.vx *= 0.7;
+    }
+    // flies, and the smell of it: small things come to feed on carrion too
+    if (chance(dt * 0.7)) G.fx.add({ type: 'bubble', x: this.x + rand(-6, 6), y: this.y - 4, vx: rand(-4, 4), vy: -10, s: 0.6, seed: rand(TAU), life: 1.2 });
+  }
+  draw(ctx) {
+    const rig = this.rig; if (!rig) return;
+    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+    ctx.globalAlpha = (this.life < 4 ? this.life / 4 : 1) * 0.92;
+    rig.draw(ctx, 0, 0, this.facing, 0, this.anim, { scale: this.size * rig.scale });
+    ctx.restore();
+    // the water has been at it: a wash of silt over whatever is left
+    ctx.globalAlpha = 0.22; ctx.fillStyle = '#4a5244';
+    ctx.fillRect(Math.round(this.x - this.r), Math.round(this.y - this.r * 0.5), Math.round(this.r * 2), Math.round(this.r));
+    ctx.globalAlpha = 1;
   }
 }
 function dropMeat(x, y, n, massEach, colors = BLOOD_COLORS) {
@@ -8244,7 +8328,6 @@ const Missions = {
     P.genePoints += 3; P.newPoints += 3;
     art.apply(P);
     Story.say(3);
-    if (typeof Doc !== 'undefined') Doc.note('relic');
     G.addScore(6000);
     G.banner = { text: art.name, sub: art.boon, t: 5, max: 5, color: art.col };
     G.fx.text(P.x, P.y - 34 * P.vis, 'RELIC CLAIMED', { color: art.col, scale: 3, life: 2 });
@@ -8540,6 +8623,7 @@ class Player {
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
+    this.mouth = null;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -8573,7 +8657,7 @@ class Player {
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.toxin = 0; this.rads = 0; this.crush = 0; this.hazT = 0;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
-    this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
+    this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.headShakeT = 0; this.goreT = 0; this.snapT = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
     this.wet = 1; this.dripT = 0;
     Trials.reset(this);
@@ -8719,6 +8803,7 @@ class Player {
     if (this.st.landRegen > 0 && this.onLand) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.landRegen * dt);
     if (this.poisonT > 0) { this.poisonT -= dt; this.hp -= this.venomDps * dt; if (chance(dt * 6)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030']); if (this.hp <= 0) return this.die('POISONED'); }
     if (this.hazards(dt)) return;
+    this.updateChew(dt, inp);
     // input
     let ix = inp.x, iy = inp.y; const mag = Math.hypot(ix, iy); if (mag > 1) { ix /= mag; iy /= mag; }
     this.moving = mag > 0.15;
@@ -8876,6 +8961,10 @@ class Player {
     this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim, this.onLand);
     if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
     else this.legPhase += dt * (2 + swim * 7);
+    // shaking what you have just bitten, and the blood that stays on the teeth
+    if (this.headShakeT > 0) this.headShakeT -= dt;
+    if (this.goreT > 0) this.goreT -= dt * 0.25;
+    if (this.snapT > 0) this.snapT -= dt;
     // jaws
     if (this.biteT > 0) {
       this.biteT -= dt;
@@ -8952,6 +9041,8 @@ class Player {
   }
   pushGhost(life) { this.ghosts.push({ nodes: this.chain.nodes.map(n => ({ x: n.x, y: n.y, a: n.a })), life, flip: this.facing }); if (this.ghosts.length > 8) this.ghosts.shift(); }
   bite() {
+    // a full mouth cannot bite: every press works the meal instead
+    if (this.mouth) { if (this.biteCd > 0) return; this.biteCd = 0.16; this.chew(1); return; }
     if (this.biteCd > 0) return;
     if (this.grabbed) {
       this.breakFree++; this.biteCd = 0.25; this.rollT = 1; SFX.chomp(this.size); G.shake(4); G.fx.bubbles(this.x, this.y, 6, 10 * this.size);
@@ -9004,7 +9095,17 @@ class Player {
       if (chomped && !this.st.multiChomp) continue;
       this.chompEntity(e, sx, sy, dx, dy); hit = true; chomped = true;
     }
-    if (!hit) { SFX.chomp(this.size); if (this.inWater) G.fx.bubbles(sx, sy, 3, 4 * this.size); }
+    // the snap itself: jaws closing is a thing you can see whether or not
+    // there was anything in them
+    this.snapT = 0.14;
+    if (!hit) {
+      SFX.chomp(this.size);
+      if (this.inWater) { G.fx.bubbles(sx, sy, 3, 4 * this.size); G.fx.silt && G.fx.silt(sx, sy, 1, 8); }
+    } else {
+      this.headShakeT = 0.34; this.goreT = Math.max(this.goreT, 3.2);
+      G.hitstop(0.04);
+      for (let i = 0; i < 5; i++) G.fx.add({ type: 'spark', x: sx + rand(-4, 4) * this.vis, y: sy + rand(-4, 4) * this.vis, vx: Math.cos(this.angle) * rand(40, 140), vy: Math.sin(this.angle) * rand(40, 140), s: 1, color: '#ffffff', life: 0.18 });
+    }
     this.biteCount++;
     if (this.st.leviathan && this.biteCount % 6 === 0) this.shockwave();
   }
@@ -9210,7 +9311,67 @@ class Player {
     if (this.st.bullRush) G.shake(3);
     this.ramHit.clear();
   }
+  // ---- the mouthful -------------------------------------------------------
+  // Nothing goes straight down. What you catch ends up crossways in the jaws
+  // and has to be worked: mash bite to chew it, and until it is chewed it is
+  // worth nothing, it slows you down, and a hard enough hit knocks it loose.
   eat(e) {
+    const m = {
+      name: e.name, mass: e.mass || 0, spec: e.spec, species: e.species, size: e.size || 1, type: e.type,
+      threat: e.threat, human: e.human, isBoss: e.isBoss, armor: e.armor || 0, poison: e.poison || 0,
+      dismembered: e.dismembered || 0, x: e.x, y: e.y, bloods: e.bloodColors || null,
+    };
+    // scraps are scraps: a mouthful of meat off the floor goes down whole
+    if (e.type === 'gib' || m.mass < 0.6) { this.swallowMeal(m); return; }
+    if (this.mouth) this.swallowMeal(this.mouth.m);            // room for one at a time
+    const rel = m.mass / Math.max(1, this.mass);
+    const need = clamp(Math.round(2 + rel * 3), 2, 10);
+    this.mouth = { m, need, done: 0, t: 0, drop: 0 };
+    G.fx.text(this.x, this.y - 26 * this.vis, 'IN THE JAWS', { color: '#ffd060', life: 1.1 });
+    SFX.crunch && SFX.crunch(this.size, 0);
+  }
+  // one chew: a crunch, a spray, and a step toward the meal being worth something
+  chew(n = 1) {
+    const M = this.mouth; if (!M) return;
+    M.done += n; M.t = 0.12;
+    this.jaw = 1; this.headShakeT = 0.26; this.goreT = Math.max(this.goreT, 2.4);
+    G.shake(2); SFX.crunch && SFX.crunch(this.size, 0);
+    const [sx, sy] = this.snout;
+    G.fx.blood(sx, sy, 3, Math.cos(this.angle) * 40, Math.sin(this.angle) * 40, 34, M.m.bloods || BLOOD_COLORS);
+    if (this.inWater) G.fx.bubbles(sx, sy, 2, 5 * this.vis);
+    if (M.done >= M.need) {
+      const m = M.m; this.mouth = null;
+      this.swallowMeal(m);
+      G.fx.text(this.x, this.y - 26 * this.vis, 'SWALLOWED', { color: '#8ef0a0', life: 1.2, scale: 2 });
+      SFX.gulp && SFX.gulp(this.size, 0);
+    }
+  }
+  // knocked out of your jaws: what is left of it hits the floor as meat
+  dropMouthful() {
+    const M = this.mouth; if (!M) return;
+    this.mouth = null;
+    const left = 1 - M.done / M.need;
+    const [sx, sy] = this.snout;
+    G.fx.text(this.x, this.y - 26 * this.vis, 'DROPPED IT', { color: '#ff8060', life: 1.4 });
+    G.fx.blood(sx, sy, 8, 0, 0, 60, M.m.bloods || BLOOD_COLORS);
+    const n = clamp(Math.round(1 + left * 3), 1, 4);
+    dropMeat(sx, sy, n, M.m.mass * left / n, M.m.bloods || BLOOD_COLORS);
+  }
+  updateChew(dt, inp) {
+    const M = this.mouth; if (!M) return;
+    if (M.t > 0) M.t -= dt;
+    M.age = (M.age || 0) + dt;
+    // gravity does some of the work, but only some: a mouthful left alone
+    // takes the better part of a minute to go down on its own
+    M.auto = (M.auto || 0) + dt;
+    if (M.auto > 2.6) { M.auto = 0; this.chew(1); return; }
+    // a mouthful is dead weight: you swim heavy until it is down
+    const drag = Math.pow(0.62, dt);
+    this.vx *= drag; this.vy *= drag;
+    this.jaw = Math.max(this.jaw || 0, 0.35 + Math.abs(Math.sin(this.t * 9)) * 0.3);
+    if (chance(dt * 5)) { const [sx, sy] = this.snout; G.fx.blood(sx, sy, 1, 0, 0, 16, M.m.bloods || BLOOD_COLORS); }
+  }
+  swallowMeal(e) {
     // a scrapper is the animal that makes a meal out of things too small to
     // be worth a bigger crocodile's time
     const rel = e.mass / Math.max(1, this.mass);
@@ -9251,6 +9412,8 @@ class Player {
   eatMass(m, x, y) { this.mass += m * this.st.growth; this.hunger = Math.min(100, this.hunger + m * 20 / Math.pow(this.size, 1.8)); G.fx.text(x, y, '+' + Math.round(m), { color: '#ffd860', vy: -18 }); G.addScore(m * 5); }
   hurt(dmg, src, kind = 'bite') {
     if (this.dead || dmg <= 0) return 0;
+    // a real hit while your jaws are full costs you the meal
+    if (this.mouth && dmg > this.maxHp * 0.06 && chance(0.55)) this.dropMouthful();
     const dot = kind === 'crush' || kind === 'venom';
     if (this.invuln > 0 && !dot) return 0;
     if (this.braceT > 0 && kind !== 'venom' && this.tryParry(dmg, src, kind)) return 0;
@@ -9297,7 +9460,29 @@ class Player {
     for (const g of this.ghosts) drawCroc(ctx, { nodes: g.nodes }, this.parts, this.vis, { flipY: g.flip, alpha: g.life * 0.7 });
     const blink = this.invuln > 0 && !this.dead && Math.floor(G.t * 30) % 2 === 0 && this.hurtFlash <= 0;
     if (this.st.lure) { ctx.globalCompositeOperation = 'lighter'; Shape.burst(ctx, this.x, this.y, 26 * this.vis, '#40f0c8', 12, 17, 0.8, 0.16); ctx.globalCompositeOperation = 'source-over'; }
-    drawCroc(ctx, this.chain, this.parts, this.vis, { jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll, alpha: blink ? 0.5 : 1 });
+    const spd2 = Math.hypot(this.vx, this.vy);
+    const opts = {
+      jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll,
+      alpha: blink ? 0.5 : 1,
+      // legs paddle when you are idling and fold away when you are travelling
+      legTuck: this.onLand ? 0 : clamp(spd2 / (this.speedMax * 0.7 + 1), 0, 1),
+      legSwing: this.onLand ? 0.55 : 0.3,
+      breath: this.moving ? 0 : Math.sin(this.t * 2.1) * 0.5 + 0.5,
+      headShake: this.headShakeT > 0 ? Math.sin(this.t * 46) * 0.22 * this.headShakeT : 0,
+      gore: this.goreT,
+    };
+    drawCroc(ctx, this.chain, this.parts, this.vis, opts);
+    // the snap: a white crescent thrown off the jaws on the frame they close
+    if (this.snapT > 0) {
+      const [sx2, sy2] = this.snout, a = this.angle, k = this.snapT / 0.14;
+      ctx.save(); ctx.translate(sx2, sy2); ctx.rotate(a);
+      ctx.globalAlpha = clamp(k, 0, 1) * 0.9;
+      ctx.strokeStyle = '#eafff4'; ctx.lineWidth = Math.max(1, 1.6 * this.vis);
+      ctx.beginPath(); ctx.arc(0, 0, (7 + 13 * (1 - k)) * this.vis, -1.1, 1.1); ctx.stroke();
+      ctx.globalAlpha = clamp(k, 0, 1) * 0.5;
+      ctx.beginPath(); ctx.arc(0, 0, (3 + 8 * (1 - k)) * this.vis, -0.8, 0.8); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.restore();
+    }
     if (this.wet > 0.06 && !this.hidden) {
       const n = this.chain.nodes, w = this.wet;
       // Darken: water on a hide sinks its value. Drawn as one non-overlapping
@@ -10206,19 +10391,8 @@ const Habitat = {
     G.storeSave();
     return true;
   },
-  // like the first animal, the first meal is on the project — otherwise the
-  // induction tells a brand new save to feed something it cannot pay for
-  feedCost(c) {
-    if (typeof Tutor !== 'undefined' && Tutor.at('feed')) return 0;
-    return c ? 1 + Math.floor(c.lv / 3) : 1;
-  },
-  feedXp(c) { return 12 + c.lv * 3; },
-  canFeed(c) { return !!c && c.lv < this.MAX_LV && Research.data() >= this.feedCost(c); },
-  feed(c) {
-    if (!this.canFeed(c)) return 0;
-    G.save.data -= this.feedCost(c);
-    return this.addXp(c, this.feedXp(c));
-  },
+  // There is no feeding it here. An animal in the enclosure grows by being
+  // taken out and used — what it eats, it eats in the field.
   // returns how many levels it gained
   addXp(c, n) {
     if (!c) return 0;
@@ -10491,7 +10665,7 @@ const Labyrinth = {
   // swamp and the ocean you can leave whenever you like.
   begin(stage) {
     this.reset();
-    if (!stage || stage.zone !== 'sewer') return;
+    if (!stage || stage.zone !== 'sewer' || stage.intro) return;   // the first room still has its grate
     const span = 1500 + (stage.diff || 0) * 380;
     this.x0 = stage.x - span; this.x1 = stage.x + span;
     // put each gate on a stretch with a roof, so it reads as a door in a
@@ -10549,6 +10723,113 @@ const Labyrinth = {
     ctx.fillStyle = col;
     for (let i = 0; i < 5; i++) ctx.fillRect(Math.round(x + dir * (3 - i)), y - i, 2, 1), ctx.fillRect(Math.round(x + dir * (3 - i)), y + i, 2, 1);
     Font.draw(ctx, Math.round(bd / 10) + 'M', x, y + 9, { color: col, align: 'center' });
+  },
+};
+
+/* ===== src/lairs.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// TERRITORY.
+//
+// Bosses used to arrive. You shed your skin, a timer ran, and something came
+// over the horizon whether you wanted it or not. That is an event, not a
+// world: nothing about the map told you it was coming and nothing about the
+// map was different once it was dead.
+//
+// Now every boss owns a stretch. It is always in the same place, it is there
+// before you are, and it never leaves. You find its lair the way you find
+// anything down here — by the state of the water on the way in: bones on the
+// floor, a silt haze, the sound it makes when it is not hunting. Swim into the
+// middle of that and it wakes up. Stay out and it never touches you.
+// ---------------------------------------------------------------------------
+const LAIRS = [
+  // ---- the sewer -------------------------------------------------------
+  { id: 'broodmother', x: -3800, r: 280, warn: 760, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN HERE' },
+  { id: 'gnasher', x: -7400, r: 300, warn: 800, name: 'THE GNASHER', sign: 'bones', tell: 'THE WATER IS FULL OF BONES' },
+  { id: 'sludgeking', x: -14250, r: 360, warn: 900, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
+  // ---- the glades ------------------------------------------------------
+  { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
+  { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
+  { id: 'warboat', x: 9300, r: 320, warn: 800, name: 'THE POACHER WARBOAT', sign: 'traps', tell: 'TRAPLINES. SOMEBODY WORKS THIS WATER' },
+  { id: 'skunkape', x: 14250, r: 340, warn: 900, name: 'THE SKUNK APE', sign: 'prints', tell: 'PRINTS IN THE MUD, AND THEY ARE NOT YOURS' },
+  // ---- the ocean -------------------------------------------------------
+  { id: 'anvil', x: 21800, r: 320, warn: 800, name: 'THE ANVIL', sign: 'bones', tell: 'EVERY FISH HERE IS SWIMMING THE OTHER WAY' },
+  { id: 'greenwall', x: 25100, r: 320, warn: 800, name: 'THE GREEN WALL', sign: 'holes', tell: 'HOLES IN THE REEF BIG ENOUGH TO SWIM INTO' },
+  { id: 'lantern', x: 34200, r: 400, warn: 1100, name: 'THE LANTERN', sign: 'glow', tell: 'THERE IS A LIGHT DOWN THERE' },
+];
+const LAIR_BY_ID = {};
+for (const L of LAIRS) LAIR_BY_ID[L.id] = L;
+
+const Lairs = {
+  cleared: {}, warned: {}, woken: {}, nearT: 0, armT: 0,
+
+  // A run opens with a few seconds of grace: nobody wants to be told whose
+  // water this is before they have their bearings.
+  reset() { this.cleared = {}; this.warned = {}; this.woken = {}; this.nearT = 0; this.armT = 5; },
+
+  // the lair whose territory the player is standing in, if any
+  at(x) {
+    for (const L of LAIRS) if (Math.abs(x - L.x) < L.r) return L;
+    return null;
+  },
+  // the nearest lair worth mentioning
+  near(x) {
+    let best = null, bd = 1e9;
+    for (const L of LAIRS) { const d = Math.abs(x - L.x); if (d < L.warn && d < bd) { bd = d; best = L; } }
+    return best;
+  },
+
+  update(dt) {
+    const P = G.player;
+    if (!P || P.dead || G.state !== 'play') return;
+    if (this.armT > 0) { this.armT -= dt; return; }
+    const L = this.near(P.x);
+    if (!L || this.cleared[L.id]) return;
+    const d = Math.abs(P.x - L.x);
+    // the approach: the map tells you before anything else does
+    if (!this.warned[L.id] && d < L.warn) {
+      this.warned[L.id] = 1;
+      G.banner = { text: 'TERRITORY', sub: L.tell, t: 3.4, max: 3.4, color: '#ff8c40' };
+      SFX.growl && SFX.growl(0);
+    }
+    // signs in the water, thicker the closer you get
+    const k = clamp(1 - d / L.warn, 0, 1);
+    if (chance(dt * 6 * k)) {
+      const sx = P.x + rand(-160, 160), sy = clamp(World.floorY(sx) - rand(2, 26), 4, 4000);
+      if (L.sign === 'glow') G.fx.glow(sx, sy, rand(1.5, 3.5), '#7affda', rand(0.2, 0.5));
+      else if (L.sign === 'sludge') G.fx.bubbles(sx, sy, 1, 6);
+      else G.fx.silt(sx, sy, 1, 10);
+    }
+    if (k > 0.55 && chance(dt * 0.5)) SFX.growl && SFX.growl(G.panOf(L.x));
+    // and the middle of it wakes whatever lives there
+    if (!this.woken[L.id] && d < L.r && !G.boss) {
+      this.woken[L.id] = 1;
+      G.spawnBoss(L.id, L.x);
+    }
+  },
+
+  // called when a boss dies: its stretch is quiet from here on
+  clear(kind) { if (kind) this.cleared[kind] = 1; },
+
+  // a marker on the edge of the screen for a territory you are inside of
+  draw(ctx) {
+    const P = G.player; if (!P || P.dead) return;
+    const L = this.near(P.x);
+    if (!L || this.cleared[L.id]) return;
+    const d = Math.abs(P.x - L.x), k = clamp(1 - d / L.warn, 0, 1);
+    const [sx] = G.cam.toScreen(L.x, P.y);
+    const col = d < L.r ? '#ff4030' : '#ff8c40';
+    if (sx > 16 && sx < G.W - 16) return;
+    const x = sx <= 16 ? 12 : G.W - 12, dir = sx <= 16 ? -1 : 1, y = 92;
+    ctx.globalAlpha = 0.4 + k * 0.6;
+    ctx.fillStyle = 'rgba(8,6,6,0.7)'; ctx.fillRect(x - 9, y - 8, 18, 16);
+    ctx.fillStyle = col;
+    // a skull, four pixels wide, which is all the warning anybody needs
+    ctx.fillRect(x - 4, y - 5, 8, 6); ctx.fillRect(x - 3, y + 1, 6, 3);
+    ctx.fillStyle = '#100808'; ctx.fillRect(x - 3, y - 4, 2, 2); ctx.fillRect(x + 1, y - 4, 2, 2); ctx.fillRect(x - 1, y + 1, 2, 2);
+    ctx.globalAlpha = 1;
+    Font.draw(ctx, Math.round(d / 10) + 'M', x, y + 10, { color: col, align: 'center' });
+    ctx.fillStyle = col; ctx.fillRect(x + dir * 6, y - 1, 3, 2);
   },
 };
 
@@ -10710,437 +10991,6 @@ function forceMutate(player) {
   G.fx.blood(player.x, player.y, 14, 0, 0, 60, ['#a8f030', '#5a8a10']);
   return m;
 }
-
-/* ===== src/doc.js ===== */
-'use strict';
-// ---------------------------------------------------------------------------
-// DOC CROC.
-//
-// The project's lead herpetologist spliced himself years ago and it took. He
-// walks his own lab floor in a coat that does not fit any more, and he teaches
-// you the building one job at a time.
-//
-// He is entirely optional. Every lesson is a thing you were going to do anyway;
-// doing it pays you, and if you would rather just play you can send him away
-// and he stays away.
-// ---------------------------------------------------------------------------
-const DOC_LESSONS = [
-  { id: 'l.feed', ev: 'feed', pay: 6, icon: 'meat', line: 'FEED ONE' },
-  { id: 'l.fund', ev: 'fund', pay: 8, icon: 'flask', line: 'FUND A STEP' },
-  { id: 'l.point', ev: 'point', pay: 8, icon: 'star', line: 'SPEND A POINT' },
-  { id: 'l.hatch', ev: 'hatch', pay: 10, icon: 'egg', line: 'HATCH ANOTHER' },
-  { id: 'l.vial', ev: 'vial', pay: 8, icon: 'vial', line: 'LOAD A TUBE' },
-  { id: 'l.gene', ev: 'gene', pay: 10, icon: 'hex', line: 'SPLICE IN THE FIELD' },
-  { id: 'l.relic', ev: 'relic', pay: 15, icon: 'relic', line: 'BRING A RELIC BACK' },
-  { id: 'l.zone', ev: 'zone', pay: 12, icon: 'globe', line: 'SURVEY A ZONE' },
-];
-
-// What he says when he walks into a room with you. Short: he is a crocodile
-// with a doctorate, not a manual.
-const DOC_SCRIPT = {
-  research: [
-    { icon: 'flask', line: 'DATA BUYS SCIENCE' },
-    { icon: 'hex', line: 'SCIENCE BUYS TEETH' },
-    { icon: 'star', line: 'PICK A COLUMN' },
-  ],
-  habitat: [
-    { icon: 'egg', line: 'THEY ARE YOURS' },
-    { icon: 'meat', line: 'FEED THEM' },
-  ],
-  bench: [
-    { icon: 'vial', line: 'ONE TUBE PER RUN' },
-  ],
-};
-
-const Doc = {
-  // ---------- state ----------
-  save() {
-    const s = G.save; if (!s) return { done: [], off: false };
-    if (!s.doc) s.doc = { done: [], off: false };
-    if (!Array.isArray(s.doc.done)) s.doc.done = [];
-    return s.doc;
-  },
-  off() { return !!this.save().off; },
-  dismiss() { this.save().off = true; G.storeSave(); },
-  recall() { this.save().off = false; G.storeSave(); },
-  done(id) { return this.save().done.indexOf(id) >= 0; },
-  // the lesson he is on: the first one you have not done
-  current() { if (this.off() || (typeof Tutor !== 'undefined' && Tutor.on())) return null; for (const l of DOC_LESSONS) if (!this.done(l.id)) return l; return null; },
-  progress() { const d = this.save(); return { got: d.done.length, tot: DOC_LESSONS.length }; },
-  // Something happened. If it is what he was waiting for, pay up and move on.
-  note(ev) {
-    const l = this.current();
-    if (!l || l.ev !== ev) return false;
-    this.save().done.push(l.id);
-    Research.addData(l.pay);
-    this.cheer = 2.6; this.cheerPay = l.pay;
-    G.storeSave();
-    if (typeof SFX !== 'undefined' && SFX.levelup) SFX.levelup();
-    return true;
-  },
-  cheer: 0, cheerPay: 0, t: 0, x: 196, dir: 1, waitT: 0, blink: 0,
-  // ---------- talking in a room ----------
-  // He walks on from the left, says his piece a line at a time, and then stays
-  // in the corner reacting to what you do.
-  scene: null,
-  say(id) {
-    if (this.off() || !DOC_SCRIPT[id]) { this.scene = null; return; }
-    const seen = this.save().seen || (this.save().seen = {});
-    this.scene = { id, i: 0, t: 0, walk: 0, hold: seen[id] ? 1 : 0 };
-    seen[id] = (seen[id] || 0) + 1;
-  },
-  sceneNext() {
-    const sc = this.scene; if (!sc) return false;
-    const script = DOC_SCRIPT[sc.id] || [];
-    if (sc.i < script.length - 1) { sc.i++; sc.t = 0; return true; }
-    sc.done = true; return false;
-  },
-  // he walks in, then idles; the caller just draws him every frame
-  drawScene(ctx, id, opts) {
-    if (this.off()) return;
-    const sc = this.scene;
-    if (!sc || sc.id !== id) return;
-    // where his bubble hangs. Rooms with a full-height panel in them put it low,
-    // down on the floor beside him, so it never lands on what you are reading.
-    sc.by = (opts && opts.bubbleY) || G.H - 104;
-    sc.t += 1 / 60; sc.walk = Math.min(1, sc.walk + 1 / 36);
-    const script = DOC_SCRIPT[id] || [];
-    const line = sc.done ? null : script[Math.min(sc.i, script.length - 1)];
-    const F = LAB.FLOOR;
-    // he enters from off the left edge and settles at the bottom corner
-    const x = Math.round(lerp(-44, 46, easeOut(sc.walk)));
-    const prevX = this.x, prevDir = this.dir, prevWait = this.waitT, prevT = this.t;
-    this.x = x; this.dir = 1; this.waitT = sc.walk >= 1 ? 9 : 0; this.t = prevT;
-    const oldF = LAB.FLOOR;
-    LAB.FLOOR = G.H - 14;
-    this.draw(ctx);
-    // and his bubble, off to the right of him so it never covers him
-    if (line && sc.walk > 0.6) {
-      const w = Math.max(62, Font.width(line.line, 1) + 36), h = 25;
-      const bx = x + 24, by = sc.by;
-      // it floats over whatever is behind it, so it needs to be solid, bordered
-      // and shadowed or it reads as text lying loose on the screen
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx + 3, by + 3, w, h);
-      ctx.fillStyle = '#0c2124'; ctx.fillRect(bx, by, w, h);
-      ctx.fillStyle = '#1d4a46'; ctx.fillRect(bx, by, w, 1); ctx.fillRect(bx, by + h - 1, w, 1);
-      ctx.fillRect(bx, by, 1, h); ctx.fillRect(bx + w - 1, by, 1, h);
-      ctx.fillStyle = '#7affda'; ctx.fillRect(bx + 1, by + 1, w - 2, 2);
-      // the tail, stepping down toward him
-      for (let i = 0; i < 6; i++) { ctx.fillStyle = '#0c2124'; ctx.fillRect(bx - 1 - i, by + h - 10 + i, i + 2, 2); }
-      this.icon(ctx, line.icon, bx + 14, by + 13, '#7affda');
-      Font.draw(ctx, line.line, bx + 26, by + 10, { color: '#e2f0e8' });
-      // the little chevron that says there is more
-      if (Math.floor(this.t * 3) % 2) { ctx.fillStyle = '#7affda'; for (let i = 0; i < 3; i++) ctx.fillRect(bx + w - 10 + i, by + h - 10 + i, 2, 1); }
-    } else if (this.cheer > 0 && sc.walk > 0.6) {
-      const txt = '+' + this.cheerPay, w = 56, bx = x + 24, by = sc.by;
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx + 3, by + 3, w, 25);
-      ctx.fillStyle = '#231c08'; ctx.fillRect(bx, by, w, 25);
-      ctx.fillStyle = '#6a5a18'; ctx.fillRect(bx, by, w, 1); ctx.fillRect(bx, by + 24, w, 1); ctx.fillRect(bx, by, 1, 25); ctx.fillRect(bx + w - 1, by, 1, 25);
-      ctx.fillStyle = '#ffe060'; ctx.fillRect(bx + 1, by + 1, w - 2, 2);
-      this.icon(ctx, 'tick', bx + 14, by + 13, '#ffe060');
-      Font.draw(ctx, txt, bx + 26, by + 10, { color: '#ffe060' });
-    }
-    LAB.FLOOR = oldF;
-    this.x = prevX; this.dir = prevDir; this.waitT = prevWait;
-  },
-  sceneBubbleRect() {
-    const sc = this.scene; if (!sc || this.off()) return null;
-    const script = DOC_SCRIPT[sc.id] || [];
-    const line = sc.done ? null : script[Math.min(sc.i, script.length - 1)];
-    if (!line) return null;
-    const w = Math.max(62, Font.width(line.line, 1) + 36);
-    const x = Math.round(lerp(-44, 46, easeOut(sc.walk)));
-    return { x: x + 24, y: sc.by || G.H - 104, w, h: 25 };
-  },
-  update(raw) {
-    this.t += raw;
-    if (this.cheer > 0) this.cheer -= raw;
-    if (this.blink > 0) this.blink -= raw; else if (chance(raw * 0.4)) this.blink = 0.14;
-    // he paces the middle of the floor, stopping to look at things
-    if (this.waitT > 0) { this.waitT -= raw; return; }
-    this.x += this.dir * raw * 16;
-    if (this.x > 300) { this.x = 300; this.dir = -1; this.waitT = rand(1.4, 3.4); }
-    if (this.x < 140) { this.x = 140; this.dir = 1; this.waitT = rand(1.4, 3.4); }
-  },
-  // ---------- the animal himself ----------
-  // A crocodile's head and tail on a man's frame, in a lab coat that gave up.
-  draw(ctx) {
-    const F = LAB.FLOOR, x = Math.round(this.x), t = this.t;
-    const walking = this.waitT <= 0;
-    const bob = walking ? Math.round(Math.abs(Math.sin(t * 4)) * 2) : Math.round(Math.sin(t * 1.4) * 0.6);
-    const y = F + 22 - bob, f = this.dir;
-    const SKIN = '#4f6a45', SKIN_D = '#33472c', SKIN_L = '#6d8a5c', COAT = '#e4e8e0', COAT_D = '#b8bfb6';
-    // mirroring has to flip the far edge of a rect, not just its origin, or
-    // the animal comes apart when he turns round
-    const px = (a, b, w, h, c) => {
-      ctx.fillStyle = c;
-      const ax = f > 0 ? x + a : x - a - w;
-      ctx.fillRect(Math.round(ax), Math.round(y + b), Math.max(1, w), Math.max(1, h));
-    };
-    ctx.globalAlpha = 0.3; ctx.fillStyle = '#0a1114'; ctx.fillRect(x - 10, F + 20, 20, 3); ctx.globalAlpha = 1;
-    // tail, swinging with the walk — the coat was never cut for it
-    const sw = Math.sin(t * (walking ? 4 : 1.1)) * 3;
-    for (let i = 0; i < 7; i++) {
-      const tw = 5 - i * 0.6;
-      px(-7 - i * 3, -8 + i * 1.4 + sw * (i / 7), tw, tw, i % 2 ? SKIN : SKIN_D);
-    }
-    // legs
-    const st = walking ? Math.sin(t * 8) * 3 : 0;
-    px(-5 + st, -10, 4, 10, '#2f3a44'); px(1 - st, -10, 4, 10, '#3a4550');
-    px(-6 + st, -1, 6, 3, '#20262c'); px(0 - st, -1, 6, 3, '#20262c');
-    // body in the coat
-    px(-6, -28, 12, 19, COAT);
-    px(-6, -28, 3, 19, COAT_D);
-    px(-1, -28, 1, 19, COAT_D);
-    // the coat does not close over the chest
-    px(-3, -26, 5, 9, SKIN_L);
-    for (let i = 0; i < 3; i++) px(-3, -25 + i * 3, 5, 1, SKIN_D);
-    // arms: one holding a slate
-    px(-9, -26, 3, 12, COAT); px(6, -26, 3, 11, COAT);
-    px(-9, -15, 3, 3, SKIN); px(6, -16, 3, 3, SKIN);
-    px(7, -22, 7, 9, '#2a3438'); px(8, -21, 5, 7, this.cheer > 0 ? '#8ce8a0' : '#3fd0a8');
-    for (let i = 0; i < 3; i++) px(9, -20 + i * 2, 3 - i, 1, '#0d1a18');
-    // neck and the head: long snout, brow ridge, a working eye
-    px(-2, -33, 6, 6, SKIN);
-    px(-4, -40, 10, 8, SKIN);
-    px(-4, -40, 10, 2, SKIN_L);
-    px(4, -38, 13, 5, SKIN);           // snout
-    px(4, -38, 13, 1, SKIN_L);
-    px(4, -34, 13, 1, SKIN_D);
-    // teeth along the jaw line
-    ctx.fillStyle = '#f2f4e8';
-    for (let i = 0; i < 6; i++) px(5 + i * 2, -34, 1, 2, '#f2f4e8');
-    // nostril, brow, eye
-    px(15, -37, 2, 2, SKIN_D);
-    px(1, -41, 5, 2, SKIN_D);
-    if (this.blink > 0) px(2, -39, 3, 1, SKIN_D);
-    else { px(2, -40, 3, 3, '#f0e8c0'); px(3, -39, 1, 2, '#101a10'); }
-    // scutes down the skull
-    for (let i = 0; i < 4; i++) px(-3 + i * 3, -41, 2, 2, SKIN_D);
-    // round spectacles, pushed up onto the brow where they are no use
-    ctx.strokeStyle = '#c8b070'; ctx.lineWidth = 1;
-    Shape.ring(ctx, x + f * 4, y - 43, 3, 1, '#c8b070');
-    Shape.ring(ctx, x + f * 10, y - 43, 3, 1, '#c8b070');
-    px(5, -44, 3, 1, '#c8b070');
-    // an ID badge on the coat
-    px(-5, -20, 4, 5, '#d8d0a0'); px(-5, -20, 4, 1, '#8a8260');
-  },
-  // ---------- the speech bubble ----------
-  // An icon and two or three words. He is a crocodile; he is not verbose.
-  drawBubble(ctx) {
-    const l = this.current();
-    if (this.off() || (!l && this.cheer <= 0)) return;
-    const x = Math.round(this.x), F = LAB.FLOOR;
-    const cheering = this.cheer > 0;
-    const txt = cheering ? '+' + this.cheerPay : (l ? l.line : '');
-    const w = Math.max(58, Font.width(txt, 1) + 34), h = 24;
-    const bx = clamp(x - w / 2, 6, G.W - w - 6), by = F - 78;
-    ctx.fillStyle = 'rgba(6,16,16,0.92)'; ctx.fillRect(bx, by, w, h);
-    ctx.fillStyle = cheering ? '#ffe060' : '#7affda'; ctx.fillRect(bx, by, w, 2);
-    // the tail of the bubble, pointing at him
-    ctx.fillStyle = 'rgba(6,16,16,0.92)';
-    for (let i = 0; i < 5; i++) ctx.fillRect(clamp(x - 3 + i, bx, bx + w - 1), by + h + i, 5 - i, 1);
-    this.icon(ctx, cheering ? 'tick' : (l ? l.icon : 'tick'), bx + 13, by + 12, cheering ? '#ffe060' : '#7affda');
-    Font.draw(ctx, txt, bx + 25, by + 9, { color: cheering ? '#ffe060' : '#d8e8de' });
-    // how far through the course you are, as pips
-    const p = this.progress();
-    for (let i = 0; i < p.tot; i++) { ctx.fillStyle = i < p.got ? '#3fd0a8' : '#1c2e2c'; ctx.fillRect(bx + 4 + i * 5, by + h - 5, 3, 3); }
-  },
-  // tiny pictograms, so a lesson is a picture with a caption rather than prose
-  icon(ctx, id, x, y, col) {
-    const px = (a, b, w, h, c) => { ctx.fillStyle = c || col; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
-    switch (id) {
-      case 'meat': for (let dy = -4; dy <= 4; dy++) { const w = 5 - Math.abs(dy) * 0.4; px(-w, dy, w * 2, 1, '#c0443a'); } px(-3, -3, 4, 2, '#e0685a'); px(1, 1, 4, 2, '#e8dcc0'); break;
-      case 'flask': px(-1, -5, 3, 3, col); px(-4, -2, 9, 7, col); px(-2, 0, 5, 4, '#0d1a18'); break;
-      case 'star': for (let i = 0; i < 5; i++) { px(-1, -5 + i, 3, 1, col); } px(-5, -1, 11, 3, col); break;
-      case 'egg': for (let dy = -5; dy <= 4; dy++) { const w = 4 - Math.abs(dy + 1) * 0.35; px(-w, dy, w * 2, 1, col); } px(-2, -2, 4, 1, '#0d1a18'); break;
-      case 'vial': px(-3, -6, 7, 2, col); px(-2, -4, 5, 9, col); px(-1, -1, 3, 5, '#0d1a18'); break;
-      case 'hex': for (let dy = -4; dy <= 4; dy++) { const w = 4 - Math.abs(dy) * 0.5; px(-w, dy, w * 2, 1, col); } px(-2, -2, 4, 4, '#0d1a18'); break;
-      case 'relic': px(-1, -6, 3, 12, col); px(-4, -3, 9, 3, col); px(-3, 3, 7, 2, col); break;
-      case 'globe': Shape.ring(ctx, x, y, 5, 1, col); px(-5, -1, 11, 1, col); px(-1, -5, 2, 11, col); break;
-      default: px(-5, 0, 3, 3, col); px(-3, 2, 3, 3, col); px(-1, 0, 3, 3, col); px(1, -2, 3, 3, col); px(3, -4, 3, 3, col); break;
-    }
-  },
-  // the hit box for sending him away, or calling him back
-  bubbleRect() {
-    const l = this.current();
-    if (!l) return null;
-    const w = Math.max(58, Font.width(l.line, 1) + 34);
-    return { x: clamp(Math.round(this.x) - w / 2, 6, G.W - w - 6), y: LAB.FLOOR - 78, w, h: 24 };
-  },
-};
-
-/* ===== src/tutor.js ===== */
-'use strict';
-// ---------------------------------------------------------------------------
-// THE FIRST HOUR.
-//
-// A new save owns nothing: no animal, no colour, no map but the one outside
-// the door. So the first thing that happens is that Doc walks you through
-// making a crocodile, and until it is made there is nothing else to press.
-//
-// This is not the optional course he teaches later. It is a rail: each step
-// names one control, lights it, and refuses the others until you use it. Five
-// steps and you are in the water.
-// ---------------------------------------------------------------------------
-const TUTOR_STEPS = [
-  { id: 'tohabitat', room: 'title', icon: 'egg',
-    line: 'EVERY TANK IN HERE IS EMPTY.', hint: 'OPEN THE HABITAT' },
-  { id: 'hatch', room: 'habitat', icon: 'egg',
-    line: 'PICK A STOCK. THE FIRST ONE IS ON THE PROJECT.', hint: 'GROW IT' },
-  { id: 'feed', room: 'habitat', icon: 'meat',
-    line: 'IT IS ALIVE, AND IT IS SMALL.', hint: 'FEED IT' },
-  { id: 'release', room: 'habitat', icon: 'star',
-    line: 'BIGGER. IT IS READY TO GO OUT.', hint: 'RELEASE IT' },
-  { id: 'site', room: 'stages', icon: 'globe',
-    line: 'YOUR CALL WHERE IT GOES IN THE WATER.', hint: 'PICK A SITE AND RELEASE' },
-  // ---- and then he does not stop talking, because the water is the hard part
-  { id: 'dive', room: 'play', icon: 'drop',
-    line: 'YOU ARE FOUR INCHES LONG. GET UNDER.', hint: 'DIVE',
-    test: P => P.y > World.surface(P.x) + 14 },
-  { id: 'eat', room: 'play', icon: 'meat',
-    line: 'EVERYTHING DOWN THERE IS SMALLER THAN YOU THINK.', hint: 'EAT SOMETHING',
-    test: () => (G.stats && G.stats.eaten || 0) > 0 },
-  { id: 'hide', room: 'play', icon: 'vial',
-    line: 'DEEP AND STILL AND THEY LOSE YOU.', hint: 'GET HIDDEN',
-    test: P => Alarm.hidden(P) },
-  { id: 'grow', room: 'play', icon: 'star',
-    line: 'KEEP EATING. NOTHING ELSE MATTERS YET.', hint: 'GROW A SIZE',
-    test: P => P.tier > (Tutor.startTier || 0) },
-];
-
-const Tutor = {
-  // ---------- state ----------
-  on() { return !!(G.save && !G.save.tutDone); },
-  index() { return clamp((G.save && G.save.tutStep) || 0, 0, TUTOR_STEPS.length - 1); },
-  step() { return this.on() ? TUTOR_STEPS[this.index()] : null; },
-  at(id) { const s = this.step(); return !!s && s.id === id; },
-  // A save that already has animals in it, or runs on the clock, has plainly
-  // been played before: it does not get put back through the induction.
-  adopt() {
-    const s = G.save; if (!s || s.tutDone) return;
-    const lived = (s.runs || 0) > 0 || (Array.isArray(s.habitat) && s.habitat.some(c => c)) || (Array.isArray(s.research) && s.research.length);
-    if (lived) { s.tutDone = true; s.tutStep = TUTOR_STEPS.length - 1; }
-  },
-  // the step is done; move on, and finish the whole thing at the end
-  pass(id) {
-    if (!this.at(id)) return false;
-    const n = this.index() + 1;
-    if (n >= TUTOR_STEPS.length) { G.save.tutDone = true; G.save.tutStep = n - 1; }
-    else G.save.tutStep = n;
-    G.storeSave();
-    if (typeof SFX !== 'undefined' && SFX.ui) SFX.ui();
-    this.flash = 0.5;
-    return true;
-  },
-  flash: 0, startTier: 0,
-  update(raw) {
-    if (this.flash > 0) this.flash -= raw;
-    // in the water he is not waiting for a button: he is watching you
-    if (!this.on()) return;
-    const s = this.step();
-    if (!s || s.room !== 'play' || !s.test) return;
-    const P = G.player;
-    if (!P || P.dead || (G.state !== 'play' && G.state !== 'intro')) return;
-    if (this.holdT === undefined) this.holdT = 0;
-    if (s.test(P)) { this.holdT += raw; if (this.holdT > 0.5) { this.holdT = 0; this.pass(s.id); } }
-    else this.holdT = 0;
-  },
-  // the field half of the induction starts when you hit the water
-  enterField() {
-    if (!this.on()) return;
-    this.startTier = (G.player && G.player.tier) || 0;
-    this.holdT = 0;
-  },
-  inField() { const s = this.step(); return !!s && s.room === 'play'; },
-  // ---------- the rail ----------
-  // Each of these answers "may I press that yet". Anything not named by the
-  // step you are on says no, which is what makes it a tutorial and not a hint.
-  // which door the induction will let you through right now
-  wantStation() { return this.on() ? 'habitat' : null; },
-  allowStation(id) { const w = this.on() && this.wantStation(); return !w || id === w; },
-  allowHabRow(kind) {
-    if (!this.on()) return true;
-    if (this.at('feed')) return kind === 'feed';
-    if (this.at('release')) return kind === 'go';
-    return false;
-  },
-  // an empty enclosure has its own hatch panel; during the induction the only
-  // way to make an animal is the bay, or the rail has a hole in it
-  allowHabHatch() { return !this.on() || this.at('hatch'); },
-  // ---------- the dialogue box ----------
-  barRect() { return { x: 0, y: G.H - 42, w: G.W, h: 42 }; },
-  // a bouncing chevron over whatever you are supposed to press
-  point(ctx, r) {
-    if (!this.on() || !r) return;
-    const t = G.menuT, bob = Math.round(Math.abs(Math.sin(t * 4)) * 3);
-    const x = Math.round(r.x + r.w / 2), y = Math.round(r.y) - 6 - bob;
-    // a target right up against the top of the screen has nowhere to hang an
-    // arrow; the pulsing frame says it well enough on its own
-    if (r.y >= 28) {
-      ctx.fillStyle = '#ffe060';
-      for (let i = 0; i < 5; i++) { ctx.fillRect(x - 4 + i, y - i, 2, 1); ctx.fillRect(x + 4 - i, y - i, 2, 1); }
-      ctx.fillRect(x - 1, y - 8, 2, 6);
-    }
-    // and a frame round the target, so there is no doubt which thing it is
-    ctx.globalAlpha = 0.5 + Math.sin(t * 6) * 0.25;
-    UI.bracket(ctx, r.x - 3, r.y - 3, r.w + 6, r.h + 6, '#ffe060', 8);
-    ctx.globalAlpha = 1;
-  },
-  // his head, in a box, at the left of the bar
-  portrait(ctx, x, y) {
-    const t = G.menuT;
-    const SKIN = '#4f6a45', SKIN_D = '#33472c', SKIN_L = '#6d8a5c';
-    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
-    ctx.fillStyle = '#0a1c1a'; ctx.fillRect(x - 15, y - 15, 30, 30);
-    ctx.fillStyle = '#16302c'; ctx.fillRect(x - 15, y - 15, 30, 1);
-    px(-9, -9, 15, 11, SKIN);              // skull
-    px(-9, -9, 15, 3, SKIN_L);
-    px(4, -5, 11, 6, SKIN);                // snout
-    px(4, -5, 11, 2, SKIN_L);
-    px(4, 1, 11, 2, SKIN_D);
-    for (let i = 0; i < 5; i++) px(5 + i * 2, 1, 1, 2, '#e8ecd8');   // teeth
-    px(-9, 2, 13, 3, SKIN_D);              // jaw
-    // the working eye, with a blink on a slow clock
-    const shut = (t % 4.4) > 4.15;
-    px(-4, -6, 5, shut ? 1 : 4, shut ? SKIN_D : '#0e1a10');
-    if (!shut) { px(-3, -5, 2, 2, '#c8e860'); px(-3, -5, 1, 1, '#f0ffd0'); }
-    px(-10, -8, 3, 4, SKIN_D);             // brow
-    // the glasses he has never once looked through
-    ctx.fillStyle = '#d8c840';
-    ctx.fillRect(Math.round(x - 10), Math.round(y - 12), 13, 1);
-    ctx.fillRect(Math.round(x - 10), Math.round(y - 14), 4, 3);
-    ctx.fillRect(Math.round(x - 4), Math.round(y - 14), 4, 3);
-    UI.bracket(ctx, x - 15, y - 15, 30, 30, 'rgba(122,255,218,0.45)', 7);
-  },
-  // the bar itself: who is talking, what they said, and what to do about it
-  draw(ctx) {
-    if (!this.on()) return;
-    const s = this.step(); if (!s) return;
-    const W = G.W, t = G.menuT, r = this.barRect();
-    ctx.fillStyle = '#04100f'; ctx.fillRect(r.x, r.y, r.w, r.h);
-    ctx.fillStyle = '#0a1f1d'; ctx.fillRect(r.x, r.y + 2, r.w, r.h - 2);
-    ctx.fillStyle = this.flash > 0 ? '#ffe060' : '#7affda'; ctx.fillRect(r.x, r.y, r.w, 2);
-    // a soft wash off the top edge so the bar sits in the room, not on it
-    const g = ctx.createLinearGradient(0, r.y - 16, 0, r.y);
-    g.addColorStop(0, 'rgba(4,16,15,0)'); g.addColorStop(1, 'rgba(4,16,15,0.85)');
-    ctx.fillStyle = g; ctx.fillRect(0, r.y - 16, W, 16);
-    this.portrait(ctx, 26, r.y + 21);
-    const tx = 50;
-    Font.draw(ctx, 'DOC CROC', tx, r.y + 6, { color: '#4f9f90' });
-    Font.draw(ctx, s.line, tx, r.y + 17, { color: '#e2f0e8' });
-    // the instruction, lit, with his icon on it
-    Doc.icon(ctx, s.icon, tx + 6, r.y + 32, '#ffe060');
-    Font.draw(ctx, s.hint, tx + 16, r.y + 29, { color: '#ffe060' });
-    // six pips: how far along the induction you are
-    const n = TUTOR_STEPS.length, i = this.index();
-    for (let q = 0; q < n; q++) {
-      ctx.fillStyle = q < i ? '#3fd0a8' : q === i ? (Math.floor(t * 3) % 2 ? '#ffe060' : '#8a7a20') : '#1c2e2c';
-      ctx.fillRect(W - 14 - (n - q) * 9, r.y + 18, 6, 6);
-    }
-    Font.draw(ctx, (i + 1) + '/' + n, W - 14, r.y + 6, { color: '#4f7f74', align: 'right' });
-  },
-};
 
 /* ===== src/drop.js ===== */
 'use strict';
@@ -11832,7 +11682,6 @@ const Lab = {
     this.t += raw;
     if (this.hint > 0) this.hint -= raw;
     if (this._spec) CrocView.update(this._spec, raw, 9.5);
-    if (typeof Doc !== 'undefined') Doc.update(raw);
     for (const s of this.staff) {
       if (s.mode === 'walk' || s.mode === 'clip') {
         if (s.waitT > 0) { s.waitT -= raw; s.anim.speed = 0; }
@@ -11870,7 +11719,6 @@ const Lab = {
     // staff walk between the machines and the railing
     for (const s of this.staff) this.drawStaff(ctx, s);
     // the man who runs the place, such as he still is
-    if (typeof Doc !== 'undefined' && !Doc.off()) Doc.draw(ctx);
     this.acidFx(ctx, t);
     this.foreground(ctx, t);
     this.lighting(ctx, t);
@@ -12442,6 +12290,14 @@ const UI = {
     haz('FILTH', P.toxin || 0, '#8ab820', '#e0ff40');
     haz('PRESS', P.crush || 0, '#4a9ac8', '#a0e8ff');
     haz('DOSE', P.rads || 0, '#3ef07a', '#d0ffb0');
+    // what is in your jaws right now, and how much of it is left to work
+    if (P.mouth) {
+      const M = P.mouth, f = clamp(M.done / M.need, 0, 1);
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, hy2, 96, 11);
+      Font.draw(ctx, 'CHEW', 9, hy2 + 3, { color: Math.floor(t * 6) % 2 ? '#ffd060' : '#c0a040' });
+      this.meter(ctx, 44, hy2 + 3, 54, 5, f, '#d4564a', '#2a1410');
+      hy2 += 13;
+    }
     this.hazBottom = hy2;               // the mission bar starts below whatever is lit
     // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
@@ -12505,6 +12361,7 @@ const UI = {
     }
     // standing order: one line, a hairline of progress under it
     Labyrinth.draw(ctx);
+    Lairs.draw(ctx);
     const mh = Missions.hud();
     if (mh) {
       const my = Math.max(70, this.hazBottom || 70), mw = 150;
@@ -12915,7 +12772,7 @@ const UI = {
     // the induction's dialogue bar owns the foot of the screen, so the plates
     // move up out from under it while it is running
     const pw = 102, ph = 26, gap = 8;   // 'RESEARCH' at double height needs the room
-    const py = H - 48 - (typeof Tutor !== 'undefined' && Tutor.on() ? 46 : 0);
+    const py = H - 48;
     const total = out.length * pw + (out.length - 1) * gap;
     out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
     return out;
@@ -12952,22 +12809,11 @@ const UI = {
       if (on) this.bracket(ctx, s2.bx - 3, s2.by - 3, s2.bw + 6, s2.bh + 6, '#7affda', 8);
     });
 
-    // --- Doc has something for you, or he does not
-    if (typeof Doc !== 'undefined') Doc.drawBubble(ctx);
-
     // --- one number that matters, and nothing else
     const d = Research.data();
     if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
-    if (!Tutor.on()) {
-      Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
-      Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
-    }
-    // the induction lights the one door it wants you to take
-    if (Tutor.on()) {
-      const want = Tutor.wantStation();
-      const s2 = want && st.find(q => q.id === want);
-      if (s2) Tutor.point(ctx, { x: s2.bx, y: s2.by, w: s2.bw, h: s2.bh });
-    }
+    Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
+    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
   },
   // ---------- the research lab ----------
   // A wall of five programme cylinders and, beside the one you are looking at,
@@ -13177,7 +13023,7 @@ const UI = {
       if (on) this.bracket(ctx, r.x - 3, r.y - 2, r.w + 6, r.h + 4, st === 'ready' ? '#ffe060' : st === 'locked' ? '#4a5a58' : cat.col, 8);
     }
 
-    // --- the floor of the room the board is bolted into. Doc stands on it, so
+    // --- the floor of the room the board is bolted into, lit from the board so
     // it has to be a place: wall base, skirting, tiles, and the light the board
     // spills down onto them. The gear on it is silhouette only — shapes, not
     // labels, or the eye reads it as another panel to parse.
@@ -13192,8 +13038,6 @@ const UI = {
     this.meter(ctx, gx + 5, B.y + B.h + 6, 118, 5, tp.frac, '#3fd0a8', '#0d1e1c');
     Font.draw(ctx, tp.got + '/' + tp.tot, gx + 159, B.y + B.h + 5, { color: '#4f7f74', align: 'right' });
 
-    // Doc is in here with you, on the floor under the board
-    if (typeof Doc !== 'undefined') Doc.drawScene(ctx, 'research', { bubbleY: G.H - 56 });
     this.drawExit(ctx);
   },
   // The room behind every front-end screen never changes, and it was being
@@ -13255,7 +13099,7 @@ const UI = {
     for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
     ctx.globalAlpha = 1;
   },
-  // the strip of floor below it, where Doc stands
+  // the strip of floor below it
   paintFloor(ctx, fy) {
     const W = G.W, H = G.H;
     ctx.fillStyle = '#0a1417'; ctx.fillRect(0, fy - 10, W, H - fy + 10);
@@ -13371,7 +13215,6 @@ const UI = {
     if (tab === 'research') this.drawResearch(ctx);
     else if (tab === 'relics') this.drawRelics(ctx, t);
     else this.drawVialRack(ctx, t);
-    if (typeof Doc !== 'undefined' && tab !== 'research') Doc.drawScene(ctx, 'bench');
     this.drawExit(ctx);
   },
   // ---- RELICS: everything the project has out of the field, and what it gives
@@ -13518,7 +13361,7 @@ const UI = {
     if (!this._habP[key]) { if (Object.keys(this._habP).length > 24) this._habP = {}; this._habP[key] = buildCrocParts(look); }
     return this._habP[key];
   },
-  // the three upgrade meters, the feed plate and the hide swatches
+  // the three upgrade meters and the hide swatches
   // ---------- the habitat: the creation menu ----------
   // Clicking HABITAT opens the bench where animals are made and raised, not a
   // wall of glass you then have to click through. Six slots along the top, the
@@ -13535,8 +13378,7 @@ const UI = {
   habDossier() { return { x: 10, y: 80, w: 136, h: 168 }; },
   habRows() {
     const out = [], rx = 456, rw = 174;
-    out.push({ kind: 'feed', i: 0, x: rx, y: 80, w: rw, h: 40 });
-    HAB_UPGRADES.forEach((u, i) => out.push({ kind: 'up', id: u.id, u, i, x: rx, y: 126 + i * 22, w: rw, h: 19 }));
+    HAB_UPGRADES.forEach((u, i) => out.push({ kind: 'up', id: u.id, u, i, x: rx, y: 88 + i * 24, w: rw, h: 21 }));
     out.push({ kind: 'go', i: 0, x: rx, y: 198, w: rw, h: 32 });
     // the build, as a strip of swatches along the foot
     SIZE_GRADES.forEach((gr, i) => out.push({ kind: 'len', gr, i, x: 14 + i * 30, y: 264, w: 27, h: 22 }));
@@ -13636,19 +13478,7 @@ const UI = {
     // --- everything you can do, down the right
     for (const r of this.habRows()) {
       const on = this.habRowIndex(r) === (G.habRow || 0);
-      if (r.kind === 'feed') {
-        const ok = Habitat.canFeed(cur), cost = Habitat.feedCost(cur);
-        ctx.fillStyle = on ? 'rgba(24,40,18,0.96)' : 'rgba(8,18,10,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
-        ctx.fillStyle = ok ? '#8ab820' : '#2e3a24'; ctx.fillRect(r.x, r.y, r.w, 2);
-        const mx = r.x + 24, my = r.y + 21;
-        ctx.fillStyle = ok ? '#a8342c' : '#3a2420';
-        for (let dy = -8; dy <= 8; dy++) { const w2 = 11 - Math.abs(dy) * 0.6; ctx.fillRect(Math.round(mx - w2), my + dy, Math.round(w2 * 2), 1); }
-        ctx.fillStyle = ok ? '#d4564a' : '#4a2e28'; ctx.fillRect(mx - 7, my - 6, 9, 5);
-        ctx.fillStyle = ok ? '#e8dcc0' : '#3a3830'; ctx.fillRect(mx + 3, my + 2, 8, 3);
-        Font.draw(ctx, 'FEED', r.x + 46, r.y + 10, { color: ok ? '#cfe8a0' : '#5f6f68' });
-        Font.draw(ctx, cost === 0 ? 'FREE' : String(cost), r.x + r.w - 8, r.y + 22, { color: ok ? '#ffe060' : '#5f6f68', align: 'right', scale: 2 });
-        if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, ok ? '#8ab820' : '#4a5a3a', 6);
-      } else if (r.kind === 'up') {
+      if (r.kind === 'up') {
         const have = cur.up[r.id];
         ctx.fillStyle = on ? 'rgba(16,38,36,0.96)' : 'rgba(5,14,15,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
         ctx.fillStyle = r.u.col; ctx.fillRect(r.x, r.y, 3, r.h);
@@ -13692,7 +13522,6 @@ const UI = {
     Font.draw(ctx, 'HIDE', 272, 254, { color: '#4f7f74' });
     const d = Research.data();
     Font.draw(ctx, String(d) + ' DATA', W - 12, H - 14, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', outline: '#3a2a00' });
-    if (Tutor.on()) for (const r2 of this.habRows()) if (Tutor.allowHabRow(r2.kind)) Tutor.point(ctx, r2);
     this.drawExit(ctx);
   },
   // an empty slot: the stock library, on the same stage the animals stand on
@@ -13776,12 +13605,10 @@ const UI = {
     this.bracket(ctx, go.x - 2, go.y - 2, go.w + 4, go.h + 4, can ? '#7affda' : '#3a4a48', 7);
     Font.draw(ctx, !open ? 'SEALED' : !afford ? 'NEED DATA' : 'GROW IT', go.x + go.w / 2, go.y + 11,
       { color: can ? '#dffdf4' : '#6a7f7a', align: 'center', scale: 2, outline: '#04120e' });
-    if (Tutor.at('hatch') && can) Tutor.point(ctx, go);
   },
   habApply(r, cur, sel) {
     // one place that knows what activating a row means
     if (r.kind === 'up') return Habitat.invest(cur, r.id) ? 'up' : null;
-    if (r.kind === 'feed') { const n = Habitat.feed(cur); return n === 0 && !Habitat.canFeed(cur) ? null : (n > 0 ? 'level' : 'fed'); }
     if (r.kind === 'go') { if (sel !== Habitat.runnerIndex()) { Habitat.select(sel); return 'pick'; } return 'go'; }
     if (r.kind === 'len') { if (!Create.sizeUnlocked(r.i)) return null; cur.size = r.i; G.storeSave(); return 'set'; }
     if (r.kind === 'girth') { if (!Create.girthUnlocked(r.i)) return null; cur.girth = r.i; G.storeSave(); return 'set'; }
@@ -14118,14 +13945,13 @@ const UI = {
     ctx.fillStyle = '#1a0e04'; ctx.fillRect(gx2, go.y + go.h - 1, go.w, 1);
     this.bracket(ctx, gx2 - 2, go.y - 2, go.w + 4, go.h + 4, open ? '#ff8050' : '#5a4a48', 7);
     Font.draw(ctx, open ? 'RELEASE' : 'SEALED', gx2 + go.w / 2, go.y + 7, { color: open ? '#ffd0a0' : '#a08070', align: 'center', scale: 2, outline: '#2a0c00' });
-    if (!Tutor.on()) Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE     ENTER  RELEASE', px0 + shake, H - 11, { color: '#4f7f74' });
-    if (Tutor.at('site') && open) Tutor.point(ctx, go);
+    Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE     ENTER  RELEASE', px0 + shake, H - 11, { color: '#4f7f74' });
     this.drawExit(ctx);
   },
   // the induction's dialogue bar owns the foot of the screen; the button that
   // sends you out moves up above it rather than hiding behind it
   stageGoRect() {
-    const px0 = G.W * 0.62, lift = (typeof Tutor !== 'undefined' && Tutor.on()) ? 48 : 0;
+    const px0 = G.W * 0.62, lift = 0;
     return { x: Math.round(px0), y: G.H - 42 - lift, w: Math.round(G.W - 22 - px0), h: 24 };
   },
   // the croc turning slowly in the acid, wearing whatever you picked
@@ -14653,7 +14479,7 @@ const G = {
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
-    Meta.load(); this.loadSave(); Tutor.adopt();
+    Meta.load(); this.loadSave();
     this.touchUI = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     this.scale = 1; this.rotated = false; this.rs = 1; this.rsLocked = false; this.slowFrames = 0; this.frameAvg = 0;
     World.onChunkLoad = (ch, rng) => this.onChunkLoad(ch, rng);
@@ -14730,7 +14556,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -14785,7 +14611,6 @@ const G = {
     this.banner = null;
     this.placeLandmark(st);
     Labyrinth.begin(st);
-    Tutor.enterField();
     // Nobody flies a specimen out to a municipal trunk main. The sewer gets
     // wheeled down a corridor and tipped into a hatch.
     if (st && st.zone === 'sewer') Delivery.begin(st); else Drop.begin(st);
@@ -14854,7 +14679,6 @@ const G = {
     P.chain.reset(P.x, P.y, -0.3);
     this.cam.x = TANK; this.cam.y = World.floorY(TANK) - 46; this.cam.zoom = 2.6;
     this.state = 'intro'; this.banner = null;
-    Tutor.enterField();
     SFX.peep();
   },
   crackTank() {
@@ -14905,6 +14729,24 @@ const G = {
         }
       }
     }
+    // ---- what already died here -----------------------------------------
+    // A small crocodile does not hunt its way up: it finds. Every stretch of
+    // map carries a few carcasses, thickest in the system where everything
+    // that dies upstream ends up on the floor.
+    {
+      const Bc = Biome.at(ch.x0);
+      const n = Bc.indoor ? (rng() < 0.7 ? 1 + Math.floor(rng() * 2) : 0) : (rng() < 0.35 ? 1 : 0);
+      const pool = Bc.indoor ? ['rat', 'rat', 'bigrat'] : ['mullet', 'rat', 'mullet', 'bass'];
+      for (let k = 0; k < n; k++) {
+        const cx2 = ch.x0 + rng() * World.CHUNK;
+        if (Math.abs(cx2 - P.x) < 200) continue;
+        const fy2 = World.floorY(cx2); if (fy2 < 2) continue;
+        const kind = pool[Math.floor(rng() * pool.length)];
+        if (!SPECIES[kind]) continue;
+        const c = new Carrion(cx2, fy2 - 6, kind);
+        this.add(c);
+      }
+    }
     const B = Biome.at(ch.x0);
     for (let k = 0; k < 5; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
@@ -14930,15 +14772,13 @@ const G = {
     this.state = 'bench'; this.menuT = 0;
     this.benchTab = tab || this.benchTab || 'build';
     if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; }
-    if (!Tutor.on() && this.benchTab !== 'research') Doc.say('bench');
     if (this.benchSel === undefined) this.benchSel = 0;
     SFX.ui();
   },
   openHabitat() {
-    this.state = 'habitat'; this.menuT = 0; Tutor.pass('tohabitat');
+    this.state = 'habitat'; this.menuT = 0;
     if (this.createSel === undefined) this.createSel = 0;
     Habitat.ensure();
-    if (!Tutor.on()) Doc.say('habitat');
     if (this.habSel === undefined) this.habSel = Habitat.runnerIndex();
     if (this.habRow === undefined) this.habRow = 0;
     if (this.habHatch === undefined) this.habHatch = 0;
@@ -14947,12 +14787,6 @@ const G = {
   // the research programme, one of the three benches in the lab
   updateResearch(raw) {
 
-        // he is mid-sentence: a tap on the bubble moves him along
-        {
-          const br = Doc.sceneBubbleRect();
-          if (br && Input.mouse.clicked && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.sceneNext(); SFX.ui(); return; }
-          if (br && Input.hit('KeyT')) { Doc.sceneNext(); SFX.ui(); return; }
-        }
         const cats = UI.resCatRects();
         if (Input.hit('ArrowLeft', 'KeyA')) { this.resCat = (this.resCat + cats.length - 1) % cats.length; this.resNode = 0; SFX.ui(); }
         if (Input.hit('ArrowRight', 'KeyD')) { this.resCat = (this.resCat + 1) % cats.length; this.resNode = 0; SFX.ui(); }
@@ -14972,8 +14806,6 @@ const G = {
         const cur = rows[clamp(this.resNode || 0, 0, rows.length - 1)];
         if (fund && cur) {
           if (Research.buy(cur.nd)) {
-            Doc.note('fund');
-            if (cur.nd.grant && cur.nd.grant.zone) Doc.note('zone');
             SFX.levelup(); this.whiteFlash(0.25);
             this.banner = { text: 'FUNDED', sub: cur.nd.name, t: 2.6, max: 2.6, color: cur.nd.cat.col };
           } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
@@ -15034,6 +14866,8 @@ const G = {
   },
   onBossKilled(e) {
     this.stats.bosses++; this.addScore(10000);
+    // its stretch is quiet from here on: nothing else moves in
+    if (typeof Lairs !== 'undefined') Lairs.clear(e.lairId);
     this.banner = { text: e.name + ' DEFEATED', sub: '+10,000', t: 4, max: 4, color: '#ffd060' };
     this.slowmo(0.2, 1.2); this.zoomPunch(1.15); SFX.roar(3); SFX.levelup(); this.whiteFlash(0.6);
     if (this.boss === e) this.boss = null;
@@ -15065,7 +14899,6 @@ const G = {
         P.tier = t2; P.sheds++;
         P.hp = P.maxHp; P.lastMax = P.maxHp; P.hunger = Math.max(P.hunger, 55);
         P.genePoints += 2; P.newPoints += 2;
-        { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
         if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t3 of Meta.checkUnlocks()) this.announceUnlock(t3); Meta.save(); }
         this.storeSave();
       },
@@ -15089,7 +14922,6 @@ const G = {
     this.banner = { text: 'NEW FORM: ' + TIERS[P.tier].name, sub: card.node.name, t: 3.5, max: 3.5, color: card.path ? PATHS[card.path].color : '#ffffff' };
     SFX.pick(); SFX.roar(P.size); this.whiteFlash(0.5); this.fx.glow(P.x, P.y, 60 * P.vis, '#ffffff', 0.8); this.addScore(500 * P.tier);
     if (card.node.evo) this.fx.text(P.x, P.y - 40 * P.size, 'EVOLVED!', { color: card.path ? PATHS[card.path].color : '#fff', scale: 3, life: 2 });
-    { const nb = this.bossFor(P.sheds, P.x); if (nb) { this.director.bossQueue = nb; this.director.bossT = 9; } }
     if (P.tier >= TIERS.length - 1) { Meta.event('swampgod'); for (const t2 of Meta.checkUnlocks()) this.announceUnlock(t2); Meta.save(); }
     this.storeSave();
   },
@@ -15099,7 +14931,6 @@ const G = {
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
     d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(26 - D * 2.6, 7, 26) * rand(0.8, 1.25); this.spawnPredator(D); }
     d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
-    if (d.bossQueue && !this.boss) { d.bossT -= dt; if (d.bossT <= 0) this.spawnBoss(d.bossQueue); }
     // hard cap
     if (this.ents.length > 220) { let n = 0; for (const e of this.ents) if (e.type === 'gib' && n++ > 40) e.remove = true; }
   },
@@ -15182,25 +15013,21 @@ const G = {
     }
     if (warn) { this.banner = { text: warn, t: 2.5, max: 2.5, color: '#ff8060' }; SFX.growl(side); }
   },
-  // sheds 2/4/6 bring a mini out of the local roster; 8 and 10 bring the world
-  // boss of whichever zone you are standing in
-  bossFor(sheds, x) {
-    if (sheds < 2 || sheds % 2) return null;
-    const r = ZONE_BOSSES[zoneAt(x).id] || ZONE_BOSSES.glades;
-    if (sheds >= 8) return r.world;
-    return r.mini[(sheds / 2 - 1) % r.mini.length];
-  },
-  spawnBoss(kind) {
-    const P = this.player, halfW = this.W / this.cam.zoom / 2, side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + 220), fy = World.floorY(x);
+  // Bosses are places now, not events: see src/lairs.js. Nothing queues one.
+  // A boss is spawned where it lives. atX is its lair; without one it comes in
+  // off the edge of the screen, which is only used by the debug harnesses now.
+  spawnBoss(kind, atX) {
+    const P = this.player, halfW = this.W / this.cam.zoom / 2, side = (atX !== undefined ? (atX >= P.x ? 1 : -1) : (chance(0.5) ? 1 : -1));
+    const x = atX !== undefined ? atX : P.x + side * (halfW + 220), fy = World.floorY(x);
     let boss = null;
     if (kind === 'oldscar') { const wx = World.findX(x, xx => World.floorY(xx) > 80, 900, 30); if (wx !== null) boss = Spawn.gator(wx, clamp(80, 10, World.floorY(wx) - 20), Math.max(1.6, P.size * 1.35), true); }
     else if (kind === 'warboat') { const wx = World.findX(x, xx => World.floorY(xx) > 60, 900, 30); if (wx !== null) boss = Spawn.boat(wx, 'warboat', -side); }
     else if (kind === 'python') { boss = this.add(new Snake(x, fy < 0 ? -10 : 6, 'python', Math.max(2.2, P.size * 0.8))); boss.isBoss = true; boss.persistent = true; boss.name = 'MOTHER PYTHON'; boss.hp = boss.maxHp = Math.round(boss.maxHp * 1.6); }
-    else if (kind === 'skunkape') { const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
+    else if (kind === 'skunkape') { const bx = World.findX(x, xx => World.floorY(xx) < -8, 6000, 40); if (bx !== null) boss = this.add(new SkunkApe(bx)); }
     else if (kind === 'shark') { const wx = World.findX(x, xx => World.floorY(xx) > 200, 1500, 40); if (wx !== null) { boss = this.add(new Fish(wx, clamp(150, 60, World.floorY(wx) - 40), 'shark')); boss.size = 2.2; boss.sizeClass = Math.max(10, P.size * 1.3); boss.hp = boss.maxHp = 1400; boss.mass = 1500; boss.name = 'BIG BULL'; boss.isBoss = true; boss.persistent = true; boss.speed = 200; boss.gibs = 6; } }
     else if (kind === 'broodmother') {
       // she does not swim: find her a dry ledge to come down off
-      const bx = World.findX(P.x + side * (halfW + 100), xx => World.floorY(xx) < -8, 5000, 40);
+      const bx = World.findX(x, xx => World.floorY(xx) < -8, 5000, 40);
       if (bx !== null) {
         boss = this.add(new LandAnimal(bx, 'bigrat'));
         boss.size = 3.4; boss.groundOff *= boss.size; boss.r *= boss.size;
@@ -15223,10 +15050,11 @@ const G = {
         if (B2.glow) boss.bossGlow = B2.glow;
       }
     }
-    if (!boss) { this.director.bossT = 8; return; }
+    if (!boss) { if (typeof Lairs !== 'undefined' && atX !== undefined) Lairs.woken[kind] = 0; return; }
     Boss.init(boss, BOSS_SPEC[kind] || { phases: 3, hp: 1.3 });
-    this.boss = boss; this.director.bossQueue = null;
-    this.banner = { text: 'WARNING', sub: boss.name + ' APPROACHES', t: 4, max: 4, color: '#ff3030' }; SFX.warning(); this.shake(6);
+    boss.lairId = kind;
+    this.boss = boss;
+    this.banner = { text: 'ITS TERRITORY', sub: boss.name + ' IS AWAKE', t: 4, max: 4, color: '#ff3030' }; SFX.warning(); this.shake(6);
   },
   // ---------- update ----------
   loop(ts) {
@@ -15243,7 +15071,6 @@ const G = {
     requestAnimationFrame(t => this.loop(t));
   },
   update(dt, raw) {
-    Tutor.update(raw);
     // global keys
     if (Input.hit('KeyM')) { const m = SFX.toggleMute(); if (!SFX.ctx) { SFX.init(); if (m) SFX.master && (SFX.master.gain.value = 0); } }
     // The bay shutter outlives the screen that started it. It comes down over
@@ -15282,20 +15109,11 @@ const G = {
             if (inRoom || onPlate) hit = i;
           }
         }
-        // his bubble is a button: tap it to send him away, tap where he stood
-        // to call him back. Nobody has to be taught anything.
-        if (Input.mouse.clicked) {
-          const br = Doc.bubbleRect();
-          if (br && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.dismiss(); SFX.ui(); break; }
-        }
-        if (Input.hit('KeyT')) { if (Doc.off()) Doc.recall(); else Doc.dismiss(); SFX.ui(); break; }
         if (Input.hit('KeyH')) { this.prevState = 'title'; this.state = 'help'; break; }
         if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; break; }
         const use = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || (hit >= 0 && hit === this.labSel);
         if (hit >= 0 && hit !== this.labSel) { this.labSel = hit; SFX.ui(); break; }
-        // on a first run the induction holds you to one door
-        { const want = Tutor.on() && Tutor.wantStation(); if (want) { const k = stn.findIndex(s3 => s3.id === want); if (k >= 0) this.labSel = k; } }
-        if (use && !this.labWipe && Tutor.allowStation(stn[this.labSel].id)) {
+        if (use && !this.labWipe) {
           SFX.init(); SFX.resume(); SFX.ui();
           const st2 = stn[this.labSel];
           this.labWipe = { t: 0, dur: 0.44, id: st2.id, x: st2.x + st2.w / 2, y: st2.y + st2.h / 2, gone: false };
@@ -15305,10 +15123,10 @@ const G = {
       }
       case 'bench': {
         this.menuT += raw; Lab.update(raw);
-        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; Doc.scene = null; SFX.ui(); break; }
+        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { this.state = 'title'; SFX.ui(); break; }
         const inR = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
         const tabs = UI.benchTabs();
-        const goTab = id => { if (this.benchTab === id) return; this.benchTab = id; this.benchSel = 0; if (id !== 'research') Doc.say('bench'); else Doc.scene = null; SFX.ui(); };
+        const goTab = id => { if (this.benchTab === id) return; this.benchTab = id; this.benchSel = 0; SFX.ui(); };
         if (Input.hit('Tab', 'KeyE')) goTab(tabs[(tabs.findIndex(b2 => b2.id === this.benchTab) + 1) % tabs.length].id);
         if (Input.hit('KeyQ')) goTab(tabs[(tabs.findIndex(b2 => b2.id === this.benchTab) + tabs.length - 1) % tabs.length].id);
         if (Input.mouse.clicked) for (const b2 of tabs) if (inR(b2)) { goTab(b2.id); break; }
@@ -15335,7 +15153,7 @@ const G = {
           }
           if (take) {
             const v = VIALS[clamp(this.benchSel, 0, VIALS.length - 1)];
-            if (LabBench.have(v)) { LabBench.load(v.id); Doc.note('vial'); SFX.pick(); }
+            if (LabBench.have(v)) { LabBench.load(v.id); SFX.pick(); }
             else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
           }
         }
@@ -15365,11 +15183,10 @@ const G = {
             for (const r of UI.createTicks()) if (inR(r) && r.i !== this.createSel) { this.createSel = r.i; SFX.ui(); grow = false; }
             if (inR(UI.createGoRect())) grow = true;
           }
-          if (grow && !Tutor.allowHabHatch()) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; grow = false; }
           if (grow) {
             const sp2 = BASE_SPECIES[clamp(this.createSel || 0, 0, n2 - 1)];
             if (Habitat.hatch(sel, sp2.id)) {
-              Habitat.select(sel); Doc.note('hatch'); Tutor.pass('hatch');
+              Habitat.select(sel);
               this.habRow = 0;
               SFX.hatch && SFX.hatch(); SFX.levelup(); this.whiteFlash(0.4);
               this.banner = { text: 'GROWN', sub: Habitat.tag(L[sel]), t: 2.6, max: 2.6, color: sp2.holo || '#7affda' };
@@ -15390,13 +15207,10 @@ const G = {
         if (Input.mouse.clicked) for (let i2 = 0; i2 < rows.length; i2++) if (inR(rows[i2])) { if (row === i2) act = true; else { this.habRow = i2; SFX.ui(); } }
         if (act) {
           const r = rows[clamp(this.habRow || 0, 0, rows.length - 1)];
-          if (!Tutor.allowHabRow(r.kind)) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; break; }
           const res = UI.habApply(r, cur, sel);
           if (!res) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
-          else if (res === 'go') { Tutor.pass('release'); SFX.pick(); this.openStages(); }
-          else if (res === 'level') { Tutor.pass('feed'); Doc.note('feed'); SFX.levelup(); this.whiteFlash(0.3); this.banner = { text: 'GREW', sub: Habitat.tag(cur) + '  LV ' + cur.lv, t: 2.2, max: 2.2, color: '#8ab820' }; }
-          else if (res === 'up') { Doc.note('point'); SFX.pick(); }
-          else if (res === 'fed') { Tutor.pass('feed'); Doc.note('feed'); SFX.ui(); }
+          else if (res === 'go') { SFX.pick(); this.openStages(); }
+          else if (res === 'up') { SFX.pick(); }
           else SFX.ui();
         }
         if (this.menuShake > 0) this.menuShake -= raw;
@@ -15465,7 +15279,7 @@ const G = {
         const goHit = Input.mouse.clicked && Input.mouse.x > gr.x && Input.mouse.x < gr.x + gr.w && Input.mouse.y > gr.y && Input.mouse.y < gr.y + gr.h;
         if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit || goHit) {
           const st = list[this.stageSel];
-          if (Stages.unlocked(st)) { Tutor.pass('site'); SFX.pick(); this.startRun(false, st, this.loadout); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+          if (Stages.unlocked(st)) { SFX.pick(); this.startRun(false, st, this.loadout); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
         }
         if (this.menuShake > 0) this.menuShake -= raw;
         break;
@@ -15582,7 +15396,6 @@ const G = {
           // hold the old body so a big splice can grow into the new one on screen
           const wasParts = P.parts, wasLook = P.look;
           if (g && Genome.buy(P, g)) {
-            Doc.note('gene');
             const col = g.lin ? LINEAGES[g.lin].color : '#ffffff';
             if (g.apex || g.chimera) {
               const newParts = P.parts, newLook = P.look;
@@ -15670,7 +15483,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -15685,7 +15498,13 @@ const G = {
   updateCamera(dt) {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
-    c.zoom = lerp(c.zoom, tz, 1 - Math.exp(-2.5 * dt));
+    // The zoom used to be a live float that moved a hair every frame. Every
+    // background layer is a pattern locked to camera * zoom, so a zoom that
+    // never settles makes the grain crawl, the strata shimmer and the whole
+    // backdrop look like it is boiling. Track it smoothly, but snap what the
+    // renderer actually uses to a fixed ladder so a still camera is still.
+    c.zoomRaw = lerp(c.zoomRaw === undefined ? c.zoom : c.zoomRaw, tz, 1 - Math.exp(-2.5 * dt));
+    c.zoom = Math.round(c.zoomRaw * 32) / 32;
     let tx = P.x + P.vx * 0.22, ty = P.y + P.vy * 0.12;
     // an execution is framed on both of them, so the boss never leaves the shot
     if (this.finisher && this.finisher.e && !this.finisher.e.dead) {
@@ -15696,6 +15515,10 @@ const G = {
     const k = 1 - Math.exp(-5 * dt);
     c.x = lerp(c.x, tx, k); c.y = lerp(c.y, ty, k);
     c.y = Math.max(c.y, -(this.H / 2) / c.zoom + 30);
+    // and land the camera on a whole device pixel, so the ground, its grain and
+    // everything standing on it share one grid instead of sliding against it
+    const q = Math.max(0.001, c.zoom * (this.rs || 1));
+    if (isFinite(c.x) && isFinite(c.y)) { c.x = Math.round(c.x * q) / q; c.y = Math.round(c.y * q) / q; }
   },
   drawEgg(ctx) {
     const e = this.egg; if (!e || e.hatched) return;
@@ -15719,10 +15542,10 @@ const G = {
     // the lab floor itself; the three stations paint their own wall over the
     // top of it, so drawing it under them was both wasted and, while the wall
     // was a scrim, visible as the whole room ghosting through the screen.
-    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'habitat') { UI.drawHabitat(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'bench') { UI.drawLabBench(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'stages') { UI.drawStages(ctx); Tutor.draw(ctx); return; }
+    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'stages') { UI.drawStages(ctx); return; }
     // the delivery is its own picture: the world is not in shot yet
     if (this.state === 'delivery') { Delivery.draw(ctx); UI.drawWipe(ctx); return; }
     const indoor = World.isIndoor(cam.x);
@@ -15785,9 +15608,9 @@ const G = {
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
-      case 'stages': UI.drawStages(ctx); Tutor.draw(ctx); break;
+      case 'stages': UI.drawStages(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
-      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); if (Tutor.inField()) Tutor.draw(ctx); break;
+      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
       case 'morph': Morph.drawUI(ctx); break;
       case 'drop': Drop.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;

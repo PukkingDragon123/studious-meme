@@ -140,8 +140,9 @@ const TIERS = [
 ];
 const SIZE_FLOOR3 = 0.027;                       // 0.3 cubed: the hatchling
 // The divisor is the whole difficulty of growing. At 15 a run walked up the
-// ladder; at 27 every rung is most of a hunt, and the top of the ladder is a
-// campaign rather than an afternoon.
-const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 27);
-const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 27;
+// ladder. At 44 a rung is a campaign: you are a hand-long animal in a system
+// full of things that are not, and the only way up is everything you can find,
+// chewed down one mouthful at a time.
+const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 44);
+const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 44;
 function tierFor(size) { let t = 0; for (let i = 0; i < TIERS.length; i++) if (size >= TIERS[i].size - 1e-6) t = i; return t; }

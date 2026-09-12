@@ -11,6 +11,7 @@ class Player {
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
+    this.mouth = null;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -44,7 +45,7 @@ class Player {
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.toxin = 0; this.rads = 0; this.crush = 0; this.hazT = 0;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
-    this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
+    this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.headShakeT = 0; this.goreT = 0; this.snapT = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
     this.wet = 1; this.dripT = 0;
     Trials.reset(this);
@@ -190,6 +191,7 @@ class Player {
     if (this.st.landRegen > 0 && this.onLand) this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.st.landRegen * dt);
     if (this.poisonT > 0) { this.poisonT -= dt; this.hp -= this.venomDps * dt; if (chance(dt * 6)) G.fx.blood(this.x, this.y, 1, 0, 0, 20, ['#40c040', '#208030']); if (this.hp <= 0) return this.die('POISONED'); }
     if (this.hazards(dt)) return;
+    this.updateChew(dt, inp);
     // input
     let ix = inp.x, iy = inp.y; const mag = Math.hypot(ix, iy); if (mag > 1) { ix /= mag; iy /= mag; }
     this.moving = mag > 0.15;
@@ -347,6 +349,10 @@ class Player {
     this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim, this.onLand);
     if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
     else this.legPhase += dt * (2 + swim * 7);
+    // shaking what you have just bitten, and the blood that stays on the teeth
+    if (this.headShakeT > 0) this.headShakeT -= dt;
+    if (this.goreT > 0) this.goreT -= dt * 0.25;
+    if (this.snapT > 0) this.snapT -= dt;
     // jaws
     if (this.biteT > 0) {
       this.biteT -= dt;
@@ -423,6 +429,8 @@ class Player {
   }
   pushGhost(life) { this.ghosts.push({ nodes: this.chain.nodes.map(n => ({ x: n.x, y: n.y, a: n.a })), life, flip: this.facing }); if (this.ghosts.length > 8) this.ghosts.shift(); }
   bite() {
+    // a full mouth cannot bite: every press works the meal instead
+    if (this.mouth) { if (this.biteCd > 0) return; this.biteCd = 0.16; this.chew(1); return; }
     if (this.biteCd > 0) return;
     if (this.grabbed) {
       this.breakFree++; this.biteCd = 0.25; this.rollT = 1; SFX.chomp(this.size); G.shake(4); G.fx.bubbles(this.x, this.y, 6, 10 * this.size);
@@ -475,7 +483,17 @@ class Player {
       if (chomped && !this.st.multiChomp) continue;
       this.chompEntity(e, sx, sy, dx, dy); hit = true; chomped = true;
     }
-    if (!hit) { SFX.chomp(this.size); if (this.inWater) G.fx.bubbles(sx, sy, 3, 4 * this.size); }
+    // the snap itself: jaws closing is a thing you can see whether or not
+    // there was anything in them
+    this.snapT = 0.14;
+    if (!hit) {
+      SFX.chomp(this.size);
+      if (this.inWater) { G.fx.bubbles(sx, sy, 3, 4 * this.size); G.fx.silt && G.fx.silt(sx, sy, 1, 8); }
+    } else {
+      this.headShakeT = 0.34; this.goreT = Math.max(this.goreT, 3.2);
+      G.hitstop(0.04);
+      for (let i = 0; i < 5; i++) G.fx.add({ type: 'spark', x: sx + rand(-4, 4) * this.vis, y: sy + rand(-4, 4) * this.vis, vx: Math.cos(this.angle) * rand(40, 140), vy: Math.sin(this.angle) * rand(40, 140), s: 1, color: '#ffffff', life: 0.18 });
+    }
     this.biteCount++;
     if (this.st.leviathan && this.biteCount % 6 === 0) this.shockwave();
   }
@@ -681,7 +699,67 @@ class Player {
     if (this.st.bullRush) G.shake(3);
     this.ramHit.clear();
   }
+  // ---- the mouthful -------------------------------------------------------
+  // Nothing goes straight down. What you catch ends up crossways in the jaws
+  // and has to be worked: mash bite to chew it, and until it is chewed it is
+  // worth nothing, it slows you down, and a hard enough hit knocks it loose.
   eat(e) {
+    const m = {
+      name: e.name, mass: e.mass || 0, spec: e.spec, species: e.species, size: e.size || 1, type: e.type,
+      threat: e.threat, human: e.human, isBoss: e.isBoss, armor: e.armor || 0, poison: e.poison || 0,
+      dismembered: e.dismembered || 0, x: e.x, y: e.y, bloods: e.bloodColors || null,
+    };
+    // scraps are scraps: a mouthful of meat off the floor goes down whole
+    if (e.type === 'gib' || m.mass < 0.6) { this.swallowMeal(m); return; }
+    if (this.mouth) this.swallowMeal(this.mouth.m);            // room for one at a time
+    const rel = m.mass / Math.max(1, this.mass);
+    const need = clamp(Math.round(2 + rel * 3), 2, 10);
+    this.mouth = { m, need, done: 0, t: 0, drop: 0 };
+    G.fx.text(this.x, this.y - 26 * this.vis, 'IN THE JAWS', { color: '#ffd060', life: 1.1 });
+    SFX.crunch && SFX.crunch(this.size, 0);
+  }
+  // one chew: a crunch, a spray, and a step toward the meal being worth something
+  chew(n = 1) {
+    const M = this.mouth; if (!M) return;
+    M.done += n; M.t = 0.12;
+    this.jaw = 1; this.headShakeT = 0.26; this.goreT = Math.max(this.goreT, 2.4);
+    G.shake(2); SFX.crunch && SFX.crunch(this.size, 0);
+    const [sx, sy] = this.snout;
+    G.fx.blood(sx, sy, 3, Math.cos(this.angle) * 40, Math.sin(this.angle) * 40, 34, M.m.bloods || BLOOD_COLORS);
+    if (this.inWater) G.fx.bubbles(sx, sy, 2, 5 * this.vis);
+    if (M.done >= M.need) {
+      const m = M.m; this.mouth = null;
+      this.swallowMeal(m);
+      G.fx.text(this.x, this.y - 26 * this.vis, 'SWALLOWED', { color: '#8ef0a0', life: 1.2, scale: 2 });
+      SFX.gulp && SFX.gulp(this.size, 0);
+    }
+  }
+  // knocked out of your jaws: what is left of it hits the floor as meat
+  dropMouthful() {
+    const M = this.mouth; if (!M) return;
+    this.mouth = null;
+    const left = 1 - M.done / M.need;
+    const [sx, sy] = this.snout;
+    G.fx.text(this.x, this.y - 26 * this.vis, 'DROPPED IT', { color: '#ff8060', life: 1.4 });
+    G.fx.blood(sx, sy, 8, 0, 0, 60, M.m.bloods || BLOOD_COLORS);
+    const n = clamp(Math.round(1 + left * 3), 1, 4);
+    dropMeat(sx, sy, n, M.m.mass * left / n, M.m.bloods || BLOOD_COLORS);
+  }
+  updateChew(dt, inp) {
+    const M = this.mouth; if (!M) return;
+    if (M.t > 0) M.t -= dt;
+    M.age = (M.age || 0) + dt;
+    // gravity does some of the work, but only some: a mouthful left alone
+    // takes the better part of a minute to go down on its own
+    M.auto = (M.auto || 0) + dt;
+    if (M.auto > 2.6) { M.auto = 0; this.chew(1); return; }
+    // a mouthful is dead weight: you swim heavy until it is down
+    const drag = Math.pow(0.62, dt);
+    this.vx *= drag; this.vy *= drag;
+    this.jaw = Math.max(this.jaw || 0, 0.35 + Math.abs(Math.sin(this.t * 9)) * 0.3);
+    if (chance(dt * 5)) { const [sx, sy] = this.snout; G.fx.blood(sx, sy, 1, 0, 0, 16, M.m.bloods || BLOOD_COLORS); }
+  }
+  swallowMeal(e) {
     // a scrapper is the animal that makes a meal out of things too small to
     // be worth a bigger crocodile's time
     const rel = e.mass / Math.max(1, this.mass);
@@ -722,6 +800,8 @@ class Player {
   eatMass(m, x, y) { this.mass += m * this.st.growth; this.hunger = Math.min(100, this.hunger + m * 20 / Math.pow(this.size, 1.8)); G.fx.text(x, y, '+' + Math.round(m), { color: '#ffd860', vy: -18 }); G.addScore(m * 5); }
   hurt(dmg, src, kind = 'bite') {
     if (this.dead || dmg <= 0) return 0;
+    // a real hit while your jaws are full costs you the meal
+    if (this.mouth && dmg > this.maxHp * 0.06 && chance(0.55)) this.dropMouthful();
     const dot = kind === 'crush' || kind === 'venom';
     if (this.invuln > 0 && !dot) return 0;
     if (this.braceT > 0 && kind !== 'venom' && this.tryParry(dmg, src, kind)) return 0;
@@ -768,7 +848,29 @@ class Player {
     for (const g of this.ghosts) drawCroc(ctx, { nodes: g.nodes }, this.parts, this.vis, { flipY: g.flip, alpha: g.life * 0.7 });
     const blink = this.invuln > 0 && !this.dead && Math.floor(G.t * 30) % 2 === 0 && this.hurtFlash <= 0;
     if (this.st.lure) { ctx.globalCompositeOperation = 'lighter'; Shape.burst(ctx, this.x, this.y, 26 * this.vis, '#40f0c8', 12, 17, 0.8, 0.16); ctx.globalCompositeOperation = 'source-over'; }
-    drawCroc(ctx, this.chain, this.parts, this.vis, { jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll, alpha: blink ? 0.5 : 1 });
+    const spd2 = Math.hypot(this.vx, this.vy);
+    const opts = {
+      jaw: this.jaw, legPhase: this.legPhase, flipY: this.facing, flash: this.hurtFlash, roll: this.roll,
+      alpha: blink ? 0.5 : 1,
+      // legs paddle when you are idling and fold away when you are travelling
+      legTuck: this.onLand ? 0 : clamp(spd2 / (this.speedMax * 0.7 + 1), 0, 1),
+      legSwing: this.onLand ? 0.55 : 0.3,
+      breath: this.moving ? 0 : Math.sin(this.t * 2.1) * 0.5 + 0.5,
+      headShake: this.headShakeT > 0 ? Math.sin(this.t * 46) * 0.22 * this.headShakeT : 0,
+      gore: this.goreT,
+    };
+    drawCroc(ctx, this.chain, this.parts, this.vis, opts);
+    // the snap: a white crescent thrown off the jaws on the frame they close
+    if (this.snapT > 0) {
+      const [sx2, sy2] = this.snout, a = this.angle, k = this.snapT / 0.14;
+      ctx.save(); ctx.translate(sx2, sy2); ctx.rotate(a);
+      ctx.globalAlpha = clamp(k, 0, 1) * 0.9;
+      ctx.strokeStyle = '#eafff4'; ctx.lineWidth = Math.max(1, 1.6 * this.vis);
+      ctx.beginPath(); ctx.arc(0, 0, (7 + 13 * (1 - k)) * this.vis, -1.1, 1.1); ctx.stroke();
+      ctx.globalAlpha = clamp(k, 0, 1) * 0.5;
+      ctx.beginPath(); ctx.arc(0, 0, (3 + 8 * (1 - k)) * this.vis, -0.8, 0.8); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.restore();
+    }
     if (this.wet > 0.06 && !this.hidden) {
       const n = this.chain.nodes, w = this.wet;
       // Darken: water on a hide sinks its value. Drawn as one non-overlapping

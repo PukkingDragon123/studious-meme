@@ -22,7 +22,7 @@ const Labyrinth = {
   // swamp and the ocean you can leave whenever you like.
   begin(stage) {
     this.reset();
-    if (!stage || stage.zone !== 'sewer') return;
+    if (!stage || stage.zone !== 'sewer' || stage.intro) return;   // the first room still has its grate
     const span = 1500 + (stage.diff || 0) * 380;
     this.x0 = stage.x - span; this.x1 = stage.x + span;
     // put each gate on a stretch with a roof, so it reads as a door in a

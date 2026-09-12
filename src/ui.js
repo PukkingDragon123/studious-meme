@@ -82,6 +82,14 @@ const UI = {
     haz('FILTH', P.toxin || 0, '#8ab820', '#e0ff40');
     haz('PRESS', P.crush || 0, '#4a9ac8', '#a0e8ff');
     haz('DOSE', P.rads || 0, '#3ef07a', '#d0ffb0');
+    // what is in your jaws right now, and how much of it is left to work
+    if (P.mouth) {
+      const M = P.mouth, f = clamp(M.done / M.need, 0, 1);
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, hy2, 96, 11);
+      Font.draw(ctx, 'CHEW', 9, hy2 + 3, { color: Math.floor(t * 6) % 2 ? '#ffd060' : '#c0a040' });
+      this.meter(ctx, 44, hy2 + 3, 54, 5, f, '#d4564a', '#2a1410');
+      hy2 += 13;
+    }
     this.hazBottom = hy2;               // the mission bar starts below whatever is lit
     // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
@@ -145,6 +153,7 @@ const UI = {
     }
     // standing order: one line, a hairline of progress under it
     Labyrinth.draw(ctx);
+    Lairs.draw(ctx);
     const mh = Missions.hud();
     if (mh) {
       const my = Math.max(70, this.hazBottom || 70), mw = 150;
@@ -555,7 +564,7 @@ const UI = {
     // the induction's dialogue bar owns the foot of the screen, so the plates
     // move up out from under it while it is running
     const pw = 102, ph = 26, gap = 8;   // 'RESEARCH' at double height needs the room
-    const py = H - 48 - (typeof Tutor !== 'undefined' && Tutor.on() ? 46 : 0);
+    const py = H - 48;
     const total = out.length * pw + (out.length - 1) * gap;
     out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
     return out;
@@ -592,22 +601,11 @@ const UI = {
       if (on) this.bracket(ctx, s2.bx - 3, s2.by - 3, s2.bw + 6, s2.bh + 6, '#7affda', 8);
     });
 
-    // --- Doc has something for you, or he does not
-    if (typeof Doc !== 'undefined') Doc.drawBubble(ctx);
-
     // --- one number that matters, and nothing else
     const d = Research.data();
     if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
-    if (!Tutor.on()) {
-      Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
-      Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
-    }
-    // the induction lights the one door it wants you to take
-    if (Tutor.on()) {
-      const want = Tutor.wantStation();
-      const s2 = want && st.find(q => q.id === want);
-      if (s2) Tutor.point(ctx, { x: s2.bx, y: s2.by, w: s2.bw, h: s2.bh });
-    }
+    Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
+    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
   },
   // ---------- the research lab ----------
   // A wall of five programme cylinders and, beside the one you are looking at,
@@ -817,7 +815,7 @@ const UI = {
       if (on) this.bracket(ctx, r.x - 3, r.y - 2, r.w + 6, r.h + 4, st === 'ready' ? '#ffe060' : st === 'locked' ? '#4a5a58' : cat.col, 8);
     }
 
-    // --- the floor of the room the board is bolted into. Doc stands on it, so
+    // --- the floor of the room the board is bolted into, lit from the board so
     // it has to be a place: wall base, skirting, tiles, and the light the board
     // spills down onto them. The gear on it is silhouette only — shapes, not
     // labels, or the eye reads it as another panel to parse.
@@ -832,8 +830,6 @@ const UI = {
     this.meter(ctx, gx + 5, B.y + B.h + 6, 118, 5, tp.frac, '#3fd0a8', '#0d1e1c');
     Font.draw(ctx, tp.got + '/' + tp.tot, gx + 159, B.y + B.h + 5, { color: '#4f7f74', align: 'right' });
 
-    // Doc is in here with you, on the floor under the board
-    if (typeof Doc !== 'undefined') Doc.drawScene(ctx, 'research', { bubbleY: G.H - 56 });
     this.drawExit(ctx);
   },
   // The room behind every front-end screen never changes, and it was being
@@ -895,7 +891,7 @@ const UI = {
     for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
     ctx.globalAlpha = 1;
   },
-  // the strip of floor below it, where Doc stands
+  // the strip of floor below it
   paintFloor(ctx, fy) {
     const W = G.W, H = G.H;
     ctx.fillStyle = '#0a1417'; ctx.fillRect(0, fy - 10, W, H - fy + 10);
@@ -1011,7 +1007,6 @@ const UI = {
     if (tab === 'research') this.drawResearch(ctx);
     else if (tab === 'relics') this.drawRelics(ctx, t);
     else this.drawVialRack(ctx, t);
-    if (typeof Doc !== 'undefined' && tab !== 'research') Doc.drawScene(ctx, 'bench');
     this.drawExit(ctx);
   },
   // ---- RELICS: everything the project has out of the field, and what it gives
@@ -1158,7 +1153,7 @@ const UI = {
     if (!this._habP[key]) { if (Object.keys(this._habP).length > 24) this._habP = {}; this._habP[key] = buildCrocParts(look); }
     return this._habP[key];
   },
-  // the three upgrade meters, the feed plate and the hide swatches
+  // the three upgrade meters and the hide swatches
   // ---------- the habitat: the creation menu ----------
   // Clicking HABITAT opens the bench where animals are made and raised, not a
   // wall of glass you then have to click through. Six slots along the top, the
@@ -1175,8 +1170,7 @@ const UI = {
   habDossier() { return { x: 10, y: 80, w: 136, h: 168 }; },
   habRows() {
     const out = [], rx = 456, rw = 174;
-    out.push({ kind: 'feed', i: 0, x: rx, y: 80, w: rw, h: 40 });
-    HAB_UPGRADES.forEach((u, i) => out.push({ kind: 'up', id: u.id, u, i, x: rx, y: 126 + i * 22, w: rw, h: 19 }));
+    HAB_UPGRADES.forEach((u, i) => out.push({ kind: 'up', id: u.id, u, i, x: rx, y: 88 + i * 24, w: rw, h: 21 }));
     out.push({ kind: 'go', i: 0, x: rx, y: 198, w: rw, h: 32 });
     // the build, as a strip of swatches along the foot
     SIZE_GRADES.forEach((gr, i) => out.push({ kind: 'len', gr, i, x: 14 + i * 30, y: 264, w: 27, h: 22 }));
@@ -1276,19 +1270,7 @@ const UI = {
     // --- everything you can do, down the right
     for (const r of this.habRows()) {
       const on = this.habRowIndex(r) === (G.habRow || 0);
-      if (r.kind === 'feed') {
-        const ok = Habitat.canFeed(cur), cost = Habitat.feedCost(cur);
-        ctx.fillStyle = on ? 'rgba(24,40,18,0.96)' : 'rgba(8,18,10,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
-        ctx.fillStyle = ok ? '#8ab820' : '#2e3a24'; ctx.fillRect(r.x, r.y, r.w, 2);
-        const mx = r.x + 24, my = r.y + 21;
-        ctx.fillStyle = ok ? '#a8342c' : '#3a2420';
-        for (let dy = -8; dy <= 8; dy++) { const w2 = 11 - Math.abs(dy) * 0.6; ctx.fillRect(Math.round(mx - w2), my + dy, Math.round(w2 * 2), 1); }
-        ctx.fillStyle = ok ? '#d4564a' : '#4a2e28'; ctx.fillRect(mx - 7, my - 6, 9, 5);
-        ctx.fillStyle = ok ? '#e8dcc0' : '#3a3830'; ctx.fillRect(mx + 3, my + 2, 8, 3);
-        Font.draw(ctx, 'FEED', r.x + 46, r.y + 10, { color: ok ? '#cfe8a0' : '#5f6f68' });
-        Font.draw(ctx, cost === 0 ? 'FREE' : String(cost), r.x + r.w - 8, r.y + 22, { color: ok ? '#ffe060' : '#5f6f68', align: 'right', scale: 2 });
-        if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, ok ? '#8ab820' : '#4a5a3a', 6);
-      } else if (r.kind === 'up') {
+      if (r.kind === 'up') {
         const have = cur.up[r.id];
         ctx.fillStyle = on ? 'rgba(16,38,36,0.96)' : 'rgba(5,14,15,0.9)'; ctx.fillRect(r.x, r.y, r.w, r.h);
         ctx.fillStyle = r.u.col; ctx.fillRect(r.x, r.y, 3, r.h);
@@ -1332,7 +1314,6 @@ const UI = {
     Font.draw(ctx, 'HIDE', 272, 254, { color: '#4f7f74' });
     const d = Research.data();
     Font.draw(ctx, String(d) + ' DATA', W - 12, H - 14, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', outline: '#3a2a00' });
-    if (Tutor.on()) for (const r2 of this.habRows()) if (Tutor.allowHabRow(r2.kind)) Tutor.point(ctx, r2);
     this.drawExit(ctx);
   },
   // an empty slot: the stock library, on the same stage the animals stand on
@@ -1416,12 +1397,10 @@ const UI = {
     this.bracket(ctx, go.x - 2, go.y - 2, go.w + 4, go.h + 4, can ? '#7affda' : '#3a4a48', 7);
     Font.draw(ctx, !open ? 'SEALED' : !afford ? 'NEED DATA' : 'GROW IT', go.x + go.w / 2, go.y + 11,
       { color: can ? '#dffdf4' : '#6a7f7a', align: 'center', scale: 2, outline: '#04120e' });
-    if (Tutor.at('hatch') && can) Tutor.point(ctx, go);
   },
   habApply(r, cur, sel) {
     // one place that knows what activating a row means
     if (r.kind === 'up') return Habitat.invest(cur, r.id) ? 'up' : null;
-    if (r.kind === 'feed') { const n = Habitat.feed(cur); return n === 0 && !Habitat.canFeed(cur) ? null : (n > 0 ? 'level' : 'fed'); }
     if (r.kind === 'go') { if (sel !== Habitat.runnerIndex()) { Habitat.select(sel); return 'pick'; } return 'go'; }
     if (r.kind === 'len') { if (!Create.sizeUnlocked(r.i)) return null; cur.size = r.i; G.storeSave(); return 'set'; }
     if (r.kind === 'girth') { if (!Create.girthUnlocked(r.i)) return null; cur.girth = r.i; G.storeSave(); return 'set'; }
@@ -1758,14 +1737,13 @@ const UI = {
     ctx.fillStyle = '#1a0e04'; ctx.fillRect(gx2, go.y + go.h - 1, go.w, 1);
     this.bracket(ctx, gx2 - 2, go.y - 2, go.w + 4, go.h + 4, open ? '#ff8050' : '#5a4a48', 7);
     Font.draw(ctx, open ? 'RELEASE' : 'SEALED', gx2 + go.w / 2, go.y + 7, { color: open ? '#ffd0a0' : '#a08070', align: 'center', scale: 2, outline: '#2a0c00' });
-    if (!Tutor.on()) Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE     ENTER  RELEASE', px0 + shake, H - 11, { color: '#4f7f74' });
-    if (Tutor.at('site') && open) Tutor.point(ctx, go);
+    Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE     ENTER  RELEASE', px0 + shake, H - 11, { color: '#4f7f74' });
     this.drawExit(ctx);
   },
   // the induction's dialogue bar owns the foot of the screen; the button that
   // sends you out moves up above it rather than hiding behind it
   stageGoRect() {
-    const px0 = G.W * 0.62, lift = (typeof Tutor !== 'undefined' && Tutor.on()) ? 48 : 0;
+    const px0 = G.W * 0.62, lift = 0;
     return { x: Math.round(px0), y: G.H - 42 - lift, w: Math.round(G.W - 22 - px0), h: 24 };
   },
   // the croc turning slowly in the acid, wearing whatever you picked

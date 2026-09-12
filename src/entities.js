@@ -207,6 +207,50 @@ class Gib extends Entity {
     ctx.drawImage(this.src.c, p.sx, p.sy, p.sw, p.sh, -p.sw / 2, -p.sh / 2, p.sw, p.sh); ctx.restore(); ctx.globalAlpha = 1;
   }
 }
+// ---------------------------------------------------------------------------
+// CARRION.
+//
+// Something died here before you turned up. It is face down in the silt with
+// its own flies over it, it does not fight, and it is most of what a small
+// crocodile eats. Scavenging is not a sideline at this size: it is the job.
+class Carrion extends Entity {
+  constructor(x, y, kind = 'rat', mass) {
+    super(x, y);
+    this.useSpecies(kind);
+    this.type = 'carrion'; this.name = (this.name || 'MEAT') + ' CARCASS';
+    this.edible = true; this.mass = mass !== undefined ? mass : Math.max(0.8, this.mass * 0.6);
+    this.hp = this.maxHp = 1; this.sizeClass = Math.min(this.sizeClass * 0.5, 0.6);
+    this.threat = 0; this.bleeds = true; this.gibs = 2; this.layer = -1; this.latchable = false;
+    this.rot = rand(-0.3, 0.3) + Math.PI;                     // belly up
+    this.life = rand(70, 140); this.aware = false;
+    this.anim.mode = 'dead'; this.anim.speed = 0;
+    this.settled = false;
+  }
+  update(dt) {
+    this.tick(dt); this.life -= dt; if (this.life <= 0) this.remove = true;
+    if (this.inWater) { this.drag(dt, 2.2); this.vy += 22 * dt; }
+    else { this.vy += 600 * dt; }
+    this.move(dt);
+    const fy = World.floorY(this.x), rr = this.r * this.size * 0.4;
+    if (this.y > fy - rr) {
+      if (!this.settled && this.vy > 30) { G.fx.silt(this.x, fy, 3, 18); this.settled = true; }
+      this.y = fy - rr; this.vy = 0; this.vx *= 0.7;
+    }
+    // flies, and the smell of it: small things come to feed on carrion too
+    if (chance(dt * 0.7)) G.fx.add({ type: 'bubble', x: this.x + rand(-6, 6), y: this.y - 4, vx: rand(-4, 4), vy: -10, s: 0.6, seed: rand(TAU), life: 1.2 });
+  }
+  draw(ctx) {
+    const rig = this.rig; if (!rig) return;
+    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+    ctx.globalAlpha = (this.life < 4 ? this.life / 4 : 1) * 0.92;
+    rig.draw(ctx, 0, 0, this.facing, 0, this.anim, { scale: this.size * rig.scale });
+    ctx.restore();
+    // the water has been at it: a wash of silt over whatever is left
+    ctx.globalAlpha = 0.22; ctx.fillStyle = '#4a5244';
+    ctx.fillRect(Math.round(this.x - this.r), Math.round(this.y - this.r * 0.5), Math.round(this.r * 2), Math.round(this.r));
+    ctx.globalAlpha = 1;
+  }
+}
 function dropMeat(x, y, n, massEach, colors = BLOOD_COLORS) {
   for (let i = 0; i < n; i++) {
     const g = new Gib(x, y, SPR.meat, { sx: 0, sy: 0, sw: 5, sh: 4 }, 1 + rand(0.5), 1, true, colors);

@@ -402,21 +402,49 @@ function drawCroc(ctx, chain, parts, worldSize, opts = {}) {
   if (opts.alpha !== undefined) ctx.globalAlpha = opts.alpha;
   const white = opts.flash > 0;
   const img = p => (white ? spriteWhite(p).c : p.c);
+  // A crocodile is not a swimming log. The legs paddle, plant and tuck; the
+  // body breathes; the head shakes what it has just bitten.
+  const tuck = clamp(opts.legTuck || 0, 0, 1);        // 1 = held flat against the flank
+  const swing = opts.legSwing || 0;                    // radians of fore/aft throw
+  const breath = opts.breath || 0;
   for (let i = CROC_LEN - 1; i >= 1; i--) {
     const s = n[i], part = i <= 5 ? parts.body[i - 1] : parts.tail[i - 6];
-    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a); ctx.scale(size, sy);
+    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
+    // the ribcage lifts a touch on the breath, the tail does not
+    const bs = i <= 4 ? 1 + breath * 0.05 : 1;
+    ctx.scale(size, sy * bs);
     if (i === 1 || i === 4) {
-      const lp = opts.legPhase || 0, f = Math.sin(lp + (i === 1 ? 0 : Math.PI)) > 0 ? 0 : 1;
+      const lp = (opts.legPhase || 0) + (i === 1 ? 0 : Math.PI);
+      const f = Math.sin(lp) > 0 ? 0 : 1;
       const leg = parts.legs[f];
-      ctx.drawImage(img(leg), -leg.ox - 4, 4); ctx.drawImage(img(leg), -leg.ox + 6, 4);
+      // each of the pair swings out of phase with the other, and both fold
+      // back and up against the body the faster the animal is moving
+      for (const [ox, ph] of [[-4, 0], [6, 1.9]]) {
+        const a2 = Math.sin(lp + ph) * swing * (1 - tuck);
+        const lift = Math.max(0, Math.sin(lp + ph)) * 1.4 * (1 - tuck);
+        ctx.save();
+        ctx.translate(ox, 3);
+        ctx.rotate(a2 - tuck * 0.85);
+        ctx.drawImage(img(leg), -leg.ox, 1 - lift);
+        ctx.restore();
+      }
     }
     ctx.drawImage(img(part), -part.ox, -part.oy);
     ctx.restore();
   }
   const h = n[0];
-  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a); ctx.scale(size, sy);
+  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.a + (opts.headShake || 0)); ctx.scale(size, sy);
   ctx.save(); ctx.translate(0, parts.jawY); ctx.rotate(jaw * 0.8); ctx.drawImage(img(parts.jaw), 0, 0); ctx.restore();
   ctx.drawImage(img(parts.head), -parts.head.ox, -parts.head.oy);
+  // blood on the teeth after a kill, drying off over a few seconds
+  if (opts.gore > 0 && !white) {
+    ctx.globalAlpha = clamp(opts.gore, 0, 1) * 0.85;
+    ctx.fillStyle = '#8a1410';
+    ctx.fillRect(parts.head.eyeX - parts.head.ox + 2, parts.jawY - 2, 7, 2);
+    ctx.fillStyle = '#c02018';
+    ctx.fillRect(parts.head.eyeX - parts.head.ox + 3, parts.jawY - 1, 4, 1);
+    ctx.globalAlpha = opts.alpha !== undefined ? opts.alpha : 1;
+  }
   if (parts.look.glow && !white) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = rgba(parts.look.glow, 0.55); ctx.fillRect(parts.head.eyeX - parts.head.ox - 1, parts.head.eyeY - parts.head.oy - 1, 3, 3);
