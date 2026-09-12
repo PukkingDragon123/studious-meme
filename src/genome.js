@@ -118,27 +118,27 @@ function gene(o) { GENES.push(o); return o; }
     const dir = HEX_DIR[li];
     T[lin].forEach((n, i) => {
       const rr = i + 1;
-      gene({ id: lin + ':' + n[0], lin, ring: rr, q: dir[0] * rr, r: dir[1] * rr, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [2, 4, 7, 12][i], apex: i === 3 });
+      gene({ id: lin + ':' + n[0], lin, ring: rr, q: dir[0] * rr, r: dir[1] * rr, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [3, 6, 11, 18][i], apex: i === 3 });
     });
   });
   // ---- ring 2: the hybrids, on the edge between two lineages
   for (const [q, r, i, j] of ring(2)) {
     if (j !== 1) continue;
     const h = HYB[segA(i) + '|' + segB(i)]; if (!h) continue;
-    gene({ id: 'hy:' + h[0], lin: segA(i), lin2: segB(i), ring: 2, q, r, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 6, hybrid: true });
+    gene({ id: 'hy:' + h[0], lin: segA(i), lin2: segB(i), ring: 2, q, r, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 9, hybrid: true });
   }
   // ---- ring 3: two minor adaptations per edge, one owned by each side
   for (const [q, r, i, j] of ring(3)) {
     if (j === 0) continue;
     const lin = j === 1 ? segA(i) : segB(i);
     const m = MINOR[lin] && MINOR[lin][j === 1 ? 0 : 1]; if (!m) continue;
-    gene({ id: 'mn:' + m[0], lin, ring: 3, q, r, name: m[1], desc: m[2], apply: m[3], look: m[4], down: m[5], downApply: m[6], load: 1, cost: 3, minor: true });
+    gene({ id: 'mn:' + m[0], lin, ring: 3, q, r, name: m[1], desc: m[2], apply: m[3], look: m[4], down: m[5], downApply: m[6], load: 1, cost: 4, minor: true });
   }
   // ---- ring 4: the chimeras, halfway between two apexes
   for (const [q, r, i, j] of ring(4)) {
     if (j !== 2) continue;
     const d = DEEP[segA(i) + '|' + segB(i)]; if (!d) continue;
-    gene({ id: 'ch:' + d[0], lin: segA(i), lin2: segB(i), ring: 4, q, r, name: d[1], desc: d[2], apply: d[3], look: d[4], down: d[5], downApply: d[6], load: 7, cost: 11, hybrid: true, chimera: true });
+    gene({ id: 'ch:' + d[0], lin: segA(i), lin2: segB(i), ring: 4, q, r, name: d[1], desc: d[2], apply: d[3], look: d[4], down: d[5], downApply: d[6], load: 7, cost: 17, hybrid: true, chimera: true });
   }
 })();
 // ---------------------------------------------------------------------------
@@ -208,8 +208,20 @@ const Genome = {
     return false;
   },
   // a gene can be taken when it touches one you already have
+  // The tree asks for a body as well as points: a deep gene will not take in a
+  // yearling. This is the gate that makes growing and splicing one problem
+  // rather than two.
+  tierNeed(g) {
+    if (g.root || g.minor) return 0;
+    if (g.apex) return 9;
+    if (g.chimera) return 8;
+    if (g.hybrid) return 4;
+    return [0, 1, 3, 5, 7][g.ring] || 0;
+  },
+  tierBlocked(P, g) { return P.tier < this.tierNeed(g); },
   unlocked(P, g) {
     if (g.root) return false;
+    if (this.tierBlocked(P, g)) return false;
     if (this.has(P, g.id)) return false;
     if (this.has(P, 'core') === false) return false;
     // one apex per crocodile: the four ends of the tree are exclusive
@@ -227,7 +239,7 @@ const Genome = {
   tax(P, g) {
     const open = this.spread(P);
     const mine = (g.lin && this.depth(P, g.lin) > 0) ? 1 : 0;
-    return 1 + 0.2 * Math.max(0, open - mine);
+    return 1 + 0.32 * Math.max(0, open - mine);
   },
   cost(P, g) {
     const a = g.lin ? (P.affinity[LINEAGES[g.lin].affinity] || 0) : 0;
@@ -249,7 +261,7 @@ const Genome = {
   // total instability from everything spliced in
   load(P) { let n = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.load) n += g.load; } return n; },
   // what the body can carry: it grows with you, so late genes need late mass
-  limit(P) { return 9 + P.tier * 2.2 + (P.strainBonus || 0); },
+  limit(P) { return 7 + P.tier * 1.8 + (P.strainBonus || 0); },
   // 0 while stable, rising past 1 once the genome is over its limit
   strain(P) { const l = this.limit(P); return l <= 0 ? 0 : Math.max(0, (this.load(P) - l) / Math.max(4, l * 0.5)); },
   // how far down each lineage the player has gone

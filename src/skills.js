@@ -139,6 +139,9 @@ const TIERS = [
   { name: 'LEVIATHAN', size: 8.0 }, { name: 'SARCOSUCHUS', size: 10.5 }, { name: 'DEINOSUCHUS', size: 13.5 }, { name: 'SWAMP GOD', size: 18 },
 ];
 const SIZE_FLOOR3 = 0.027;                       // 0.3 cubed: the hatchling
-const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 15);
-const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 15;
+// The divisor is the whole difficulty of growing. At 15 a run walked up the
+// ladder; at 27 every rung is most of a hunt, and the top of the ladder is a
+// campaign rather than an afternoon.
+const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 27);
+const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 27;
 function tierFor(size) { let t = 0; for (let i = 0; i < TIERS.length; i++) if (size >= TIERS[i].size - 1e-6) t = i; return t; }

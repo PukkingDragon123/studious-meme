@@ -5309,8 +5309,11 @@ const TIERS = [
   { name: 'LEVIATHAN', size: 8.0 }, { name: 'SARCOSUCHUS', size: 10.5 }, { name: 'DEINOSUCHUS', size: 13.5 }, { name: 'SWAMP GOD', size: 18 },
 ];
 const SIZE_FLOOR3 = 0.027;                       // 0.3 cubed: the hatchling
-const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 15);
-const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 15;
+// The divisor is the whole difficulty of growing. At 15 a run walked up the
+// ladder; at 27 every rung is most of a hunt, and the top of the ladder is a
+// campaign rather than an afternoon.
+const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 27);
+const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 27;
 function tierFor(size) { let t = 0; for (let i = 0; i < TIERS.length; i++) if (size >= TIERS[i].size - 1e-6) t = i; return t; }
 
 /* ===== src/genome.js ===== */
@@ -5434,27 +5437,27 @@ function gene(o) { GENES.push(o); return o; }
     const dir = HEX_DIR[li];
     T[lin].forEach((n, i) => {
       const rr = i + 1;
-      gene({ id: lin + ':' + n[0], lin, ring: rr, q: dir[0] * rr, r: dir[1] * rr, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [2, 4, 7, 12][i], apex: i === 3 });
+      gene({ id: lin + ':' + n[0], lin, ring: rr, q: dir[0] * rr, r: dir[1] * rr, name: n[1], desc: n[2], apply: n[3], look: n[4], down: n[5], downApply: n[6], load: n[7], cost: [3, 6, 11, 18][i], apex: i === 3 });
     });
   });
   // ---- ring 2: the hybrids, on the edge between two lineages
   for (const [q, r, i, j] of ring(2)) {
     if (j !== 1) continue;
     const h = HYB[segA(i) + '|' + segB(i)]; if (!h) continue;
-    gene({ id: 'hy:' + h[0], lin: segA(i), lin2: segB(i), ring: 2, q, r, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 6, hybrid: true });
+    gene({ id: 'hy:' + h[0], lin: segA(i), lin2: segB(i), ring: 2, q, r, name: h[1], desc: h[2], apply: h[3], look: h[4], down: h[5], downApply: h[6], load: h[7], cost: 9, hybrid: true });
   }
   // ---- ring 3: two minor adaptations per edge, one owned by each side
   for (const [q, r, i, j] of ring(3)) {
     if (j === 0) continue;
     const lin = j === 1 ? segA(i) : segB(i);
     const m = MINOR[lin] && MINOR[lin][j === 1 ? 0 : 1]; if (!m) continue;
-    gene({ id: 'mn:' + m[0], lin, ring: 3, q, r, name: m[1], desc: m[2], apply: m[3], look: m[4], down: m[5], downApply: m[6], load: 1, cost: 3, minor: true });
+    gene({ id: 'mn:' + m[0], lin, ring: 3, q, r, name: m[1], desc: m[2], apply: m[3], look: m[4], down: m[5], downApply: m[6], load: 1, cost: 4, minor: true });
   }
   // ---- ring 4: the chimeras, halfway between two apexes
   for (const [q, r, i, j] of ring(4)) {
     if (j !== 2) continue;
     const d = DEEP[segA(i) + '|' + segB(i)]; if (!d) continue;
-    gene({ id: 'ch:' + d[0], lin: segA(i), lin2: segB(i), ring: 4, q, r, name: d[1], desc: d[2], apply: d[3], look: d[4], down: d[5], downApply: d[6], load: 7, cost: 11, hybrid: true, chimera: true });
+    gene({ id: 'ch:' + d[0], lin: segA(i), lin2: segB(i), ring: 4, q, r, name: d[1], desc: d[2], apply: d[3], look: d[4], down: d[5], downApply: d[6], load: 7, cost: 17, hybrid: true, chimera: true });
   }
 })();
 // ---------------------------------------------------------------------------
@@ -5524,8 +5527,20 @@ const Genome = {
     return false;
   },
   // a gene can be taken when it touches one you already have
+  // The tree asks for a body as well as points: a deep gene will not take in a
+  // yearling. This is the gate that makes growing and splicing one problem
+  // rather than two.
+  tierNeed(g) {
+    if (g.root || g.minor) return 0;
+    if (g.apex) return 9;
+    if (g.chimera) return 8;
+    if (g.hybrid) return 4;
+    return [0, 1, 3, 5, 7][g.ring] || 0;
+  },
+  tierBlocked(P, g) { return P.tier < this.tierNeed(g); },
   unlocked(P, g) {
     if (g.root) return false;
+    if (this.tierBlocked(P, g)) return false;
     if (this.has(P, g.id)) return false;
     if (this.has(P, 'core') === false) return false;
     // one apex per crocodile: the four ends of the tree are exclusive
@@ -5543,7 +5558,7 @@ const Genome = {
   tax(P, g) {
     const open = this.spread(P);
     const mine = (g.lin && this.depth(P, g.lin) > 0) ? 1 : 0;
-    return 1 + 0.2 * Math.max(0, open - mine);
+    return 1 + 0.32 * Math.max(0, open - mine);
   },
   cost(P, g) {
     const a = g.lin ? (P.affinity[LINEAGES[g.lin].affinity] || 0) : 0;
@@ -5565,7 +5580,7 @@ const Genome = {
   // total instability from everything spliced in
   load(P) { let n = 0; for (const id of P.genes) { const g = GENE_BY_ID[id]; if (g && g.load) n += g.load; } return n; },
   // what the body can carry: it grows with you, so late genes need late mass
-  limit(P) { return 9 + P.tier * 2.2 + (P.strainBonus || 0); },
+  limit(P) { return 7 + P.tier * 1.8 + (P.strainBonus || 0); },
   // 0 while stable, rising past 1 once the genome is over its limit
   strain(P) { const l = this.limit(P); return l <= 0 ? 0 : Math.max(0, (this.load(P) - l) / Math.max(4, l * 0.5)); },
   // how far down each lineage the player has gone
@@ -9200,7 +9215,11 @@ class Player {
     // be worth a bigger crocodile's time
     const rel = e.mass / Math.max(1, this.mass);
     const small = this.st.smallGrowth > 1 && rel < 0.18 ? this.st.smallGrowth : 1;
-    const gain = e.mass * this.st.growth * small * (1 + Math.min(this.combo, 20) * 0.03) * (1 + 0.12 * this.tier);
+    // Snacks keep you alive; they do not build an animal. A meal is worth its
+    // full mass only when it is a real share of yours, and everything under
+    // that pays a fraction. Growing means hunting up, not grazing down.
+    const share = clamp(0.3 + 0.7 * (rel / 0.15), 0.3, 1);
+    const gain = e.mass * share * this.st.growth * small * (1 + Math.min(this.combo, 20) * 0.03) * (1 + 0.05 * this.tier);
     this.mass += gain;
     this.hunger = Math.min(100, this.hunger + e.mass * 30 / Math.pow(this.size, 1.8) * this.st.hungerRestore);
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));
@@ -12759,6 +12778,8 @@ const UI = {
       if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
       // a chimera gets a second ring: it is the far end of two lineages at once
       if (g.chimera && g.lin2) this.hex(ctx, c.sx, c.sy, r * 0.62, null, own ? LINEAGES[g.lin2].color : shade(LINEAGES[g.lin2].color, 0.5), 1);
+      const tb = !own && Genome.tierBlocked(P, g);
+      if (tb) { ctx.fillStyle = '#8cd8ff'; ctx.fillRect(Math.round(c.sx) - 3, Math.round(c.sy) + Math.round(r * 0.52), 6, 2); ctx.fillRect(Math.round(c.sx) - 1, Math.round(c.sy) + Math.round(r * 0.52) - 2, 2, 2); }
       const rb = !own && Genome.researchBlocked(g);
       const tp = !rb && Genome.trialBlocked(P, g) ? Trials.progress(P, g) : null;
       if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
@@ -12854,7 +12875,11 @@ const UI = {
       phh2 = Math.max(phh2, by2 + 10 - py3);
     }
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
-    else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : tprog && !tprog.done ? 'TRIAL LOCKED' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: tprog && !tprog.done ? '#ffa030' : '#7a6a6a', align: 'right' });
+    else if (!open) {
+      const tn = Genome.tierBlocked(P, g) ? Genome.tierNeed(g) : 0;
+      Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : tn ? 'NEEDS ' + TIERS[tn].name : tprog && !tprog.done ? 'TRIAL LOCKED' : 'LOCKED',
+        px3 + pw - 8, py3 + 7, { color: tn ? '#8cd8ff' : tprog && !tprog.done ? '#ffa030' : '#7a6a6a', align: 'right' });
+    }
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
     // the old duplicate close button here is now the shared exit control
     if (!this.exitShown()) Font.draw(ctx, 'SPACE  SPLICE', W / 2, H - 11, { color: '#7f9a90', align: 'center' });

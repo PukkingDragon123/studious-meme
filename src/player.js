@@ -686,7 +686,11 @@ class Player {
     // be worth a bigger crocodile's time
     const rel = e.mass / Math.max(1, this.mass);
     const small = this.st.smallGrowth > 1 && rel < 0.18 ? this.st.smallGrowth : 1;
-    const gain = e.mass * this.st.growth * small * (1 + Math.min(this.combo, 20) * 0.03) * (1 + 0.12 * this.tier);
+    // Snacks keep you alive; they do not build an animal. A meal is worth its
+    // full mass only when it is a real share of yours, and everything under
+    // that pays a fraction. Growing means hunting up, not grazing down.
+    const share = clamp(0.3 + 0.7 * (rel / 0.15), 0.3, 1);
+    const gain = e.mass * share * this.st.growth * small * (1 + Math.min(this.combo, 20) * 0.03) * (1 + 0.05 * this.tier);
     this.mass += gain;
     this.hunger = Math.min(100, this.hunger + e.mass * 30 / Math.pow(this.size, 1.8) * this.st.hungerRestore);
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));

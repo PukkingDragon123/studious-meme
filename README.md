@@ -194,7 +194,8 @@ opens overhead and drops to three hundred feet, a second ledge that climbs, the
 tightest run in the game, the sump under the road — and then the grate. Floor
 and ceiling are authored together in one table so they can never drift apart.
 
-Every other site comes out of a helicopter.
+Every other site in the glades and the ocean comes out of a helicopter. Sewer
+sites do not: those come out of a lab, in a tank, on a trolley.
 
 ## The drop
 
@@ -312,7 +313,12 @@ Every gene carries a **downside** as well as an upside — serrated teeth thin t
 you down, an apex gene costs you a quarter of your health — and a **strain** load. Your body only
 tolerates so much at once (the limit grows as you do), and past it the splices start fighting: health
 bleeds away, and enough of it kills you outright. You can also only ever carry **one apex gene**, and
-every extra lineage in you marks the next gene up by 20%, so a scattered build is the expensive one.
+every extra lineage in you marks the next gene up by 32%, so a scattered build is the expensive one.
+
+The tree also asks for a body, not just points. A gene has a **size gate**: the first ring will not
+take in a hatchling, the second wants a JUVENILE, the third an ADULT, the fourth an ELDER; hybrids
+want a SUB-ADULT, chimeras an ANCIENT, and an apex will not go into anything under a TITAN. Locked cells carry a small blue bar and the panel
+names the tier you are short of. Growing and splicing are one problem, not two.
 
 **Affinity** is the quiet half of the system. Rolling and dismembering feeds Ripper, ambush kills feed
 Phantom, taking hits feeds Bulwark, eating big meals feeds Colossus, and hunting people and land
@@ -364,6 +370,13 @@ want you dead — there is a tank back at the facility with your name stencilled
 on it. A net that lands gives you four seconds of thrashing to tear it; if you
 do not, the run ends **CAPTURED**, and that is worse than being eaten.
 
+And a person who has seen you and can see how small you are does not run and
+does not shoot past his own boots. He wades in. Above about four feet of
+crocodile he **punches** — a real hit, real knockback, and he will keep doing it.
+Below that he does not bother hitting you at all: he gets his arms under you,
+tucks you under one of them and **walks**, and where he is walking is a crate.
+Mash to buck out of his hands before he gets there, or the run ends **TAKEN**.
+
 It comes down on its own while nobody finds anything, but slower each time they
 have called it in.
 
@@ -379,16 +392,38 @@ Each zone changes what the stealth game even is.
   shadow on white sand — and the only thing that helps is putting something
   solid between you and the sky. That is what the wrecks are for.
 
+## The delivery
+
+A sewer site does not get a helicopter, because a helicopter cannot fly into a
+sewer. It gets the lab. You come round strapped inside a transport tank on a
+trolley, bolted lid, LIVE SPECIMEN stencilled on the glass, two people in hard
+hats wheeling you down a corridor under strip lights. Mash anything you like —
+that is what the straps are for. The trolley stops at **DISPOSAL HATCH 4**, the
+leaf rolls up, the tank tips, and you go down a storm chute for fifteen seconds
+with exactly one control: **lean**. Grates, pipe stubs and valve bodies come out
+of the dark at you and every one you clip costs blood. Then the splash, and you
+are in the system.
+
 ## Locked in
 
-A sewer run is not a stretch of water you leave when you have had enough. You
-are put down inside the reach and the tunnel is barred east and west by
-**sluice gates**: steel, hydraulic, and they do not care how hard you bite them.
-Somewhere between them is the site's relic, and the relic is the key. Carry it
-and the hydraulics start; swim out through an open gate and the run ends
-**ESCAPED**, which is the only way out of there that is not a stomach. A marker
-on the edge of the screen always points at the nearest gate and tells you how
-far, so the reach has a shape even when you cannot see either end of it.
+A sewer run is not a stretch of water you leave when you have had enough. The
+reach is barred east and west by **sluice gates**, and they are welded, not
+locked. There is no key. There is no relic that opens them, no hydraulics that
+will ever start, and no door at the other end of the chute you came down. What
+is in here is all there is, and the only way out of the system is a stomach — it
+does not have to be yours. A marker on the edge of the screen points at the
+nearest wall of the world and tells you how far, so the reach has a shape even
+when you cannot see either end of it.
+
+## What they poured down here
+
+The system is not just dark water. **Acid** pools off a plating line eat you
+where you sit. **Sludge** fills your blood with filth and holds onto you.
+And the **drums** — still leaking, glowing green through the muck — do neither:
+they fill a **DOSE** meter, and when it tops out something gets grafted onto you
+that you did not choose. Eight forced splices, and every one is a trade: runaway
+growth that starves you, a tumourous hide that slows you, glowing blood that
+heals you and shows everything where you are.
 
 ## Work going on in the water
 

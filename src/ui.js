@@ -418,6 +418,8 @@ const UI = {
       if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
       // a chimera gets a second ring: it is the far end of two lineages at once
       if (g.chimera && g.lin2) this.hex(ctx, c.sx, c.sy, r * 0.62, null, own ? LINEAGES[g.lin2].color : shade(LINEAGES[g.lin2].color, 0.5), 1);
+      const tb = !own && Genome.tierBlocked(P, g);
+      if (tb) { ctx.fillStyle = '#8cd8ff'; ctx.fillRect(Math.round(c.sx) - 3, Math.round(c.sy) + Math.round(r * 0.52), 6, 2); ctx.fillRect(Math.round(c.sx) - 1, Math.round(c.sy) + Math.round(r * 0.52) - 2, 2, 2); }
       const rb = !own && Genome.researchBlocked(g);
       const tp = !rb && Genome.trialBlocked(P, g) ? Trials.progress(P, g) : null;
       if (!open && !own) { ctx.fillStyle = 'rgba(6,10,12,0.55)'; this.hex(ctx, c.sx, c.sy, r, 'rgba(6,10,12,0.5)', null); }
@@ -513,7 +515,11 @@ const UI = {
       phh2 = Math.max(phh2, by2 + 10 - py3);
     }
     if (own) Font.draw(ctx, 'SPLICED', px3 + pw - 8, py3 + 7, { color: '#7affda', align: 'right' });
-    else if (!open) Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : tprog && !tprog.done ? 'TRIAL LOCKED' : 'LOCKED', px3 + pw - 8, py3 + 7, { color: tprog && !tprog.done ? '#ffa030' : '#7a6a6a', align: 'right' });
+    else if (!open) {
+      const tn = Genome.tierBlocked(P, g) ? Genome.tierNeed(g) : 0;
+      Font.draw(ctx, g.apex && P.apex ? 'ONE APEX ONLY' : tn ? 'NEEDS ' + TIERS[tn].name : tprog && !tprog.done ? 'TRIAL LOCKED' : 'LOCKED',
+        px3 + pw - 8, py3 + 7, { color: tn ? '#8cd8ff' : tprog && !tprog.done ? '#ffa030' : '#7a6a6a', align: 'right' });
+    }
     else Font.draw(ctx, cost + ' PT' + (cost === 1 ? '' : 'S') + (P.genePoints >= cost ? '  [SPACE]' : '  SHORT'), px3 + pw - 8, py3 + 7, { color: P.genePoints >= cost ? '#7affda' : '#c08a8a', align: 'right' });
     // the old duplicate close button here is now the shared exit control
     if (!this.exitShown()) Font.draw(ctx, 'SPACE  SPLICE', W / 2, H - 11, { color: '#7f9a90', align: 'center' });
