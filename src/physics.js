@@ -123,6 +123,24 @@ const Weather = {
 
 // reactive plants: decor items get a bend spring that things push on
 const Foliage = {
+  // How much of you a bed of weed is covering at (x, y), 0..1. Only plants
+  // that actually grow in the water count: a cypress on the bank is not
+  // hiding anything from a man in a boat.
+  coverAt(x, y) {
+    const D = World.decor; if (!D.length) return 0;
+    let lo = 0, hi = D.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (D[m].x < x - 40) lo = m + 1; else hi = m; }
+    let c = 0;
+    for (let i = lo; i < D.length; i++) {
+      const d = D[i]; if (d.x > x + 40) break;
+      const k = FOLIAGE_KIND[d.type]; if (!k || !k.water) continue;
+      const top = k.top(d);
+      if (y < Math.min(top, d.y) - 10 || y > Math.max(top, d.y) + 10) continue;
+      c += 0.22 * clamp(1 - Math.abs(d.x - x) / 40, 0, 1);
+      if (c >= 1) break;
+    }
+    return clamp(c, 0, 1);
+  },
   // apply a push to plants near (x, y) moving with vx; r is the body radius
   disturb(x, y, vx, r) {
     const D = World.decor; if (!D.length) return;

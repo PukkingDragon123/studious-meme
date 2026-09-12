@@ -17,26 +17,26 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
   // ---- ZONE 2: THE EVERGLADES. Where a run starts and where it is learned.
-  { id: 'outfall', zone: 'glades', lat: -0.30, lon: 0.34, name: 'THE OUTFALL', sub: 'BREAK CONTAINMENT AND FIND THE PIPE', x: -2800, size: 1.0, diff: 0, intro: true },
-  { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
-  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
-  { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
-  { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
-  { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
-  { id: 'campground', zone: 'glades', lat: 0.02, lon: 1.30, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
-  { id: 'bay', zone: 'glades', lat: -0.62, lon: 1.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
-  { id: 'seawall', zone: 'glades', lat: 0.30, lon: 1.44, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+  { id: 'outfall', zone: 'glades', lat: -0.30, lon: 0.34, name: 'THE OUTFALL', sub: 'BREAK CONTAINMENT AND FIND THE PIPE', x: -2800, size: 0.3, diff: 0, intro: true },
+  { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 1100 } },
+  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 2800 } },
+  { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 1.25, diff: 1.5, need: { reach: 4200 } },
+  { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 1.7, diff: 2.0, need: { reach: 6100 } },
+  { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 2.3, diff: 2.5, need: { reach: 7600 } },
+  { id: 'campground', zone: 'glades', lat: 0.02, lon: 1.30, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 3.0, diff: 3.0, need: { reach: 9400 } },
+  { id: 'bay', zone: 'glades', lat: -0.62, lon: 1.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 4.0, diff: 3.6, need: { reach: 11000 } },
+  { id: 'seawall', zone: 'glades', lat: 0.30, lon: 1.44, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 8.0, diff: 4.6, kaiju: true, need: { tier: 7 } },
   // ---- ZONE 1: THE SEWER NETWORK. Under the city, west of the lab.
-  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 1.4, diff: 0.8, need: { reach: 2800 } },
-  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 2.1, diff: 1.6, need: { reach: 4200 } },
-  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 3.0, diff: 2.4, need: { reach: 6100 } },
-  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 4.0, diff: 3.2, need: { reach: 7600 } },
-  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
+  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 0.45, diff: 0.8, need: { reach: 2800 } },
+  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 0.8, diff: 1.6, need: { reach: 4200 } },
+  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 1.4, diff: 2.4, need: { reach: 6100 } },
+  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 2.2, diff: 3.2, need: { reach: 7600 } },
+  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 3.4, diff: 4.2, need: { tier: 5 } },
   // ---- ZONE 3: THE OPEN OCEAN. Past the seawall, down the wall, into the dark.
-  { id: 'shelf', zone: 'ocean', lat: -0.20, lon: 4.58, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 4.4, diff: 3.0, need: { reach: 11000 } },
-  { id: 'reef', zone: 'ocean', lat: -0.58, lon: 4.98, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 5.6, diff: 3.8, need: { reach: 15300 } },
-  { id: 'wall', zone: 'ocean', lat: 0.26, lon: 5.02, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 7.2, diff: 4.5, need: { tier: 6 } },
-  { id: 'trench', survey: true, zone: 'ocean', lat: -0.12, lon: 5.46, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
+  { id: 'shelf', zone: 'ocean', lat: -0.20, lon: 4.58, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 2.0, diff: 3.0, need: { reach: 11000 } },
+  { id: 'reef', zone: 'ocean', lat: -0.58, lon: 4.98, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 2.9, diff: 3.8, need: { reach: 15300 } },
+  { id: 'wall', zone: 'ocean', lat: 0.26, lon: 5.02, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 4.4, diff: 4.5, need: { tier: 6 } },
+  { id: 'trench', survey: true, zone: 'ocean', lat: -0.12, lon: 5.46, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 7.6, diff: 5.4, kaiju: true, need: { tier: 8 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;

@@ -43,6 +43,26 @@ const UI = {
     ctx.fillStyle = '#e0902a'; ctx.fillRect(12, 23, 11, 3); ctx.fillStyle = '#f4f0e0';
     for (let i = 0; i < 4; i++) ctx.fillRect(13 + i * 3, 26, 2, 2);
     ctx.fillRect(12, 28, 11, 2);
+    // ---- how much of you they have worked out, and how much the water is
+    // doing for you. These two bars are the whole stealth game.
+    {
+      const st = Alarm.stage(), lv = Alarm.level, con = Alarm.concealment(P), hid = Alarm.hidden(P);
+      const ax = 6, ay = 40, aw = 130;
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(ax, ay, aw, 24);
+      this.bracket(ctx, ax, ay, aw, 24, Alarm.flashT > 0 && Math.floor(t * 12) % 2 ? st.col : 'rgba(120,220,200,0.35)', 5);
+      // an eye that opens as they get surer
+      const ec = lv > 0.62 ? st.col : lv > 0.3 ? st.col : '#3f6f66';
+      ctx.fillStyle = ec;
+      const lid = Math.round(3 * (1 - clamp(lv * 1.4, 0, 1)));
+      ctx.fillRect(ax + 6, ay + 5 + lid, 11, 7 - lid * 2);
+      ctx.fillStyle = '#0a1412'; ctx.fillRect(ax + 10, ay + 6 + lid, 3, 5 - lid * 2);
+      this.meter(ctx, ax + 22, ay + 5, aw - 30, 6, lv, st.col, '#2a1408');
+      // and the cover you are under
+      ctx.fillStyle = hid ? '#3fd0a8' : '#4a5a58';
+      ctx.fillRect(ax + 6, ay + 15, 4, 6); ctx.fillRect(ax + 5, ay + 14, 6, 2);
+      this.meter(ctx, ax + 22, ay + 15, aw - 30 - (hid ? 40 : 0), 5, con, hid ? '#3fd0a8' : '#7a8a86', '#0d1e1c');
+      if (hid) Font.draw(ctx, 'HIDDEN', ax + aw - 5, ay + 14, { color: '#3fd0a8', align: 'right' });
+    }
     // status reads as a column of lit tabs rather than three words
     let ty2 = 8;
     const tab = (col, on) => { if (!on) return; ctx.fillStyle = Math.floor(t * 5) % 2 ? col : mixColor(col, '#101816', 0.45); ctx.fillRect(140, ty2, 4, 8); ty2 += 10; };
@@ -122,9 +142,10 @@ const UI = {
       if (P.braceFlash > 0) { ctx.globalAlpha = clamp(P.braceFlash * 4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6); ctx.globalAlpha = 1; }
     }
     // standing order: one line, a hairline of progress under it
+    Labyrinth.draw(ctx);
     const mh = Missions.hud();
     if (mh) {
-      const my = 52, mw = 150;
+      const my = 70, mw = 150;
       ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, my - 2, mw, 13);
       ctx.fillStyle = mh.col; ctx.fillRect(8, my - 2, 2, 13);
       const flash = G.mission && G.mission.flashT > 0 && Math.floor(t * 12) % 2;

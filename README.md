@@ -330,6 +330,100 @@ Four tiered paths, five nodes each, ending in an evolution that changes how you 
 | **Phantom** | speed, ambush crits, stealth, shadow dash | Wraith: higher leaps, slow-motion breaches, afterimages |
 | **Abyssal** | venom, regeneration, lure, toxic blood | Leviathan: periodic shockwaves |
 
+## Being seen
+
+A crocodile's whole life is the difference between being in the water and being
+in the open, so that difference is a number now, and it is the number the game
+is about.
+
+**CONCEALMENT** is what the water is doing for you at this instant: how deep you
+are, whether there is weed over you, whether there is a roof, how black the
+biome is, how late it is — minus everything you give away by moving. It is not
+a stat you buy. It is where you chose to be and how fast you chose to go. Deep
+and still is hidden. Deep and sprinting is a wake with something under it.
+
+**THE ALARM** is what the people on the surface have worked out, and it only
+moves when somebody actually sees something. A man on a bank has to be close
+enough, facing roughly your way, and looking at water that is not hiding you —
+miss any one and he carries on with his day. A question mark over his head means
+he half saw something; an exclamation mark means he is sure, and he shouts, and
+everyone within three hundred feet turns round. Taking a person where nobody can
+see it is worth almost nothing. Taking one in front of four others is the
+loudest thing you can do in this game.
+
+| Alarm | What it means |
+| --- | --- |
+| **UNSEEN** | nobody has anything |
+| **SOMETHING IN THE WATER** | one report, nobody sure |
+| **SIGHTED** | armed people will now shoot at you on sight |
+| **CAPTURE CREW INBOUND** | it has been called in |
+
+**CAPTURE** is the fail state that is not death. Past three quarters the site
+calls it in and a boat comes out with a spotlight and a net gun. They do not
+want you dead — there is a tank back at the facility with your name stencilled
+on it. A net that lands gives you four seconds of thrashing to tear it; if you
+do not, the run ends **CAPTURED**, and that is worse than being eaten.
+
+It comes down on its own while nobody finds anything, but slower each time they
+have called it in.
+
+## The water is not the same everywhere
+
+Each zone changes what the stealth game even is.
+
+- **The sewer** is dark and roofed, so concealment is nearly free — and you are
+  locked in (below).
+- **The Everglades** is where the people are: banks, camps, tours, traplines,
+  boats. Concealment is cheap but there is always somebody to spend it on.
+- **The ocean** is clear. Depth stops hiding you out on the shelf — you are a
+  shadow on white sand — and the only thing that helps is putting something
+  solid between you and the sky. That is what the wrecks are for.
+
+## Locked in
+
+A sewer run is not a stretch of water you leave when you have had enough. You
+are put down inside the reach and the tunnel is barred east and west by
+**sluice gates**: steel, hydraulic, and they do not care how hard you bite them.
+Somewhere between them is the site's relic, and the relic is the key. Carry it
+and the hydraulics start; swim out through an open gate and the run ends
+**ESCAPED**, which is the only way out of there that is not a stomach. A marker
+on the edge of the screen always points at the nearest gate and tells you how
+far, so the reach has a shape even when you cannot see either end of it.
+
+## Work going on in the water
+
+Not props — people in the middle of doing something, who will notice you doing
+something too.
+
+**MANATEE WATCHING** is the most human thing in the swamp: a pontoon moored over
+something grey and slow, six people who have paid forty dollars each leaning
+over the rail to look at it. It is also six pairs of eyes pointed straight down
+into the water you are trying to cross, and what they came to see is a hundred
+and eighty pounds of meat that does not run. Taking it while they watch is the
+single biggest jump the alarm can make.
+
+There are also **survey crews** shooting levels across the channel from the bank,
+and **traplines** somebody is coming back for.
+
+## You start the length of a forearm
+
+Three rungs were added under HATCHLING — the bottom of the ladder used to be a
+yard of animal, already the top of the food chain in the shallows. A release is
+now a release of something small: **0.4 ft out of the tank**, and the mass curve
+floors at 0.3 so the bottom rungs are reachable at all.
+
+> HATCHLING · YEARLING · FINGERLING · JUVENILE · SUB-ADULT · ADULT · BULL ·
+> ELDER · ANCIENT · TITAN · LEVIATHAN · SARCOSUCHUS · DEINOSUCHUS · SWAMP GOD
+
+## Landmarks
+
+Every release site has one big thing placed by hand rather than left to the
+chunk spawner — something you can see coming, orient by, hide under and remember
+the place by afterwards. The biggest is **THE CAUSEWAY**: four lanes on concrete
+piers with its middle span in the water, lamp standards still on the parapet,
+rebar hanging out of the tear. The shadow under the deck is the best cover for
+miles.
+
 ## The animals are animals
 
 No cartoon eyes. The white sclera with a big roving pupil in it is a human

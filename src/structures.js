@@ -36,8 +36,19 @@ class Structure extends Entity {
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
+      // The way out of the labyrinth. Steel, hydraulic, and it does not care
+      // how hard you bite it. It opens for the key and for nothing else.
+      case 'sluice': { this.name = 'SLUICE GATE'; this.hp = 9999; this.armor = 99; this.r = 26; this.open = 0; this.lit = 0; break; }
       case 'shop': { this.name = 'BAIT SHOP'; this.hp = 300; this.deckY = -20; this.w = 96; this.r = 60 * this.ss; this.pilings = []; for (let i = 0; i < 5; i++) this.pilings.push({ ox: -40 + i * 20, hp: 60, dead: false }); break; }
       case 'campsite': { this.name = 'CAMPSITE'; this.hp = 90; this.r = 44 * this.ss; this.tent = Math.floor(this.seed * 3); break; }
+      // A four-lane causeway with its middle span in the water. It is the
+      // biggest thing in the swamp that is not alive, you can see it from half
+      // a mile off, and the shadow under the deck is the best cover for miles.
+      case 'bridge': {
+        this.name = 'THE CAUSEWAY'; this.hp = 4000; this.armor = 40; this.r = 150;
+        this.deckY = -96; this.span = 300; this.ss = 1; this.gap = 0.42;
+        break;
+      }
       case 'wreck': {
         // a hull on the bottom: landmark, shelter and something to smash open
         this.name = ['TRAWLER WRECK', 'FREIGHTER WRECK', 'SAILBOAT WRECK'][Math.floor(this.seed * 3)];
@@ -137,6 +148,22 @@ class Structure extends Entity {
       if (!this.holed && this.hp < this.maxHp * 0.55) { this.holed = true; G.fx.silt(this.x, this.y - 10, 16, 70); SFX.splinter(this.pan); G.shake(5); G.fx.text(this.x, this.y - 34, 'HULL BREACHED', { color: '#ffd060', scale: 2, life: 1.6 }); }
     }
     if (this.kind === 'buoy') { this.y = World.surface(this.x) - 4; }
+    // ---- the sluice gate -------------------------------------------------
+    // It watches for the key. Bring the site's relic within reach and the
+    // hydraulics start, and once it is up it stays up.
+    if (this.kind === 'sluice') {
+      const has = typeof Labyrinth !== 'undefined' && Labyrinth.keyed();
+      this.lit = has ? 1 : 0;
+      if (has && this.open < 1) {
+        if (this.open === 0) { SFX.clank && SFX.clank(); G.shake(5); G.banner = { text: 'THE GATE IS COMING UP', sub: 'GO', t: 3, max: 3, color: '#3fd0a8' }; }
+        this.open = Math.min(1, this.open + dt * 0.34);
+        if (chance(dt * 12)) G.fx.bubbles(this.x + rand(-18, 18), this.y - 20, 1, 8);
+      }
+      // and it is the way out: swimming through an open one ends the run well
+      if (this.open > 0.55 && P && !P.dead && Math.abs(P.x - this.x) < 14) {
+        if (typeof Labyrinth !== 'undefined') Labyrinth.escaped();
+      }
+    }
     if ((this.kind === 'campfire' || this.kind === 'campsite') && chance(dt * 22)) G.fx.add({ type: 'smoke', x: this.x + rand(-2, 2) * this.ss, y: this.y - 6 * this.ss, vx: rand(-6, 6), vy: -rand(14, 28), s: rand(1.5, 3), color: '#6a6a6a', life: rand(0.8, 1.8), t: 0, maxLife: 1.4 });
     if ((this.kind === 'campfire' || this.kind === 'campsite') && this.lightOn) G.fx.glow(this.x + (this.kind === 'campsite' ? 41 * this.ss : 0), this.y - 4 * this.ss, (14 + Math.sin(this.t * 9) * 3) * this.ss, '#ff8020', 0.12);
     for (const o of this.alivePeople) {
@@ -359,6 +386,27 @@ class Structure extends Entity {
         Font.draw(ctx, 'SUBJECT 7', 0, -bh - 26, { color: '#2a2018', align: 'center' });
         break;
       }
+      case 'sluice': {
+        const roof = World.roofY(this.x), top = roof === null ? -150 : roof - 6;
+        const floorY = World.floorY(this.x), h = Math.max(60, floorY - top);
+        const open = this.open, rise = Math.round(h * open);
+        // the frame, sunk into the tunnel wall
+        px(-26, top - 6, 10, h + 12, '#2e3a40'); px(16, top - 6, 10, h + 12, '#2e3a40');
+        px(-26, top - 6, 52, 6, '#3e4c54'); px(-26, top - 6, 52, 2, '#5a6a74');
+        // the leaf, wound up into the head as it opens
+        const leafTop = top + rise, leafH = h - rise;
+        if (leafH > 2) {
+          px(-18, leafTop, 36, leafH, '#56626a');
+          for (let i = 0; i < 6; i++) px(-16 + i * 6, leafTop, 3, leafH, '#414c54');
+          for (let j = 0; j * 22 < leafH; j++) px(-18, leafTop + j * 22, 36, 3, '#6a7880');
+          px(-18, leafTop, 36, 2, '#8494a0');
+        }
+        // the lock plate, red while it is shut and green once the key is in
+        const lc = open > 0.02 ? '#3fd0a8' : (this.lit > 0 && Math.floor(this.t * 6) % 2 ? '#ffe060' : '#d03828');
+        px(-5, top + 10, 10, 12, '#1d262b'); px(-3, top + 12, 6, 8, lc);
+        if (open > 0.02) { px(-26, top + h - 2, 52, 2, 'rgba(63,208,168,0.5)'); }
+        break;
+      }
       case 'grate': {
         if (this.broken) { px(-16, -74, 4, 14, '#6a6a64'); px(12, -20, 4, 20, '#6a6a64'); break; }
         px(-22, -84, 44, 8, '#4a4a44'); px(-22, -84, 44, 2, '#6a6a64');
@@ -367,6 +415,44 @@ class Structure extends Entity {
         px(-24, -86, 6, 88, '#3a3a36'); px(20, -86, 6, 88, '#3a3a36');
         const f = 1 - clamp(this.hp / this.maxHp, 0, 1);
         if (f > 0.2) { ctx.strokeStyle = '#c8c8c0'; ctx.lineWidth = 1; for (let k = 0; k < f * 8; k++) { const a = ihash(k, 7) * TAU; ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(Math.cos(a) * 20 * f, -40 + Math.sin(a) * 26 * f); ctx.stroke(); } }
+        break;
+      }
+      case 'bridge': {
+        const S = this.span, D = this.deckY, fy = World.floorY(this.x), surf = World.surface(this.x);
+        // piers, standing in the channel
+        for (let k = -2; k <= 2; k++) {
+          const ox = k * (S / 2.2);
+          if (Math.abs(k) === 1) continue;                        // the span that fell took these
+          px(ox - 13, D + 8, 26, (fy - D) - 8, '#5a5e5c');
+          px(ox - 13, D + 8, 6, (fy - D) - 8, '#6e7270');
+          px(ox - 15, D + 4, 30, 6, '#494d4b');
+          for (let j = 0; j * 34 < fy - D; j++) px(ox - 13, D + 20 + j * 34, 26, 2, '#3e4240');
+          if (surf > D) px(ox - 15, surf - 3, 30, 5, 'rgba(60,90,70,0.45)');   // waterline scum
+        }
+        // deck, with the middle out of it
+        for (const seg of [[-S, -S / 2.2 - 4], [S / 2.2 + 4, S]]) {
+          px(seg[0], D, seg[1] - seg[0], 14, '#5e625f');
+          px(seg[0], D, seg[1] - seg[0], 3, '#787c78');
+          px(seg[0], D + 11, seg[1] - seg[0], 3, '#3c403e');
+          // parapet and lamp standards
+          px(seg[0], D - 8, seg[1] - seg[0], 3, '#6a6e6a');
+          for (let x2 = seg[0] + 20; x2 < seg[1] - 10; x2 += 58) {
+            px(x2, D - 30, 3, 24, '#4a4e4c');
+            px(x2 - 3, D - 33, 9, 4, '#5c605e');
+            if (this.lightOn) { px(x2 - 2, D - 30, 7, 2, '#ffe8a0'); G.fx.glow(this.x + x2 + 1, this.y + D - 30, 16, '#ffd070', 0.10); }
+          }
+          // lane markings, seen edge-on as ticks along the kerb
+          for (let x2 = seg[0] + 8; x2 < seg[1] - 6; x2 += 22) px(x2, D + 1, 10, 1, '#c8ccc0');
+        }
+        // the fallen span, half in the water, tilted
+        ctx.save();
+        ctx.translate(0, D + 26); ctx.rotate(0.34);
+        px(-S / 2.4, 0, S / 1.6, 13, '#565a58');
+        px(-S / 2.4, 0, S / 1.6, 3, '#6c706c');
+        for (let j = 0; j < 7; j++) px(-S / 2.4 + j * (S / 11), 13, 3, 9, '#434745');
+        ctx.restore();
+        // rebar and rubble where it tore
+        for (let k = 0; k < 7; k++) { const rx = -S / 2.2 + ihash(k, 5) * 24; px(rx, D + 12 + k, 2, 9, '#7a6a50'); }
         break;
       }
       case 'wreck': {

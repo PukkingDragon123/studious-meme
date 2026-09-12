@@ -3136,7 +3136,7 @@ const BIOMES = [
     town: true, music: 0.5,
   },
   {
-    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 15300,
+    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 15300, clarity: 0.4,
     sky: ['#2f86d8', '#d8ecf4'], water: ['#2aa0b0', '#0f6474', '#03202c'], scum: '#4a8a7a', fog: '#c8e4ee',
     parallax: ['mangrove', 'island', 'island'], ground: ['#7a7460', '#5a5648', '#3a3830'], grass: '#5a8a4a',
     plants: [['seagrass', 2.6], ['shellbed', 2], ['coral', 1.4], ['algae', 1.6], ['rock', 1.4], ['sunkbranch', 1]],
@@ -3158,7 +3158,7 @@ const BIOMES = [
   },
   // ===================== OPEN OCEAN =============================
   {
-    id: 'shelf', name: 'THE SHELF', x0: 19000, x1: 21800,
+    id: 'shelf', name: 'THE SHELF', x0: 19000, x1: 21800, clarity: 0.7,
     sky: ['#3a86c8', '#dceaf2'], water: ['#3aa8c0', '#1e6a86', '#0a2a3a'], scum: '#7a9a6a', fog: '#cfe4ee',
     parallax: ['bluff', 'block', 'bluff'], ground: ['#c8bc9a', '#a89a78', '#7a6e54'], grass: '#7aa86a', open: 'coast',
     plants: [['weed', 2.2], ['algae', 1.8], ['reed', 1.2], ['oyster', 1.4], ['rubble', 1]],
@@ -3167,7 +3167,7 @@ const BIOMES = [
     music: 0.3,
   },
   {
-    id: 'reef', name: 'THE REEF', x0: 21800, x1: 25000,
+    id: 'reef', name: 'THE REEF', x0: 21800, x1: 25000, clarity: 0.5,
     sky: ['#2f7ec4', '#cfe8f4'], water: ['#2fb0b8', '#1a7a86', '#07303c'], scum: '#8aa85a', fog: '#c0e2ee',
     parallax: ['bluff', 'bluff', 'block'], ground: ['#c0a884', '#9a8464', '#6e5c44'], grass: '#5ab0a0', open: 'reef',
     plants: [['coral', 3.2], ['fan', 2.4], ['sponge', 2], ['weed', 1.6], ['algae', 1.4], ['oyster', 1.2]],
@@ -3176,7 +3176,7 @@ const BIOMES = [
     music: 0.35,
   },
   {
-    id: 'wall', name: 'THE WALL', x0: 25000, x1: 29800,
+    id: 'wall', name: 'THE WALL', x0: 25000, x1: 29800, clarity: 0.45,
     sky: ['#1e5e9e', '#9ac4dc'], water: ['#1f7a92', '#104a62', '#031824'], scum: '#5a7a5a', fog: '#8ab0c8',
     parallax: ['bluff', 'block', 'bluff'], ground: ['#7a7060', '#5a5246', '#3a352c'], grass: '#3a8a80', open: 'rig',
     plants: [['fan', 2.4], ['coral', 2], ['sponge', 1.8], ['kelp', 2.2], ['algae', 1.4]],
@@ -3185,7 +3185,7 @@ const BIOMES = [
     dark: 0.2, flora: '#5a8a90', floraMix: 0.4, music: 0.7,
   },
   {
-    id: 'trench', name: 'THE TRENCH', x0: 29800, x1: 35400,
+    id: 'trench', name: 'THE TRENCH', x0: 29800, x1: 35400, clarity: 0.15,
     sky: ['#0a2436', '#245878'], water: ['#12465c', '#082a3a', '#010b12'], scum: '#3a5a4a', fog: '#123044',
     parallax: ['bluff', 'bluff', 'block'], ground: ['#4a4a50', '#34343a', '#202024'], grass: '#2a6a70', open: 'deep',
     plants: [['tubeworm', 3.2], ['sponge', 2], ['fan', 1.2], ['coral', 1], ['rubble', 2]],
@@ -3401,6 +3401,24 @@ const Weather = {
 
 // reactive plants: decor items get a bend spring that things push on
 const Foliage = {
+  // How much of you a bed of weed is covering at (x, y), 0..1. Only plants
+  // that actually grow in the water count: a cypress on the bank is not
+  // hiding anything from a man in a boat.
+  coverAt(x, y) {
+    const D = World.decor; if (!D.length) return 0;
+    let lo = 0, hi = D.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (D[m].x < x - 40) lo = m + 1; else hi = m; }
+    let c = 0;
+    for (let i = lo; i < D.length; i++) {
+      const d = D[i]; if (d.x > x + 40) break;
+      const k = FOLIAGE_KIND[d.type]; if (!k || !k.water) continue;
+      const top = k.top(d);
+      if (y < Math.min(top, d.y) - 10 || y > Math.max(top, d.y) + 10) continue;
+      c += 0.22 * clamp(1 - Math.abs(d.x - x) / 40, 0, 1);
+      if (c >= 1) break;
+    }
+    return clamp(c, 0, 1);
+  },
   // apply a push to plants near (x, y) moving with vx; r is the body radius
   disturb(x, y, vx, r) {
     const D = World.decor; if (!D.length) return;
@@ -5258,13 +5276,19 @@ function computeLook(player) {
   return L;
 }
 // size tiers (croc size units). Reaching a new tier triggers a shed.
+// You come out of the tank the length of a man's forearm. The bottom of this
+// ladder used to be HATCHLING at size 1, which was already a yard of animal
+// and already the top of most of the food chain in the shallows. Three rungs
+// were added under it, and the mass curve floors at 0.3 so they are reachable.
 const TIERS = [
-  { name: 'HATCHLING', size: 1.0 }, { name: 'JUVENILE', size: 1.35 }, { name: 'SUB-ADULT', size: 1.8 }, { name: 'ADULT', size: 2.4 },
-  { name: 'BULL', size: 3.1 }, { name: 'ELDER', size: 4.0 }, { name: 'ANCIENT', size: 5.2 }, { name: 'TITAN', size: 6.7 },
-  { name: 'LEVIATHAN', size: 8.6 }, { name: 'SARCOSUCHUS', size: 11 }, { name: 'DEINOSUCHUS', size: 14 }, { name: 'SWAMP GOD', size: 18 },
+  { name: 'HATCHLING', size: 0.30 }, { name: 'YEARLING', size: 0.46 }, { name: 'FINGERLING', size: 0.68 },
+  { name: 'JUVENILE', size: 1.0 }, { name: 'SUB-ADULT', size: 1.4 }, { name: 'ADULT', size: 1.9 },
+  { name: 'BULL', size: 2.6 }, { name: 'ELDER', size: 3.4 }, { name: 'ANCIENT', size: 4.5 }, { name: 'TITAN', size: 6.0 },
+  { name: 'LEVIATHAN', size: 8.0 }, { name: 'SARCOSUCHUS', size: 10.5 }, { name: 'DEINOSUCHUS', size: 13.5 }, { name: 'SWAMP GOD', size: 18 },
 ];
-const massToSize = m => Math.cbrt(1 + m / 15);
-const sizeToMass = s => (s * s * s - 1) * 15;
+const SIZE_FLOOR3 = 0.027;                       // 0.3 cubed: the hatchling
+const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 15);
+const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 15;
 function tierFor(size) { let t = 0; for (let i = 0; i < TIERS.length; i++) if (size >= TIERS[i].size - 1e-6) t = i; return t; }
 
 /* ===== src/genome.js ===== */
@@ -5706,26 +5730,26 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
   // ---- ZONE 2: THE EVERGLADES. Where a run starts and where it is learned.
-  { id: 'outfall', zone: 'glades', lat: -0.30, lon: 0.34, name: 'THE OUTFALL', sub: 'BREAK CONTAINMENT AND FIND THE PIPE', x: -2800, size: 1.0, diff: 0, intro: true },
-  { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 1.7, diff: 0.5, need: { reach: 1100 } },
-  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 2.3, diff: 1.0, need: { reach: 2800 } },
-  { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 3.0, diff: 1.5, need: { reach: 4200 } },
-  { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 3.7, diff: 2.0, need: { reach: 6100 } },
-  { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 4.5, diff: 2.5, need: { reach: 7600 } },
-  { id: 'campground', zone: 'glades', lat: 0.02, lon: 1.30, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 5.3, diff: 3.0, need: { reach: 9400 } },
-  { id: 'bay', zone: 'glades', lat: -0.62, lon: 1.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 6.4, diff: 3.6, need: { reach: 11000 } },
-  { id: 'seawall', zone: 'glades', lat: 0.30, lon: 1.44, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 9.5, diff: 4.6, kaiju: true, need: { tier: 7 } },
+  { id: 'outfall', zone: 'glades', lat: -0.30, lon: 0.34, name: 'THE OUTFALL', sub: 'BREAK CONTAINMENT AND FIND THE PIPE', x: -2800, size: 0.3, diff: 0, intro: true },
+  { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 1100 } },
+  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 2800 } },
+  { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 1.25, diff: 1.5, need: { reach: 4200 } },
+  { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 1.7, diff: 2.0, need: { reach: 6100 } },
+  { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 2.3, diff: 2.5, need: { reach: 7600 } },
+  { id: 'campground', zone: 'glades', lat: 0.02, lon: 1.30, name: 'PARADISE CAMPGROUND', sub: 'A HUNDRED TOURISTS AND ONE OF YOU', x: 10200, size: 3.0, diff: 3.0, need: { reach: 9400 } },
+  { id: 'bay', zone: 'glades', lat: -0.62, lon: 1.16, name: 'FLORIDA BAY', sub: 'SALT, SHARKS, OPEN HORIZON', x: 12300, size: 4.0, diff: 3.6, need: { reach: 11000 } },
+  { id: 'seawall', zone: 'glades', lat: 0.30, lon: 1.44, name: 'THE SEAWALL', sub: 'THEY BUILT A CITY. EAT IT.', x: 16200, size: 8.0, diff: 4.6, kaiju: true, need: { tier: 7 } },
   // ---- ZONE 1: THE SEWER NETWORK. Under the city, west of the lab.
-  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 1.4, diff: 0.8, need: { reach: 2800 } },
-  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 2.1, diff: 1.6, need: { reach: 4200 } },
-  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 3.0, diff: 2.4, need: { reach: 6100 } },
-  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 4.0, diff: 3.2, need: { reach: 7600 } },
-  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 5.4, diff: 4.2, need: { tier: 5 } },
+  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 0.45, diff: 0.8, need: { reach: 2800 } },
+  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 0.8, diff: 1.6, need: { reach: 4200 } },
+  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 1.4, diff: 2.4, need: { reach: 6100 } },
+  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 2.2, diff: 3.2, need: { reach: 7600 } },
+  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 3.4, diff: 4.2, need: { tier: 5 } },
   // ---- ZONE 3: THE OPEN OCEAN. Past the seawall, down the wall, into the dark.
-  { id: 'shelf', zone: 'ocean', lat: -0.20, lon: 4.58, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 4.4, diff: 3.0, need: { reach: 11000 } },
-  { id: 'reef', zone: 'ocean', lat: -0.58, lon: 4.98, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 5.6, diff: 3.8, need: { reach: 15300 } },
-  { id: 'wall', zone: 'ocean', lat: 0.26, lon: 5.02, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 7.2, diff: 4.5, need: { tier: 6 } },
-  { id: 'trench', survey: true, zone: 'ocean', lat: -0.12, lon: 5.46, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 9.0, diff: 5.4, kaiju: true, need: { tier: 8 } },
+  { id: 'shelf', zone: 'ocean', lat: -0.20, lon: 4.58, name: 'THE SHELF', sub: 'SAND AND SEAGRASS. THE LAST OF THE LIGHT.', x: 20500, size: 2.0, diff: 3.0, need: { reach: 11000 } },
+  { id: 'reef', zone: 'ocean', lat: -0.58, lon: 4.98, name: 'THE REEF', sub: 'A CITY BUILT BY ANIMALS. IT IS FULL.', x: 23200, size: 2.9, diff: 3.8, need: { reach: 15300 } },
+  { id: 'wall', zone: 'ocean', lat: 0.26, lon: 5.02, name: 'THE WALL', sub: 'THE BOTTOM STOPS. KEEP SWIMMING.', x: 27000, size: 4.4, diff: 4.5, need: { tier: 6 } },
+  { id: 'trench', survey: true, zone: 'ocean', lat: -0.12, lon: 5.46, name: 'THE TRENCH', sub: 'NOTHING DOWN HERE HAS EVER SEEN THE SUN', x: 32000, size: 7.6, diff: 5.4, kaiju: true, need: { tier: 8 } },
 ];
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
@@ -5924,7 +5948,22 @@ class Entity {
   }
   die(killer) {
     if (this.dead) return; this.dead = true; this.remove = true;
-    if (this.human && killer === G.player) for (const o of G.ents) if (o !== this && o.human && !o.dead && Math.abs(o.x - this.x) < 300) { o.panicked = true; o.state = 'flee'; o.stateT = 6; o.watching = false; }
+    // the one they paid to look at, taken while they watched
+    if (this.watched && killer === G.player && !this.watched.sinking) {
+      Alarm.notice(0.55, this, 'IN FRONT OF THE TOUR');
+      for (const q of this.watched.alivePass || []) q.panic = 3;
+      SFX.scream && SFX.scream(this.watched.pan);
+      G.banner = { text: 'THEY ALL SAW THAT', sub: 'THE TOUR IS CALLING IT IN', t: 3, max: 3, color: '#ff4030' };
+    }
+    if (this.human && killer === G.player) {
+      for (const o of G.ents) if (o !== this && o.human && !o.dead && Math.abs(o.x - this.x) < 300) { o.panicked = true; o.state = 'flee'; o.stateT = 6; o.watching = false; }
+      // taking a person in front of other people is the single loudest thing
+      // you can do; taking one alone in the dark is barely anything at all
+      let witnesses = 0;
+      for (const o of G.ents) if (o !== this && o.human && !o.dead && Math.abs(o.x - this.x) < 420) witnesses++;
+      Alarm.notice(witnesses ? 0.34 + witnesses * 0.09 : 0.1, this, witnesses ? 'THEY SAW IT HAPPEN' : 'ONE MISSING');
+      Alarm.noise(this.x, this.y, 420, 0);
+    }
     G.onEntityKilled(this, killer === G.player, this.gulped);
   }
   explode(power = 1) {
@@ -6025,7 +6064,8 @@ class Fish extends Entity {
     this.tick(dt);
     const P = G.player, d = this.def, dP = this.distTo(P), ratio = this.playerRatio();
     const sp = this.speed * (1 - this.slow) * (this.stun > 0 ? 0 : 1);
-    const sees = this.senses(d.flee || 120);
+    if (this.tame) { this.state = 'idle'; }
+    const sees = !this.tame && this.senses(d.flee || 120);
     if (P.st.fearAura && this.sizeClass < P.size * 0.6 && dP < 260) { this.state = 'flee'; this.stateT = 1; }
     else if (d.pred && !P.dead && (ratio < 1.15 || (this.hp < this.maxHp && dP < 320)) && dP < 560) { this.state = 'hunt'; this.aware = true; }
     else if (d.aggr && !P.dead && P.size < d.aggrMax && dP < 170 && this.aware) this.state = 'hunt';
@@ -6191,6 +6231,7 @@ class LandAnimal extends Entity {
     this.y = fy - this.groundOff; this.vy = 0;
     if (this.watching) { this.vx = 0; this.anim.phase += dt * 0.8; this.facing = sign(P.x - this.x) || this.facing; return; }
     const sees = this.senses(d.flee), dP = this.distTo(P);
+    if (d.human) this.look(dt, P, dP);
     // land predators hunt other land animals when the player is not a factor
     if (d.hunter) {
       this.huntCd -= dt;
@@ -6209,7 +6250,7 @@ class LandAnimal extends Entity {
     // armed people stand their ground and shoot until you get too close
     if (this.armed === undefined) { const v = this.rig && this.rig.spec ? this.rig.spec.prop : null; this.armed = v === 'rifle' || v === 'shotgun' || v === 'harpoon' ? v : null; this.shootCd = rand(0.6, 2); }
     if (this.armed && !P.dead && !this.panicked) {
-      const seesP = dP < 420 && P.y > -200 && Math.abs(P.y - this.y) < 260;
+      const seesP = dP < 420 && P.y > -200 && Math.abs(P.y - this.y) < 260 && this.onAlert();
       if (seesP && dP > 76) {
         this.state = 'shoot'; this.stateT = 1.2; this.facing = sign(P.x - this.x) || this.facing;
         this.shootCd -= dt;
@@ -6260,6 +6301,60 @@ class LandAnimal extends Entity {
     if (Math.abs(this.vx) > 10) { this.grazeT += dt * Math.abs(this.vx) * 0.1; Foliage.disturb(this.x, this.y, this.vx, this.r); if (Mud.softness(this.x) > 0.3 && chance(dt * 3)) G.fx.print(this.x, World.floorY(this.x) - 1, 3, this.facing); }
     if (d.human && this.kind === 'fisherman') this.rodT += dt;
   }
+  // ---- what a person on a bank can actually work out -------------------
+  // Three things have to line up: you are close enough, you are roughly in
+  // front of them, and the water is not doing enough for you. Miss any one
+  // and they carry on with their day.
+  look(dt, P, dP) {
+    if (this.alertT === undefined) { this.alertT = 0; this.callT = 0; this.suspectX = 0; this.lookA = 0; }
+    if (this.callT > 0) this.callT -= dt;
+    if (P.dead) { this.alertT = Math.max(0, this.alertT - dt * 0.5); return; }
+    const range = this.armed ? 400 : 250;
+    const conceal = Alarm.concealment(P);
+    let see = 0;
+    if (dP < range) {
+      // in front of them, and not behind their shoulder
+      const ahead = sign(P.x - this.x) === this.facing;
+      const cone = ahead ? 1 : 0.18;
+      // the nearer you are the less the water hides you
+      const near = clamp(1 - dP / range, 0, 1);
+      see = near * cone * (1 - conceal) * (this.watching ? 1.6 : 1);
+      // a head out of the water at short range is unmistakable
+      if (P.y < World.surface(P.x) && dP < range * 0.6) see = Math.max(see, near * cone * 0.8);
+    }
+    if (see > 0.12) {
+      this.alertT = Math.min(2.4, this.alertT + see * dt * 2.2);
+      this.suspectX = P.x; this.suspectY = P.y;
+      this.lookA = sign(P.x - this.x);
+      // personal certainty spills into the site alarm
+      Alarm.notice(see * dt * 0.14, this, this.def.human ? 'A MAN SAW YOU' : '');
+      // and past a point they shout, which is worth more than what they saw
+      if (this.alertT > 1.5 && this.callT <= 0) {
+        this.callT = 6;
+        SFX.yell && SFX.yell(this.pan);
+        Alarm.notice(0.16, this, 'THEY ARE SHOUTING');
+        // everyone in earshot turns round
+        for (const o of G.ents) {
+          if (o === this || !o.human || o.dead) continue;
+          if (Math.abs(o.x - this.x) > 360) continue;
+          o.alertT = Math.max(o.alertT || 0, 1.1);
+          o.suspectX = P.x; o.suspectY = P.y;
+          o.facing = sign(P.x - o.x) || o.facing;
+        }
+        this.shoutT = 1.4;
+      }
+    } else {
+      this.alertT = Math.max(0, this.alertT - dt * 0.35);
+    }
+    // a person who half saw something turns to face where it was
+    if (this.alertT > 0.4 && this.alertT < 1.5 && this.state !== 'shoot' && this.state !== 'flee') {
+      this.facing = sign(this.suspectX - this.x) || this.facing;
+      this.vx = approach(this.vx, 0, 400 * dt);
+    }
+  }
+  // has this one worked out you are there
+  onAlert() { return (this.alertT || 0) > 1.5 || Alarm.level > 0.62; }
+
   updateSwim(dt, P, d) {
     this.swimT += dt; this.state = 'swim';
     const s = World.surface(this.x); this.vy = approach(this.vy, this.y > s - 2 ? -30 : 20, 150 * dt);
@@ -6282,6 +6377,20 @@ class LandAnimal extends Entity {
     this.anim.cast = this.kind === 'fisherman' && this.state === 'idle' ? 1 : 0;
     const ang = this.state === 'swim' ? (this.human ? -Math.PI / 2 + 0.3 : 0.25) : 0;
     this.rig.draw(ctx, this.x, this.y, this.facing, ang, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
+    // what this one has worked out, over its head: a question mark while it is
+    // only suspicious, an exclamation once it is sure and shouting
+    const al = this.alertT || 0;
+    if (this.human && al > 0.35) {
+      const hy = this.y - this.worldLen * 0.95 - 6, hx = Math.round(this.x);
+      const sure = al > 1.5 || (this.shoutT || 0) > 0;
+      const col = sure ? '#ff5a3a' : '#ffd23a';
+      const bob = Math.round(Math.sin(this.t * 7) * (sure ? 1.5 : 0.6));
+      ctx.fillStyle = 'rgba(6,12,14,0.75)'; ctx.fillRect(hx - 4, hy - 11 + bob, 8, 13);
+      ctx.fillStyle = col;
+      if (sure) { ctx.fillRect(hx - 1, hy - 9 + bob, 3, 7); ctx.fillRect(hx - 1, hy + bob, 3, 2); }
+      else { ctx.fillRect(hx - 2, hy - 9 + bob, 5, 2); ctx.fillRect(hx + 1, hy - 8 + bob, 2, 3); ctx.fillRect(hx - 1, hy - 5 + bob, 3, 2); ctx.fillRect(hx - 1, hy - 3 + bob, 2, 2); ctx.fillRect(hx - 1, hy + bob, 2, 2); }
+    }
+    if (this.shoutT > 0) this.shoutT -= 0.016;
     if (this.muzzle > 0) { ctx.fillStyle = '#fff0a0'; const mx = this.x + this.facing * this.r * 1.5, my = this.y - this.worldLen * 0.55; ctx.fillRect(mx - 2, my - 2, 5, 4); ctx.fillStyle = '#ffd040'; ctx.fillRect(mx + this.facing * 3, my - 1, 3, 2); }
     if (this.kind === 'fisherman' && this.state !== 'swim' && this.state !== 'flee') {
       const hx = this.x + this.facing * this.r * 0.9, hy = this.y - this.groundOff * 0.72;
@@ -6495,6 +6604,7 @@ class Boat extends Entity {
     this.threat = (kind === 'tourist' || this.pontoon || this.jon) ? 0 : 1;
     this.speed = this.war ? 55 : this.pontoon ? 26 : this.jon ? 40 : kind === 'tourist' ? 35 : 45;
     this.fan = 0; this.sinking = false; this.sinkT = 0; this.engineOn = true; this.harpoonCd = 5; this.turnCd = 0; this.moored = false;
+    this.watch = null; this.watchT = 0;
     this.pass = [];
     const n = this.war ? 3 : this.pontoon ? 5 : this.jon ? 2 : kind === 'tourist' ? 4 : 2;
     const ptype = this.pontoon ? 'tourist' : this.jon ? 'fisherman' : kind === 'tourist' ? 'tourist' : 'poacher';
@@ -6568,6 +6678,31 @@ class Boat extends Entity {
     } else { this.vx *= 0.98; this.fan *= 0.97; }
     this.x += this.vx * dt; if (Math.abs(this.vx) > 4) this.facing = sign(this.vx);
     if (Math.abs(this.vx) > 10) { Water.splash(this.x + this.facing * this.r * 0.9, -Math.abs(this.vx) * 0.5 * dt * 60 * 0.1, 10 * this.bs); Water.splash(this.x - this.facing * this.r * 0.8, Math.abs(this.vx) * 0.45 * dt * 60 * 0.1, 12 * this.bs); }
+    // ---- everyone aboard is a pair of eyes -----------------------------
+    // A boat full of people is worse than a man on a bank, and a boat full of
+    // people already leaning over the rail looking into the water is worst of
+    // all, because they are looking exactly where you are.
+    if (!P.dead && this.alivePass.length) {
+      const conceal = Alarm.concealment(P);
+      const dx = Math.abs(P.x - this.x), range = this.tour ? 190 : 300;
+      if (dx < range) {
+        const near = clamp(1 - dx / range, 0, 1);
+        const looking = this.tour ? 1.9 : this.threat ? 1.25 : 0.8;
+        const eyes = 0.5 + this.alivePass.length * 0.16;
+        const see = near * looking * eyes * (1 - conceal) * 0.09;
+        if (see > 0.004) {
+          Alarm.notice(see * dt, this, this.tour ? 'THE TOUR BOAT SAW YOU' : 'A BOAT SAW YOU');
+          this.sawT = 1.2;
+          for (const q of this.alivePass) if (chance(dt * 1.5)) q.panic = Math.max(q.panic, 0.6);
+        }
+      }
+    }
+    if (this.sawT > 0) this.sawT -= dt;
+    // the tour holds station over whatever it came to see
+    if (this.tour && this.watch && !this.watch.dead && !this.watch.remove) {
+      this.x = approach(this.x, this.watch.x, 18 * dt);
+      this.watchT += dt;
+    }
     // shooting
     const inRange = !P.dead && Math.abs(P.x - this.x) < 320 + this.r && P.y < 110 && P.y > -160;
     for (const p of this.alivePass) {
@@ -6702,7 +6837,7 @@ class Kayak extends Entity {
 // ---------- projectiles ----------
 class Projectile extends Entity {
   constructor(x, y, vx, vy, kind, owner) {
-    super(x, y); this.vx = vx; this.vy = vy; this.kind = kind; this.owner = owner; this.type = 'proj'; this.edible = false; this.bleeds = false; this.latchable = false; this.life = kind === 'rock' ? 4 : 1.6; this.r = kind === 'rock' ? 4 : 1; this.hp = 1; this.layer = 2; this.stuck = false; this.name = kind;
+    super(x, y); this.vx = vx; this.vy = vy; this.kind = kind; this.owner = owner; this.type = 'proj'; this.edible = false; this.bleeds = false; this.latchable = false; this.life = kind === 'rock' ? 4 : 1.6; this.r = kind === 'rock' ? 4 : kind === 'net' ? 7 : 1; this.hp = 1; this.layer = 2; this.stuck = false; this.name = kind;
   }
   hitTest() { return false; }
   update(dt) {
@@ -6713,6 +6848,7 @@ class Projectile extends Entity {
       if (chance(0.5) && under) G.fx.bubbles(this.x, this.y, 1, 1);
     } else if (this.kind === 'rock') { this.vy += 620 * dt; if (under) { if (!this.wasWater) { this.wasWater = true; G.fx.splash(this.x, 1.2, this.vx); } this.drag(dt, 4); } }
     else if (this.kind === 'harpoon') { if (under) this.drag(dt, 1.2); this.vy += 60 * dt; if (chance(0.7)) G.fx.bubbles(this.x, this.y, 1, 1); }
+    else if (this.kind === 'net') { this.vy += 120 * dt; if (under) this.drag(dt, 2.6); this.spin = (this.spin || 0) + dt * 5; }
     this.move(dt);
     this.angle = Math.atan2(this.vy, this.vx);
     if (this.y > World.floorY(this.x) - 2) { this.remove = true; if (this.kind === 'rock') G.fx.smoke(this.x, this.y, 3, '#6b5a3a'); }
@@ -6721,6 +6857,7 @@ class Projectile extends Entity {
       const spd = Math.hypot(this.vx, this.vy);
       if (this.kind === 'bullet') { const dmg = 9 * clamp(spd / 500, 0.2, 1); if (P.hurt(dmg, this.owner, 'bullet') > 0) G.fx.text(P.x, P.y - 18 * P.size, 'SHOT!', { color: '#ffb040' }); else { G.fx.sparks(this.x, this.y, 6); SFX.ricochet(this.pan); } }
       else if (this.kind === 'rock') { P.hurt(22, this.owner, 'crush'); G.shake(8); SFX.thud(this.pan); P.vx += this.vx * 0.3; P.vy += this.vy * 0.2; }
+      else if (this.kind === 'net') { P.snare(this.owner); this.remove = true; return; }
       else if (this.kind === 'harpoon' && this.owner && !this.owner.sinking) { const T = { boat: this.owner, t: 0 }; this.owner.tether = T; P.tether = T; P.hurt(10, this.owner, 'bullet'); G.fx.text(P.x, P.y - 20, 'HARPOONED! BITE TO BREAK FREE', { color: '#ff6040', scale: 1, life: 2 }); G.shake(8); }
       this.remove = true;
     }
@@ -6728,7 +6865,125 @@ class Projectile extends Entity {
   draw(ctx) {
     if (this.kind === 'bullet') { ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = '#ffe080'; ctx.fillRect(-3, 0, 4, 1); ctx.fillStyle = 'rgba(255,220,120,0.4)'; ctx.fillRect(-9, 0, 6, 1); ctx.restore(); }
     else if (this.kind === 'rock') drawSpr(ctx, SPR.rockProj, this.x, this.y, this.t * 6, 1.6, 1.6);
+    else if (this.kind === 'net') {
+      // a weighted net, tumbling: a ring of lead with mesh strung across it
+      const r = 7, a = this.spin || 0;
+      ctx.save(); ctx.translate(Math.round(this.x), Math.round(this.y)); ctx.rotate(a);
+      ctx.fillStyle = '#cfd8c8';
+      for (let k = 0; k < 8; k++) { const q = k / 8 * TAU; ctx.fillRect(Math.round(Math.cos(q) * r) - 1, Math.round(Math.sin(q) * r) - 1, 2, 2); }
+      ctx.fillStyle = 'rgba(200,214,190,0.5)';
+      for (let k = -1; k <= 1; k++) { ctx.fillRect(-r, k * 4, r * 2, 1); ctx.fillRect(k * 4, -r, 1, r * 2); }
+      ctx.restore();
+    }
     else if (this.kind === 'harpoon') { drawSpr(ctx, SPR.harpoon, this.x, this.y, this.angle, 1, 1); if (this.owner) { ctx.strokeStyle = '#d0d0c0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(this.owner.x, this.owner.y - 10); ctx.lineTo(this.x, this.y); ctx.stroke(); } }
+  }
+}
+// ---------- MANATEE WATCHING ----------
+// A pontoon full of people who have paid forty dollars each to lean over a rail
+// and look at something grey and slow. It is the most human thing in the swamp.
+// It is also six pairs of eyes pointed straight down into the water you are
+// trying to cross, and whatever they came to see is a hundred and eighty
+// pounds of meat that does not run.
+function spawnManateeWatch(x) {
+  const wx = World.findX(x, xx => World.floorY(xx) > 90, 700, 30);
+  if (wx === null) return null;
+  const boat = Spawn.boat(wx, 'pontoon', 1);
+  boat.moored = true; boat.engineOn = false; boat.speed = 0; boat.tour = true;
+  boat.name = 'MANATEE TOUR';
+  // the animal they came for, below and slightly off the bow
+  const m = new Fish(wx + rand(-30, 30), clamp(World.floorY(wx) - 26, 26, 160), 'manatee');
+  m.tame = true; m.watched = boat; G.add(m);
+  boat.watch = m;
+  // and a marker buoy on the line
+  const buoy = new Structure(wx + 54, 'buoy'); G.add(buoy);
+  return boat;
+}
+// ---------- A SURVEY CREW ----------
+// Two people and a tripod on the bank, shooting levels across the channel.
+// They are not looking for you. They will see you anyway.
+function spawnSurvey(x) {
+  const lx = World.findX(x, xx => World.floorY(xx) < -6, 800, 24);
+  if (lx === null) return null;
+  const a = new LandAnimal(lx, 'scientist'); a.state = 'idle'; a.stateT = 99; a.facing = 1; G.add(a);
+  const b = new LandAnimal(lx + rand(40, 70), 'ranger'); b.state = 'idle'; b.stateT = 99; b.facing = -1; G.add(b);
+  G.add(new Structure(lx + 24, 'console'));
+  return a;
+}
+// ---------- A TRAPLINE ----------
+// Somebody is running crab traps along this bank, and will be back for them.
+function spawnTrapline(x, n = 4) {
+  let placed = 0;
+  for (let i = 0; i < n; i++) {
+    const tx = World.findX(x + i * rand(60, 110), xx => World.floorY(xx) > 40, 240, 16);
+    if (tx === null) continue;
+    G.add(new Structure(tx, 'crabtrap')); placed++;
+  }
+  return placed;
+}
+
+// ---------- THE CAPTURE CREW ----------
+// Called when the site has seen enough of you. They do not want you dead —
+// there is a tank back at the facility with your name stencilled on it — so
+// they carry a net gun and a spotlight and they are very patient.
+class CaptureBoat extends Boat {
+  constructor(x) {
+    super(x, 'warboat', 1);
+    this.kind = 'capture'; this.capture = true; this.isBoss = false; this.persistent = true;
+    this.name = 'CAPTURE CREW'; this.threat = 1;
+    this.hp = 260; this.maxHp = 260; this.speed = 62;
+    this.netCd = 3.2; this.lampA = 0; this.searchT = 0; this.lastPing = 0;
+    for (const p of this.pass) p.type = 'scientist';
+  }
+  update(dt) {
+    const P = G.player;
+    super.update(dt);
+    if (this.sinking || this.dead || !P || P.dead) return;
+    // the lamp sweeps until it finds you, then it holds
+    const conceal = Alarm.concealment(P);
+    const seen = conceal < 0.55 && Math.abs(P.x - this.x) < 340;
+    const want = Math.atan2((P.y - 6) - (this.y - 14), P.x - this.x);
+    this.lampA = seen ? lerp(this.lampA, want, 0.14) : this.lampA + dt * 0.9 * (Math.sin(this.t * 0.5) > 0 ? 1 : -1);
+    if (seen) {
+      this.searchT = 0;
+      // being under their lamp is being seen, continuously
+      Alarm.notice(dt * 0.05, this, 'UNDER THE LAMP');
+      // close the distance, but keep off so you cannot simply eat them
+      const want2 = P.x + sign(this.x - P.x) * 120;
+      this.x = approach(this.x, want2, this.speed * dt);
+      this.facing = sign(P.x - this.x) || this.facing;
+      this.netCd -= dt;
+      if (this.netCd <= 0 && Math.abs(P.x - this.x) < 260) {
+        this.netCd = rand(2.6, 4.2);
+        const hx = this.x + this.facing * this.r * 0.5, hy = this.y - 12;
+        const tx = P.x + P.vx * 0.45, ty = P.y + P.vy * 0.35;
+        const a = Math.atan2(ty - hy, tx - hx);
+        G.add(new Projectile(hx, hy, Math.cos(a) * 340, Math.sin(a) * 340 - 40, 'net', this));
+        SFX.gunshot && SFX.gunshot(this.pan);
+        G.fx.smoke(hx, hy, 2, '#b0b8a8');
+      }
+    } else {
+      this.searchT += dt;
+      // quartering the last place anybody saw anything
+      const target = Alarm.lastSeenX + Math.sin(this.t * 0.6) * 180;
+      this.x = approach(this.x, target, this.speed * 0.7 * dt);
+      if (this.searchT > 26 && Alarm.level < 0.5) { this.sinking = false; this.remove = true; Alarm.crew = null; }
+    }
+  }
+  draw(ctx) {
+    super.draw(ctx);
+    if (this.sinking || this.dead) return;
+    // the searchlight: a cone of dust you very much do not want to be in
+    const lx = this.x + this.facing * this.r * 0.4, ly = this.y - 14;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.17;
+    ctx.translate(lx, ly); ctx.rotate(this.lampA);
+    const g = ctx.createLinearGradient(0, 0, 300, 0);
+    g.addColorStop(0, 'rgba(230,244,210,0.9)'); g.addColorStop(1, 'rgba(230,244,210,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(300, -54); ctx.lineTo(300, 54); ctx.lineTo(0, 3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#f4ffd0'; ctx.fillRect(Math.round(lx) - 2, Math.round(ly) - 2, 4, 4);
   }
 }
 // ---------- SKUNK APE (land boss) ----------
@@ -7145,8 +7400,19 @@ class Structure extends Entity {
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
+      // The way out of the labyrinth. Steel, hydraulic, and it does not care
+      // how hard you bite it. It opens for the key and for nothing else.
+      case 'sluice': { this.name = 'SLUICE GATE'; this.hp = 9999; this.armor = 99; this.r = 26; this.open = 0; this.lit = 0; break; }
       case 'shop': { this.name = 'BAIT SHOP'; this.hp = 300; this.deckY = -20; this.w = 96; this.r = 60 * this.ss; this.pilings = []; for (let i = 0; i < 5; i++) this.pilings.push({ ox: -40 + i * 20, hp: 60, dead: false }); break; }
       case 'campsite': { this.name = 'CAMPSITE'; this.hp = 90; this.r = 44 * this.ss; this.tent = Math.floor(this.seed * 3); break; }
+      // A four-lane causeway with its middle span in the water. It is the
+      // biggest thing in the swamp that is not alive, you can see it from half
+      // a mile off, and the shadow under the deck is the best cover for miles.
+      case 'bridge': {
+        this.name = 'THE CAUSEWAY'; this.hp = 4000; this.armor = 40; this.r = 150;
+        this.deckY = -96; this.span = 300; this.ss = 1; this.gap = 0.42;
+        break;
+      }
       case 'wreck': {
         // a hull on the bottom: landmark, shelter and something to smash open
         this.name = ['TRAWLER WRECK', 'FREIGHTER WRECK', 'SAILBOAT WRECK'][Math.floor(this.seed * 3)];
@@ -7246,6 +7512,22 @@ class Structure extends Entity {
       if (!this.holed && this.hp < this.maxHp * 0.55) { this.holed = true; G.fx.silt(this.x, this.y - 10, 16, 70); SFX.splinter(this.pan); G.shake(5); G.fx.text(this.x, this.y - 34, 'HULL BREACHED', { color: '#ffd060', scale: 2, life: 1.6 }); }
     }
     if (this.kind === 'buoy') { this.y = World.surface(this.x) - 4; }
+    // ---- the sluice gate -------------------------------------------------
+    // It watches for the key. Bring the site's relic within reach and the
+    // hydraulics start, and once it is up it stays up.
+    if (this.kind === 'sluice') {
+      const has = typeof Labyrinth !== 'undefined' && Labyrinth.keyed();
+      this.lit = has ? 1 : 0;
+      if (has && this.open < 1) {
+        if (this.open === 0) { SFX.clank && SFX.clank(); G.shake(5); G.banner = { text: 'THE GATE IS COMING UP', sub: 'GO', t: 3, max: 3, color: '#3fd0a8' }; }
+        this.open = Math.min(1, this.open + dt * 0.34);
+        if (chance(dt * 12)) G.fx.bubbles(this.x + rand(-18, 18), this.y - 20, 1, 8);
+      }
+      // and it is the way out: swimming through an open one ends the run well
+      if (this.open > 0.55 && P && !P.dead && Math.abs(P.x - this.x) < 14) {
+        if (typeof Labyrinth !== 'undefined') Labyrinth.escaped();
+      }
+    }
     if ((this.kind === 'campfire' || this.kind === 'campsite') && chance(dt * 22)) G.fx.add({ type: 'smoke', x: this.x + rand(-2, 2) * this.ss, y: this.y - 6 * this.ss, vx: rand(-6, 6), vy: -rand(14, 28), s: rand(1.5, 3), color: '#6a6a6a', life: rand(0.8, 1.8), t: 0, maxLife: 1.4 });
     if ((this.kind === 'campfire' || this.kind === 'campsite') && this.lightOn) G.fx.glow(this.x + (this.kind === 'campsite' ? 41 * this.ss : 0), this.y - 4 * this.ss, (14 + Math.sin(this.t * 9) * 3) * this.ss, '#ff8020', 0.12);
     for (const o of this.alivePeople) {
@@ -7468,6 +7750,27 @@ class Structure extends Entity {
         Font.draw(ctx, 'SUBJECT 7', 0, -bh - 26, { color: '#2a2018', align: 'center' });
         break;
       }
+      case 'sluice': {
+        const roof = World.roofY(this.x), top = roof === null ? -150 : roof - 6;
+        const floorY = World.floorY(this.x), h = Math.max(60, floorY - top);
+        const open = this.open, rise = Math.round(h * open);
+        // the frame, sunk into the tunnel wall
+        px(-26, top - 6, 10, h + 12, '#2e3a40'); px(16, top - 6, 10, h + 12, '#2e3a40');
+        px(-26, top - 6, 52, 6, '#3e4c54'); px(-26, top - 6, 52, 2, '#5a6a74');
+        // the leaf, wound up into the head as it opens
+        const leafTop = top + rise, leafH = h - rise;
+        if (leafH > 2) {
+          px(-18, leafTop, 36, leafH, '#56626a');
+          for (let i = 0; i < 6; i++) px(-16 + i * 6, leafTop, 3, leafH, '#414c54');
+          for (let j = 0; j * 22 < leafH; j++) px(-18, leafTop + j * 22, 36, 3, '#6a7880');
+          px(-18, leafTop, 36, 2, '#8494a0');
+        }
+        // the lock plate, red while it is shut and green once the key is in
+        const lc = open > 0.02 ? '#3fd0a8' : (this.lit > 0 && Math.floor(this.t * 6) % 2 ? '#ffe060' : '#d03828');
+        px(-5, top + 10, 10, 12, '#1d262b'); px(-3, top + 12, 6, 8, lc);
+        if (open > 0.02) { px(-26, top + h - 2, 52, 2, 'rgba(63,208,168,0.5)'); }
+        break;
+      }
       case 'grate': {
         if (this.broken) { px(-16, -74, 4, 14, '#6a6a64'); px(12, -20, 4, 20, '#6a6a64'); break; }
         px(-22, -84, 44, 8, '#4a4a44'); px(-22, -84, 44, 2, '#6a6a64');
@@ -7476,6 +7779,44 @@ class Structure extends Entity {
         px(-24, -86, 6, 88, '#3a3a36'); px(20, -86, 6, 88, '#3a3a36');
         const f = 1 - clamp(this.hp / this.maxHp, 0, 1);
         if (f > 0.2) { ctx.strokeStyle = '#c8c8c0'; ctx.lineWidth = 1; for (let k = 0; k < f * 8; k++) { const a = ihash(k, 7) * TAU; ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(Math.cos(a) * 20 * f, -40 + Math.sin(a) * 26 * f); ctx.stroke(); } }
+        break;
+      }
+      case 'bridge': {
+        const S = this.span, D = this.deckY, fy = World.floorY(this.x), surf = World.surface(this.x);
+        // piers, standing in the channel
+        for (let k = -2; k <= 2; k++) {
+          const ox = k * (S / 2.2);
+          if (Math.abs(k) === 1) continue;                        // the span that fell took these
+          px(ox - 13, D + 8, 26, (fy - D) - 8, '#5a5e5c');
+          px(ox - 13, D + 8, 6, (fy - D) - 8, '#6e7270');
+          px(ox - 15, D + 4, 30, 6, '#494d4b');
+          for (let j = 0; j * 34 < fy - D; j++) px(ox - 13, D + 20 + j * 34, 26, 2, '#3e4240');
+          if (surf > D) px(ox - 15, surf - 3, 30, 5, 'rgba(60,90,70,0.45)');   // waterline scum
+        }
+        // deck, with the middle out of it
+        for (const seg of [[-S, -S / 2.2 - 4], [S / 2.2 + 4, S]]) {
+          px(seg[0], D, seg[1] - seg[0], 14, '#5e625f');
+          px(seg[0], D, seg[1] - seg[0], 3, '#787c78');
+          px(seg[0], D + 11, seg[1] - seg[0], 3, '#3c403e');
+          // parapet and lamp standards
+          px(seg[0], D - 8, seg[1] - seg[0], 3, '#6a6e6a');
+          for (let x2 = seg[0] + 20; x2 < seg[1] - 10; x2 += 58) {
+            px(x2, D - 30, 3, 24, '#4a4e4c');
+            px(x2 - 3, D - 33, 9, 4, '#5c605e');
+            if (this.lightOn) { px(x2 - 2, D - 30, 7, 2, '#ffe8a0'); G.fx.glow(this.x + x2 + 1, this.y + D - 30, 16, '#ffd070', 0.10); }
+          }
+          // lane markings, seen edge-on as ticks along the kerb
+          for (let x2 = seg[0] + 8; x2 < seg[1] - 6; x2 += 22) px(x2, D + 1, 10, 1, '#c8ccc0');
+        }
+        // the fallen span, half in the water, tilted
+        ctx.save();
+        ctx.translate(0, D + 26); ctx.rotate(0.34);
+        px(-S / 2.4, 0, S / 1.6, 13, '#565a58');
+        px(-S / 2.4, 0, S / 1.6, 3, '#6c706c');
+        for (let j = 0; j < 7; j++) px(-S / 2.4 + j * (S / 11), 13, 3, 9, '#434745');
+        ctx.restore();
+        // rebar and rubble where it tore
+        for (let k = 0; k < 7; k++) { const rx = -S / 2.2 + ihash(k, 5) * 24; px(rx, D + 12 + k, 2, 9, '#7a6a50'); }
         break;
       }
       case 'wreck': {
@@ -8120,6 +8461,7 @@ class Player {
   reset() {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
+    this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -8174,8 +8516,41 @@ class Player {
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
   rebuildLook() { this.look = computeLook(this); this.parts = buildCrocParts(this.look); }
 
+  // A net has landed on you. This is not damage — you cannot be hurt out of
+  // it and healing does not help. You have a few seconds of thrashing to tear
+  // it, and if you do not, they winch you in and the run ends in a tank.
+  snare(src) {
+    if (this.dead || this.netT > 0) return;
+    this.netT = 4.2; this.netHp = 6 + Math.round(this.size * 2); this.netBy = src || null;
+    G.shake(9); SFX.thud && SFX.thud(0);
+    G.fx.text(this.x, this.y - 22 * this.vis, 'NETTED - MASH TO TEAR', { color: '#ff6040', life: 2.2 });
+    G.banner = { text: 'NETTED', sub: 'TEAR IT OR THEY TAKE YOU', t: 2.4, max: 2.4, color: '#ff4030' };
+  }
+  // thrashing inside it: every bite tears a strand
+  updateNet(dt, inp) {
+    this.netT -= dt;
+    this.vx = approach(this.vx, 0, 260 * dt);
+    this.vy = approach(this.vy, this.y > World.surface(this.x) ? -18 : 40, 160 * dt);
+    this.x += this.vx * dt; this.y += this.vy * dt;
+    this.chain.solve(this.x, this.y, this.angle + Math.sin(this.t * 26) * 0.12, this.vis, dt, 0);
+    this.jaw = 0.4 + Math.abs(Math.sin(this.t * 18)) * 0.5;
+    if (chance(dt * 14)) G.fx.bubbles(this.x + rand(-10, 10) * this.vis, this.y, 1, 4);
+    if (inp && (inp.bite || inp.dash || inp.brace)) {
+      if (!this.netHeld) { this.netHeld = true; this.netHp -= 1; G.shake(3); SFX.bite && SFX.bite(this.size, 0);
+        G.fx.sparks(this.x + rand(-8, 8) * this.vis, this.y + rand(-6, 6) * this.vis, 3); }
+    } else this.netHeld = false;
+    if (this.netHp <= 0) {
+      this.netT = 0; this.invuln = Math.max(this.invuln, 1.2);
+      G.fx.text(this.x, this.y - 22 * this.vis, 'TORE FREE', { color: '#7affda', life: 1.6 });
+      SFX.levelup && SFX.levelup();
+      if (this.netBy) this.netBy.netCd = Math.max(this.netBy.netCd, 4);
+      return;
+    }
+    if (this.netT <= 0) this.die('CAPTURED', this.netBy);
+  }
   update(dt, inp) {
     if (this.dead) { this.updateDead(dt); return; }
+    if (this.netT > 0) { this.updateNet(dt, inp); return; }
     if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
@@ -9780,6 +10155,255 @@ const LabBench = {
   },
 };
 
+/* ===== src/alarm.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// BEING SEEN.
+//
+// A crocodile's whole life is the difference between being in the water and
+// being in the open. This file is that difference, made into a number.
+//
+// CONCEALMENT is what the water is doing for you right now: how deep you are,
+// whether there is weed over you, whether there is a roof, how dark the biome
+// is, how much of a wake you are pushing. It is not a stat you buy. It is
+// where you chose to be and how fast you chose to move.
+//
+// The ALARM is what the people on the surface have worked out. It only goes
+// up when somebody actually sees something, and it comes down slowly while
+// nobody does. Past three quarters the site calls it in, and a capture crew
+// comes out with a net gun. A net that holds is not death — it is worse. It is
+// going back in the tank.
+// ---------------------------------------------------------------------------
+const ALARM_STAGES = [
+  { at: 0.00, id: 'calm', name: 'UNSEEN', col: '#4f9f90' },
+  { at: 0.30, id: 'suspicious', name: 'SOMETHING IN THE WATER', col: '#e0c040' },
+  { at: 0.62, id: 'alarmed', name: 'SIGHTED', col: '#ff8c40' },
+  { at: 0.88, id: 'hunt', name: 'CAPTURE CREW INBOUND', col: '#ff4030' },
+];
+
+const Alarm = {
+  level: 0, prev: 0, state: 'calm', flashT: 0, crew: null, crewT: 0,
+  lastSeenX: 0, lastSeenY: 0, seenT: 0, quietT: 0, calls: 0,
+  reset() {
+    this.level = 0; this.prev = 0; this.state = 'calm'; this.flashT = 0;
+    this.crew = null; this.crewT = 0; this.seenT = 0; this.quietT = 0; this.calls = 0;
+  },
+  stage() { let s = ALARM_STAGES[0]; for (const q of ALARM_STAGES) if (this.level >= q.at) s = q; return s; },
+  at(id) { return this.stage().id === id; },
+  hunting() { return this.level >= 0.88; },
+
+  // ---------- concealment ----------
+  // 0 is standing on a bank in daylight. 1 is a shape under four feet of tannin
+  // with weed over it. Everything in between is a judgement you are making.
+  concealment(P) {
+    if (!P || P.dead) return 1;
+    const surf = World.surface(P.x), fy = World.floorY(P.x);
+    let c = 0;
+    // depth under the surface is most of it
+    const depth = P.y - surf;
+    const B0 = Biome.at(P.x);
+    // Clear water does not hide anything. On the shelf you are a shadow on
+    // white sand from fifty feet up, and the only thing that helps is getting
+    // something solid between you and the sky.
+    const clarity = (B0 && B0.clarity) || 0;
+    if (depth > 0) c += clamp(depth / (24 + 14 * P.vis), 0, 1) * 0.66 * (1 - clarity * 0.8);
+    else c -= 0.16;                                    // hauled out in the open
+    // a roof over the water is a roof over you
+    const roof = World.roofY(P.x);
+    if (roof !== null) c += 0.32;
+    // how black the water is here, and how late it is
+    if (B0 && B0.dark) c += B0.dark * 0.22;
+    const night = G.day !== undefined ? clamp(1 - Math.abs(G.day - 0.5) * 2.6, 0, 1) : 0;
+    c += night * 0.2;
+    // cover you are actually inside: weed, roots, wreckage
+    c += clamp(Foliage.coverAt ? Foliage.coverAt(P.x, P.y) : 0, 0, 1) * (0.26 + clarity * 0.4);
+    // hard cover: a hull, a reef head, anything you can put between you and up
+    for (const e of G.ents) {
+      if (e.type !== 'structure' || e.remove) continue;
+      if (e.kind !== 'wreck' && e.kind !== 'dock' && e.kind !== 'stilthouse' && e.kind !== 'shop' && e.kind !== 'seawall' && e.kind !== 'bridge') continue;
+      if (Math.abs(e.x - P.x) > (e.r || 20) + 18) continue;
+      if (P.y < e.y - 40) continue;
+      c += 0.3 + clarity * 0.25; break;
+    }
+    // and everything you give away by moving
+    const speed = Math.hypot(P.vx, P.vy);
+    c -= clamp(speed / 420, 0, 1) * 0.34;
+    if (P.onLand) c -= 0.3;
+    if (depth > -4 && depth < 6 && speed > 90) c -= 0.12;   // a wake on the surface
+    if (P.st && P.st.stealth) c += (P.st.stealth - 1) * 0.4;
+    if (P.lure) c -= 0.25;
+    return clamp(c, 0, 1);
+  },
+  hidden(P) { return this.concealment(P) > 0.58; },
+
+  // ---------- somebody saw something ----------
+  // `weight` is how sure they are. A glimpse of a wake is not a man on a bank
+  // watching you take a dog.
+  notice(weight, e, why) {
+    const P = G.player; if (!P || P.dead) return;
+    const before = this.level;
+    this.level = clamp(this.level + weight, 0, 1);
+    this.quietT = 0;
+    if (e) { this.lastSeenX = P.x; this.lastSeenY = P.y; }
+    if (this.level > before + 0.02) this.flashT = 0.5;
+    // crossing a line is an event, not a number ticking over
+    const a = ALARM_STAGES.filter(q => before < q.at && this.level >= q.at).pop();
+    if (a) {
+      this.state = a.id;
+      G.banner = { text: a.name, sub: why || '', t: 2.4, max: 2.4, color: a.col };
+      if (a.id === 'alarmed') { SFX.warning && SFX.warning(); this.calls++; }
+      if (a.id === 'hunt') { SFX.warning && SFX.warning(); this.crewT = 4; }
+      if (a.id === 'suspicious') SFX.ui && SFX.ui();
+    }
+  },
+  // a loud thing happened at x: anyone near enough hears it whether or not
+  // they were looking
+  noise(x, y, radius, weight) {
+    for (const e of G.ents) {
+      if (!e.human || e.dead) continue;
+      if (Math.abs(e.x - x) > radius) continue;
+      e.alertT = Math.max(e.alertT || 0, 0.5);
+      e.suspectX = x; e.suspectY = y;
+    }
+    if (weight) this.notice(weight, null, 'NOISE');
+  },
+
+  update(dt) {
+    const P = G.player;
+    if (this.flashT > 0) this.flashT -= dt;
+    if (!P || P.dead) return;
+    this.quietT += dt;
+    // it comes down, but only after they have stopped finding anything, and
+    // the more times they have called it in the slower it forgets
+    if (this.quietT > 4) {
+      const forget = (this.hunting() ? 0.012 : 0.03) / (1 + this.calls * 0.4);
+      this.level = Math.max(0, this.level - forget * dt * 60 * 0.016 * 60 * 0.016);
+      this.level = Math.max(0, this.level - forget * dt);
+    }
+    const st = this.stage();
+    if (st.id !== this.state && this.level < this.prev) this.state = st.id;
+    this.prev = this.level;
+    // the crew: called once, and they take a while to get here
+    if (this.crewT > 0) {
+      this.crewT -= dt;
+      if (this.crewT <= 0 && !this.crew) this.callCrew();
+    }
+    if (this.crew && (this.crew.dead || this.crew.remove)) { this.crew = null; if (this.level > 0.8) this.crewT = 14; }
+  },
+  callCrew() {
+    const P = G.player; if (!P || P.dead) return;
+    // put them on open water upwind of you, far enough that you get a moment
+    const side = P.x > this.lastSeenX ? 1 : -1;
+    let x = World.findX(P.x + side * 420, xx => World.floorY(xx) > 60, 900, 40);
+    if (x === null) x = World.findX(P.x - side * 420, xx => World.floorY(xx) > 60, 900, 40);
+    if (x === null) return;
+    if (typeof CaptureBoat === 'undefined') return;
+    this.crew = G.add(new CaptureBoat(x));
+    G.banner = { text: 'CAPTURE CREW', sub: 'THEY WANT YOU ALIVE', t: 2.8, max: 2.8, color: '#ff4030' };
+  },
+};
+
+/* ===== src/labyrinth.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// LOCKED IN.
+//
+// A sewer run is not a stretch of water you swim along and leave when you have
+// had enough. It is a system with a door at each end, and both doors are shut
+// before you get there.
+//
+// You are put down inside the reach. The tunnel is barred east and west by
+// sluice gates you cannot bite through, cannot climb and cannot squeeze past.
+// Somewhere in between, in a vault or a sump or behind something that wants to
+// eat you, is the site's relic — and the relic is the key. Carry it and the
+// hydraulics start; swim out through an open gate and the run ends the way it
+// is supposed to end, which is the only way out of here that is not a stomach.
+// ---------------------------------------------------------------------------
+const Labyrinth = {
+  on: false, gates: [], x0: 0, x1: 0, done: false, nagT: 0,
+
+  reset() { this.on = false; this.gates = []; this.done = false; this.nagT = 0; },
+
+  // Called when a run begins. Only the sewer network is a labyrinth: the
+  // swamp and the ocean you can leave whenever you like.
+  begin(stage) {
+    this.reset();
+    if (!stage || stage.zone !== 'sewer') return;
+    const span = 1500 + (stage.diff || 0) * 380;
+    this.x0 = stage.x - span; this.x1 = stage.x + span;
+    // put each gate on a stretch with a roof, so it reads as a door in a
+    // tunnel and not a fence standing in open water
+    const place = wx => {
+      const gx = World.findX(wx, xx => World.roofY(xx) !== null && World.floorY(xx) > 30, 700, 30);
+      if (gx === null) return null;
+      const g = new Structure(gx, 'sluice'); G.add(g); this.gates.push(g); return g;
+    };
+    const a = place(this.x0), b = place(this.x1);
+    if (!a && !b) return;
+    this.on = true;
+    G.banner = { text: 'THE GATES ARE DOWN', sub: 'FIND THE KEY', t: 4, max: 4, color: '#ff8c40' };
+  },
+
+  // you are holding the site's relic
+  keyed() {
+    if (!this.on) return true;
+    const st = G.stage; if (!st) return false;
+    const art = ARTIFACTS.find(a => a.stage === st.id);
+    return !!(art && Missions.has(art.id));
+  },
+
+  // a closed gate is a wall. Push the animal back off it rather than letting
+  // it tunnel through, and let it know what it just hit.
+  clamp(P) {
+    if (!this.on || this.done || !P || P.dead) return;
+    for (const g of this.gates) {
+      if (g.remove || g.open > 0.55) continue;
+      const d = P.x - g.x;
+      const pad = 12 + 5 * P.vis;
+      if (Math.abs(d) > pad) continue;
+      const side = d >= 0 ? 1 : -1;
+      P.x = g.x + side * pad;
+      if (P.vx * side < 0) { P.vx *= -0.25; if (Math.abs(P.vx) > 40) { G.shake(3); SFX.thud && SFX.thud(0); } }
+      if (this.nagT <= 0) {
+        this.nagT = 6;
+        G.banner = { text: 'SHUT', sub: this.keyed() ? 'IT IS COMING UP' : 'THE KEY IS STILL IN HERE', t: 2.2, max: 2.2, color: '#ff8c40' };
+      }
+    }
+  },
+
+  update(dt) { if (this.nagT > 0) this.nagT -= dt; },
+
+  // out through an open gate: the run ends, and it ends well
+  escaped() {
+    if (!this.on || this.done) return;
+    this.done = true;
+    const P = G.player;
+    G.addScore(12000);
+    G.banner = { text: 'OUT', sub: 'THE SYSTEM DID NOT KEEP YOU', t: 4, max: 4, color: '#3fd0a8' };
+    SFX.levelup && SFX.levelup(); G.whiteFlash(0.5); G.slowmo(0.3, 1.2);
+    if (P && !P.dead) P.die('ESCAPED');
+  },
+
+  // a marker on the HUD edge pointing at the nearest gate, so the reach always
+  // has a shape even when you cannot see either end of it
+  draw(ctx) {
+    if (!this.on || this.done) return;
+    const P = G.player; if (!P || P.dead) return;
+    const keyed = this.keyed();
+    let best = null, bd = 1e9;
+    for (const g of this.gates) { if (g.remove) continue; const d = Math.abs(g.x - P.x); if (d < bd) { bd = d; best = g; } }
+    if (!best) return;
+    const [sx] = G.cam.toScreen(best.x, best.y);
+    const y = 78, col = keyed ? '#3fd0a8' : '#ff8c40';
+    if (sx > 12 && sx < G.W - 12) return;                       // it is on screen; you can see it
+    const x = sx <= 12 ? 10 : G.W - 10, dir = sx <= 12 ? -1 : 1;
+    ctx.fillStyle = 'rgba(6,14,14,0.7)'; ctx.fillRect(x - 8, y - 7, 16, 14);
+    ctx.fillStyle = col;
+    for (let i = 0; i < 5; i++) ctx.fillRect(Math.round(x + dir * (3 - i)), y - i, 2, 1), ctx.fillRect(Math.round(x + dir * (3 - i)), y + i, 2, 1);
+    Font.draw(ctx, Math.round(bd / 10) + 'M', x, y + 9, { color: col, align: 'center' });
+  },
+};
+
 /* ===== src/doc.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
@@ -10063,6 +10687,19 @@ const TUTOR_STEPS = [
     line: 'BIGGER. IT IS READY TO GO OUT.', hint: 'RELEASE IT' },
   { id: 'site', room: 'stages', icon: 'globe',
     line: 'YOUR CALL WHERE IT GOES IN THE WATER.', hint: 'PICK A SITE AND RELEASE' },
+  // ---- and then he does not stop talking, because the water is the hard part
+  { id: 'dive', room: 'play', icon: 'drop',
+    line: 'YOU ARE FOUR INCHES LONG. GET UNDER.', hint: 'DIVE',
+    test: P => P.y > World.surface(P.x) + 14 },
+  { id: 'eat', room: 'play', icon: 'meat',
+    line: 'EVERYTHING DOWN THERE IS SMALLER THAN YOU THINK.', hint: 'EAT SOMETHING',
+    test: () => (G.stats && G.stats.eaten || 0) > 0 },
+  { id: 'hide', room: 'play', icon: 'vial',
+    line: 'DEEP AND STILL AND THEY LOSE YOU.', hint: 'GET HIDDEN',
+    test: P => Alarm.hidden(P) },
+  { id: 'grow', room: 'play', icon: 'star',
+    line: 'KEEP EATING. NOTHING ELSE MATTERS YET.', hint: 'GROW A SIZE',
+    test: P => P.tier > (Tutor.startTier || 0) },
 ];
 
 const Tutor = {
@@ -10089,8 +10726,26 @@ const Tutor = {
     this.flash = 0.5;
     return true;
   },
-  flash: 0,
-  update(raw) { if (this.flash > 0) this.flash -= raw; },
+  flash: 0, startTier: 0,
+  update(raw) {
+    if (this.flash > 0) this.flash -= raw;
+    // in the water he is not waiting for a button: he is watching you
+    if (!this.on()) return;
+    const s = this.step();
+    if (!s || s.room !== 'play' || !s.test) return;
+    const P = G.player;
+    if (!P || P.dead || (G.state !== 'play' && G.state !== 'intro')) return;
+    if (this.holdT === undefined) this.holdT = 0;
+    if (s.test(P)) { this.holdT += raw; if (this.holdT > 0.5) { this.holdT = 0; this.pass(s.id); } }
+    else this.holdT = 0;
+  },
+  // the field half of the induction starts when you hit the water
+  enterField() {
+    if (!this.on()) return;
+    this.startTier = (G.player && G.player.tier) || 0;
+    this.holdT = 0;
+  },
+  inField() { const s = this.step(); return !!s && s.room === 'play'; },
   // ---------- the rail ----------
   // Each of these answers "may I press that yet". Anything not named by the
   // step you are on says no, which is what makes it a tutorial and not a hint.
@@ -11038,6 +11693,26 @@ const UI = {
     ctx.fillStyle = '#e0902a'; ctx.fillRect(12, 23, 11, 3); ctx.fillStyle = '#f4f0e0';
     for (let i = 0; i < 4; i++) ctx.fillRect(13 + i * 3, 26, 2, 2);
     ctx.fillRect(12, 28, 11, 2);
+    // ---- how much of you they have worked out, and how much the water is
+    // doing for you. These two bars are the whole stealth game.
+    {
+      const st = Alarm.stage(), lv = Alarm.level, con = Alarm.concealment(P), hid = Alarm.hidden(P);
+      const ax = 6, ay = 40, aw = 130;
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(ax, ay, aw, 24);
+      this.bracket(ctx, ax, ay, aw, 24, Alarm.flashT > 0 && Math.floor(t * 12) % 2 ? st.col : 'rgba(120,220,200,0.35)', 5);
+      // an eye that opens as they get surer
+      const ec = lv > 0.62 ? st.col : lv > 0.3 ? st.col : '#3f6f66';
+      ctx.fillStyle = ec;
+      const lid = Math.round(3 * (1 - clamp(lv * 1.4, 0, 1)));
+      ctx.fillRect(ax + 6, ay + 5 + lid, 11, 7 - lid * 2);
+      ctx.fillStyle = '#0a1412'; ctx.fillRect(ax + 10, ay + 6 + lid, 3, 5 - lid * 2);
+      this.meter(ctx, ax + 22, ay + 5, aw - 30, 6, lv, st.col, '#2a1408');
+      // and the cover you are under
+      ctx.fillStyle = hid ? '#3fd0a8' : '#4a5a58';
+      ctx.fillRect(ax + 6, ay + 15, 4, 6); ctx.fillRect(ax + 5, ay + 14, 6, 2);
+      this.meter(ctx, ax + 22, ay + 15, aw - 30 - (hid ? 40 : 0), 5, con, hid ? '#3fd0a8' : '#7a8a86', '#0d1e1c');
+      if (hid) Font.draw(ctx, 'HIDDEN', ax + aw - 5, ay + 14, { color: '#3fd0a8', align: 'right' });
+    }
     // status reads as a column of lit tabs rather than three words
     let ty2 = 8;
     const tab = (col, on) => { if (!on) return; ctx.fillStyle = Math.floor(t * 5) % 2 ? col : mixColor(col, '#101816', 0.45); ctx.fillRect(140, ty2, 4, 8); ty2 += 10; };
@@ -11117,9 +11792,10 @@ const UI = {
       if (P.braceFlash > 0) { ctx.globalAlpha = clamp(P.braceFlash * 4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6); ctx.globalAlpha = 1; }
     }
     // standing order: one line, a hairline of progress under it
+    Labyrinth.draw(ctx);
     const mh = Missions.hud();
     if (mh) {
-      const my = 52, mw = 150;
+      const my = 70, mw = 150;
       ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, my - 2, mw, 13);
       ctx.fillStyle = mh.col; ctx.fillRect(8, my - 2, 2, 13);
       const flash = G.mission && G.mission.flashT > 0 && Math.floor(t * 12) % 2;
@@ -13336,6 +14012,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
+    Alarm.reset(); Labyrinth.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -13388,7 +14065,35 @@ const G = {
     this.seedNursery(x, 1); this.seedNursery(x, -1);
     for (let i = 0; i < 16; i++) { this.director.spawnT = 0; this.populate(1 + (st.diff || 0)); }
     this.banner = null;
+    this.placeLandmark(st);
+    Labyrinth.begin(st);
+    Tutor.enterField();
     Drop.begin(st);
+  },
+  // ---- one big handmade thing per site --------------------------------
+  // Every release site gets a landmark placed by hand rather than left to the
+  // chunk spawner: something you can see coming, orient by, hide under and
+  // remember the place by afterwards.
+  LANDMARKS: {
+    mangrove: ['stilthouse', 260], camp: ['shop', -180], cypress: ['tower', 220],
+    prairie: ['tower', -240], river: ['bridge', 200], campground: ['shop', 240],
+    bay: ['bridge', -260], seawall: ['seawall', 300],
+    undercroft: ['campsite', 180], shaft: ['console', -140], junction: ['console', 200],
+    gallery: ['wreck', -220], sump: ['wreck', 240],
+    shelf: ['wreck', 260], reef: ['wreck', -260], wall: ['wreck', 300], trench: ['wreck', -300],
+  },
+  placeLandmark(st) {
+    if (!st) return;
+    const spec = this.LANDMARKS[st.id]; if (!spec) return;
+    const [kind, off] = spec;
+    // put it somewhere it can actually stand: a bank for buildings, the bottom
+    // for hulls, open water with a floor under it for the causeway
+    const wantLand = kind === 'shop' || kind === 'stilthouse' || kind === 'tower' || kind === 'campsite' || kind === 'console';
+    const x = World.findX(st.x + off, xx => wantLand ? World.floorY(xx) < 10 : World.floorY(xx) > 40, 900, 30);
+    if (x === null) return;
+    const b = new Structure(x, kind);
+    this.add(b);
+    this.landmark = b;
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -13420,10 +14125,16 @@ const G = {
     // a few rats and roaches to eat on the way out
     for (let i = 0; i < 9; i++) { const rx = -2150 + i * 210 + rand(-40, 40); if (World.floorY(rx) < -2) this.add(new LandAnimal(rx, 'rat')); else this.add(new Bottom(rx, 'roach')); }
     for (let i = 0; i < 6; i++) { const rx = -2000 + i * 300; Spawn.school(rx, clamp(World.floorY(rx) - 12, 6, 30), chance(0.5) ? 'minnow' : 'shiner'); }
+    // the thing in the tank is a hatchling, and it is the smallest the game
+    // ever lets you be
+    const sz = (this.stage && this.stage.size) || 0.3;
+    P.size = sz; P.sizeTarget = sz; P.mass = sizeToMass(sz); P.tier = tierFor(sz);
+    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 92;
     P.x = TANK; P.y = World.floorY(TANK) - 42; P.angle = -0.3; P.facing = 1; P.frozen = true; P.hidden = false;
     P.chain.reset(P.x, P.y, -0.3);
     this.cam.x = TANK; this.cam.y = World.floorY(TANK) - 46; this.cam.zoom = 2.6;
     this.state = 'intro'; this.banner = null;
+    Tutor.enterField();
     SFX.peep();
   },
   crackTank() {
@@ -13458,6 +14169,22 @@ const G = {
     const P = this.player, D = this.difficulty();
     // human activity: structures cluster where there is water access
     if (rng() < 0.75) { for (let a = 0; a < 3; a++) { const sx = ch.x0 + rng() * World.CHUNK; if (Math.abs(sx - P.x) < 320) continue; if (trySpawnStructure(sx, rng, D)) break; } }
+    // ---- work going on in the water -------------------------------------
+    // Not props: people in the middle of doing something, who will notice you
+    // doing something too. Only outdoors, and never right on top of you.
+    {
+      const B0 = Biome.at(ch.x0);
+      const ax = ch.x0 + rng() * World.CHUNK;
+      if (!B0.indoor && Math.abs(ax - P.x) > 420 && this.state !== 'title') {
+        const busy = B0.town ? 0.5 : B0.id === 'bay' || B0.id === 'river' || B0.id === 'campground' ? 0.34 : 0.2;
+        if (rng() < busy) {
+          const pick = rng();
+          if (pick < 0.34 && (B0.id === 'bay' || B0.id === 'river' || B0.id === 'campground' || B0.town)) spawnManateeWatch(ax);
+          else if (pick < 0.62) spawnSurvey(ax);
+          else spawnTrapline(ax, 3 + Math.floor(rng() * 3));
+        }
+      }
+    }
     const B = Biome.at(ch.x0);
     for (let k = 0; k < 5; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
@@ -14222,6 +14949,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -14334,7 +15062,7 @@ const G = {
       case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
       case 'stages': UI.drawStages(ctx); Tutor.draw(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
-      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
+      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); if (Tutor.inField()) Tutor.draw(ctx); break;
       case 'morph': Morph.drawUI(ctx); break;
       case 'drop': Drop.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;

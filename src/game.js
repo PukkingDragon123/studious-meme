@@ -226,6 +226,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
+    Alarm.reset(); Labyrinth.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -278,7 +279,35 @@ const G = {
     this.seedNursery(x, 1); this.seedNursery(x, -1);
     for (let i = 0; i < 16; i++) { this.director.spawnT = 0; this.populate(1 + (st.diff || 0)); }
     this.banner = null;
+    this.placeLandmark(st);
+    Labyrinth.begin(st);
+    Tutor.enterField();
     Drop.begin(st);
+  },
+  // ---- one big handmade thing per site --------------------------------
+  // Every release site gets a landmark placed by hand rather than left to the
+  // chunk spawner: something you can see coming, orient by, hide under and
+  // remember the place by afterwards.
+  LANDMARKS: {
+    mangrove: ['stilthouse', 260], camp: ['shop', -180], cypress: ['tower', 220],
+    prairie: ['tower', -240], river: ['bridge', 200], campground: ['shop', 240],
+    bay: ['bridge', -260], seawall: ['seawall', 300],
+    undercroft: ['campsite', 180], shaft: ['console', -140], junction: ['console', 200],
+    gallery: ['wreck', -220], sump: ['wreck', 240],
+    shelf: ['wreck', 260], reef: ['wreck', -260], wall: ['wreck', 300], trench: ['wreck', -300],
+  },
+  placeLandmark(st) {
+    if (!st) return;
+    const spec = this.LANDMARKS[st.id]; if (!spec) return;
+    const [kind, off] = spec;
+    // put it somewhere it can actually stand: a bank for buildings, the bottom
+    // for hulls, open water with a floor under it for the causeway
+    const wantLand = kind === 'shop' || kind === 'stilthouse' || kind === 'tower' || kind === 'campsite' || kind === 'console';
+    const x = World.findX(st.x + off, xx => wantLand ? World.floorY(xx) < 10 : World.floorY(xx) > 40, 900, 30);
+    if (x === null) return;
+    const b = new Structure(x, kind);
+    this.add(b);
+    this.landmark = b;
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -310,10 +339,16 @@ const G = {
     // a few rats and roaches to eat on the way out
     for (let i = 0; i < 9; i++) { const rx = -2150 + i * 210 + rand(-40, 40); if (World.floorY(rx) < -2) this.add(new LandAnimal(rx, 'rat')); else this.add(new Bottom(rx, 'roach')); }
     for (let i = 0; i < 6; i++) { const rx = -2000 + i * 300; Spawn.school(rx, clamp(World.floorY(rx) - 12, 6, 30), chance(0.5) ? 'minnow' : 'shiner'); }
+    // the thing in the tank is a hatchling, and it is the smallest the game
+    // ever lets you be
+    const sz = (this.stage && this.stage.size) || 0.3;
+    P.size = sz; P.sizeTarget = sz; P.mass = sizeToMass(sz); P.tier = tierFor(sz);
+    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 92;
     P.x = TANK; P.y = World.floorY(TANK) - 42; P.angle = -0.3; P.facing = 1; P.frozen = true; P.hidden = false;
     P.chain.reset(P.x, P.y, -0.3);
     this.cam.x = TANK; this.cam.y = World.floorY(TANK) - 46; this.cam.zoom = 2.6;
     this.state = 'intro'; this.banner = null;
+    Tutor.enterField();
     SFX.peep();
   },
   crackTank() {
@@ -348,6 +383,22 @@ const G = {
     const P = this.player, D = this.difficulty();
     // human activity: structures cluster where there is water access
     if (rng() < 0.75) { for (let a = 0; a < 3; a++) { const sx = ch.x0 + rng() * World.CHUNK; if (Math.abs(sx - P.x) < 320) continue; if (trySpawnStructure(sx, rng, D)) break; } }
+    // ---- work going on in the water -------------------------------------
+    // Not props: people in the middle of doing something, who will notice you
+    // doing something too. Only outdoors, and never right on top of you.
+    {
+      const B0 = Biome.at(ch.x0);
+      const ax = ch.x0 + rng() * World.CHUNK;
+      if (!B0.indoor && Math.abs(ax - P.x) > 420 && this.state !== 'title') {
+        const busy = B0.town ? 0.5 : B0.id === 'bay' || B0.id === 'river' || B0.id === 'campground' ? 0.34 : 0.2;
+        if (rng() < busy) {
+          const pick = rng();
+          if (pick < 0.34 && (B0.id === 'bay' || B0.id === 'river' || B0.id === 'campground' || B0.town)) spawnManateeWatch(ax);
+          else if (pick < 0.62) spawnSurvey(ax);
+          else spawnTrapline(ax, 3 + Math.floor(rng() * 3));
+        }
+      }
+    }
     const B = Biome.at(ch.x0);
     for (let k = 0; k < 5; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
@@ -1112,6 +1163,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -1224,7 +1276,7 @@ const G = {
       case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
       case 'stages': UI.drawStages(ctx); Tutor.draw(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
-      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;
+      case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); if (Tutor.inField()) Tutor.draw(ctx); break;
       case 'morph': Morph.drawUI(ctx); break;
       case 'drop': Drop.drawUI(ctx); break;
       case 'genes': UI.drawGenes(ctx); break;

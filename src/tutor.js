@@ -21,6 +21,19 @@ const TUTOR_STEPS = [
     line: 'BIGGER. IT IS READY TO GO OUT.', hint: 'RELEASE IT' },
   { id: 'site', room: 'stages', icon: 'globe',
     line: 'YOUR CALL WHERE IT GOES IN THE WATER.', hint: 'PICK A SITE AND RELEASE' },
+  // ---- and then he does not stop talking, because the water is the hard part
+  { id: 'dive', room: 'play', icon: 'drop',
+    line: 'YOU ARE FOUR INCHES LONG. GET UNDER.', hint: 'DIVE',
+    test: P => P.y > World.surface(P.x) + 14 },
+  { id: 'eat', room: 'play', icon: 'meat',
+    line: 'EVERYTHING DOWN THERE IS SMALLER THAN YOU THINK.', hint: 'EAT SOMETHING',
+    test: () => (G.stats && G.stats.eaten || 0) > 0 },
+  { id: 'hide', room: 'play', icon: 'vial',
+    line: 'DEEP AND STILL AND THEY LOSE YOU.', hint: 'GET HIDDEN',
+    test: P => Alarm.hidden(P) },
+  { id: 'grow', room: 'play', icon: 'star',
+    line: 'KEEP EATING. NOTHING ELSE MATTERS YET.', hint: 'GROW A SIZE',
+    test: P => P.tier > (Tutor.startTier || 0) },
 ];
 
 const Tutor = {
@@ -47,8 +60,26 @@ const Tutor = {
     this.flash = 0.5;
     return true;
   },
-  flash: 0,
-  update(raw) { if (this.flash > 0) this.flash -= raw; },
+  flash: 0, startTier: 0,
+  update(raw) {
+    if (this.flash > 0) this.flash -= raw;
+    // in the water he is not waiting for a button: he is watching you
+    if (!this.on()) return;
+    const s = this.step();
+    if (!s || s.room !== 'play' || !s.test) return;
+    const P = G.player;
+    if (!P || P.dead || (G.state !== 'play' && G.state !== 'intro')) return;
+    if (this.holdT === undefined) this.holdT = 0;
+    if (s.test(P)) { this.holdT += raw; if (this.holdT > 0.5) { this.holdT = 0; this.pass(s.id); } }
+    else this.holdT = 0;
+  },
+  // the field half of the induction starts when you hit the water
+  enterField() {
+    if (!this.on()) return;
+    this.startTier = (G.player && G.player.tier) || 0;
+    this.holdT = 0;
+  },
+  inField() { const s = this.step(); return !!s && s.room === 'play'; },
   // ---------- the rail ----------
   // Each of these answers "may I press that yet". Anything not named by the
   // step you are on says no, which is what makes it a tutorial and not a hint.

@@ -309,7 +309,7 @@ const BIOMES = [
     town: true, music: 0.5,
   },
   {
-    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 15300,
+    id: 'bay', name: 'FLORIDA BAY', x0: 11000, x1: 15300, clarity: 0.4,
     sky: ['#2f86d8', '#d8ecf4'], water: ['#2aa0b0', '#0f6474', '#03202c'], scum: '#4a8a7a', fog: '#c8e4ee',
     parallax: ['mangrove', 'island', 'island'], ground: ['#7a7460', '#5a5648', '#3a3830'], grass: '#5a8a4a',
     plants: [['seagrass', 2.6], ['shellbed', 2], ['coral', 1.4], ['algae', 1.6], ['rock', 1.4], ['sunkbranch', 1]],
@@ -331,7 +331,7 @@ const BIOMES = [
   },
   // ===================== OPEN OCEAN =============================
   {
-    id: 'shelf', name: 'THE SHELF', x0: 19000, x1: 21800,
+    id: 'shelf', name: 'THE SHELF', x0: 19000, x1: 21800, clarity: 0.7,
     sky: ['#3a86c8', '#dceaf2'], water: ['#3aa8c0', '#1e6a86', '#0a2a3a'], scum: '#7a9a6a', fog: '#cfe4ee',
     parallax: ['bluff', 'block', 'bluff'], ground: ['#c8bc9a', '#a89a78', '#7a6e54'], grass: '#7aa86a', open: 'coast',
     plants: [['weed', 2.2], ['algae', 1.8], ['reed', 1.2], ['oyster', 1.4], ['rubble', 1]],
@@ -340,7 +340,7 @@ const BIOMES = [
     music: 0.3,
   },
   {
-    id: 'reef', name: 'THE REEF', x0: 21800, x1: 25000,
+    id: 'reef', name: 'THE REEF', x0: 21800, x1: 25000, clarity: 0.5,
     sky: ['#2f7ec4', '#cfe8f4'], water: ['#2fb0b8', '#1a7a86', '#07303c'], scum: '#8aa85a', fog: '#c0e2ee',
     parallax: ['bluff', 'bluff', 'block'], ground: ['#c0a884', '#9a8464', '#6e5c44'], grass: '#5ab0a0', open: 'reef',
     plants: [['coral', 3.2], ['fan', 2.4], ['sponge', 2], ['weed', 1.6], ['algae', 1.4], ['oyster', 1.2]],
@@ -349,7 +349,7 @@ const BIOMES = [
     music: 0.35,
   },
   {
-    id: 'wall', name: 'THE WALL', x0: 25000, x1: 29800,
+    id: 'wall', name: 'THE WALL', x0: 25000, x1: 29800, clarity: 0.45,
     sky: ['#1e5e9e', '#9ac4dc'], water: ['#1f7a92', '#104a62', '#031824'], scum: '#5a7a5a', fog: '#8ab0c8',
     parallax: ['bluff', 'block', 'bluff'], ground: ['#7a7060', '#5a5246', '#3a352c'], grass: '#3a8a80', open: 'rig',
     plants: [['fan', 2.4], ['coral', 2], ['sponge', 1.8], ['kelp', 2.2], ['algae', 1.4]],
@@ -358,7 +358,7 @@ const BIOMES = [
     dark: 0.2, flora: '#5a8a90', floraMix: 0.4, music: 0.7,
   },
   {
-    id: 'trench', name: 'THE TRENCH', x0: 29800, x1: 35400,
+    id: 'trench', name: 'THE TRENCH', x0: 29800, x1: 35400, clarity: 0.15,
     sky: ['#0a2436', '#245878'], water: ['#12465c', '#082a3a', '#010b12'], scum: '#3a5a4a', fog: '#123044',
     parallax: ['bluff', 'bluff', 'block'], ground: ['#4a4a50', '#34343a', '#202024'], grass: '#2a6a70', open: 'deep',
     plants: [['tubeworm', 3.2], ['sponge', 2], ['fan', 1.2], ['coral', 1], ['rubble', 2]],

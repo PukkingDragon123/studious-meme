@@ -110,7 +110,22 @@ class Entity {
   }
   die(killer) {
     if (this.dead) return; this.dead = true; this.remove = true;
-    if (this.human && killer === G.player) for (const o of G.ents) if (o !== this && o.human && !o.dead && Math.abs(o.x - this.x) < 300) { o.panicked = true; o.state = 'flee'; o.stateT = 6; o.watching = false; }
+    // the one they paid to look at, taken while they watched
+    if (this.watched && killer === G.player && !this.watched.sinking) {
+      Alarm.notice(0.55, this, 'IN FRONT OF THE TOUR');
+      for (const q of this.watched.alivePass || []) q.panic = 3;
+      SFX.scream && SFX.scream(this.watched.pan);
+      G.banner = { text: 'THEY ALL SAW THAT', sub: 'THE TOUR IS CALLING IT IN', t: 3, max: 3, color: '#ff4030' };
+    }
+    if (this.human && killer === G.player) {
+      for (const o of G.ents) if (o !== this && o.human && !o.dead && Math.abs(o.x - this.x) < 300) { o.panicked = true; o.state = 'flee'; o.stateT = 6; o.watching = false; }
+      // taking a person in front of other people is the single loudest thing
+      // you can do; taking one alone in the dark is barely anything at all
+      let witnesses = 0;
+      for (const o of G.ents) if (o !== this && o.human && !o.dead && Math.abs(o.x - this.x) < 420) witnesses++;
+      Alarm.notice(witnesses ? 0.34 + witnesses * 0.09 : 0.1, this, witnesses ? 'THEY SAW IT HAPPEN' : 'ONE MISSING');
+      Alarm.noise(this.x, this.y, 420, 0);
+    }
     G.onEntityKilled(this, killer === G.player, this.gulped);
   }
   explode(power = 1) {
@@ -211,7 +226,8 @@ class Fish extends Entity {
     this.tick(dt);
     const P = G.player, d = this.def, dP = this.distTo(P), ratio = this.playerRatio();
     const sp = this.speed * (1 - this.slow) * (this.stun > 0 ? 0 : 1);
-    const sees = this.senses(d.flee || 120);
+    if (this.tame) { this.state = 'idle'; }
+    const sees = !this.tame && this.senses(d.flee || 120);
     if (P.st.fearAura && this.sizeClass < P.size * 0.6 && dP < 260) { this.state = 'flee'; this.stateT = 1; }
     else if (d.pred && !P.dead && (ratio < 1.15 || (this.hp < this.maxHp && dP < 320)) && dP < 560) { this.state = 'hunt'; this.aware = true; }
     else if (d.aggr && !P.dead && P.size < d.aggrMax && dP < 170 && this.aware) this.state = 'hunt';
@@ -377,6 +393,7 @@ class LandAnimal extends Entity {
     this.y = fy - this.groundOff; this.vy = 0;
     if (this.watching) { this.vx = 0; this.anim.phase += dt * 0.8; this.facing = sign(P.x - this.x) || this.facing; return; }
     const sees = this.senses(d.flee), dP = this.distTo(P);
+    if (d.human) this.look(dt, P, dP);
     // land predators hunt other land animals when the player is not a factor
     if (d.hunter) {
       this.huntCd -= dt;
@@ -395,7 +412,7 @@ class LandAnimal extends Entity {
     // armed people stand their ground and shoot until you get too close
     if (this.armed === undefined) { const v = this.rig && this.rig.spec ? this.rig.spec.prop : null; this.armed = v === 'rifle' || v === 'shotgun' || v === 'harpoon' ? v : null; this.shootCd = rand(0.6, 2); }
     if (this.armed && !P.dead && !this.panicked) {
-      const seesP = dP < 420 && P.y > -200 && Math.abs(P.y - this.y) < 260;
+      const seesP = dP < 420 && P.y > -200 && Math.abs(P.y - this.y) < 260 && this.onAlert();
       if (seesP && dP > 76) {
         this.state = 'shoot'; this.stateT = 1.2; this.facing = sign(P.x - this.x) || this.facing;
         this.shootCd -= dt;
@@ -446,6 +463,60 @@ class LandAnimal extends Entity {
     if (Math.abs(this.vx) > 10) { this.grazeT += dt * Math.abs(this.vx) * 0.1; Foliage.disturb(this.x, this.y, this.vx, this.r); if (Mud.softness(this.x) > 0.3 && chance(dt * 3)) G.fx.print(this.x, World.floorY(this.x) - 1, 3, this.facing); }
     if (d.human && this.kind === 'fisherman') this.rodT += dt;
   }
+  // ---- what a person on a bank can actually work out -------------------
+  // Three things have to line up: you are close enough, you are roughly in
+  // front of them, and the water is not doing enough for you. Miss any one
+  // and they carry on with their day.
+  look(dt, P, dP) {
+    if (this.alertT === undefined) { this.alertT = 0; this.callT = 0; this.suspectX = 0; this.lookA = 0; }
+    if (this.callT > 0) this.callT -= dt;
+    if (P.dead) { this.alertT = Math.max(0, this.alertT - dt * 0.5); return; }
+    const range = this.armed ? 400 : 250;
+    const conceal = Alarm.concealment(P);
+    let see = 0;
+    if (dP < range) {
+      // in front of them, and not behind their shoulder
+      const ahead = sign(P.x - this.x) === this.facing;
+      const cone = ahead ? 1 : 0.18;
+      // the nearer you are the less the water hides you
+      const near = clamp(1 - dP / range, 0, 1);
+      see = near * cone * (1 - conceal) * (this.watching ? 1.6 : 1);
+      // a head out of the water at short range is unmistakable
+      if (P.y < World.surface(P.x) && dP < range * 0.6) see = Math.max(see, near * cone * 0.8);
+    }
+    if (see > 0.12) {
+      this.alertT = Math.min(2.4, this.alertT + see * dt * 2.2);
+      this.suspectX = P.x; this.suspectY = P.y;
+      this.lookA = sign(P.x - this.x);
+      // personal certainty spills into the site alarm
+      Alarm.notice(see * dt * 0.14, this, this.def.human ? 'A MAN SAW YOU' : '');
+      // and past a point they shout, which is worth more than what they saw
+      if (this.alertT > 1.5 && this.callT <= 0) {
+        this.callT = 6;
+        SFX.yell && SFX.yell(this.pan);
+        Alarm.notice(0.16, this, 'THEY ARE SHOUTING');
+        // everyone in earshot turns round
+        for (const o of G.ents) {
+          if (o === this || !o.human || o.dead) continue;
+          if (Math.abs(o.x - this.x) > 360) continue;
+          o.alertT = Math.max(o.alertT || 0, 1.1);
+          o.suspectX = P.x; o.suspectY = P.y;
+          o.facing = sign(P.x - o.x) || o.facing;
+        }
+        this.shoutT = 1.4;
+      }
+    } else {
+      this.alertT = Math.max(0, this.alertT - dt * 0.35);
+    }
+    // a person who half saw something turns to face where it was
+    if (this.alertT > 0.4 && this.alertT < 1.5 && this.state !== 'shoot' && this.state !== 'flee') {
+      this.facing = sign(this.suspectX - this.x) || this.facing;
+      this.vx = approach(this.vx, 0, 400 * dt);
+    }
+  }
+  // has this one worked out you are there
+  onAlert() { return (this.alertT || 0) > 1.5 || Alarm.level > 0.62; }
+
   updateSwim(dt, P, d) {
     this.swimT += dt; this.state = 'swim';
     const s = World.surface(this.x); this.vy = approach(this.vy, this.y > s - 2 ? -30 : 20, 150 * dt);
@@ -468,6 +539,20 @@ class LandAnimal extends Entity {
     this.anim.cast = this.kind === 'fisherman' && this.state === 'idle' ? 1 : 0;
     const ang = this.state === 'swim' ? (this.human ? -Math.PI / 2 + 0.3 : 0.25) : 0;
     this.rig.draw(ctx, this.x, this.y, this.facing, ang, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
+    // what this one has worked out, over its head: a question mark while it is
+    // only suspicious, an exclamation once it is sure and shouting
+    const al = this.alertT || 0;
+    if (this.human && al > 0.35) {
+      const hy = this.y - this.worldLen * 0.95 - 6, hx = Math.round(this.x);
+      const sure = al > 1.5 || (this.shoutT || 0) > 0;
+      const col = sure ? '#ff5a3a' : '#ffd23a';
+      const bob = Math.round(Math.sin(this.t * 7) * (sure ? 1.5 : 0.6));
+      ctx.fillStyle = 'rgba(6,12,14,0.75)'; ctx.fillRect(hx - 4, hy - 11 + bob, 8, 13);
+      ctx.fillStyle = col;
+      if (sure) { ctx.fillRect(hx - 1, hy - 9 + bob, 3, 7); ctx.fillRect(hx - 1, hy + bob, 3, 2); }
+      else { ctx.fillRect(hx - 2, hy - 9 + bob, 5, 2); ctx.fillRect(hx + 1, hy - 8 + bob, 2, 3); ctx.fillRect(hx - 1, hy - 5 + bob, 3, 2); ctx.fillRect(hx - 1, hy - 3 + bob, 2, 2); ctx.fillRect(hx - 1, hy + bob, 2, 2); }
+    }
+    if (this.shoutT > 0) this.shoutT -= 0.016;
     if (this.muzzle > 0) { ctx.fillStyle = '#fff0a0'; const mx = this.x + this.facing * this.r * 1.5, my = this.y - this.worldLen * 0.55; ctx.fillRect(mx - 2, my - 2, 5, 4); ctx.fillStyle = '#ffd040'; ctx.fillRect(mx + this.facing * 3, my - 1, 3, 2); }
     if (this.kind === 'fisherman' && this.state !== 'swim' && this.state !== 'flee') {
       const hx = this.x + this.facing * this.r * 0.9, hy = this.y - this.groundOff * 0.72;
@@ -681,6 +766,7 @@ class Boat extends Entity {
     this.threat = (kind === 'tourist' || this.pontoon || this.jon) ? 0 : 1;
     this.speed = this.war ? 55 : this.pontoon ? 26 : this.jon ? 40 : kind === 'tourist' ? 35 : 45;
     this.fan = 0; this.sinking = false; this.sinkT = 0; this.engineOn = true; this.harpoonCd = 5; this.turnCd = 0; this.moored = false;
+    this.watch = null; this.watchT = 0;
     this.pass = [];
     const n = this.war ? 3 : this.pontoon ? 5 : this.jon ? 2 : kind === 'tourist' ? 4 : 2;
     const ptype = this.pontoon ? 'tourist' : this.jon ? 'fisherman' : kind === 'tourist' ? 'tourist' : 'poacher';
@@ -754,6 +840,31 @@ class Boat extends Entity {
     } else { this.vx *= 0.98; this.fan *= 0.97; }
     this.x += this.vx * dt; if (Math.abs(this.vx) > 4) this.facing = sign(this.vx);
     if (Math.abs(this.vx) > 10) { Water.splash(this.x + this.facing * this.r * 0.9, -Math.abs(this.vx) * 0.5 * dt * 60 * 0.1, 10 * this.bs); Water.splash(this.x - this.facing * this.r * 0.8, Math.abs(this.vx) * 0.45 * dt * 60 * 0.1, 12 * this.bs); }
+    // ---- everyone aboard is a pair of eyes -----------------------------
+    // A boat full of people is worse than a man on a bank, and a boat full of
+    // people already leaning over the rail looking into the water is worst of
+    // all, because they are looking exactly where you are.
+    if (!P.dead && this.alivePass.length) {
+      const conceal = Alarm.concealment(P);
+      const dx = Math.abs(P.x - this.x), range = this.tour ? 190 : 300;
+      if (dx < range) {
+        const near = clamp(1 - dx / range, 0, 1);
+        const looking = this.tour ? 1.9 : this.threat ? 1.25 : 0.8;
+        const eyes = 0.5 + this.alivePass.length * 0.16;
+        const see = near * looking * eyes * (1 - conceal) * 0.09;
+        if (see > 0.004) {
+          Alarm.notice(see * dt, this, this.tour ? 'THE TOUR BOAT SAW YOU' : 'A BOAT SAW YOU');
+          this.sawT = 1.2;
+          for (const q of this.alivePass) if (chance(dt * 1.5)) q.panic = Math.max(q.panic, 0.6);
+        }
+      }
+    }
+    if (this.sawT > 0) this.sawT -= dt;
+    // the tour holds station over whatever it came to see
+    if (this.tour && this.watch && !this.watch.dead && !this.watch.remove) {
+      this.x = approach(this.x, this.watch.x, 18 * dt);
+      this.watchT += dt;
+    }
     // shooting
     const inRange = !P.dead && Math.abs(P.x - this.x) < 320 + this.r && P.y < 110 && P.y > -160;
     for (const p of this.alivePass) {
@@ -888,7 +999,7 @@ class Kayak extends Entity {
 // ---------- projectiles ----------
 class Projectile extends Entity {
   constructor(x, y, vx, vy, kind, owner) {
-    super(x, y); this.vx = vx; this.vy = vy; this.kind = kind; this.owner = owner; this.type = 'proj'; this.edible = false; this.bleeds = false; this.latchable = false; this.life = kind === 'rock' ? 4 : 1.6; this.r = kind === 'rock' ? 4 : 1; this.hp = 1; this.layer = 2; this.stuck = false; this.name = kind;
+    super(x, y); this.vx = vx; this.vy = vy; this.kind = kind; this.owner = owner; this.type = 'proj'; this.edible = false; this.bleeds = false; this.latchable = false; this.life = kind === 'rock' ? 4 : 1.6; this.r = kind === 'rock' ? 4 : kind === 'net' ? 7 : 1; this.hp = 1; this.layer = 2; this.stuck = false; this.name = kind;
   }
   hitTest() { return false; }
   update(dt) {
@@ -899,6 +1010,7 @@ class Projectile extends Entity {
       if (chance(0.5) && under) G.fx.bubbles(this.x, this.y, 1, 1);
     } else if (this.kind === 'rock') { this.vy += 620 * dt; if (under) { if (!this.wasWater) { this.wasWater = true; G.fx.splash(this.x, 1.2, this.vx); } this.drag(dt, 4); } }
     else if (this.kind === 'harpoon') { if (under) this.drag(dt, 1.2); this.vy += 60 * dt; if (chance(0.7)) G.fx.bubbles(this.x, this.y, 1, 1); }
+    else if (this.kind === 'net') { this.vy += 120 * dt; if (under) this.drag(dt, 2.6); this.spin = (this.spin || 0) + dt * 5; }
     this.move(dt);
     this.angle = Math.atan2(this.vy, this.vx);
     if (this.y > World.floorY(this.x) - 2) { this.remove = true; if (this.kind === 'rock') G.fx.smoke(this.x, this.y, 3, '#6b5a3a'); }
@@ -907,6 +1019,7 @@ class Projectile extends Entity {
       const spd = Math.hypot(this.vx, this.vy);
       if (this.kind === 'bullet') { const dmg = 9 * clamp(spd / 500, 0.2, 1); if (P.hurt(dmg, this.owner, 'bullet') > 0) G.fx.text(P.x, P.y - 18 * P.size, 'SHOT!', { color: '#ffb040' }); else { G.fx.sparks(this.x, this.y, 6); SFX.ricochet(this.pan); } }
       else if (this.kind === 'rock') { P.hurt(22, this.owner, 'crush'); G.shake(8); SFX.thud(this.pan); P.vx += this.vx * 0.3; P.vy += this.vy * 0.2; }
+      else if (this.kind === 'net') { P.snare(this.owner); this.remove = true; return; }
       else if (this.kind === 'harpoon' && this.owner && !this.owner.sinking) { const T = { boat: this.owner, t: 0 }; this.owner.tether = T; P.tether = T; P.hurt(10, this.owner, 'bullet'); G.fx.text(P.x, P.y - 20, 'HARPOONED! BITE TO BREAK FREE', { color: '#ff6040', scale: 1, life: 2 }); G.shake(8); }
       this.remove = true;
     }
@@ -914,7 +1027,125 @@ class Projectile extends Entity {
   draw(ctx) {
     if (this.kind === 'bullet') { ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = '#ffe080'; ctx.fillRect(-3, 0, 4, 1); ctx.fillStyle = 'rgba(255,220,120,0.4)'; ctx.fillRect(-9, 0, 6, 1); ctx.restore(); }
     else if (this.kind === 'rock') drawSpr(ctx, SPR.rockProj, this.x, this.y, this.t * 6, 1.6, 1.6);
+    else if (this.kind === 'net') {
+      // a weighted net, tumbling: a ring of lead with mesh strung across it
+      const r = 7, a = this.spin || 0;
+      ctx.save(); ctx.translate(Math.round(this.x), Math.round(this.y)); ctx.rotate(a);
+      ctx.fillStyle = '#cfd8c8';
+      for (let k = 0; k < 8; k++) { const q = k / 8 * TAU; ctx.fillRect(Math.round(Math.cos(q) * r) - 1, Math.round(Math.sin(q) * r) - 1, 2, 2); }
+      ctx.fillStyle = 'rgba(200,214,190,0.5)';
+      for (let k = -1; k <= 1; k++) { ctx.fillRect(-r, k * 4, r * 2, 1); ctx.fillRect(k * 4, -r, 1, r * 2); }
+      ctx.restore();
+    }
     else if (this.kind === 'harpoon') { drawSpr(ctx, SPR.harpoon, this.x, this.y, this.angle, 1, 1); if (this.owner) { ctx.strokeStyle = '#d0d0c0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(this.owner.x, this.owner.y - 10); ctx.lineTo(this.x, this.y); ctx.stroke(); } }
+  }
+}
+// ---------- MANATEE WATCHING ----------
+// A pontoon full of people who have paid forty dollars each to lean over a rail
+// and look at something grey and slow. It is the most human thing in the swamp.
+// It is also six pairs of eyes pointed straight down into the water you are
+// trying to cross, and whatever they came to see is a hundred and eighty
+// pounds of meat that does not run.
+function spawnManateeWatch(x) {
+  const wx = World.findX(x, xx => World.floorY(xx) > 90, 700, 30);
+  if (wx === null) return null;
+  const boat = Spawn.boat(wx, 'pontoon', 1);
+  boat.moored = true; boat.engineOn = false; boat.speed = 0; boat.tour = true;
+  boat.name = 'MANATEE TOUR';
+  // the animal they came for, below and slightly off the bow
+  const m = new Fish(wx + rand(-30, 30), clamp(World.floorY(wx) - 26, 26, 160), 'manatee');
+  m.tame = true; m.watched = boat; G.add(m);
+  boat.watch = m;
+  // and a marker buoy on the line
+  const buoy = new Structure(wx + 54, 'buoy'); G.add(buoy);
+  return boat;
+}
+// ---------- A SURVEY CREW ----------
+// Two people and a tripod on the bank, shooting levels across the channel.
+// They are not looking for you. They will see you anyway.
+function spawnSurvey(x) {
+  const lx = World.findX(x, xx => World.floorY(xx) < -6, 800, 24);
+  if (lx === null) return null;
+  const a = new LandAnimal(lx, 'scientist'); a.state = 'idle'; a.stateT = 99; a.facing = 1; G.add(a);
+  const b = new LandAnimal(lx + rand(40, 70), 'ranger'); b.state = 'idle'; b.stateT = 99; b.facing = -1; G.add(b);
+  G.add(new Structure(lx + 24, 'console'));
+  return a;
+}
+// ---------- A TRAPLINE ----------
+// Somebody is running crab traps along this bank, and will be back for them.
+function spawnTrapline(x, n = 4) {
+  let placed = 0;
+  for (let i = 0; i < n; i++) {
+    const tx = World.findX(x + i * rand(60, 110), xx => World.floorY(xx) > 40, 240, 16);
+    if (tx === null) continue;
+    G.add(new Structure(tx, 'crabtrap')); placed++;
+  }
+  return placed;
+}
+
+// ---------- THE CAPTURE CREW ----------
+// Called when the site has seen enough of you. They do not want you dead —
+// there is a tank back at the facility with your name stencilled on it — so
+// they carry a net gun and a spotlight and they are very patient.
+class CaptureBoat extends Boat {
+  constructor(x) {
+    super(x, 'warboat', 1);
+    this.kind = 'capture'; this.capture = true; this.isBoss = false; this.persistent = true;
+    this.name = 'CAPTURE CREW'; this.threat = 1;
+    this.hp = 260; this.maxHp = 260; this.speed = 62;
+    this.netCd = 3.2; this.lampA = 0; this.searchT = 0; this.lastPing = 0;
+    for (const p of this.pass) p.type = 'scientist';
+  }
+  update(dt) {
+    const P = G.player;
+    super.update(dt);
+    if (this.sinking || this.dead || !P || P.dead) return;
+    // the lamp sweeps until it finds you, then it holds
+    const conceal = Alarm.concealment(P);
+    const seen = conceal < 0.55 && Math.abs(P.x - this.x) < 340;
+    const want = Math.atan2((P.y - 6) - (this.y - 14), P.x - this.x);
+    this.lampA = seen ? lerp(this.lampA, want, 0.14) : this.lampA + dt * 0.9 * (Math.sin(this.t * 0.5) > 0 ? 1 : -1);
+    if (seen) {
+      this.searchT = 0;
+      // being under their lamp is being seen, continuously
+      Alarm.notice(dt * 0.05, this, 'UNDER THE LAMP');
+      // close the distance, but keep off so you cannot simply eat them
+      const want2 = P.x + sign(this.x - P.x) * 120;
+      this.x = approach(this.x, want2, this.speed * dt);
+      this.facing = sign(P.x - this.x) || this.facing;
+      this.netCd -= dt;
+      if (this.netCd <= 0 && Math.abs(P.x - this.x) < 260) {
+        this.netCd = rand(2.6, 4.2);
+        const hx = this.x + this.facing * this.r * 0.5, hy = this.y - 12;
+        const tx = P.x + P.vx * 0.45, ty = P.y + P.vy * 0.35;
+        const a = Math.atan2(ty - hy, tx - hx);
+        G.add(new Projectile(hx, hy, Math.cos(a) * 340, Math.sin(a) * 340 - 40, 'net', this));
+        SFX.gunshot && SFX.gunshot(this.pan);
+        G.fx.smoke(hx, hy, 2, '#b0b8a8');
+      }
+    } else {
+      this.searchT += dt;
+      // quartering the last place anybody saw anything
+      const target = Alarm.lastSeenX + Math.sin(this.t * 0.6) * 180;
+      this.x = approach(this.x, target, this.speed * 0.7 * dt);
+      if (this.searchT > 26 && Alarm.level < 0.5) { this.sinking = false; this.remove = true; Alarm.crew = null; }
+    }
+  }
+  draw(ctx) {
+    super.draw(ctx);
+    if (this.sinking || this.dead) return;
+    // the searchlight: a cone of dust you very much do not want to be in
+    const lx = this.x + this.facing * this.r * 0.4, ly = this.y - 14;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.17;
+    ctx.translate(lx, ly); ctx.rotate(this.lampA);
+    const g = ctx.createLinearGradient(0, 0, 300, 0);
+    g.addColorStop(0, 'rgba(230,244,210,0.9)'); g.addColorStop(1, 'rgba(230,244,210,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(300, -54); ctx.lineTo(300, 54); ctx.lineTo(0, 3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#f4ffd0'; ctx.fillRect(Math.round(lx) - 2, Math.round(ly) - 2, 4, 4);
   }
 }
 // ---------- SKUNK APE (land boss) ----------

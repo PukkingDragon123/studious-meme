@@ -126,11 +126,17 @@ function computeLook(player) {
   return L;
 }
 // size tiers (croc size units). Reaching a new tier triggers a shed.
+// You come out of the tank the length of a man's forearm. The bottom of this
+// ladder used to be HATCHLING at size 1, which was already a yard of animal
+// and already the top of most of the food chain in the shallows. Three rungs
+// were added under it, and the mass curve floors at 0.3 so they are reachable.
 const TIERS = [
-  { name: 'HATCHLING', size: 1.0 }, { name: 'JUVENILE', size: 1.35 }, { name: 'SUB-ADULT', size: 1.8 }, { name: 'ADULT', size: 2.4 },
-  { name: 'BULL', size: 3.1 }, { name: 'ELDER', size: 4.0 }, { name: 'ANCIENT', size: 5.2 }, { name: 'TITAN', size: 6.7 },
-  { name: 'LEVIATHAN', size: 8.6 }, { name: 'SARCOSUCHUS', size: 11 }, { name: 'DEINOSUCHUS', size: 14 }, { name: 'SWAMP GOD', size: 18 },
+  { name: 'HATCHLING', size: 0.30 }, { name: 'YEARLING', size: 0.46 }, { name: 'FINGERLING', size: 0.68 },
+  { name: 'JUVENILE', size: 1.0 }, { name: 'SUB-ADULT', size: 1.4 }, { name: 'ADULT', size: 1.9 },
+  { name: 'BULL', size: 2.6 }, { name: 'ELDER', size: 3.4 }, { name: 'ANCIENT', size: 4.5 }, { name: 'TITAN', size: 6.0 },
+  { name: 'LEVIATHAN', size: 8.0 }, { name: 'SARCOSUCHUS', size: 10.5 }, { name: 'DEINOSUCHUS', size: 13.5 }, { name: 'SWAMP GOD', size: 18 },
 ];
-const massToSize = m => Math.cbrt(1 + m / 15);
-const sizeToMass = s => (s * s * s - 1) * 15;
+const SIZE_FLOOR3 = 0.027;                       // 0.3 cubed: the hatchling
+const massToSize = m => Math.cbrt(SIZE_FLOOR3 + m / 15);
+const sizeToMass = s => (s * s * s - SIZE_FLOOR3) * 15;
 function tierFor(size) { let t = 0; for (let i = 0; i < TIERS.length; i++) if (size >= TIERS[i].size - 1e-6) t = i; return t; }

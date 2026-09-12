@@ -9,6 +9,7 @@ class Player {
   reset() {
     this.x = 0; this.y = 70; this.vx = 0; this.vy = 0; this.angle = 0; this.facing = 1;
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
+    this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -63,8 +64,41 @@ class Player {
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
   rebuildLook() { this.look = computeLook(this); this.parts = buildCrocParts(this.look); }
 
+  // A net has landed on you. This is not damage — you cannot be hurt out of
+  // it and healing does not help. You have a few seconds of thrashing to tear
+  // it, and if you do not, they winch you in and the run ends in a tank.
+  snare(src) {
+    if (this.dead || this.netT > 0) return;
+    this.netT = 4.2; this.netHp = 6 + Math.round(this.size * 2); this.netBy = src || null;
+    G.shake(9); SFX.thud && SFX.thud(0);
+    G.fx.text(this.x, this.y - 22 * this.vis, 'NETTED - MASH TO TEAR', { color: '#ff6040', life: 2.2 });
+    G.banner = { text: 'NETTED', sub: 'TEAR IT OR THEY TAKE YOU', t: 2.4, max: 2.4, color: '#ff4030' };
+  }
+  // thrashing inside it: every bite tears a strand
+  updateNet(dt, inp) {
+    this.netT -= dt;
+    this.vx = approach(this.vx, 0, 260 * dt);
+    this.vy = approach(this.vy, this.y > World.surface(this.x) ? -18 : 40, 160 * dt);
+    this.x += this.vx * dt; this.y += this.vy * dt;
+    this.chain.solve(this.x, this.y, this.angle + Math.sin(this.t * 26) * 0.12, this.vis, dt, 0);
+    this.jaw = 0.4 + Math.abs(Math.sin(this.t * 18)) * 0.5;
+    if (chance(dt * 14)) G.fx.bubbles(this.x + rand(-10, 10) * this.vis, this.y, 1, 4);
+    if (inp && (inp.bite || inp.dash || inp.brace)) {
+      if (!this.netHeld) { this.netHeld = true; this.netHp -= 1; G.shake(3); SFX.bite && SFX.bite(this.size, 0);
+        G.fx.sparks(this.x + rand(-8, 8) * this.vis, this.y + rand(-6, 6) * this.vis, 3); }
+    } else this.netHeld = false;
+    if (this.netHp <= 0) {
+      this.netT = 0; this.invuln = Math.max(this.invuln, 1.2);
+      G.fx.text(this.x, this.y - 22 * this.vis, 'TORE FREE', { color: '#7affda', life: 1.6 });
+      SFX.levelup && SFX.levelup();
+      if (this.netBy) this.netBy.netCd = Math.max(this.netBy.netCd, 4);
+      return;
+    }
+    if (this.netT <= 0) this.die('CAPTURED', this.netBy);
+  }
   update(dt, inp) {
     if (this.dead) { this.updateDead(dt); return; }
+    if (this.netT > 0) { this.updateNet(dt, inp); return; }
     if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
