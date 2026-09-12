@@ -11627,7 +11627,7 @@ const UI = {
     // the pool of light the board throws down
     const fg = ctx.createLinearGradient(0, fy - 12, 0, H);
     fg.addColorStop(0, 'rgba(150,255,228,0.13)'); fg.addColorStop(1, 'rgba(150,255,228,0)');
-    ctx.fillStyle = fg; ctx.fillRect(B.x, fy - 12, B.w, H - fy + 12);
+    ctx.fillStyle = fg; ctx.fillRect(0, fy - 12, W, H - fy + 12);
     // gear along the back of the room, in silhouette
     const sil = '#060f11', rim = '#1e3438';
     const box = (x, y, w, h) => { ctx.fillStyle = sil; ctx.fillRect(x, y, w, h); ctx.fillStyle = rim; ctx.fillRect(x, y, w, 1); };
@@ -13534,23 +13534,29 @@ const G = {
   update(dt, raw) {
     // global keys
     if (Input.hit('KeyM')) { const m = SFX.toggleMute(); if (!SFX.ctx) { SFX.init(); if (m) SFX.master && (SFX.master.gain.value = 0); } }
+    // The bay shutter outlives the screen that started it. It comes down over
+    // the title, hands over to the station halfway, and has to keep rolling
+    // from inside that station until it is back up. Ticking it in the title
+    // case alone froze it the instant it handed over, and it stayed shut over
+    // the whole screen for the rest of the session.
+    if (this.labWipe) {
+      const wp = this.labWipe;
+      wp.t += raw;
+      if (!wp.gone && wp.t >= wp.dur * 0.5) {
+        wp.gone = true;
+        if (wp.id === 'habitat') this.openHabitat();
+        else if (wp.id === 'lab') this.openLabBench();
+        else this.openResearch();
+        this.wipeIn = 0.32;
+      }
+      if (wp.t >= wp.dur) this.labWipe = null;
+      if (this.state === 'title') { this.titleT += raw; Lab.update(raw); }
+      else this.menuT += raw;
+      return;
+    }
     switch (this.state) {
       case 'title': {
         this.titleT += raw; Lab.update(raw);
-        // the shutter, once it is down, hands over to whichever bay you chose
-        if (this.labWipe) {
-          const wp = this.labWipe;
-          wp.t += raw;
-          if (!wp.gone && wp.t >= wp.dur * 0.5) {
-            wp.gone = true;
-            if (wp.id === 'habitat') this.openHabitat();
-            else if (wp.id === 'lab') this.openLabBench();
-            else this.openResearch();
-            this.wipeIn = 0.32;
-          }
-          if (wp.t >= wp.dur) this.labWipe = null;
-          break;
-        }
         const stn = UI.labStations();
         if (this.labSel === undefined) this.labSel = 1;      // start on CREATE
         if (Input.hit('ArrowLeft', 'KeyA')) { this.labSel = (this.labSel + stn.length - 1) % stn.length; SFX.ui(); }

@@ -850,7 +850,7 @@ const UI = {
     // the pool of light the board throws down
     const fg = ctx.createLinearGradient(0, fy - 12, 0, H);
     fg.addColorStop(0, 'rgba(150,255,228,0.13)'); fg.addColorStop(1, 'rgba(150,255,228,0)');
-    ctx.fillStyle = fg; ctx.fillRect(B.x, fy - 12, B.w, H - fy + 12);
+    ctx.fillStyle = fg; ctx.fillRect(0, fy - 12, W, H - fy + 12);
     // gear along the back of the room, in silhouette
     const sil = '#060f11', rim = '#1e3438';
     const box = (x, y, w, h) => { ctx.fillStyle = sil; ctx.fillRect(x, y, w, h); ctx.fillStyle = rim; ctx.fillRect(x, y, w, 1); };
