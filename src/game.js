@@ -282,7 +282,9 @@ const G = {
     this.placeLandmark(st);
     Labyrinth.begin(st);
     Tutor.enterField();
-    Drop.begin(st);
+    // Nobody flies a specimen out to a municipal trunk main. The sewer gets
+    // wheeled down a corridor and tipped into a hatch.
+    if (st && st.zone === 'sewer') Delivery.begin(st); else Drop.begin(st);
   },
   // ---- one big handmade thing per site --------------------------------
   // Every release site gets a landmark placed by hand rather than left to the
@@ -1002,6 +1004,7 @@ const G = {
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
         break;
+      case 'delivery': Delivery.update(raw); break;
       case 'drop':
         this.updateWorld(dt, false);
         Drop.update(raw);
@@ -1216,6 +1219,8 @@ const G = {
     if (this.state === 'habitat') { UI.drawHabitat(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'bench') { UI.drawLabBench(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); Tutor.draw(ctx); return; }
+    // the delivery is its own picture: the world is not in shot yet
+    if (this.state === 'delivery') { Delivery.draw(ctx); UI.drawWipe(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }
@@ -1225,6 +1230,7 @@ const G = {
     if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
     World.drawDecor(ctx, cam, 0, day);
+    if (indoor) Waste.draw(ctx, cam);
     this.fx.drawClouds(ctx, cam);
     // world space
     ctx.save(); ctx.translate(this.W / 2 + this.shakeX, this.H / 2 + this.shakeY); ctx.scale(cam.zoom, cam.zoom); ctx.translate(-cam.x, -cam.y);
@@ -1264,6 +1270,7 @@ const G = {
     ctx.imageSmoothingEnabled = false;
     this.fx.draw(ctx, cam);
     this.fx.drawPops(ctx, cam);
+    if (indoor) Waste.drawOver(ctx, cam);
     World.drawDecor(ctx, cam, 1, day);
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);

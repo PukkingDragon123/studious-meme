@@ -149,20 +149,12 @@ class Structure extends Entity {
     }
     if (this.kind === 'buoy') { this.y = World.surface(this.x) - 4; }
     // ---- the sluice gate -------------------------------------------------
-    // It watches for the key. Bring the site's relic within reach and the
-    // hydraulics start, and once it is up it stays up.
+    // It is welded. There is no state in which it opens; the only thing it
+    // does is sit there and drip, and groan when something leans on it.
     if (this.kind === 'sluice') {
-      const has = typeof Labyrinth !== 'undefined' && Labyrinth.keyed();
-      this.lit = has ? 1 : 0;
-      if (has && this.open < 1) {
-        if (this.open === 0) { SFX.clank && SFX.clank(); G.shake(5); G.banner = { text: 'THE GATE IS COMING UP', sub: 'GO', t: 3, max: 3, color: '#3fd0a8' }; }
-        this.open = Math.min(1, this.open + dt * 0.34);
-        if (chance(dt * 12)) G.fx.bubbles(this.x + rand(-18, 18), this.y - 20, 1, 8);
-      }
-      // and it is the way out: swimming through an open one ends the run well
-      if (this.open > 0.55 && P && !P.dead && Math.abs(P.x - this.x) < 14) {
-        if (typeof Labyrinth !== 'undefined') Labyrinth.escaped();
-      }
+      this.open = 0; this.lit = 0;
+      if (chance(dt * 1.4)) G.fx.bubbles(this.x + rand(-18, 18), this.y - 20, 1, 5);
+      if (P && !P.dead && Math.abs(P.x - this.x) < 40 && chance(dt * 0.4)) SFX.clank && SFX.clank(this.pan);
     }
     if ((this.kind === 'campfire' || this.kind === 'campsite') && chance(dt * 22)) G.fx.add({ type: 'smoke', x: this.x + rand(-2, 2) * this.ss, y: this.y - 6 * this.ss, vx: rand(-6, 6), vy: -rand(14, 28), s: rand(1.5, 3), color: '#6a6a6a', life: rand(0.8, 1.8), t: 0, maxLife: 1.4 });
     if ((this.kind === 'campfire' || this.kind === 'campsite') && this.lightOn) G.fx.glow(this.x + (this.kind === 'campsite' ? 41 * this.ss : 0), this.y - 4 * this.ss, (14 + Math.sin(this.t * 9) * 3) * this.ss, '#ff8020', 0.12);

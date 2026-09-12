@@ -70,7 +70,7 @@ const UI = {
     tab('#ff5030', P.frenzyT > 0);
     tab('#ff6060', !!P.missingLimbs);
     // environment meters only exist where the environment is trying to kill you
-    let hy2 = 39;
+    let hy2 = 66;                       // under the alarm panel, never over it
     const haz = (label, v, col, warn) => {
       if (v <= 0.5) return;
       const f = clamp(v / 100, 0, 1), hot = f > 0.72;
@@ -81,6 +81,8 @@ const UI = {
     };
     haz('FILTH', P.toxin || 0, '#8ab820', '#e0ff40');
     haz('PRESS', P.crush || 0, '#4a9ac8', '#a0e8ff');
+    haz('DOSE', P.rads || 0, '#3ef07a', '#d0ffb0');
+    this.hazBottom = hy2;               // the mission bar starts below whatever is lit
     // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
     Font.draw(ctx, P.lengthFt.toFixed(1), W / 2 - 12, 6, { color: '#eaf2dc', align: 'right', scale: 2, outline: '#0a1a08' });
@@ -145,7 +147,7 @@ const UI = {
     Labyrinth.draw(ctx);
     const mh = Missions.hud();
     if (mh) {
-      const my = 70, mw = 150;
+      const my = Math.max(70, this.hazBottom || 70), mw = 150;
       ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, my - 2, mw, 13);
       ctx.fillStyle = mh.col; ctx.fillRect(8, my - 2, 2, 13);
       const flash = G.mission && G.mission.flashT > 0 && Math.floor(t * 12) % 2;

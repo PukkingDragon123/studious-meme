@@ -117,6 +117,8 @@ function computeLook(player) {
   // spliced genes change the animal, not just the numbers: tusks, plates,
   // stripes, glow. Without this the gene tree was invisible on the body.
   for (const id of player.genes || []) { const g = GENE_BY_ID[id]; if (g && g.look) g.look(L); }
+  // and what the drums did to you, which you did not pick at all
+  if (typeof WASTE_MUT_BY_ID !== 'undefined') for (const id of player.wasteMuts || []) { const m = WASTE_MUT_BY_ID[id]; if (m && m.look) m.look(L); }
   // the morph picked in the loadout is cosmetic and applied last
   const hide = typeof HIDE_BY_ID !== 'undefined' && HIDE_BY_ID[player.hide];
   if (hide && hide.apply) hide.apply(L);

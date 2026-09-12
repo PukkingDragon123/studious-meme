@@ -24,7 +24,7 @@ class Player {
       quake: false, manEater: false, gibLife: 1, shockDmg: 1,
       // environment tolerance: how fast filth and pressure accumulate, and how
       // deep you can go before the water starts squeezing
-      toxRes: 1, crushRes: 1, crushDepth: 560,
+      toxRes: 1, crushRes: 1, crushDepth: 560, acidRes: 1,
       // species signatures
       smallGrowth: 1, hatchling: false, biteRate: 1, chainCrit: 0, rollWindow: 1, bigLatch: 0,
       fishSlayer: 1, fishSwallow: false, ambushMul: 2.5,
@@ -41,7 +41,7 @@ class Player {
     this.spliceGlow = 0; this.spliceCol = '#40f0c8';
     this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
-    this.toxin = 0; this.crush = 0; this.hazT = 0;
+    this.toxin = 0; this.rads = 0; this.crush = 0; this.hazT = 0;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
@@ -529,6 +529,34 @@ class Player {
       if (chance(dt * 3)) G.fx.bubbles(this.x, this.y, 1, 8 * this.vis, 20);
       if (this.hp <= 0) { this.die('DISSOLVED'); return true; }
     }
+    // --- what is lying in the bottom of the system -----------------------
+    // Acid eats, sludge clogs, drums rewrite. Only the pools: the stretch of
+    // tunnel between two of them costs you nothing.
+    const pool = (typeof Waste !== 'undefined' && under) ? Waste.at(this.x) : null;
+    const inPool = pool && this.y > World.floorY(this.x) - 30;
+    if (inPool && pool.kind === 'acid') {
+      const res = Math.max(0.25, this.st.acidRes || 1);
+      this.hp -= this.maxHp * 0.055 * dt / res;
+      this.toxin = Math.min(130, this.toxin + 22 * dt);
+      if (chance(dt * 14)) G.fx.blood(this.x + rand(-16, 16) * this.vis, this.y + rand(-8, 8) * this.vis, 1, 0, 0, 24, ['#d8ff60', '#8aa820']);
+      if (chance(dt * 6)) G.fx.bubbles(this.x, this.y, 1, 10 * this.vis, 30);
+      if (this.hp <= 0) { this.die('DISSOLVED'); return true; }
+    }
+    if (inPool && pool.kind === 'sludge') {
+      this.toxin = Math.min(130, this.toxin + 34 * dt / Math.max(0.2, this.st.toxRes));
+      this.vx *= Math.pow(0.28, dt); this.vy *= Math.pow(0.4, dt);      // it holds you
+      if (chance(dt * 4)) G.fx.silt && G.fx.silt(this.x + rand(-12, 12), this.y, 2, 12);
+    }
+    // --- the drums ---
+    if (inPool && pool.kind === 'rads') {
+      this.rads = Math.min(140, (this.rads || 0) + 26 * dt);
+      if (chance(dt * 10)) G.fx.add({ type: 'spark', x: this.x + rand(-18, 18) * this.vis, y: this.y + rand(-12, 12) * this.vis, vx: rand(-20, 20), vy: rand(-30, 10), s: 1, color: '#a8f030', life: 0.6 });
+    } else this.rads = Math.max(0, (this.rads || 0) - 5 * dt);
+    if ((this.rads || 0) >= 100) {
+      this.rads = 0;
+      if (typeof forceMutate === 'function') forceMutate(this);
+    }
+
     // --- pressure ---
     const lim = this.st.crushDepth * (this.st.leviathan ? 1.8 : 1) + this.size * 26;
     const over = (B.pressure || 0) > 0 ? Math.max(0, depth - lim) : 0;
