@@ -263,6 +263,7 @@ const G = {
       // one site starts where you started: in the tank, in the lab
       if (this.stage.intro) this.beginIntro(); else this.beginAtStage(this.stage);
       Missions.start(this.stage);
+      Objectives.begin(this.stage);
     }
   },
   // drop straight into a stretch of the swamp, already grown, already hunted
@@ -297,18 +298,51 @@ const G = {
     gallery: ['wreck', -220], sump: ['wreck', 240],
     shelf: ['wreck', 260], reef: ['wreck', -260], wall: ['wreck', 300], trench: ['wreck', -300],
   },
+  // ---- the rest of the set, also placed by hand -------------------------
+  // The landmark tells you where you are; the dressing tells you what happens
+  // here. Every site carries its own short list of props at fixed offsets, so
+  // a stretch reads as somewhere somebody worked rather than as noise from the
+  // chunk spawner.
+  DRESSING: {
+    // the everglades: people, boats and the things they leave in the water
+    mangrove: [['dock', -180], ['crabtrap', -120], ['crabtrap', 60], ['buoy', 320], ['sign', -300]],
+    camp: [['dock', 120], ['boatramp', -320], ['crabtrap', 180], ['crabtrap', 240], ['campfire', -120], ['sign', 60], ['buoy', 420]],
+    cypress: [['dock', -260], ['sign', 120], ['campsite', 420], ['buoy', -420]],
+    prairie: [['sign', -160], ['buoy', 240], ['crabtrap', 380], ['tower', 520]],
+    river: [['buoy', -300], ['buoy', 300], ['dock', 420], ['boatramp', -520], ['sign', 140]],
+    campground: [['campsite', -260], ['campfire', -200], ['dock', 260], ['crabtrap', 320], ['sign', -60], ['buoy', 480]],
+    bay: [['buoy', -420], ['buoy', 180], ['buoy', 560], ['wreck', -260], ['crabtrap', 340]],
+    seawall: [['buoy', -360], ['dock', 300], ['wreck', -560], ['sign', 120]],
+    // the system: nobody decorates a sewer, but everybody leaves things in it
+    outfall: [['console', -180], ['sign', 160], ['grate', -420]],
+    undercroft: [['campfire', 60], ['console', -260], ['sign', 220], ['wreck', 420]],
+    shaft: [['console', 180], ['sign', -180], ['wreck', 380], ['grate', -420]],
+    junction: [['console', -260], ['console', 320], ['sign', 120], ['wreck', -520], ['grate', 560]],
+    gallery: [['wreck', 300], ['console', -340], ['sign', -120], ['wreck', -620]],
+    sump: [['wreck', -300], ['wreck', 420], ['console', 160], ['sign', -140]],
+    // and the ocean, where everything on the bottom got there by sinking
+    shelf: [['wreck', -320], ['buoy', 260], ['crabtrap', 420]],
+    reef: [['wreck', 380], ['buoy', -300], ['crabtrap', -420]],
+    wall: [['wreck', -420], ['buoy', 320]],
+    trench: [['wreck', 360], ['wreck', -520]],
+  },
   placeLandmark(st) {
     if (!st) return;
-    const spec = this.LANDMARKS[st.id]; if (!spec) return;
-    const [kind, off] = spec;
-    // put it somewhere it can actually stand: a bank for buildings, the bottom
-    // for hulls, open water with a floor under it for the causeway
-    const wantLand = kind === 'shop' || kind === 'stilthouse' || kind === 'tower' || kind === 'campsite' || kind === 'console';
-    const x = World.findX(st.x + off, xx => wantLand ? World.floorY(xx) < 10 : World.floorY(xx) > 40, 900, 30);
-    if (x === null) return;
-    const b = new Structure(x, kind);
-    this.add(b);
-    this.landmark = b;
+    const spec = this.LANDMARKS[st.id];
+    const onLand = k => k === 'shop' || k === 'stilthouse' || k === 'tower' || k === 'campsite' || k === 'console' || k === 'campfire' || k === 'sign' || k === 'boatramp';
+    const put = (kind, off, span) => {
+      const land = onLand(kind);
+      const x = World.findX(st.x + off, xx => land ? World.floorY(xx) < 10 : World.floorY(xx) > 40, span || 900, 30);
+      if (x === null) return null;
+      // never stack two props on the same few feet of bank
+      for (const e of this.ents) if (e.type === 'structure' && Math.abs(e.x - x) < 34) return null;
+      const b = new Structure(x, kind);
+      this.add(b);
+      return b;
+    };
+    if (spec) this.landmark = put(spec[0], spec[1]);
+    const dress = this.DRESSING[st.id];
+    if (dress) for (const [kind, off] of dress) put(kind, off, 260);
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -1153,7 +1187,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);

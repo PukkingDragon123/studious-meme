@@ -40,40 +40,14 @@ containment column, the signage — ghosted through everything drawn on top.
 - **HABITAT** — where animals are made and raised
 - **LAB** — the bench: what you take out, what is being funded, what you brought back
 
-**Doc Croc** walks the floor between them, and follows you into whichever bay
-you open — he comes on from the wing, says his piece a line at a time, and then
-stands in the corner reacting to what you do. The project's lead herpetologist
-spliced himself years ago and it took; he wears a coat that no longer fits over
-the tail, keeps his spectacles pushed up on a brow that has no use for them, and
-carries a slate. He teaches the building one job at a time — a picture and two
-or three words in a speech bubble — and every lesson is a thing you were going
-to do anyway, so doing it just pays you. Tap the bubble and he goes away and
-stays away.
+Nobody walks the floor between them. There is no guide, no induction, no
+speech bubble pointing at the one thing you are allowed to press — the project
+that made you does not explain itself, and neither does the building. What each
+station is, what DATA buys, what a vial does on the bench: you find out by
+opening it.
 
-## The first hour
-
-A new save owns nothing at all — no animal, no colour, no map but the one
-outside the door — so the first thing that happens is that Doc walks you
-through making a crocodile. Five steps, on a rail: each one names a single
-control, lights it with a pulsing frame and a bobbing arrow, and refuses every
-other control until you use it.
-
-> HABITAT → grow a crocodile → feed it → release it → pick where it goes in
-> the water
-
-He talks in a bar along the foot of the screen — his face in a box, what he
-said, and the one thing to do about it, with six pips showing how far along you
-are. The screens get out of its way while it is up: the station plates and the
-map's release button move above it rather than hide behind it. His optional
-course and his room patter stay quiet until the induction is finished, so there
-is only ever one voice.
-
-Two things are on the project so that the rail can never strand you: the first
-animal it grows for you is free, and so is its first meal. After that
-everything costs DATA, and DATA comes out of the water.
-
-A save with history in it — runs on the clock, animals in the tanks, anything
-funded — is never put back through the induction.
+The only thing that ever tells you what to do is the objective card a run opens
+on, and that names the objective, never the button.
 
 ## The habitat — the creation menu
 
@@ -90,16 +64,16 @@ It opens the bench where crocodiles are made and raised, in one screen:
   research has not funded showing **NO SAMPLE ON FILE**.
 - **The papers on the left**: tag, species, signature, level, how far into the
   next one, spare points, runs survived.
-- **Everything you can do on the right**: FEED, the three upgrade tracks, and
-  the button that sends it out.
+- **Everything you can do on the right**: the three upgrade tracks and the
+  button that sends it out.
 - **The build along the foot**: length, girth and the nine hides, as swatches.
 
 An animal here is a **character**, not a loadout slot. It has a species with a
-signature, a tag, a level it grew to by being fed, three tracks you can put
+signature, a tag, a level it grew to by surviving, three tracks you can put
 points into, and a build. You pick which one goes out, and it is the one that
-comes back — a run feeds it, and it grows.
+comes back, and what it did out there is the only thing that grows it. There is
+no feeding it in here: what it eats, it eats in the field.
 
-- **FEED** it a slab of meat for DATA. Enough meat is a level; a level is a point.
 - **BODY / JAWS / BLOOD** — where the points go, as three rows of notches.
 - **LENGTH / GIRTH / HIDE** — its build, and every grade is a research line item.
 - **GROW** more of them on the stage, one per empty slot.
@@ -135,8 +109,7 @@ that survives.
 The research screen is a lit board bolted to a wall of the lab, not a menu over
 it: a lamp bar on two cables above it, a steel frame with bolts through it, an
 engraved plate at its head, and the floor of the room still visible underneath —
-tiles, a trolley, gas bottles, a drain, and Doc Croc standing on it talking up at
-you. Five programme cylinders are racked down the left of the board, each filled
+tiles, a trolley, gas bottles and a drain. Five programme cylinders are racked down the left of the board, each filled
 with its own colour to however far it has got. Beside the one you are looking at,
 its chain of steps, slotted into the board.
 
@@ -179,12 +152,14 @@ its own animated glyph once you have carried it out, sealed and grey until then,
 with the site it comes from written under it and what it gives you along the
 foot. Eighteen slots, and the count in the corner is the game's long score.
 
-## The outfall, and how you got out
+## The storm drain, and how you got out
 
-One release is not a release. **THE OUTFALL** puts you back where you started:
-in the tank, in CONTAINMENT, with the lights out and the door shut. You break
-the glass, you go out through the wall, and then there is nine hundred feet of
-storm sewer between you and daylight.
+The game starts in the system. **THE STORM DRAIN** is the first site and the
+only one open on a new save: you come round in the tank, in CONTAINMENT, with
+the lights out and the door shut. You break the glass, you go out through the
+wall, and then there is nine hundred feet of storm sewer between you and
+daylight. The everglades are not a place you start — they are a place the lab
+has to survey before it will put you in them, and the open ocean after that.
 
 That stretch is authored as headroom, because headroom is the whole grammar of
 this system and it is the first thing anybody plays. It teaches all of it in
@@ -233,7 +208,6 @@ as a fragment for hosts that supply their own document shell).
 | Pause / settings | `P` / `ESC` | `II` button |
 | Gene tree | `G` / `E` / `TAB` | tap the gene chip |
 | Spin the globe | drag, or hold `LEFT` / `RIGHT` | drag anywhere on the sphere |
-| Send Doc Croc away, or call him back | `T` | tap his speech bubble |
 | Site select: change site / change zone | `UP` / `DOWN`, `Q` / `E` | tap a pin |
 | Back out of a screen | `ESC` | the **X** in the top-right corner |
 | Trait codex | `C` | via pause |
@@ -259,9 +233,11 @@ simulates and renders an entire swamp behind a screen that paints over it.
 
 ## How a run works
 
-- **You start in a tank.** A containment lab, acid, and scientists on the other side of the glass. Mash bite to crack it, drop into the drain, and follow the storm sewer east past the rats.
-- **Chew through the outfall grate** and the Everglades open up in front of you.
-- **Eat** anything under half your size to swallow it whole. Bigger prey takes bites, bleeds, loses limbs and comes apart.
+- **You start in a tank, in the sewer.** A containment lab, acid, and scientists on the other side of the glass. Mash bite to crack it, drop into the drain, and follow the storm sewer east past the rats.
+- **Chew through the outfall grate** and the Everglades are out there — once the lab has surveyed them.
+- **A run opens on a card**: the place, and three things to do in it. The same three lines live in the corner afterwards and tick themselves off. They name the objective, never the button.
+- **Eat** anything you can get past your own head and it goes in whole — but nothing goes straight down. A mouthful sits crossways in the jaws and has to be **chewed**: mash bite, watch the CHEW meter, and take a hard hit while it is full and the lot drops on the floor as meat. Bigger prey takes bites first, bleeds, loses limbs and comes apart.
+- **Scavenge.** At the size you start, hunting is mostly finding: carcasses lie on the bottom of every stretch of map, thickest in the system.
 - **Latch** onto medium prey with a bite, then bite again to **death roll**. The roll is a rhythm, not a reflex test: a **jaw-lock gauge** sweeps a needle across a wide window and you bite in time with it. The window is most of the bar, missing a beat only costs payout, and you never lose the grip.
 - **Hunger** drains constantly. Starving drains your health. Keep eating.
 - **Gene points** drop from every meal. Press `G` at any moment, in the middle of a fight if you want, and spend them.
@@ -269,13 +245,21 @@ simulates and renders an entire swamp behind a screen that paints over it.
 - **Predators** hunt you while you are small and flee when you are big.
 - **Speed up** by holding the speed button: a sustained run that drinks stamina. Aim **up** and press it instead and it becomes a leap — same pool, so opening the throttle costs you the jump.
 - **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
-- **Bosses** arrive after certain sheds, and which one comes is decided by the zone you are standing in — the sewer sends the Broodmother and the Gnasher before the Sludge King, the glades send Old Scar and the Poacher Warboat before the Skunk Ape, the ocean sends the Anvil and the Green Wall before the Lantern. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
+- **Bosses hold territory.** Nothing arrives on a timer. Each of the ten owns a stretch of water, always the same stretch, and the approach tells you before it does: bones on the floor, silt in the water, a sound off in the dark, a skull on the edge of the screen with a distance under it. Swim into the middle of it and it wakes up; stay out and it never touches you; kill it and its water is quiet for good. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
 - **The water itself is a hazard** in two of the three zones. Sewer water fills a **FILTH** meter that eventually starts eating health and smears the screen greasy green; past the depth your body is rated for, a **PRESSURE** meter fills, the view closes in and shivers, and the hull starts to give. Genes, relics and two research treatments raise both ratings.
 - **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight cuts to an **execution**: bars close in, the camera frames the pair, and three to five prompts come up on big key caps with a bar draining under each. You get three whole misses, and landing one prompt is enough. Every hit is a held impact frame with a blood wash over the lens.
 - **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run.
 - Death is permanent, but the traits and relics you unlock are not.
 
 ## The gene network
+
+Splicing happens on a bench. The screen is a room — tiled wall, a lit bench
+along the bottom with a rack of tubes and a centrifuge turning on it, and the
+animal itself hanging in a holding tank down the left wearing every gene you
+have given it, with its length, its tier and a bead for every splice etched on
+the glass. The network is laid out in what is left.
+
+
 
 Forty-nine nodes on a hex grid, four rings out from one primordial cell, and a gene can be taken
 whenever it touches something you already own. It is a graph rather than a tree: the average node
@@ -440,20 +424,26 @@ single biggest jump the alarm can make.
 There are also **survey crews** shooting levels across the channel from the bank,
 and **traplines** somebody is coming back for.
 
-## You start the length of a forearm
+## You start the length of a hand
 
 Three rungs were added under HATCHLING — the bottom of the ladder used to be a
 yard of animal, already the top of the food chain in the shallows. A release is
-now a release of something small: **0.4 ft out of the tank**, and the mass curve
-floors at 0.3 so the bottom rungs are reachable at all.
+now a release of something small: **0.3 ft out of the tank**, and the mass curve
+floors at 0.3 so the bottom rungs are reachable at all. Growing off that floor
+is the whole game: the mass-to-size curve is flat enough that a rung is a
+campaign, and a meal is only worth its full mass when it is a real share of
+yours. Snacks keep you alive. They do not build an animal.
 
 > HATCHLING · YEARLING · FINGERLING · JUVENILE · SUB-ADULT · ADULT · BULL ·
 > ELDER · ANCIENT · TITAN · LEVIATHAN · SARCOSUCHUS · DEINOSUCHUS · SWAMP GOD
 
-## Landmarks
+## Landmarks and dressing
 
 Every release site has one big thing placed by hand rather than left to the
-chunk spawner — something you can see coming, orient by, hide under and remember
+chunk spawner, and a short list of authored props around it — a dock and two
+crab traps and a boat ramp at the fish camp, consoles and a grate and a sunken
+hull at Junction 9, channel markers out in the bay. Nothing is placed twice on
+the same few feet of bank — something you can see coming, orient by, hide under and remember
 the place by afterwards. The biggest is **THE CAUSEWAY**: four lanes on concrete
 piers with its middle span in the water, lamp standards still on the parapet,
 rebar hanging out of the tear. The shadow under the deck is the best cover for

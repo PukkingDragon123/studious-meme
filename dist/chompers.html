@@ -10833,6 +10833,119 @@ const Lairs = {
   },
 };
 
+/* ===== src/objectives.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// WHAT YOU ARE DOING HERE.
+//
+// With nobody left to explain the game, the game has to say what it wants. A
+// run opens on a card: the place, and three things to do in it. The card slides
+// away after a few seconds and the same three lines live in the corner of the
+// screen for the rest of the run, ticking themselves off as you do them.
+//
+// They are deliberately not a tutorial. They tell you the objective, never the
+// button — what happens in between is still yours to work out.
+// ---------------------------------------------------------------------------
+const Objectives = {
+  list: [], cardT: 0, stage: null, tickT: 0,
+
+  begin(stage) {
+    this.stage = stage || null;
+    this.cardT = 6.5; this.tickT = 0;
+    const P = G.player;
+    const art = stage ? ARTIFACTS.find(a => a.stage === stage.id) : null;
+    const grown = (P ? P.tier : 0) + 2;
+    this.list = [
+      {
+        id: 'order', label: 'ORDER',
+        text: () => { const h = Missions.hud(); return h ? h.text : 'ORDER COMPLETE'; },
+        frac: () => { const m = G.mission; return m ? (m.done ? 1 : clamp(m.n / m.target, 0, 1)) : 1; },
+        done: () => !!(G.mission && G.mission.done),
+      },
+      {
+        id: 'relic', label: 'RELIC',
+        text: () => (art ? (Missions.has(art.id) ? art.name : 'FINISH THE ORDER AND TAKE ' + art.name) : 'NOTHING TO TAKE HERE'),
+        short: () => (art ? (Missions.has(art.id) ? art.name : 'TAKE THE RELIC') : 'NOTHING HERE'),
+        frac: () => (art ? (Missions.has(art.id) ? 1 : (G.mission && G.mission.done ? 0.6 : 0.15)) : 1),
+        done: () => !art || Missions.has(art.id),
+      },
+      {
+        id: 'grow', label: 'GROW',
+        text: () => 'REACH ' + (TIERS[Math.min(grown, TIERS.length - 1)] || TIERS[TIERS.length - 1]).name,
+        frac: () => clamp((G.player.tier) / Math.max(1, grown), 0, 1),
+        done: () => G.player.tier >= grown,
+      },
+    ];
+    // the system has a fourth thing to say, and it is not optional
+    if (stage && stage.zone === 'sewer' && !stage.intro) {
+      this.list.push({
+        id: 'out', label: 'OUT',
+        text: () => 'THERE IS NO WAY OUT OF HERE',
+        short: () => 'NO WAY OUT',
+        frac: () => 0, done: () => false, grim: true,
+      });
+    }
+  },
+
+  update(dt) { if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
+
+  // ---- the card a run opens on ------------------------------------------
+  drawCard(ctx) {
+    if (this.cardT <= 0 || !this.stage) return 0;
+    const W = G.W, H = G.H, st = this.stage;
+    const k = clamp(Math.min(this.cardT * 1.6, (6.5 - this.cardT) * 2.6), 0, 1);
+    const w = 236, h = 30 + this.list.length * 15;
+    const x = Math.round(12 + (1 - k) * -24), y = Math.round(H / 2 - h / 2);
+    ctx.globalAlpha = k;
+    ctx.fillStyle = 'rgba(4,10,12,0.86)'; ctx.fillRect(x, y, w, h);
+    const col = (ZONE_BY_ID[st.zone] || ZONES[0]).col;
+    ctx.fillStyle = col; ctx.fillRect(x, y, w, 2); ctx.fillRect(x, y, 2, h);
+    Font.draw(ctx, st.name, x + 8, y + 7, { color: '#eaf6ee' });
+    Font.draw(ctx, st.sub, x + 8, y + 17, { color: '#5f8f84' });
+    let ly = y + 30;
+    for (const o of this.list) {
+      const done = o.done();
+      this.box(ctx, x + 9, ly + 1, done, o.grim);
+      Font.draw(ctx, o.text(), x + 20, ly, { color: o.grim ? '#ff8c40' : done ? '#6ad040' : '#cfe8e0' });
+      ly += 15;
+    }
+    ctx.globalAlpha = 1;
+    return h;
+  },
+  // a checkbox: empty, ticked, or crossed through for the one you cannot do
+  box(ctx, x, y, done, grim) {
+    ctx.fillStyle = grim ? '#3a1a12' : done ? '#16381a' : '#12201e';
+    ctx.fillRect(x, y, 7, 7);
+    ctx.fillStyle = grim ? '#ff8c40' : done ? '#6ad040' : '#3f6f66';
+    ctx.fillRect(x, y, 7, 1); ctx.fillRect(x, y + 6, 7, 1); ctx.fillRect(x, y, 1, 7); ctx.fillRect(x + 6, y, 1, 7);
+    if (done) { ctx.fillStyle = '#8ef0a0'; ctx.fillRect(x + 2, y + 4, 1, 1); ctx.fillRect(x + 3, y + 3, 1, 2); ctx.fillRect(x + 4, y + 2, 1, 2); }
+    else if (grim) { ctx.fillStyle = '#ff8c40'; ctx.fillRect(x + 2, y + 3, 4, 1); }
+  },
+
+  // ---- the same list, small, for the rest of the run --------------------
+  drawHud(ctx, y) {
+    if (!this.list.length) return y;
+    // while the card is up it is saying all of this already
+    if (this.cardT > 0.6) return y;
+    const W = 158;
+    let ly = y;
+    for (const o of this.list) {
+      const done = o.done(), f = clamp(o.frac(), 0, 1);
+      ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, ly - 2, W, 13);
+      ctx.fillStyle = o.grim ? '#ff8c40' : done ? '#6ad040' : '#8ce8a0'; ctx.fillRect(8, ly - 2, 2, 13);
+      this.box(ctx, 13, ly, done, o.grim);
+      const flash = G.mission && G.mission.flashT > 0 && o.id === 'order' && Math.floor(this.tickT * 12) % 2;
+      let txt = (o.short ? o.short() : o.text());
+      if (Font.width(txt, 1) > W - 28) txt = txt.slice(0, Math.max(4, Math.floor((W - 28) / 4))) + '.';
+      Font.draw(ctx, txt, 24, ly, { color: flash ? '#ffffff' : o.grim ? '#ff8c40' : done ? '#6ad040' : '#cfe8e0' });
+      ctx.fillStyle = '#16241f'; ctx.fillRect(10, ly + 9, W - 4, 1);
+      ctx.fillStyle = o.grim ? '#5a3018' : done ? '#6ad040' : '#8ce8a0'; ctx.fillRect(10, ly + 9, Math.round((W - 4) * f), 1);
+      ly += 15;
+    }
+    return ly;
+  },
+};
+
 /* ===== src/waste.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
@@ -12359,19 +12472,11 @@ const UI = {
       ctx.fillRect(bx, by, Math.round(bw * (P.braceT > 0 ? 1 : f)), 4);
       if (P.braceFlash > 0) { ctx.globalAlpha = clamp(P.braceFlash * 4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6); ctx.globalAlpha = 1; }
     }
-    // standing order: one line, a hairline of progress under it
+    // what you are here to do: three lines that tick themselves off
     Labyrinth.draw(ctx);
     Lairs.draw(ctx);
-    const mh = Missions.hud();
-    if (mh) {
-      const my = Math.max(70, this.hazBottom || 70), mw = 150;
-      ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, my - 2, mw, 13);
-      ctx.fillStyle = mh.col; ctx.fillRect(8, my - 2, 2, 13);
-      const flash = G.mission && G.mission.flashT > 0 && Math.floor(t * 12) % 2;
-      Font.draw(ctx, mh.text, 14, my, { color: flash ? '#ffffff' : mh.col });
-      ctx.fillStyle = '#16241f'; ctx.fillRect(10, my + 9, mw - 4, 1);
-      ctx.fillStyle = mh.col; ctx.fillRect(10, my + 9, Math.round((mw - 4) * clamp(mh.frac, 0, 1)), 1);
-    }
+    Objectives.drawHud(ctx, Math.max(70, this.hazBottom || 70));
+    Objectives.drawCard(ctx);
     // dispatch: the lab talking about you on an open channel, typed in
     const dp = G.dispatch;
     if (dp) {
@@ -12553,9 +12658,12 @@ const UI = {
       }
       this._geneFit = { minX, maxX, minY, maxY };
     }
-    const f = this._geneFit, top = 44, bot = H - 16, pad = 1.3;
-    const R = Math.min(26, (W - 12) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
-    const cx = W / 2 - (f.minX + f.maxX) * 0.5 * R;
+    // the left third of the screen is the bench and the specimen on it, so the
+    // network is laid out in what is left
+    const f = this._geneFit, top = 44, bot = H - 16, pad = 1.25;
+    const fieldL = 128, fieldR = W - 232;
+    const R = Math.min(24, (fieldR - fieldL) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
+    const cx = (fieldL + fieldR) * 0.5 - (f.minX + f.maxX) * 0.5 * R;
     const cy = (top + bot) * 0.5 - (f.minY + f.maxY) * 0.5 * R;
     return GENES.map(g => {
       const [sx, sy] = Genome.pos(g, cx, cy, R);
@@ -12565,9 +12673,90 @@ const UI = {
       return { g, sx, sy, R, r: R * k };
     });
   },
+  // ---- the bench the whole screen stands on ------------------------------
+  geneBench(ctx) {
+    const W = G.W, H = G.H, by = H - 26;
+    ctx.fillStyle = '#0c181c'; ctx.fillRect(0, by, W, H - by);
+    ctx.fillStyle = '#16262a'; ctx.fillRect(0, by, W, 2);
+    ctx.fillStyle = '#0a1214'; ctx.fillRect(0, by + 2, W, 1);
+    // equipment along it: a centrifuge, a rack of tubes, a burner
+    const rack = (x) => {
+      ctx.fillStyle = '#16242a'; ctx.fillRect(x, by - 12, 34, 12);
+      for (let i = 0; i < 5; i++) {
+        const c = ['#7affda', '#a8f030', '#ffd060', '#ff8060', '#8cd8ff'][i];
+        ctx.fillStyle = '#0a1416'; ctx.fillRect(x + 3 + i * 6, by - 18, 4, 8);
+        ctx.fillStyle = c; ctx.fillRect(x + 3 + i * 6, by - 14, 4, 4);
+      }
+    };
+    rack(134); rack(W - 62);
+    // a centrifuge, turning
+    {
+      const cx = W * 0.5, a = G.t * 3;
+      ctx.fillStyle = '#16242a'; ctx.fillRect(cx - 14, by - 14, 28, 14);
+      ctx.fillStyle = '#0c1a1e'; ctx.fillRect(cx - 10, by - 11, 20, 8);
+      ctx.fillStyle = '#3fd0a8';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * 6) - 1, Math.round(by - 7 + Math.sin(a) * 2) - 1, 2, 2);
+      ctx.fillRect(Math.round(cx - Math.cos(a) * 6) - 1, Math.round(by - 7 - Math.sin(a) * 2) - 1, 2, 2);
+    }
+  },
+  // ---- the specimen, as it currently is ---------------------------------
+  geneTank(ctx, P, t) {
+    const H = G.H;
+    const x = 8, y = 56, w = 112, h = H - 56 - 104;
+    // glass, water, and the frame around it
+    ctx.fillStyle = '#061418'; ctx.fillRect(x, y, w, h);
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, 'rgba(40,120,110,0.20)'); g.addColorStop(1, 'rgba(10,40,44,0.45)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    // the animal itself, solved in local space so it hangs in the tank
+    if (!this._geneView) { this._geneView = CrocView.make(); this._geneView.t = 0.4; }
+    const v = this._geneView;
+    CrocView.update(v, 1 / 60, 3.4);
+    if (P && P.parts && P.parts.head) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x + 2, y + 2, w - 4, h - 4); ctx.clip();
+      const bob = Math.sin(t * 1.3) * 2;
+      CrocView.draw(ctx, v, P.parts, x + w / 2, y + h * 0.52 + bob, 1.05);
+      ctx.restore();
+    }
+    // bubbles rising past it
+    for (let i = 0; i < 7; i++) {
+      const bx = x + 8 + ((i * 37) % (w - 16));
+      const byy = y + h - ((t * 26 + i * 53) % (h - 6));
+      ctx.fillStyle = 'rgba(180,240,230,0.30)';
+      ctx.fillRect(Math.round(bx), Math.round(byy), 2, 2);
+    }
+    // frame, label plate and the numbers on it
+    ctx.strokeStyle = '#2a4a4a'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.fillStyle = '#14282c'; ctx.fillRect(x, y - 11, w, 11);
+    ctx.fillStyle = '#3fd0a8'; ctx.fillRect(x, y - 11, w, 1);
+    Font.draw(ctx, 'SUBJECT', x + 4, y - 9, { color: '#7fd8c0' });
+    Font.draw(ctx, (P ? P.lengthFt.toFixed(1) : '0') + ' FT', x + w - 4, y - 9, { color: '#cfe8e0', align: 'right' });
+    // the tier and the splice beads are etched on the glass at the bottom of
+    // the tank, so nothing outside it has to make room for them
+    const tier = TIERS[P ? P.tier : 0];
+    ctx.fillStyle = 'rgba(4,14,16,0.6)'; ctx.fillRect(x + 1, y + h - 20, w - 2, 19);
+    Font.draw(ctx, tier ? tier.name : '', x + 5, y + h - 17, { color: '#7fd8c0' });
+    let bx2 = x + 5;
+    for (const k of LIN_KEYS) {
+      const d = Genome.depth(P, k); if (!d) continue;
+      const L = LINEAGES[k];
+      for (let i = 0; i < d; i++) { ctx.fillStyle = L.color; ctx.fillRect(bx2, y + h - 7, 3, 3); bx2 += 5; }
+      bx2 += 3;
+    }
+    if (P && P.wasteMuts && P.wasteMuts.length) {
+      for (let i = 0; i < P.wasteMuts.length; i++) { ctx.fillStyle = '#a8f030'; ctx.fillRect(bx2, y + h - 7, 3, 3); bx2 += 5; }
+    }
+  },
   drawGenes(ctx) {
     const W = G.W, H = G.H, P = G.player, t = G.t;
-    ctx.fillStyle = 'rgba(3,8,10,0.95)'; ctx.fillRect(0, 0, W, H);
+    // Splicing happens on a bench, not in the abstract. The screen is a room:
+    // tiled wall, a lit bench along the bottom, and the animal itself standing
+    // in a holding tank on the left, wearing every gene you have given it.
+    this.labWall(ctx, false);
+    ctx.fillStyle = 'rgba(3,10,12,0.72)'; ctx.fillRect(0, 0, W, H);
+    this.geneBench(ctx);
+    this.geneTank(ctx, P, t);
     const cells = this.geneCells(), byId = {};
     for (const c of cells) byId[c.g.id] = c;
     // Links. The tree is really a graph now, so the edges get to carry the
@@ -12691,13 +12880,14 @@ const UI = {
       const sp = Genome.spread(P);
       if (sp > 1) Font.draw(ctx, 'SPREAD ' + sp + '  +' + Math.round((sp - 1) * 20) + '%', 128, 26, { color: sp > 2 ? '#ffb060' : '#7f9a90' });
     }
-    // affinity meters: what your playstyle is discounting
-    let ay = 46;
+    // affinity meters: what your playstyle is discounting, on the bench under
+    // the tank rather than over the animal in it
+    let ay = H - 96;
     for (const k of LIN_KEYS) {
       const L = LINEAGES[k], f = Genome.affinityPct(P, k);
       Font.draw(ctx, L.name, 8, ay, { color: f > 0.05 ? L.color : '#4a5a56' });
-      this.meter(ctx, 60, ay, 34, 4, f, L.color, '#131c1a');
-      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 98, ay, { color: shade(L.color, 0.85) });
+      this.meter(ctx, 62, ay, 30, 4, f, L.color, '#131c1a');
+      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 96, ay, { color: shade(L.color, 0.85) });
       ay += 11;
     }
     // detail panel for the selected gene
@@ -14593,6 +14783,7 @@ const G = {
       // one site starts where you started: in the tank, in the lab
       if (this.stage.intro) this.beginIntro(); else this.beginAtStage(this.stage);
       Missions.start(this.stage);
+      Objectives.begin(this.stage);
     }
   },
   // drop straight into a stretch of the swamp, already grown, already hunted
@@ -14627,18 +14818,51 @@ const G = {
     gallery: ['wreck', -220], sump: ['wreck', 240],
     shelf: ['wreck', 260], reef: ['wreck', -260], wall: ['wreck', 300], trench: ['wreck', -300],
   },
+  // ---- the rest of the set, also placed by hand -------------------------
+  // The landmark tells you where you are; the dressing tells you what happens
+  // here. Every site carries its own short list of props at fixed offsets, so
+  // a stretch reads as somewhere somebody worked rather than as noise from the
+  // chunk spawner.
+  DRESSING: {
+    // the everglades: people, boats and the things they leave in the water
+    mangrove: [['dock', -180], ['crabtrap', -120], ['crabtrap', 60], ['buoy', 320], ['sign', -300]],
+    camp: [['dock', 120], ['boatramp', -320], ['crabtrap', 180], ['crabtrap', 240], ['campfire', -120], ['sign', 60], ['buoy', 420]],
+    cypress: [['dock', -260], ['sign', 120], ['campsite', 420], ['buoy', -420]],
+    prairie: [['sign', -160], ['buoy', 240], ['crabtrap', 380], ['tower', 520]],
+    river: [['buoy', -300], ['buoy', 300], ['dock', 420], ['boatramp', -520], ['sign', 140]],
+    campground: [['campsite', -260], ['campfire', -200], ['dock', 260], ['crabtrap', 320], ['sign', -60], ['buoy', 480]],
+    bay: [['buoy', -420], ['buoy', 180], ['buoy', 560], ['wreck', -260], ['crabtrap', 340]],
+    seawall: [['buoy', -360], ['dock', 300], ['wreck', -560], ['sign', 120]],
+    // the system: nobody decorates a sewer, but everybody leaves things in it
+    outfall: [['console', -180], ['sign', 160], ['grate', -420]],
+    undercroft: [['campfire', 60], ['console', -260], ['sign', 220], ['wreck', 420]],
+    shaft: [['console', 180], ['sign', -180], ['wreck', 380], ['grate', -420]],
+    junction: [['console', -260], ['console', 320], ['sign', 120], ['wreck', -520], ['grate', 560]],
+    gallery: [['wreck', 300], ['console', -340], ['sign', -120], ['wreck', -620]],
+    sump: [['wreck', -300], ['wreck', 420], ['console', 160], ['sign', -140]],
+    // and the ocean, where everything on the bottom got there by sinking
+    shelf: [['wreck', -320], ['buoy', 260], ['crabtrap', 420]],
+    reef: [['wreck', 380], ['buoy', -300], ['crabtrap', -420]],
+    wall: [['wreck', -420], ['buoy', 320]],
+    trench: [['wreck', 360], ['wreck', -520]],
+  },
   placeLandmark(st) {
     if (!st) return;
-    const spec = this.LANDMARKS[st.id]; if (!spec) return;
-    const [kind, off] = spec;
-    // put it somewhere it can actually stand: a bank for buildings, the bottom
-    // for hulls, open water with a floor under it for the causeway
-    const wantLand = kind === 'shop' || kind === 'stilthouse' || kind === 'tower' || kind === 'campsite' || kind === 'console';
-    const x = World.findX(st.x + off, xx => wantLand ? World.floorY(xx) < 10 : World.floorY(xx) > 40, 900, 30);
-    if (x === null) return;
-    const b = new Structure(x, kind);
-    this.add(b);
-    this.landmark = b;
+    const spec = this.LANDMARKS[st.id];
+    const onLand = k => k === 'shop' || k === 'stilthouse' || k === 'tower' || k === 'campsite' || k === 'console' || k === 'campfire' || k === 'sign' || k === 'boatramp';
+    const put = (kind, off, span) => {
+      const land = onLand(kind);
+      const x = World.findX(st.x + off, xx => land ? World.floorY(xx) < 10 : World.floorY(xx) > 40, span || 900, 30);
+      if (x === null) return null;
+      // never stack two props on the same few feet of bank
+      for (const e of this.ents) if (e.type === 'structure' && Math.abs(e.x - x) < 34) return null;
+      const b = new Structure(x, kind);
+      this.add(b);
+      return b;
+    };
+    if (spec) this.landmark = put(spec[0], spec[1]);
+    const dress = this.DRESSING[st.id];
+    if (dress) for (const [kind, off] of dress) put(kind, off, 260);
   },
   // easy first meals, close to wherever the run begins
   seedNursery(cx, dir) {
@@ -15483,7 +15707,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);

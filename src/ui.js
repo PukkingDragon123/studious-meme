@@ -151,19 +151,11 @@ const UI = {
       ctx.fillRect(bx, by, Math.round(bw * (P.braceT > 0 ? 1 : f)), 4);
       if (P.braceFlash > 0) { ctx.globalAlpha = clamp(P.braceFlash * 4, 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(bx - 1, by - 1, bw + 2, 6); ctx.globalAlpha = 1; }
     }
-    // standing order: one line, a hairline of progress under it
+    // what you are here to do: three lines that tick themselves off
     Labyrinth.draw(ctx);
     Lairs.draw(ctx);
-    const mh = Missions.hud();
-    if (mh) {
-      const my = Math.max(70, this.hazBottom || 70), mw = 150;
-      ctx.fillStyle = 'rgba(6,14,12,0.55)'; ctx.fillRect(8, my - 2, mw, 13);
-      ctx.fillStyle = mh.col; ctx.fillRect(8, my - 2, 2, 13);
-      const flash = G.mission && G.mission.flashT > 0 && Math.floor(t * 12) % 2;
-      Font.draw(ctx, mh.text, 14, my, { color: flash ? '#ffffff' : mh.col });
-      ctx.fillStyle = '#16241f'; ctx.fillRect(10, my + 9, mw - 4, 1);
-      ctx.fillStyle = mh.col; ctx.fillRect(10, my + 9, Math.round((mw - 4) * clamp(mh.frac, 0, 1)), 1);
-    }
+    Objectives.drawHud(ctx, Math.max(70, this.hazBottom || 70));
+    Objectives.drawCard(ctx);
     // dispatch: the lab talking about you on an open channel, typed in
     const dp = G.dispatch;
     if (dp) {
@@ -345,9 +337,12 @@ const UI = {
       }
       this._geneFit = { minX, maxX, minY, maxY };
     }
-    const f = this._geneFit, top = 44, bot = H - 16, pad = 1.3;
-    const R = Math.min(26, (W - 12) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
-    const cx = W / 2 - (f.minX + f.maxX) * 0.5 * R;
+    // the left third of the screen is the bench and the specimen on it, so the
+    // network is laid out in what is left
+    const f = this._geneFit, top = 44, bot = H - 16, pad = 1.25;
+    const fieldL = 128, fieldR = W - 232;
+    const R = Math.min(24, (fieldR - fieldL) / ((f.maxX - f.minX) + pad * 2), (bot - top) / ((f.maxY - f.minY) + pad * 2));
+    const cx = (fieldL + fieldR) * 0.5 - (f.minX + f.maxX) * 0.5 * R;
     const cy = (top + bot) * 0.5 - (f.minY + f.maxY) * 0.5 * R;
     return GENES.map(g => {
       const [sx, sy] = Genome.pos(g, cx, cy, R);
@@ -357,9 +352,90 @@ const UI = {
       return { g, sx, sy, R, r: R * k };
     });
   },
+  // ---- the bench the whole screen stands on ------------------------------
+  geneBench(ctx) {
+    const W = G.W, H = G.H, by = H - 26;
+    ctx.fillStyle = '#0c181c'; ctx.fillRect(0, by, W, H - by);
+    ctx.fillStyle = '#16262a'; ctx.fillRect(0, by, W, 2);
+    ctx.fillStyle = '#0a1214'; ctx.fillRect(0, by + 2, W, 1);
+    // equipment along it: a centrifuge, a rack of tubes, a burner
+    const rack = (x) => {
+      ctx.fillStyle = '#16242a'; ctx.fillRect(x, by - 12, 34, 12);
+      for (let i = 0; i < 5; i++) {
+        const c = ['#7affda', '#a8f030', '#ffd060', '#ff8060', '#8cd8ff'][i];
+        ctx.fillStyle = '#0a1416'; ctx.fillRect(x + 3 + i * 6, by - 18, 4, 8);
+        ctx.fillStyle = c; ctx.fillRect(x + 3 + i * 6, by - 14, 4, 4);
+      }
+    };
+    rack(134); rack(W - 62);
+    // a centrifuge, turning
+    {
+      const cx = W * 0.5, a = G.t * 3;
+      ctx.fillStyle = '#16242a'; ctx.fillRect(cx - 14, by - 14, 28, 14);
+      ctx.fillStyle = '#0c1a1e'; ctx.fillRect(cx - 10, by - 11, 20, 8);
+      ctx.fillStyle = '#3fd0a8';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * 6) - 1, Math.round(by - 7 + Math.sin(a) * 2) - 1, 2, 2);
+      ctx.fillRect(Math.round(cx - Math.cos(a) * 6) - 1, Math.round(by - 7 - Math.sin(a) * 2) - 1, 2, 2);
+    }
+  },
+  // ---- the specimen, as it currently is ---------------------------------
+  geneTank(ctx, P, t) {
+    const H = G.H;
+    const x = 8, y = 56, w = 112, h = H - 56 - 104;
+    // glass, water, and the frame around it
+    ctx.fillStyle = '#061418'; ctx.fillRect(x, y, w, h);
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, 'rgba(40,120,110,0.20)'); g.addColorStop(1, 'rgba(10,40,44,0.45)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    // the animal itself, solved in local space so it hangs in the tank
+    if (!this._geneView) { this._geneView = CrocView.make(); this._geneView.t = 0.4; }
+    const v = this._geneView;
+    CrocView.update(v, 1 / 60, 3.4);
+    if (P && P.parts && P.parts.head) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x + 2, y + 2, w - 4, h - 4); ctx.clip();
+      const bob = Math.sin(t * 1.3) * 2;
+      CrocView.draw(ctx, v, P.parts, x + w / 2, y + h * 0.52 + bob, 1.05);
+      ctx.restore();
+    }
+    // bubbles rising past it
+    for (let i = 0; i < 7; i++) {
+      const bx = x + 8 + ((i * 37) % (w - 16));
+      const byy = y + h - ((t * 26 + i * 53) % (h - 6));
+      ctx.fillStyle = 'rgba(180,240,230,0.30)';
+      ctx.fillRect(Math.round(bx), Math.round(byy), 2, 2);
+    }
+    // frame, label plate and the numbers on it
+    ctx.strokeStyle = '#2a4a4a'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.fillStyle = '#14282c'; ctx.fillRect(x, y - 11, w, 11);
+    ctx.fillStyle = '#3fd0a8'; ctx.fillRect(x, y - 11, w, 1);
+    Font.draw(ctx, 'SUBJECT', x + 4, y - 9, { color: '#7fd8c0' });
+    Font.draw(ctx, (P ? P.lengthFt.toFixed(1) : '0') + ' FT', x + w - 4, y - 9, { color: '#cfe8e0', align: 'right' });
+    // the tier and the splice beads are etched on the glass at the bottom of
+    // the tank, so nothing outside it has to make room for them
+    const tier = TIERS[P ? P.tier : 0];
+    ctx.fillStyle = 'rgba(4,14,16,0.6)'; ctx.fillRect(x + 1, y + h - 20, w - 2, 19);
+    Font.draw(ctx, tier ? tier.name : '', x + 5, y + h - 17, { color: '#7fd8c0' });
+    let bx2 = x + 5;
+    for (const k of LIN_KEYS) {
+      const d = Genome.depth(P, k); if (!d) continue;
+      const L = LINEAGES[k];
+      for (let i = 0; i < d; i++) { ctx.fillStyle = L.color; ctx.fillRect(bx2, y + h - 7, 3, 3); bx2 += 5; }
+      bx2 += 3;
+    }
+    if (P && P.wasteMuts && P.wasteMuts.length) {
+      for (let i = 0; i < P.wasteMuts.length; i++) { ctx.fillStyle = '#a8f030'; ctx.fillRect(bx2, y + h - 7, 3, 3); bx2 += 5; }
+    }
+  },
   drawGenes(ctx) {
     const W = G.W, H = G.H, P = G.player, t = G.t;
-    ctx.fillStyle = 'rgba(3,8,10,0.95)'; ctx.fillRect(0, 0, W, H);
+    // Splicing happens on a bench, not in the abstract. The screen is a room:
+    // tiled wall, a lit bench along the bottom, and the animal itself standing
+    // in a holding tank on the left, wearing every gene you have given it.
+    this.labWall(ctx, false);
+    ctx.fillStyle = 'rgba(3,10,12,0.72)'; ctx.fillRect(0, 0, W, H);
+    this.geneBench(ctx);
+    this.geneTank(ctx, P, t);
     const cells = this.geneCells(), byId = {};
     for (const c of cells) byId[c.g.id] = c;
     // Links. The tree is really a graph now, so the edges get to carry the
@@ -483,13 +559,14 @@ const UI = {
       const sp = Genome.spread(P);
       if (sp > 1) Font.draw(ctx, 'SPREAD ' + sp + '  +' + Math.round((sp - 1) * 20) + '%', 128, 26, { color: sp > 2 ? '#ffb060' : '#7f9a90' });
     }
-    // affinity meters: what your playstyle is discounting
-    let ay = 46;
+    // affinity meters: what your playstyle is discounting, on the bench under
+    // the tank rather than over the animal in it
+    let ay = H - 96;
     for (const k of LIN_KEYS) {
       const L = LINEAGES[k], f = Genome.affinityPct(P, k);
       Font.draw(ctx, L.name, 8, ay, { color: f > 0.05 ? L.color : '#4a5a56' });
-      this.meter(ctx, 60, ay, 34, 4, f, L.color, '#131c1a');
-      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 98, ay, { color: shade(L.color, 0.85) });
+      this.meter(ctx, 62, ay, 30, 4, f, L.color, '#131c1a');
+      if (f > 0.05) Font.draw(ctx, '-' + Math.round(f * 50) + '%', 96, ay, { color: shade(L.color, 0.85) });
       ay += 11;
     }
     // detail panel for the selected gene
