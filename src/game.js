@@ -536,7 +536,10 @@ const G = {
   redFlash(a) { this.red = Math.max(this.red, a); },
   whiteFlash(a) { this.white = Math.max(this.white, a); },
   addScore(n) { this.score += Math.round(n); },
-  difficulty() { const P = this.player; return (this.startDiff || 0) + P.sheds + Math.abs(P.x) / 3500 + this.t / 300; },
+  // The swamp keeps pace with you, and it keeps pace faster than it used to:
+  // distance costs more, the clock costs more, and every shed you take is a
+  // standing invitation to whatever else lives out here.
+  difficulty() { const P = this.player; return (this.startDiff || 0) + P.sheds * 1.25 + Math.abs(P.x) / 2600 + this.t / 220; },
   dangerLevel() {
     const P = this.player; let d = 0;
     for (const e of this.ents) if (e.threat && !e.dead && Math.abs(e.x - P.x) < 500) d = Math.max(d, e.isBoss ? 1 : 0.6);
@@ -633,7 +636,7 @@ const G = {
   runDirector(dt) {
     const d = this.director, P = this.player, D = this.difficulty();
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
-    d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(26 - D * 2.6, 7, 26) * rand(0.8, 1.25); this.spawnPredator(D); }
+    d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(21 - D * 2.6, 5, 21) * rand(0.8, 1.25); this.spawnPredator(D); }
     d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     // hard cap
     if (this.ents.length > 220) { let n = 0; for (const e of this.ents) if (e.type === 'gib' && n++ > 40) e.remove = true; }

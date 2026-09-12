@@ -138,7 +138,9 @@ const TIERS = [
   { name: 'BULL', size: 2.6 }, { name: 'ELDER', size: 3.4 }, { name: 'ANCIENT', size: 4.5 }, { name: 'TITAN', size: 6.0 },
   { name: 'LEVIATHAN', size: 8.0 }, { name: 'SARCOSUCHUS', size: 10.5 }, { name: 'DEINOSUCHUS', size: 13.5 }, { name: 'SWAMP GOD', size: 18 },
 ];
-const SIZE_FLOOR3 = 0.027;                       // 0.3 cubed: the hatchling
+const SIZE_FLOOR3 = 0.008;                       // 0.2 cubed: under the hatchling, so a
+                                                 // specimen tipped out of a tank at 0.22 still
+                                                 // has mass on the right side of zero
 // The divisor is the whole difficulty of growing. At 15 a run walked up the
 // ladder. At 44 a rung is a campaign: you are a hand-long animal in a system
 // full of things that are not, and the only way up is everything you can find,
