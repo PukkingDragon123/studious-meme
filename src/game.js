@@ -1129,11 +1129,14 @@ const G = {
   render() {
     const ctx = this.ctx, cam = this.cam, day = this.day, P = this.player;
     ctx.imageSmoothingEnabled = false;
-    // the front end is a room, not a camera on the swamp
+    // The front end is a room, not a camera on the swamp. Only the title shows
+    // the lab floor itself; the three stations paint their own wall over the
+    // top of it, so drawing it under them was both wasted and, while the wall
+    // was a scrim, visible as the whole room ghosting through the screen.
     if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'research') { Lab.draw(ctx); UI.drawResearch(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'habitat') { Lab.draw(ctx); UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'bench') { Lab.draw(ctx); UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'research') { UI.drawResearch(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); return; }
     if (this.state === 'loadout') { UI.drawLoadout(ctx); return; }
     const indoor = World.isIndoor(cam.x);

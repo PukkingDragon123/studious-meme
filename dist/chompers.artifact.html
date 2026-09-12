@@ -11438,8 +11438,10 @@ const UI = {
     const d = Research.data(), tp = Research.totalProgress();
     if (this._resV) CrocView.update(this._resV, 1 / 60, 7);
 
-    // The room stays: this is a board bolted to a wall in it, not a page over it.
-    ctx.fillStyle = 'rgba(4,12,14,0.55)'; ctx.fillRect(0, 0, W, H);
+    // The room stays: this is a board bolted to a wall in it, not a page over
+    // it. Its own lamp bar is the light in here, so the wall keeps its ceiling
+    // strips out of the way.
+    this.labWall(ctx, false);
 
     // --- the lamp bar above the board, and the cables that hang it there
     ctx.fillStyle = '#2a3238'; ctx.fillRect(B.x + 40, 0, 3, 14); ctx.fillRect(B.x + B.w - 43, 0, 3, 14);
@@ -11486,22 +11488,24 @@ const UI = {
       const col = r.c.col, dark = mixColor(col, '#08161a', 0.7);
       ctx.fillStyle = '#0b1a1d'; ctx.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
       ctx.fillStyle = on ? '#11282c' : '#0a1a1c'; ctx.fillRect(r.x, r.y, r.w, r.h);
-      const fh = Math.round((r.h - 4) * pr.frac), top = r.y + r.h - 2 - fh;
+      // The level reads in a graduated column down the side of the tube, not as
+      // a wash over the whole face of it: a fill behind the writing put half of
+      // every word on the wrong ground as it crossed them.
+      const gx2 = r.x + r.w - 12, gy = r.y + 4, gh = r.h - 8;
+      ctx.fillStyle = '#05100f'; ctx.fillRect(gx2, gy, 8, gh);
+      ctx.fillStyle = '#0e1f21'; ctx.fillRect(gx2, gy, 8, 1);
+      const fh = Math.round(gh * pr.frac);
       if (fh > 0) {
-        ctx.fillStyle = dark; ctx.fillRect(r.x + 2, top, r.w - 4, fh);
-        ctx.fillStyle = col; ctx.fillRect(r.x + 2, top, r.w - 4, Math.min(fh, 2));
+        ctx.fillStyle = dark; ctx.fillRect(gx2 + 1, gy + gh - fh, 6, fh);
+        ctx.fillStyle = col; ctx.fillRect(gx2 + 1, gy + gh - fh, 6, Math.min(fh, 2));
       }
-      // the level in the tube rises past the writing on it, so the writing has
-      // to change ink where it does or a finished programme becomes unreadable
-      const wet = yy => fh > 0 && yy >= top, ink = mixColor(col, '#03100e', 0.8);
-      this.resPic(ctx, r.c.icon, r.x + 14, r.y + 14 + Math.sin(t * 1.2 + r.i) * 1.2,
-        wet(r.y + 14) ? ink : on ? '#e8fff8' : mixColor(col, '#0d1a18', 0.2));
-      Font.draw(ctx, pr.got + '/' + pr.total, r.x + r.w - 5, r.y + 10, { color: wet(r.y + 13) ? ink : on ? col : '#3f5f58', align: 'right' });
-      Font.draw(ctx, r.c.name, r.x + 5, r.y + 25, { color: wet(r.y + 28) ? ink : on ? '#e8fff8' : '#6f8f88' });
+      for (let q = 1; q < 4; q++) { ctx.fillStyle = '#16282a'; ctx.fillRect(gx2, gy + Math.round(gh * q / 4), 3, 1); }
+      this.resPic(ctx, r.c.icon, r.x + 14, r.y + 14 + Math.sin(t * 1.2 + r.i) * 1.2, on ? '#e8fff8' : mixColor(col, '#0d1a18', 0.2));
+      Font.draw(ctx, pr.got + '/' + pr.total, gx2 - 4, r.y + 10, { color: on ? col : '#3f5f58', align: 'right' });
+      Font.draw(ctx, r.c.name, r.x + 5, r.y + 25, { color: on ? '#e8fff8' : '#6f8f88' });
       // one cell per step in the programme, filled as they are funded
-      const pw = wet(r.y + 36);
       for (let q = 0; q < r.c.nodes.length; q++) {
-        ctx.fillStyle = Research.has(r.c.nodes[q].id) ? (pw ? ink : col) : (pw ? mixColor(col, '#03100e', 0.42) : '#1c2a28');
+        ctx.fillStyle = Research.has(r.c.nodes[q].id) ? col : '#1c2a28';
         ctx.fillRect(r.x + 5 + q * 7, r.y + 34, 5, 5);
       }
       ctx.globalAlpha = 0.2; ctx.fillStyle = '#dffdf4'; ctx.fillRect(r.x + 3, r.y + 3, 2, r.h - 6); ctx.globalAlpha = 1;
@@ -11554,7 +11558,7 @@ const UI = {
     // it has to be a place: wall base, skirting, tiles, and the light the board
     // spills down onto them. The gear on it is silhouette only — shapes, not
     // labels, or the eye reads it as another panel to parse.
-    this.resFloor(ctx, B);
+    this.labFloor(ctx, B.y + B.h + 14);
 
     // --- the whole programme, on a gauge screwed to the foot of the frame
     const gx = B.x + B.w - 172;
@@ -11569,11 +11573,51 @@ const UI = {
     if (typeof Doc !== 'undefined') Doc.drawScene(ctx, 'research', { bubbleY: G.H - 56 });
     this.drawExit(ctx);
   },
-  // the strip of laboratory left visible below the board
-  resFloor(ctx, B) {
-    const W = G.W, H = G.H, fy = B.y + B.h + 14;
-    ctx.fillStyle = '#0a1417'; ctx.fillRect(0, B.y + B.h + 4, W, H - B.y - B.h - 4);
-    ctx.fillStyle = '#101d20'; ctx.fillRect(0, B.y + B.h + 4, W, fy - B.y - B.h - 4);
+  // ---------- the room every front-end screen stands in ----------
+  // The lab behind these screens used to be the real title room with a thin
+  // scrim over it, which meant the whole place — walking staff, the tank, the
+  // signage — ghosted through everything drawn on top. It is an opaque wall
+  // now, painted here once and shared by all of them.
+  labWall(ctx, lights) {
+    const W = G.W, H = G.H;
+    ctx.fillStyle = '#08161a'; ctx.fillRect(0, 0, W, H);
+    // courses of wall block, with the mortar between them
+    for (let y = 0, r = 0; y < H; y += 22, r++) {
+      ctx.fillStyle = r % 2 ? '#0a1a1e' : '#091719'; ctx.fillRect(0, y, W, 21);
+      ctx.fillStyle = '#050f11'; ctx.fillRect(0, y + 21, W, 1);
+      for (let x = r % 2 ? 0 : 23; x < W; x += 46) ctx.fillRect(x, y, 1, 21);
+    }
+    if (lights !== false) {
+      // strip lights along the ceiling, and the cone each one drops
+      for (let i = 0; i < 4; i++) {
+        const lx = 42 + i * 156;
+        ctx.fillStyle = '#141c20'; ctx.fillRect(lx, 0, 92, 7);
+        ctx.fillStyle = '#2c383e'; ctx.fillRect(lx, 0, 92, 1);
+        ctx.fillStyle = '#0a1216'; ctx.fillRect(lx, 7, 92, 1);
+        ctx.fillStyle = '#a9ccc2'; ctx.fillRect(lx + 5, 5, 82, 2);
+        const cg = ctx.createLinearGradient(0, 7, 0, 74);
+        cg.addColorStop(0, 'rgba(169,204,194,0.13)'); cg.addColorStop(1, 'rgba(169,204,194,0)');
+        ctx.fillStyle = cg; ctx.fillRect(lx - 10, 7, 112, 67);
+      }
+    }
+    // and what they lay down the wall
+    const g = ctx.createLinearGradient(0, 0, 0, H * 0.7);
+    g.addColorStop(0, 'rgba(186,238,228,0.11)'); g.addColorStop(1, 'rgba(186,238,228,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H * 0.7);
+    // the darkness at the corners, and the scanline it is all filmed through
+    const vg = ctx.createLinearGradient(0, 0, W, 0);
+    vg.addColorStop(0, 'rgba(2,8,10,0.5)'); vg.addColorStop(0.2, 'rgba(2,8,10,0)');
+    vg.addColorStop(0.8, 'rgba(2,8,10,0)'); vg.addColorStop(1, 'rgba(2,8,10,0.5)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.12; ctx.fillStyle = '#0a2a26';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+    ctx.globalAlpha = 1;
+  },
+  // the strip of floor below it, where Doc stands
+  labFloor(ctx, fy) {
+    const W = G.W, H = G.H;
+    ctx.fillStyle = '#0a1417'; ctx.fillRect(0, fy - 10, W, H - fy + 10);
+    ctx.fillStyle = '#101d20'; ctx.fillRect(0, fy - 10, W, 8);
     ctx.fillStyle = '#1b2c30'; ctx.fillRect(0, fy - 2, W, 2);
     ctx.fillStyle = '#0c1619'; ctx.fillRect(0, fy, W, H - fy);
     // tiles, running off toward the far wall
@@ -11610,7 +11654,7 @@ const UI = {
     const vg = ctx.createLinearGradient(0, 0, W, 0);
     vg.addColorStop(0, 'rgba(2,8,10,0.55)'); vg.addColorStop(0.22, 'rgba(2,8,10,0)');
     vg.addColorStop(0.78, 'rgba(2,8,10,0)'); vg.addColorStop(1, 'rgba(2,8,10,0.55)');
-    ctx.fillStyle = vg; ctx.fillRect(0, B.y + B.h + 4, W, H - B.y - B.h - 4);
+    ctx.fillStyle = vg; ctx.fillRect(0, fy - 10, W, H - fy + 10);
   },
   // The bay shutter. Picking a station drops a steel roller over that part of
   // the room, and the screen you asked for is behind it when it comes back up.
@@ -11651,10 +11695,8 @@ const UI = {
   },
   drawLabBench(ctx) {
     const W = G.W, H = G.H, t = G.menuT;
-    ctx.fillStyle = 'rgba(3,10,12,0.88)'; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.12; ctx.fillStyle = '#0a2a26';
-    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
-    ctx.globalAlpha = 1;
+    this.labWall(ctx);
+    this.labFloor(ctx, 302);
     const tab = G.benchTab || 'vial';
     for (const b of this.benchTabs()) {
       const on = b.id === tab;
@@ -11718,16 +11760,21 @@ const UI = {
       if (lit) { ctx.fillStyle = '#ffe060'; ctx.fillRect(r.x, r.y + 2, r.w, 2); for (let q = 0; q < 3; q++) ctx.fillRect(gx - 4 + q * 4, r.y + 6, 2, 2); }
       if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, have ? '#7affda' : '#3a4a48', 8);
     }
-    // the one reading: what the selected tube gives and what it takes
-    const v = VIALS[sel];
-    if (LabBench.have(v)) {
-      Font.draw(ctx, v.name, W / 2, H - 56, { color: v.col, align: 'center', scale: 2, outline: '#04120e' });
-      Font.draw(ctx, v.up, W / 2 - 24, H - 38, { color: '#4fd07a', align: 'right' });
-      ctx.fillStyle = '#4fd07a'; ctx.fillRect(W / 2 - 18, H - 36, 2, 6); ctx.fillRect(W / 2 - 20, H - 35, 6, 1); ctx.fillRect(W / 2 - 19, H - 36, 4, 1);
-      ctx.fillStyle = '#d05a40'; ctx.fillRect(W / 2 + 16, H - 36, 2, 6); ctx.fillRect(W / 2 + 14, H - 31, 6, 1); ctx.fillRect(W / 2 + 15, H - 30, 4, 1);
-      Font.draw(ctx, v.down, W / 2 + 24, H - 38, { color: '#d05a40' });
+    // the one reading: what the selected tube gives and what it takes, on a
+    // card lying on the bench in front of the rack
+    const v = VIALS[sel], have = LabBench.have(v);
+    const cw = 250, cx2 = Math.round(W / 2 - cw / 2), cy2 = H - 62;
+    ctx.fillStyle = '#050f12'; ctx.fillRect(cx2, cy2, cw, 34);
+    ctx.fillStyle = have ? shade(v.col, 0.5) : '#1a2628'; ctx.fillRect(cx2, cy2, cw, 2);
+    ctx.fillStyle = '#0a1a1c'; ctx.fillRect(cx2, cy2 + 32, cw, 2);
+    if (have) {
+      Font.draw(ctx, v.name, W / 2, cy2 + 6, { color: v.col, align: 'center', scale: 2, outline: '#04120e' });
+      Font.draw(ctx, v.up, W / 2 - 24, cy2 + 24, { color: '#4fd07a', align: 'right' });
+      ctx.fillStyle = '#4fd07a'; ctx.fillRect(W / 2 - 18, cy2 + 26, 2, 6); ctx.fillRect(W / 2 - 20, cy2 + 27, 6, 1); ctx.fillRect(W / 2 - 19, cy2 + 26, 4, 1);
+      ctx.fillStyle = '#d05a40'; ctx.fillRect(W / 2 + 16, cy2 + 26, 2, 6); ctx.fillRect(W / 2 + 14, cy2 + 31, 6, 1); ctx.fillRect(W / 2 + 15, cy2 + 32, 4, 1);
+      Font.draw(ctx, v.down, W / 2 + 24, cy2 + 24, { color: '#d05a40' });
     } else {
-      Font.draw(ctx, 'NOT ISOLATED', W / 2, H - 44, { color: '#5f7f78', align: 'center' });
+      Font.draw(ctx, 'NOT ISOLATED', W / 2, cy2 + 14, { color: '#5f7f78', align: 'center' });
     }
   },
   dnaJars() {
@@ -11785,7 +11832,7 @@ const UI = {
     const cur = jars[sel];
     if (cur) {
       const Ln = LINEAGES[cur.lin];
-      ctx.fillStyle = 'rgba(4,12,14,0.92)'; ctx.fillRect(10, H - 40, W - 20, 30);
+      ctx.fillStyle = '#050f12'; ctx.fillRect(10, H - 40, W - 20, 30);
       ctx.fillStyle = cur.open ? Ln.color : '#3a4a48'; ctx.fillRect(10, H - 40, 3, 30);
       Font.draw(ctx, cur.open ? cur.g.name : 'SEALED', 18, H - 36, { color: cur.open ? Ln.color : '#5f7f78' });
       if (cur.open) Font.drawWrapped(ctx, cur.g.desc || '', 18, H - 26, W - 36, { color: '#8faaa4', lineHeight: 9 });
@@ -11828,17 +11875,15 @@ const UI = {
   habHatchRects() {
     // the species you could put in an empty enclosure, as portraits
     const out = [];
-    BASE_SPECIES.forEach((sp, i) => out.push({ sp, i, x: 20 + i * 100, y: 190, w: 92, h: 78 }));
+    BASE_SPECIES.forEach((sp, i) => out.push({ sp, i, x: 12 + i * 104, y: 184, w: 100, h: 90 }));
     return out;
   },
   drawHabitat(ctx) {
     const W = G.W, H = G.H, t = G.menuT;
     Habitat.ensure();
     const L = Habitat.list(), sel = clamp(G.habSel || 0, 0, HAB_SLOTS - 1), cur = L[sel];
-    ctx.fillStyle = 'rgba(3,10,12,0.86)'; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.12; ctx.fillStyle = '#0a2a26';
-    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
-    ctx.globalAlpha = 1;
+    this.labWall(ctx);
+    this.labFloor(ctx, 302);
 
     // --- the row of enclosures
     for (const k of this.habTanks()) {
@@ -12000,21 +12045,31 @@ const UI = {
       ctx.fillStyle = open ? (sp.trait ? sp.trait.col : '#7affda') : '#2a3a38'; ctx.fillRect(r.x, r.y, r.w, 2);
       // the portrait is the animal's own head art
       ctx.save();
-      ctx.beginPath(); ctx.rect(r.x + 2, r.y + 4, r.w - 4, 44); ctx.clip();
+      ctx.beginPath(); ctx.rect(r.x + 2, r.y + 4, r.w - 4, 42); ctx.clip();
       if (open) {
         const v = this.habView(20 + r.i); CrocView.update(v, 0, 5.2);
         const L2 = Object.assign({}, CROC_LOOKS.base, sp.look || {});
         L2.girth = sp.girth || 1;
-        CrocView.draw(ctx, v, this.habParts(L2), r.x + r.w / 2 - 2, r.y + 28, 0.62);
+        CrocView.draw(ctx, v, this.habParts(L2), r.x + r.w / 2 - 2, r.y + 27, 0.62);
       } else {
         ctx.fillStyle = '#1b2726';
-        ctx.fillRect(r.x + r.w / 2 - 7, r.y + 24, 14, 12);
-        ctx.fillRect(r.x + r.w / 2 - 4, r.y + 16, 8, 8);
+        ctx.fillRect(r.x + r.w / 2 - 7, r.y + 23, 14, 12);
+        ctx.fillRect(r.x + r.w / 2 - 4, r.y + 15, 8, 8);
       }
       ctx.restore();
-      Font.draw(ctx, open ? sp.name : 'SEALED', r.x + r.w / 2, r.y + 52, { color: open ? '#c8d8d0' : '#5f7f78', align: 'center' });
-      if (open && sp.trait) Font.draw(ctx, sp.trait.name, r.x + r.w / 2, r.y + 62, { color: sp.trait.col, align: 'center' });
-      if (open) Font.draw(ctx, String(cost), r.x + r.w / 2, r.y + 68, { color: afford ? '#ffe060' : '#6a5a3a', align: 'center', scale: 2 });
+      // a long species name breaks over two lines rather than running off the
+      // side of its card and into the next one
+      const mid = r.x + r.w / 2, nm = open ? sp.name : 'SEALED';
+      const col2 = open ? '#c8d8d0' : '#5f7f78';
+      if (Font.width(nm, 1) <= r.w - 6 || nm.indexOf(' ') < 0) {
+        Font.draw(ctx, nm, mid, r.y + 52, { color: col2, align: 'center' });
+      } else {
+        const cut = nm.lastIndexOf(' ');
+        Font.draw(ctx, nm.slice(0, cut), mid, r.y + 48, { color: col2, align: 'center' });
+        Font.draw(ctx, nm.slice(cut + 1), mid, r.y + 56, { color: col2, align: 'center' });
+      }
+      if (open && sp.trait) Font.draw(ctx, sp.trait.name, mid, r.y + 64, { color: sp.trait.col, align: 'center' });
+      if (open) Font.draw(ctx, String(cost), mid, r.y + 73, { color: afford ? '#ffe060' : '#6a5a3a', align: 'center', scale: 2 });
       if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, afford && open ? '#ffe060' : '#4a5a58', 7);
     }
     const d = Research.data();
@@ -13990,11 +14045,14 @@ const G = {
   render() {
     const ctx = this.ctx, cam = this.cam, day = this.day, P = this.player;
     ctx.imageSmoothingEnabled = false;
-    // the front end is a room, not a camera on the swamp
+    // The front end is a room, not a camera on the swamp. Only the title shows
+    // the lab floor itself; the three stations paint their own wall over the
+    // top of it, so drawing it under them was both wasted and, while the wall
+    // was a scrim, visible as the whole room ghosting through the screen.
     if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'research') { Lab.draw(ctx); UI.drawResearch(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'habitat') { Lab.draw(ctx); UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'bench') { Lab.draw(ctx); UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'research') { UI.drawResearch(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); return; }
     if (this.state === 'loadout') { UI.drawLoadout(ctx); return; }
     const indoor = World.isIndoor(cam.x);

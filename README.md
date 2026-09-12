@@ -31,6 +31,12 @@ walk the selection along the room and whichever one you are standing at gets a
 targeting bracket. Choosing one drops a corrugated steel shutter over that bay,
 and the screen you asked for is behind it when it comes back up.
 
+Each station is its own opaque room — block wall, strip lights along the
+ceiling, and a floor at the foot of it with a trolley, gas bottles, a stool and
+a drain on it in silhouette. They are painted, not laid over the title room as a
+scrim: while they were, the whole lab behind them — the walking staff, the
+containment column, the signage — ghosted through everything drawn on top.
+
 - **RESEARCH** — the sequencer and monitor bank on the left wall
 - **HABITAT** — the enclosures down the middle of the floor
 - **LAB** — the vial rack and the DNA wall on the right
