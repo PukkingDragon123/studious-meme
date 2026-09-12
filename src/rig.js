@@ -134,18 +134,43 @@ const R = {
     o.x.putImageData(img, 0, 0);
   },
   // big cartoon eye: dark ring, white, pupil looking `look` (dx,dy in -1..1), catchlight
+  // An animal's eye is a dark wet bead set into the skull with one point of
+  // light in it. The white sclera and the big roving pupil under it are a
+  // cartoon face: they are what made every creature in this game read as a
+  // mascot rather than as something you were about to eat. Those are kept, on
+  // `toon`, for the people — a human face does want its whites.
   eye(o, x, y, r, opts = {}) {
     const ring = opts.ring || '#1c1410';
-    if (r < 1.6) { R.px(o, x - 1, y - 1, ring, 3, 3); R.px(o, x - 1, y - 1, '#ffffff', 2, 2); R.px(o, x, y, '#141414'); return; }
-    const rr = opts.scared ? r * 1.25 : r;
-    R.disc(o, x, y, rr + 1, ring); R.disc(o, x, y, rr, opts.sclera || '#f2ece0');
-    R.disc(o, x, y + rr * 0.35, rr * 0.8, mixColor(opts.sclera || '#f2ece0', ring, 0.24));   // lid shadow
-    const pr = Math.max(1, Math.round(rr * (opts.scared ? 0.36 : 0.52)));
-    const look = opts.look || [0.35, 0.05], lx = look[0] * Math.max(0, rr - pr), ly = look[1] * Math.max(0, rr - pr);
-    if (opts.iris) R.disc(o, x + lx, y + ly, Math.min(rr - 0.4, pr + 1.2), opts.iris);
-    R.disc(o, x + lx, y + ly, pr, opts.pupil || '#141414');
-    R.px(o, x + lx - Math.max(0, pr - 1), y + ly - Math.max(0, pr - 1), '#ffffff');
-    if (opts.lid) { R.px(o, x - rr - 1, y - rr - 1, opts.lid, rr * 2 + 3, Math.round(rr * 0.7)); }
+    if (opts.toon) {
+      if (r < 1.6) { R.px(o, x - 1, y - 1, ring, 3, 3); R.px(o, x - 1, y - 1, '#ffffff', 2, 2); R.px(o, x, y, '#141414'); return; }
+      const rt = opts.scared ? r * 1.25 : r;
+      R.disc(o, x, y, rt + 1, ring); R.disc(o, x, y, rt, opts.sclera || '#f2ece0');
+      R.disc(o, x, y + rt * 0.35, rt * 0.8, mixColor(opts.sclera || '#f2ece0', ring, 0.24));
+      const pt = Math.max(1, Math.round(rt * (opts.scared ? 0.36 : 0.52)));
+      const lk = opts.look || [0.35, 0.05], lxt = lk[0] * Math.max(0, rt - pt), lyt = lk[1] * Math.max(0, rt - pt);
+      if (opts.iris) R.disc(o, x + lxt, y + lyt, Math.min(rt - 0.4, pt + 1.2), opts.iris);
+      R.disc(o, x + lxt, y + lyt, pt, opts.pupil || '#141414');
+      R.px(o, x + lxt - Math.max(0, pt - 1), y + lyt - Math.max(0, pt - 1), '#ffffff');
+      if (opts.lid) R.px(o, x - rt - 1, y - rt - 1, opts.lid, rt * 2 + 3, Math.round(rt * 0.7));
+      return;
+    }
+    const iris = opts.iris || '#3a2a16', dark = opts.pupil || '#0a0806';
+    // small eyes are two pixels of dark and one of light, and nothing else fits
+    if (r < 1.7) {
+      R.px(o, x - 1, y - 1, mixColor(ring, '#000000', 0.35), 3, 3);
+      R.px(o, x - 1, y - 1, mixColor(iris, '#000000', 0.3), 2, 2);
+      R.px(o, x - 1, y - 1, opts.glint || '#d8d4c8');
+      return;
+    }
+    const rr = r * (opts.scared ? 1.1 : 0.92);
+    // the socket, then the iris, then the slit of a pupil
+    R.disc(o, x, y, rr + 1, mixColor(ring, '#000000', 0.3));
+    R.disc(o, x, y, rr, mixColor(iris, '#000000', 0.18));
+    R.disc(o, x, y + rr * 0.12, rr * 0.66, dark);
+    R.px(o, x - Math.max(1, rr * 0.5), y - Math.max(1, rr * 0.5), opts.glint || '#e8e4d8');
+    // a brow line above it so the skull reads over the eye
+    if (rr >= 2.2) R.px(o, x - rr - 1, y - rr - 1, mixColor(ring, '#000000', 0.2), rr * 2 + 2, 1);
+    if (opts.lid) R.px(o, x - rr - 1, y - rr - 1, opts.lid, rr * 2 + 3, Math.round(rr * 0.55));
   },
   part(o, ox, oy) { return { c: o.c, w: o.w, h: o.h, ox, oy }; },
   // a torn stump where a part used to be
@@ -240,8 +265,8 @@ function buildFish(s) {
     // gill arc
     const gx = 2 + L * 0.74; for (let j = -H * 0.28; j <= H * 0.28; j++) { const bulge = Math.round(Math.sqrt(Math.max(0, 1 - (j / (H * 0.3)) ** 2)) * L * 0.03); R.px(o, gx + bulge, cy + j, R.lo2(s.mid)); }
     // eye
-    const er = Math.max(1.2, H * 0.17), ex = 2 + L * (s.snout === 'gar' ? 0.7 : 0.84), ey = cy - H * 0.16;
-    R.eye(o, ex, ey, er, { ring: OL, iris: s.eye, look: [0.4, 0.05] });
+    const er = Math.max(1.1, H * 0.13), ex = 2 + L * (s.snout === 'gar' ? 0.72 : 0.85), ey = cy - H * 0.2;
+    R.eye(o, ex, ey, er, { ring: OL, iris: s.eye || '#6a5a2a' });
     // mouth
     const mx = 2 + L - 1, my = cy + H * 0.14;
     if (s.snout === 'gar') { for (let i = 0; i < L * 0.22; i++) R.px(o, mx - i, my - 1 + (i % 2), R.lo2(s.mid)); for (let i = 1; i < L * 0.2; i += 2) R.px(o, mx - i, my, '#f4f0e0'); }
@@ -285,7 +310,7 @@ R.inside = (o, x, y) => { x = Math.round(x); y = Math.round(y); if (x < 0 || y <
 // spec: {len (body px), neck 0..1, legs 0..1, beak:'spear'|'hook'|'spoon'|'pouch'|'short'|'curve', body, belly, wing, head, beakCol, legCol, crest}
 function buildBird(s) {
   const L = s.len, H = Math.max(6, Math.round(L * 0.66)), OL = R.ol(s.body), parts = {};
-  const hs = Math.max(3, Math.round(L * 0.23)), neckLen = Math.round(L * (0.06 + (s.neck || 0.3) * 0.5)), legLen = Math.max(3, Math.round(L * (0.1 + (s.legs || 0.3) * 0.5)));
+  const hs = Math.max(3, Math.round(L * 0.185)), neckLen = Math.round(L * (0.06 + (s.neck || 0.3) * 0.5)), legLen = Math.max(3, Math.round(L * (0.1 + (s.legs || 0.3) * 0.5)));
   { // body: deep chest at the front tapering back to the tail, back raised over
     // the shoulder. A plain ellipse read as a soup bowl.
     const tl = Math.max(3, Math.round(L * 0.32));
@@ -332,7 +357,7 @@ function buildBird(s) {
     else if (s.beak === 'hook') { R.px(o, bx, by - 1, bc, bl, 3); R.px(o, bx + bl - 2, by + 2, R.lo(bc), 2, 2); }
     else if (s.beak === 'curve') for (let i = 0; i < bl; i++) R.px(o, bx + i, by + Math.round(i * i * 0.08), bc, 1, 2);
     else { R.px(o, bx, by, bc, bl, 2); R.px(o, bx, by + 1, R.lo(bc), bl, 1); }
-    R.eye(o, hx + hs * 0.38, hy - hs * 0.14, Math.max(1.4, hs * 0.19), { ring: OL, iris: s.eye || '#c8a030', look: [0.4, 0.1] });
+    R.eye(o, hx + hs * 0.44, hy - hs * 0.24, Math.max(1.1, hs * 0.2), { ring: OL, iris: s.eye || '#8a6a20' });
     R.outline(o, OL);
     parts.head = R.part(o, hx, hy + hs * 0.6);   // pivot at the top of the neck
   }
@@ -426,8 +451,9 @@ function buildBird(s) {
 // =========================================================== QUADRUPED
 // spec: {len, h, legs, snout, ears:'short'|'long'|'none', antlers, horns, tusks, tail:'short'|'long'|'bushy'|'none', body, belly, dark, pattern, mane, mask, hoof}
 function buildQuad(s) {
-  const L = s.len, H = Math.max(7, Math.round(L * (s.h || 0.46) * 1.16)), OL = R.ol(s.body), parts = {};
-  const legLen = Math.max(3, Math.round(H * (0.24 + (s.legs || 0.5) * 0.52))), hs = Math.max(4, Math.round(H * 0.64));
+  const L = s.len, H = Math.max(6, Math.round(L * (s.h || 0.46) * 0.99)), OL = R.ol(s.body), parts = {};
+  const legLen = Math.max(4, Math.round(H * (0.34 + (s.legs || 0.5) * 0.66)));
+  const hs = Math.max(3, Math.round(H * (s.headK || 0.46)));
   {
     const o = R.mk(L + 6, H + 8), cx = 3 + L / 2, cy = 4 + H / 2, belly = s.belly || R.hi(s.body);
     const coat = s.coat || (s.pattern === 'bands' ? 'hide' : 'fur');
@@ -445,13 +471,16 @@ function buildQuad(s) {
     // crease where the shoulder meets the barrel
     for (let j = -Math.round(H * 0.22); j <= Math.round(H * 0.3); j++) R.px(o, cx + L * 0.12, cy + j, R.lo2(s.body), 1, 1);
     // neck stub reaching toward the head
-    R.blob(o, cx + L * 0.42, cy - H * 0.2, L * 0.13, H * 0.3, s.head || s.body, { tex: coat, seed: L + 3, hl: false });
+    for (let k = 0; k < 5; k++) {
+      const u = k / 4;
+      R.blob(o, cx + L * (0.3 + u * 0.14), cy - H * (0.06 + u * 0.3), L * (0.12 - u * 0.03), H * (0.3 - u * 0.06), s.head || s.body, { tex: coat, seed: L + 3 + k, hl: false });
+    }
     if (s.mane) R.px(o, cx, cy - H / 2 - 2, s.mane, L * 0.3, 3);
     R.outline(o, OL);
     parts.body = R.part(o, cx, cy);
   }
   { // head: round skull, snout blob, ears, big eye, nose
-    const sn = Math.round(hs * (0.3 + (s.snout || 0.4) * 0.8)), hc = s.head || s.body, o = R.mk(hs * 2 + sn + 8, hs * 2 + 12), hx = 3 + hs, hy = 8 + hs;
+    const sn = Math.round(hs * (0.5 + (s.snout || 0.4) * 1.15)), hc = s.head || s.body, o = R.mk(hs * 2 + sn + 8, hs * 2 + 12), hx = 3 + hs, hy = 8 + hs;
     const el = s.ears === 'none' ? 0 : s.ears === 'long' ? hs * 0.8 : hs * 0.45;
     if (el) { R.blob(o, hx - hs * 0.35, hy - hs - el * 0.3, Math.max(1.5, hs * 0.22), el * 0.6, hc, { hl: false }); R.blob(o, hx + hs * 0.25, hy - hs - el * 0.25, Math.max(1.5, hs * 0.22), el * 0.55, hc, { hl: false }); R.px(o, hx - hs * 0.35, hy - hs - el * 0.3, R.hi(s.belly || hc), 1, el * 0.35); }
     if (s.antlers) { const ac = '#7a5a34'; for (const ox of [-hs * 0.4, hs * 0.1]) { R.px(o, hx + ox, hy - hs - 6, ac, 1, 7); R.px(o, hx + ox - 2, hy - hs - 5, ac, 5, 1); R.px(o, hx + ox - 2, hy - hs - 7, ac, 1, 3); R.px(o, hx + ox + 2, hy - hs - 8, ac, 1, 4); } }
@@ -462,33 +491,44 @@ function buildQuad(s) {
     R.disc(o, hx + hs * 0.7 + sn * 0.6, hy + hs * 0.05, Math.max(1, hs * 0.16), '#1a1410');           // nose
     R.px(o, hx + hs * 0.7 + sn * 0.3, hy + hs * 0.5, R.lo2(hc), sn * 0.5, 1);                          // mouth
     if (s.tusks) { R.px(o, hx + hs * 0.7 + sn * 0.5, hy + hs * 0.45, '#f4f0e0', 1, 3); R.px(o, hx + hs * 0.7 + sn * 0.5 - 1, hy + hs * 0.45 + 2, '#f4f0e0', 1, 2); }
-    R.eye(o, hx + hs * 0.34, hy - hs * 0.16, Math.max(1.4, hs * 0.17), { ring: OL, iris: s.eye, look: [0.35, 0.1] });
+    R.eye(o, hx + hs * 0.4, hy - hs * 0.34, Math.max(1.1, hs * 0.15), { ring: OL, iris: s.eye });
     R.outline(o, OL);
-    parts.head = R.part(o, hx - hs * 0.6, hy + hs * 0.4);   // pivot at the neck
+    parts.head = R.part(o, hx - hs * 0.5, hy + hs * 0.55);   // pivot at the base of the skull
   }
   { // tapered limb: thigh into shank, lit down the leading edge, real foot at the bottom
-    const lc = s.legCol || s.body, lw = Math.max(2, Math.round(H * 0.2));
-    const o = R.mk(lw + 6, legLen + 6), cx = 3 + lw / 2;
+    const lc = s.legCol || s.body, lw = Math.max(2, Math.round(H * 0.16));
+    let cxFoot = 0;
+    const o = R.mk(lw + 8, legLen + 6), cx = 4 + lw / 2;
     const lit = R.hi(lc), shd = R.lo(lc), foot = s.hoof || R.lo2(lc);
+    // Two segments with a joint between them. A single straight taper is a
+    // stilt; a thigh that carries back to a hock and a thin cannon bone under
+    // it is what makes a mammal's leg read as a leg.
+    const knee = Math.round(legLen * 0.46), sweep = Math.max(1, lw * 0.5);
     for (let j = 0; j < legLen; j++) {
-      const u = j / Math.max(1, legLen), w = Math.max(1.4, lw * (1 - u * 0.4));
-      R.px(o, cx - w / 2, 1 + j, lc, w, 1);
-      R.px(o, cx - w / 2, 1 + j, lit, Math.max(1, w * 0.3), 1);
-      R.px(o, cx + w / 2 - Math.max(1, w * 0.26), 1 + j, shd, Math.max(1, w * 0.26), 1);
+      const u = j / Math.max(1, legLen);
+      let w, off;
+      if (j < knee) { const k = j / Math.max(1, knee); w = Math.max(1.4, lw * (1 - k * 0.42)); off = -sweep * k; }
+      else { const k = (j - knee) / Math.max(1, legLen - knee); w = Math.max(1.1, lw * 0.56 * (1 - k * 0.3)); off = -sweep + sweep * 0.55 * k; }
+      R.px(o, cx + off - w / 2, 1 + j, lc, w, 1);
+      R.px(o, cx + off - w / 2, 1 + j, lit, Math.max(1, w * 0.34), 1);
+      R.px(o, cx + off + w / 2 - Math.max(1, w * 0.28), 1 + j, shd, Math.max(1, w * 0.28), 1);
+      if (j === knee) R.px(o, cx + off - w / 2, 1 + j, R.lo2(lc), w, 1);
+      if (u > 0.98) break;
     }
-    const pw = lw + 2, fy = 1 + legLen;
-    R.px(o, cx - pw / 2, fy - 1, foot, pw, 2);
-    if (!s.hoof) { R.px(o, cx - pw / 2 - 1, fy, foot, pw + 1, 1); R.px(o, cx - pw / 2, fy + 1, R.lo2(foot), 1, 1); R.px(o, cx - pw / 2 + 2, fy + 1, R.lo2(foot), 1, 1); }
-    else R.px(o, cx - pw / 2, fy + 1, R.lo2(foot), pw, 1);
+    const pw = Math.max(2, Math.round(lw * 0.8) + 1), fy = 1 + legLen;
+    cxFoot = cx - sweep * 0.45;
+    R.px(o, cxFoot - pw / 2, fy - 1, foot, pw, 2);
+    if (!s.hoof) { R.px(o, cxFoot - pw / 2 - 1, fy, foot, pw + 1, 1); R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), 1, 1); R.px(o, cxFoot - pw / 2 + 2, fy + 1, R.lo2(foot), 1, 1); }
+    else R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), pw, 1);
     R.outline(o, OL); parts.leg = R.part(o, cx, 1); }
   { const tl = s.tail === 'long' || s.tail === 'bushy' ? Math.round(L * 0.5) : s.tail === 'none' ? 0 : Math.round(L * 0.14), tc = s.tailCol || s.body;
     if (tl) {
-      const bushy = s.tail === 'bushy', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.4 : 1.9;
+      const bushy = s.tail === 'bushy', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.2 : 1.5;
       const lit = R.hi(tc), shd = R.lo(tc);
       for (let i = 0; i < tl; i++) {
         const u = (i + 1) / (tl + 1);
         // base is thick and it thins toward the tip; bushy tails swell in the middle
-        const hh = bushy ? th * Math.pow(Math.sin(u * Math.PI), 0.45) + 0.9 : Math.max(0.7, th * (1 - u * 0.55));
+        const hh = bushy ? th * Math.pow(Math.sin(u * Math.PI), 0.45) + 0.9 : Math.max(0.6, th * (1 - u * 0.8));
         const col = i < tl * 0.25 && s.tailTip ? s.tailTip : tc;
         R.px(o, 1 + i, o.h / 2 - hh, col, 1, hh * 2);
         R.px(o, 1 + i, o.h / 2 - hh, lit, 1, Math.max(1, hh * 0.5));
@@ -504,11 +544,11 @@ function buildQuad(s) {
     const hipY = H * 0.34, bob = Math.abs(Math.sin(ph)) * -1.5 * sp, gait = a => Math.sin(ph + a) * 0.6 * sp;
     out.push({ p: P.leg, x: -L * 0.32, y: hipY + bob, a: gait(Math.PI), alpha: 0.75, id: 'leg2', kind: 'leg' });
     out.push({ p: P.leg, x: L * 0.3, y: hipY + bob, a: gait(0), alpha: 0.75, id: 'leg3', kind: 'leg' });
-    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.15 + bob, a: (s.tail === 'long' ? 0.55 : -0.3) + Math.sin(ph * 0.7) * 0.25, id: 'tail', kind: 'tail' });
+    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.15 + bob, a: (s.tail === 'long' ? 0.95 : -0.25) + Math.sin(ph * 0.7) * 0.2, id: 'tail', kind: 'tail' });
     out.push({ p: P.body, x: 0, y: bob, a: 0, id: 'body', kind: 'body' });
     out.push({ p: P.leg, x: -L * 0.3, y: hipY + bob, a: gait(0), id: 'leg0', kind: 'leg' });
     out.push({ p: P.leg, x: L * 0.34, y: hipY + bob, a: gait(Math.PI), id: 'leg1', kind: 'leg' });
-    out.push({ p: P.head, x: L * 0.42, y: -H * 0.3 + bob, a: (anim.graze || 0) * 0.95 - 0.06 + Math.sin(ph * 0.5) * 0.03, id: 'head', kind: 'head' });
+    out.push({ p: P.head, x: L * 0.41, y: -H * 0.33 + bob, a: (anim.graze || 0) * 0.95 - 0.06 + Math.sin(ph * 0.5) * 0.03, id: 'head', kind: 'head' });
     return out;
   };
   rig.main = parts.body;
@@ -552,8 +592,8 @@ function buildBiped(s) {
     if (s.beard) R.blob(o, hx + hr * 0.15, hy + hr * 0.62, hr * 0.62, hr * 0.42, hair, { hl: false });
     // eyes: big, wide apart; scared = wider with tiny pupils
     const er = Math.max(1.3, hr * 0.2), ey = hy - hr * 0.02;
-    R.eye(o, hx + hr * 0.5, ey, er, { ring: OL, look: [0.3, 0.15], scared });
-    R.eye(o, hx - hr * 0.2, ey, er * 0.9, { ring: OL, look: [0.4, 0.15], scared });
+    R.eye(o, hx + hr * 0.5, ey, er, { ring: OL, look: [0.3, 0.15], scared, toon: true });
+    R.eye(o, hx - hr * 0.2, ey, er * 0.9, { ring: OL, look: [0.4, 0.15], scared, toon: true });
     if (s.glasses) { R.px(o, hx - hr * 0.2 - er - 1, ey - er, '#1c1410', hr * 0.7 + er * 2 + 2, 1); R.px(o, hx + hr * 0.5 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
     // mouth
     if (scared) R.blob(o, hx + hr * 0.3, hy + hr * 0.6, Math.max(1.5, hr * 0.28), Math.max(1.5, hr * 0.3), '#3a0a0a', { hl: false, shade: '#3a0a0a' });
@@ -708,7 +748,7 @@ function buildTurtle(s) {
     R.blob(o, hx, hy, hs * 1.15, hs * 0.92, s.skin, { tex: 'hide', seed: hs * 3 });
     R.blob(o, hx + hs * 0.6, hy + hs * 0.3, hs * 0.5, hs * 0.4, mixColor(s.skin, '#e8dcb0', 0.35), { hl: false });   // jaw
     if (s.stripe) for (let k = 0; k < 3; k++) R.px(o, hx - hs * 0.5 + k * hs * 0.45, hy - hs * 0.55, s.stripe, 1, hs * 0.5);
-    R.eye(o, hx + hs * 0.44, hy - hs * 0.22, Math.max(1.2, hs * 0.21), { ring: OL, iris: s.eye || '#c07030', look: [0.4, 0.1] });
+    R.eye(o, hx + hs * 0.48, hy - hs * 0.3, Math.max(1.1, hs * 0.17), { ring: OL, iris: s.eye || '#8a5a20' });
     R.px(o, hx + hs * 0.85, hy + hs * 0.28, R.lo2(s.skin), hs * 0.5, 1);
     if (s.hooked) R.px(o, hx + hs * 1.3, hy + hs * 0.15, R.lo2(s.skin), 1, 2);
     R.outline(o, OL); parts.head = R.part(o, 2, hy); }

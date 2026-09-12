@@ -259,7 +259,8 @@ const G = {
       P.recomputeStats();
       this.stage = stage || STAGES[0];
       this.storeSave();
-      this.beginAtStage(this.stage);
+      // one site starts where you started: in the tank, in the lab
+      if (this.stage.intro) this.beginIntro(); else this.beginAtStage(this.stage);
       Missions.start(this.stage);
     }
   },

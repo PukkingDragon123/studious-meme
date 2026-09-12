@@ -179,10 +179,27 @@ its own animated glyph once you have carried it out, sealed and grey until then,
 with the site it comes from written under it and what it gives you along the
 foot. Eighteen slots, and the count in the corner is the game's long score.
 
+## The outfall, and how you got out
+
+One release is not a release. **THE OUTFALL** puts you back where you started:
+in the tank, in CONTAINMENT, with the lights out and the door shut. You break
+the glass, you go out through the wall, and then there is nine hundred feet of
+storm sewer between you and daylight.
+
+That stretch is authored as headroom, because headroom is the whole grammar of
+this system and it is the first thing anybody plays. It teaches all of it in
+one run: a pool with the ceiling right down on the water, a dry ledge to haul
+out on and get your breath, a crawl with a hand of air over it, a basin that
+opens overhead and drops to three hundred feet, a second ledge that climbs, the
+tightest run in the game, the sump under the road — and then the grate. Floor
+and ceiling are authored together in one table so they can never drift apart.
+
+Every other site comes out of a helicopter.
+
 ## The drop
 
-Picking a site on the map puts you in the water, and the way you get there is
-the helicopter. A transport crosses the site with a containment crate slung
+Picking any other site on the map puts you in the water, and the way you get
+there is the helicopter. A transport crosses the site with a containment crate slung
 under it, holds at fifty feet while the rotor wash flattens the water and the
 reeds, drops the crate, and the crate breaks open. The site card types itself
 on, the pilot talks, and the camera hands over to gameplay when the animal
@@ -312,6 +329,25 @@ Four tiered paths, five nodes each, ending in an evolution that changes how you 
 | **Behemoth** | armor, HP, iron stomach, bull rush | Titan: grow faster, enemies flee in terror |
 | **Phantom** | speed, ambush crits, stealth, shadow dash | Wraith: higher leaps, slow-motion breaches, afterimages |
 | **Abyssal** | venom, regeneration, lure, toxic blood | Leviathan: periodic shockwaves |
+
+## The animals are animals
+
+No cartoon eyes. The white sclera with a big roving pupil in it is a human
+face, and putting one on a deer, a bass and a heron alike is what made
+everything in the game read as a mascot. A wild animal's eye is a dark wet bead
+set into the skull: a socket a shade darker than the coat, an iris, a pupil,
+and one pixel of light. Under two pixels across it is two pixels of dark and
+one of light, and nothing else fits. The people keep their whites, because a
+human face does want them.
+
+Proportions went with it. A head two-thirds the depth of the body over stub
+legs is a plush toy. Mammals now carry a small skull on a real neck — five
+blended masses climbing from the shoulder — over legs with a joint in them: a
+thigh that sweeps back to a hock, a thin cannon bone under it, and a hoof or a
+pad at the bottom. A single straight taper is a stilt. Muzzles are longer, eyes
+are smaller and set high and forward on the skull, and a long tail hangs and
+tapers instead of sticking out like a broom handle. Birds got a smaller head on
+the same terms; fish got the bead.
 
 ## Animal traits
 
