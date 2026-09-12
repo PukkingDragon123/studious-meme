@@ -31,12 +31,12 @@ const Habitat = {
     while (s.habitat.length < HAB_SLOTS) s.habitat.push(null);
     return s.habitat;
   },
-  // The lab always has one animal ready, or there is no game. A fresh save gets
-  // the dwarf it was always going to get, hatched for free.
+  // Nothing is handed to you. An empty habitat is the correct state of a new
+  // save: the first animal is grown in the creation bay, and the induction
+  // walks you there. This only keeps the selection pointing at something real.
   ensure() {
     const L = this.list();
-    if (!L.some(c => c)) { L[0] = this.make('dwarf'); G.save.runner = 0; }
-    if (!this.runner()) G.save.runner = L.findIndex(c => c);
+    if (!this.runner()) { const k = L.findIndex(c => c); if (k >= 0) G.save.runner = k; }
     return L;
   },
   make(spId) {
@@ -53,7 +53,12 @@ const Habitat = {
   // the room is telling you apart from the others without a word of prose.
   tag(c) { return c ? (this.spec(c).name[0] + '-' + (100 + (c.seed % 900))) : '--'; },
   // ---------- growing ----------
-  hatchCost(spId) { const sp = SPECIES_BY_ID[spId] || BASE_SPECIES[0]; return Math.round(4 + (sp.size - 1) * 9); },
+  // the first animal the project ever grows for you is on the project
+  hatchCost(spId) {
+    if (!this.list().some(c => c)) return 0;
+    const sp = SPECIES_BY_ID[spId] || BASE_SPECIES[0];
+    return Math.round(4 + (sp.size - 1) * 9);
+  },
   canHatch(slot, spId) {
     const sp = SPECIES_BY_ID[spId]; if (!sp) return false;
     if (this.at(slot)) return false;
@@ -67,7 +72,12 @@ const Habitat = {
     G.storeSave();
     return true;
   },
-  feedCost(c) { return c ? 1 + Math.floor(c.lv / 3) : 1; },
+  // like the first animal, the first meal is on the project — otherwise the
+  // induction tells a brand new save to feed something it cannot pay for
+  feedCost(c) {
+    if (typeof Tutor !== 'undefined' && Tutor.at('feed')) return 0;
+    return c ? 1 + Math.floor(c.lv / 3) : 1;
+  },
   feedXp(c) { return 12 + c.lv * 3; },
   canFeed(c) { return !!c && c.lv < this.MAX_LV && Research.data() >= this.feedCost(c); },
   feed(c) {

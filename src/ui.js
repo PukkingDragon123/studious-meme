@@ -524,7 +524,10 @@ const UI = {
       { id: 'habitat', x: 258, y: 78, w: 124, h: 218, label: 'HABITAT' },
       { id: 'lab', x: 434, y: F - 132, w: 200, h: 132, label: 'LAB' },
     ];
-    const pw = 86, ph = 26, gap = 10, py = H - 48;
+    // the induction's dialogue bar owns the foot of the screen, so the plates
+    // move up out from under it while it is running
+    const pw = 102, ph = 26, gap = 8;   // 'RESEARCH' at double height needs the room
+    const py = H - 48 - (typeof Tutor !== 'undefined' && Tutor.on() ? 46 : 0);
     const total = out.length * pw + (out.length - 1) * gap;
     out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
     return out;
@@ -567,8 +570,16 @@ const UI = {
     // --- one number that matters, and nothing else
     const d = Research.data();
     if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
-    Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
-    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
+    if (!Tutor.on()) {
+      Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
+      Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
+    }
+    // the induction lights the one door it wants you to take
+    if (Tutor.on()) {
+      const want = Tutor.wantStation();
+      const s2 = want && st.find(q => q.id === want);
+      if (s2) Tutor.point(ctx, { x: s2.bx, y: s2.by, w: s2.bw, h: s2.bh });
+    }
   },
   // ---------- the research lab ----------
   // A wall of five programme cylinders and, beside the one you are looking at,
@@ -579,8 +590,12 @@ const UI = {
   // around it: ceiling and cables above, floor and staff below. Everything on
   // it is a labelled specimen card in a slot, with a picture of what it is.
   resBoard() { return { x: 6, y: 26, w: G.W - 12, h: 270 }; },
+  // The bay where animals are grown sits at the head of the rack, above the
+  // five programmes: it is the first thing the lab does, so it is the first
+  // thing on the board.
+  resBayRect() { const B = this.resBoard(); return { x: B.x + 8, y: B.y + 10, w: 96, h: 34 }; },
   resCatRects() {
-    const B = this.resBoard(), h = 46, gap = 5, y0 = B.y + 10;
+    const B = this.resBoard(), h = 39, gap = 4, y0 = B.y + 50;
     return RESEARCH.map((c, i) => ({ x: B.x + 8, y: y0 + i * (h + gap), w: 96, h, c, i }));
   },
   resNodeRects() {
@@ -699,11 +714,45 @@ const UI = {
     ctx.fillStyle = '#556a62'; ctx.fillRect(B.x + 8, B.y - 12, 112, 1);
     Font.draw(ctx, 'RESEARCH PROGRAMME', B.x + 12, B.y - 9, { color: '#0b1614' });
     // the counter at the other end, a recessed display in a bezel
-    const cw = Math.max(84, Font.width(String(d), 2) + 52);
-    ctx.fillStyle = '#2a3238'; ctx.fillRect(B.x + B.w - cw - 8, B.y - 14, cw, 13);
-    ctx.fillStyle = '#0a1c1e'; ctx.fillRect(B.x + B.w - cw - 6, B.y - 12, cw - 4, 9);
-    Font.draw(ctx, 'DATA', B.x + B.w - cw - 2, B.y - 10, { color: '#4f7f74' });
-    Font.draw(ctx, String(d), B.x + B.w - 12, B.y - 11, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 2 });
+    const cw = Math.max(84, Font.width(String(d), 2) + 52), xo = this.exitShown() ? 28 : 0;
+    ctx.fillStyle = '#2a3238'; ctx.fillRect(B.x + B.w - cw - 8 - xo, B.y - 14, cw, 13);
+    ctx.fillStyle = '#0a1c1e'; ctx.fillRect(B.x + B.w - cw - 6 - xo, B.y - 12, cw - 4, 9);
+    Font.draw(ctx, 'DATA', B.x + B.w - cw - 2 - xo, B.y - 10, { color: '#4f7f74' });
+    Font.draw(ctx, String(d), B.x + B.w - 12 - xo, B.y - 11, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 2 });
+    
+
+    // --- the creation bay, at the head of the rack
+    {
+      const r = this.resBayRect(), lit = Tutor.allowBay();
+      ctx.fillStyle = '#0b1a1d'; ctx.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
+      ctx.fillStyle = '#0a1e22'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = lit ? '#7affda' : '#1f3a38'; ctx.fillRect(r.x, r.y, r.w, 2);
+      // a working emitter, throwing a small animal into the air above its plate
+      const ex = r.x + 17, ey = r.y + r.h - 7;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const cg = ctx.createLinearGradient(0, ey, 0, r.y + 5);
+      cg.addColorStop(0, 'rgba(122,255,218,0.26)'); cg.addColorStop(1, 'rgba(122,255,218,0)');
+      ctx.fillStyle = cg;
+      ctx.beginPath(); ctx.moveTo(ex - 7, ey); ctx.lineTo(ex + 7, ey); ctx.lineTo(ex + 13, r.y + 5); ctx.lineTo(ex - 13, r.y + 5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#22343a'; ctx.fillRect(ex - 9, ey, 18, 3);
+      ctx.fillStyle = Math.sin(t * 6) > 0 ? '#7affda' : '#1a3a36'; ctx.fillRect(ex - 6, ey + 1, 12, 1);
+      // the specimen itself, a few scanlined pixels of crocodile
+      const hy = r.y + 15 + Math.sin(t * 1.6) * 1.2;
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#7affda';
+      for (let i = 0; i < 9; i++) { const w = i < 2 ? 2 : i > 6 ? 1 : 3; ctx.fillRect(Math.round(ex - 9 + i * 2), Math.round(hy - w / 2), 2, w); }
+      ctx.fillStyle = '#dffdf4'; ctx.fillRect(Math.round(ex + 5), Math.round(hy - 2), 2, 1);
+      ctx.globalAlpha = 0.35; ctx.fillStyle = '#04100f';
+      for (let q = -3; q < 4; q++) ctx.fillRect(ex - 11, Math.round(hy + q * 2), 22, 1);
+      ctx.globalAlpha = 1;
+      Font.draw(ctx, 'CREATION', r.x + 33, r.y + 9, { color: lit ? '#e8fff8' : '#5f7f78' });
+      Font.draw(ctx, 'BAY', r.x + 33, r.y + 19, { color: lit ? '#7affda' : '#3f5f58' });
+      const empty = Habitat.list().filter(c2 => !c2).length;
+      Font.draw(ctx, empty + ' FREE', r.x + r.w - 4, r.y + 25, { color: empty ? '#4f8f84' : '#3f5f58', align: 'right' });
+      if (Tutor.at('bay')) Tutor.point(ctx, r);
+    }
 
     // --- the five programme tubes, racked down the left of the board
     for (const r of this.resCatRects()) {
@@ -879,31 +928,30 @@ const UI = {
     vg.addColorStop(0.78, 'rgba(2,8,10,0)'); vg.addColorStop(1, 'rgba(2,8,10,0.55)');
     ctx.fillStyle = vg; ctx.fillRect(0, fy - 10, W, H - fy + 10);
   },
-  // The bay shutter. Picking a station drops a steel roller over that part of
-  // the room, and the screen you asked for is behind it when it comes back up.
+  // The cut between the room and a station. The picture is squeezed to a lit
+  // line and let back out, the way a tube set changes channel. This was a
+  // corrugated roller shutter, which was a great deal of steel to look at
+  // every time you crossed the room.
   drawWipe(ctx) {
     const W = G.W, H = G.H;
     const wp = G.labWipe;
-    let k = 0, cx = W / 2;
-    if (wp) { k = clamp(wp.t / (wp.dur * 0.5), 0, 1); cx = wp.x; if (wp.t > wp.dur * 0.5) k = 1; }
-    else if (G.wipeIn > 0) { G.wipeIn -= 1 / 60; k = clamp(G.wipeIn / 0.32, 0, 1); }
+    let k = 0;
+    if (wp) { k = clamp(wp.t / (wp.dur * 0.5), 0, 1); if (wp.t > wp.dur * 0.5) k = 1; }
+    else if (G.wipeIn > 0) { G.wipeIn -= 1 / 60; k = clamp(G.wipeIn / 0.28, 0, 1); }
     else return;
-    const hgt = Math.round(H * easeOut(k));
-    if (hgt <= 0) return;
-    // corrugated steel, lit along every rib
-    for (let y = 0; y < hgt; y += 6) {
-      ctx.fillStyle = '#2c3639'; ctx.fillRect(0, y, W, 5);
-      ctx.fillStyle = '#3f4c50'; ctx.fillRect(0, y, W, 1);
-      ctx.fillStyle = '#1a2124'; ctx.fillRect(0, y + 4, W, 1);
-    }
-    // the leading edge, with a hazard stripe and a warning lamp over the bay
-    ctx.fillStyle = '#161d20'; ctx.fillRect(0, hgt - 5, W, 5);
-    for (let x = -((hgt * 2) % 16); x < W; x += 16) { ctx.fillStyle = '#c8a020'; ctx.fillRect(x, hgt - 4, 8, 3); }
-    ctx.fillStyle = '#0a1012'; ctx.fillRect(0, hgt, W, 2);
-    if (k > 0.1 && k < 1) {
-      ctx.globalAlpha = 0.5 + 0.5 * Math.sin(G.t * 20);
-      ctx.fillStyle = '#ff5030'; ctx.fillRect(Math.round(cx) - 4, hgt - 12, 8, 5);
-      ctx.globalAlpha = 1;
+    const e = easeOut(k), mid = H / 2, h = Math.round(mid * e);
+    if (h <= 0) return;
+    ctx.fillStyle = '#04090b';
+    ctx.fillRect(0, 0, W, h); ctx.fillRect(0, H - h, W, h);
+    // the closing edges, lit, with the glow they throw into what is left
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.3 * e;
+    ctx.fillStyle = '#5ac8b4'; ctx.fillRect(0, h, W, 5); ctx.fillRect(0, H - h - 5, W, 5);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(170,255,234,0.9)'; ctx.fillRect(0, h - 1, W, 1); ctx.fillRect(0, H - h, W, 1);
+    // sync ticks running along the edges, so the cut reads as a machine doing it
+    ctx.fillStyle = 'rgba(122,255,218,0.55)';
+    for (let x = (Math.round(G.menuT * 90) % 24) - 24; x < W; x += 24) {
+      ctx.fillRect(x, h - 3, 6, 1); ctx.fillRect(W - x - 6, H - h + 2, 6, 1);
     }
   },
   // ---------- the laboratory ----------
@@ -1061,6 +1109,147 @@ const UI = {
       if (cur.open) Font.drawWrapped(ctx, cur.g.desc || '', 18, H - 26, W - 36, { color: '#8faaa4', lineHeight: 9 });
       else Font.draw(ctx, 'GENE THERAPY HAS NOT FUNDED THIS LINE', 18, H - 26, { color: '#4f6f68' });
     }
+  },
+  // ---------- the creation bay ----------
+  // A projector on a plate, throwing a live crocodile into the air above it,
+  // running its own attack loop. The stock you pick is the animal you get, and
+  // the first one the project ever grows for you is free.
+  createStage() { return { x: 190, y: 34, w: 280, h: 206 }; },
+  createArrows() { return [{ id: -1, x: 160, y: 116, w: 24, h: 42 }, { id: 1, x: 476, y: 116, w: 24, h: 42 }]; },
+  createGoRect() { return { x: 508, y: 200, w: 122, h: 30 }; },
+  createTicks() {
+    const S = this.createStage(), n = BASE_SPECIES.length, w = 34, gap = 4;
+    const x0 = Math.round(S.x + (S.w - (n * w + (n - 1) * gap)) / 2);
+    return BASE_SPECIES.map((sp, i) => ({ sp, i, x: x0 + i * (w + gap), y: S.y + S.h + 4, w, h: 12 }));
+  },
+  cvView() { if (!this._cvV) { this._cvV = CrocView.make(); this._cvV.t = 1.4; } return this._cvV; },
+  cvParts(look) {
+    const key = JSON.stringify(look);
+    if (this._cvKey !== key) { this._cvKey = key; this._cvParts = buildCrocParts(look); }
+    return this._cvParts;
+  },
+  createSlot() { const L = Habitat.list(); const k = L.findIndex(c => !c); return k < 0 ? -1 : k; },
+  createCost() { const sp = BASE_SPECIES[clamp(G.createSel || 0, 0, BASE_SPECIES.length - 1)]; return Habitat.hatchCost(sp.id); },
+  drawCreate(ctx) {
+    const W = G.W, H = G.H, t = G.menuT;
+    const sp = BASE_SPECIES[clamp(G.createSel || 0, 0, BASE_SPECIES.length - 1)];
+    const open = Create.speciesUnlocked(sp), col = open ? (sp.holo || '#7affda') : '#4f7f74';
+    const S = this.createStage(), cx = S.x + S.w / 2 + 34, cy = S.y + S.h * 0.50;
+    const v = this.cvView();
+    CrocView.update(v, 1 / 60, 2.9);
+
+    this.labWall(ctx, false);
+    this.labFloor(ctx, 300);
+    // --- the emitter housing overhead, and the bay's own plate
+    ctx.fillStyle = '#1a2226'; ctx.fillRect(S.x + 40, 0, S.w - 80, 8);
+    ctx.fillStyle = '#39454c'; ctx.fillRect(S.x + 40, 0, S.w - 80, 1);
+    ctx.fillStyle = rgba(col, 0.8); ctx.fillRect(S.x + 46, 7, S.w - 92, 2);
+    Font.draw(ctx, 'CREATION BAY', 12, 6, { color: '#b8ffe8', scale: 2, outline: '#04120e' });
+    Font.draw(ctx, 'GROW A SPECIMEN FROM STOCK', 12, 22, { color: '#4f7f74' });
+
+    // --- the projector stage
+    ctx.fillStyle = 'rgba(4,14,16,0.92)'; ctx.fillRect(S.x, S.y, S.w, S.h);
+    this.bracket(ctx, S.x, S.y, S.w, S.h, rgba(col, 0.5), 14);
+    ctx.globalAlpha = 0.14; ctx.fillStyle = col;
+    for (let i = 0; i < 10; i++) ctx.fillRect(S.x + 8, S.y + 14 + i * 18, S.w - 16, 1);
+    for (let i = 0; i < 12; i++) ctx.fillRect(Math.round(S.x + 8 + i * ((S.w - 16) / 11)), S.y + 14, 1, 162);
+    ctx.globalAlpha = 1;
+    CrocView.projector(ctx, S.x + S.w / 2, cy, 152, col, t, open ? 1 : 0.25);
+    if (open) {
+      const look = Object.assign({}, CROC_LOOKS.base, sp.look || {}, { girth: sp.girth || 1 });
+      CrocView.holo(ctx, v, this.cvParts(look), cx, cy, 1.5, col, 1, t);
+      // the phase of the loop it is in, called out like a readout
+      const u = (v.t % 2.9) / 2.9;
+      const ph = u < 0.30 ? 'IDLE' : u < 0.46 ? 'COIL' : u < 0.58 ? 'LUNGE' : u < 0.64 ? 'STRIKE' : 'RECOVER';
+      Font.draw(ctx, ph, S.x + S.w - 8, S.y + 8, { color: u > 0.44 && u < 0.7 ? '#ffffff' : rgba(col, 0.75), align: 'right' });
+    } else {
+      Font.draw(ctx, 'NO SAMPLE ON FILE', S.x + S.w / 2, cy - 6, { color: '#3f5f58', align: 'center', scale: 2 });
+      Font.draw(ctx, 'RESEARCH HAS NOT FUNDED THIS STOCK', S.x + S.w / 2, cy + 12, { color: '#5f7f78', align: 'center' });
+    }
+    // a scan sweeping the stage
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.11; ctx.fillStyle = col;
+    ctx.fillRect(S.x, S.y + ((t * 46) % S.h), S.w, 2);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+
+    // --- the two arrows, as physical buttons
+    for (const a of this.createArrows()) {
+      const lit = Math.sin(t * 5 + (a.id > 0 ? 0 : Math.PI)) > -0.4;
+      ctx.fillStyle = 'rgba(10,26,28,0.92)'; ctx.fillRect(a.x, a.y, a.w, a.h);
+      ctx.fillStyle = lit ? '#7affda' : 'rgba(122,255,218,0.35)'; ctx.fillRect(a.x, a.y, a.w, 1);
+      this.bracket(ctx, a.x, a.y, a.w, a.h, 'rgba(122,255,218,0.55)', 6);
+      ctx.fillStyle = lit ? '#e8fff8' : 'rgba(122,255,218,0.5)';
+      const mx = a.x + a.w / 2, my = a.y + a.h / 2;
+      for (let i = 0; i < 7; i++) { ctx.fillRect(Math.round(mx + a.id * (4 - i)), my - i, 2, 1); ctx.fillRect(Math.round(mx + a.id * (4 - i)), my + i, 2, 1); }
+    }
+    // --- the roster along the foot of the stage
+    for (const r of this.createTicks()) {
+      const ok = Create.speciesUnlocked(r.sp), on = r.i === (G.createSel || 0);
+      ctx.fillStyle = on ? (r.sp.holo || '#7affda') : ok ? rgba(r.sp.holo || '#7affda', 0.4) : '#22302e';
+      ctx.fillRect(r.x, r.y + (on ? 0 : 3), r.w, on ? 6 : 3);
+      if (!ok) { ctx.fillStyle = '#5f7f78'; ctx.fillRect(r.x + r.w / 2 - 3, r.y + 6, 6, 5); ctx.fillRect(r.x + r.w / 2 - 2, r.y + 3, 4, 3); }
+    }
+
+    // --- the dossier on the left: who this is, and what it is like
+    const D = { x: 10, y: 34, w: 144, h: 206 };
+    ctx.fillStyle = 'rgba(5,16,18,0.92)'; ctx.fillRect(D.x, D.y, D.w, D.h);
+    this.bracket(ctx, D.x, D.y, D.w, D.h, 'rgba(120,220,200,0.4)', 10);
+    if (open) {
+      const look = Object.assign({}, CROC_LOOKS.base, sp.look || {}, { girth: sp.girth || 1 });
+      const hd = this.cvParts(look).head;
+      ctx.save(); ctx.beginPath(); ctx.rect(D.x + 4, D.y + 4, D.w - 8, 46); ctx.clip();
+      ctx.translate(D.x + 48, D.y + 30); ctx.scale(1.35, 1.35);
+      ctx.drawImage(hd.c, -hd.ox, -hd.oy);
+      ctx.restore();
+    }
+    Font.draw(ctx, open ? sp.name : 'SEALED', D.x + 6, D.y + 56, { color: open ? '#e8fff8' : '#5f7f78' });
+    Font.drawWrapped(ctx, open ? sp.latin : '', D.x + 6, D.y + 68, D.w - 12, { color: '#5f9f94', lineHeight: 9 });
+    if (open && sp.trait) {
+      ctx.fillStyle = rgba(sp.trait.col, 0.18); ctx.fillRect(D.x + 4, D.y + 88, D.w - 8, 12);
+      ctx.fillStyle = sp.trait.col; ctx.fillRect(D.x + 4, D.y + 88, 2, 12);
+      Font.draw(ctx, sp.trait.name, D.x + 10, D.y + 91, { color: sp.trait.col });
+      Font.drawWrapped(ctx, sp.trait.line, D.x + 6, D.y + 104, D.w - 12, { color: '#7f9a90', lineHeight: 9 });
+    }
+    const bars = [['LENGTH', sp.size / 2.4], ['HEALTH', sp.hp / 1.7], ['SPEED', sp.spd / 1.4], ['BITE', sp.bite / 1.7], ['GIRTH', (sp.girth || 1) / 1.35]];
+    bars.forEach((b2, i) => {
+      const by = D.y + 140 + i * 13;
+      Font.draw(ctx, b2[0], D.x + 6, by, { color: '#4f7f74' });
+      ctx.fillStyle = '#111c1e'; ctx.fillRect(D.x + 48, by, D.w - 56, 6);
+      const bw = Math.round((D.w - 56) * clamp(b2[1], 0.05, 1));
+      ctx.fillStyle = open ? col : '#2a3230'; ctx.fillRect(D.x + 48, by, bw, 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.32)'; ctx.fillRect(D.x + 48, by, bw, 2);
+    });
+
+    // --- the right-hand column: which tank it goes in, what it costs, and GO
+    const R = { x: 508, y: 40, w: 122 };
+    Font.draw(ctx, 'STOCK', R.x, R.y, { color: '#4f7f74' });
+    Font.draw(ctx, ((G.createSel || 0) + 1) + ' / ' + BASE_SPECIES.length, R.x + R.w, R.y, { color: '#c8d8d0', align: 'right' });
+    ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(R.x, R.y + 11, R.w, 1);
+    const slot = this.createSlot();
+    Font.draw(ctx, 'ENCLOSURE', R.x, R.y + 20, { color: '#4f7f74' });
+    for (let i = 0; i < HAB_SLOTS; i++) {
+      const bx = R.x + (i % 3) * 22, by = R.y + 32 + Math.floor(i / 3) * 22;
+      const full = !!Habitat.at(i), here = i === slot;
+      ctx.fillStyle = full ? '#1d3a36' : here ? 'rgba(255,224,96,0.20)' : '#0d1b1d';
+      ctx.fillRect(bx, by, 18, 18);
+      ctx.fillStyle = full ? '#3fd0a8' : here ? '#ffe060' : '#22302e';
+      ctx.fillRect(bx, by, 18, 2);
+      if (full) { ctx.fillStyle = '#3fd0a8'; for (let q = 0; q < 5; q++) ctx.fillRect(bx + 4 + q * 2, by + 9 - (q === 2 ? 2 : 0), 2, 3); }
+      else if (here) this.bracket(ctx, bx - 1, by - 1, 20, 20, '#ffe060', 5);
+    }
+    const cost = this.createCost(), afford = Research.data() >= cost;
+    Font.draw(ctx, 'COST', R.x, R.y + 84, { color: '#4f7f74' });
+    Font.draw(ctx, cost === 0 ? 'FREE' : String(cost), R.x + R.w, R.y + 82, { color: cost === 0 ? '#7affda' : afford ? '#ffe060' : '#8a5a40', align: 'right', scale: 2 });
+    Font.draw(ctx, 'DATA HELD', R.x, R.y + 104, { color: '#4f7f74' });
+    Font.draw(ctx, String(Research.data()), R.x + R.w, R.y + 104, { color: '#c8d8d0', align: 'right' });
+
+    const go = this.createGoRect(), can = open && slot >= 0 && afford;
+    ctx.fillStyle = can ? 'rgba(10,44,38,0.96)' : 'rgba(14,20,20,0.9)'; ctx.fillRect(go.x, go.y, go.w, go.h);
+    ctx.fillStyle = can ? (Math.floor(t * 2) % 2 ? '#7affda' : '#2f8a76') : '#33403e'; ctx.fillRect(go.x, go.y, go.w, 2);
+    this.bracket(ctx, go.x - 2, go.y - 2, go.w + 4, go.h + 4, can ? '#7affda' : '#3a4a48', 7);
+    Font.draw(ctx, !open ? 'SEALED' : slot < 0 ? 'NO ROOM' : !afford ? 'NEED DATA' : 'GROW IT',
+      go.x + go.w / 2, go.y + 10, { color: can ? '#dffdf4' : '#6a7f7a', align: 'center', scale: 2, outline: '#04120e' });
+    if (Tutor.at('hatch') && can) Tutor.point(ctx, go);
+    this.drawExit(ctx);
   },
   // ---------- the habitat ----------
   // Six enclosures along the back wall. Every one of them is a window onto a
@@ -1236,6 +1425,7 @@ const UI = {
         if (on) this.bracket(ctx, r.x - 2, r.y - 2, r.w + 4, r.h + 4, '#7affda', 6);
       }
     }
+    if (Tutor.on()) for (const r2 of this.habRows()) if (Tutor.allowHabRow(r2.kind)) Tutor.point(ctx, r2);
     // the one number that gates everything
     const d = Research.data();
     Font.draw(ctx, String(d), W - 12, H - 16, { color: d > 0 ? '#ffe060' : '#5f7f78', align: 'right', scale: 2, outline: '#3a2a00' });
@@ -1601,13 +1791,19 @@ const UI = {
     if (mart) {
       const have = Missions.has(mart.id);
       Font.draw(ctx, have ? mart.name : 'UNCLAIMED RELIC', px0 + shake, 232, { color: have ? mart.col : '#5f7f78' });
-      Font.draw(ctx, have ? mart.boon : mart.line, px0 + shake, 244, { color: have ? '#7f9a90' : '#3f5f58' });
+      Font.drawWrapped(ctx, have ? mart.boon : mart.line, px0 + shake, 244, W - 22 - px0, { color: have ? '#7f9a90' : '#3f5f58', lineHeight: 9 });
     }
 
-    // --- prompt
-    const okCol = open ? '#ffe060' : '#ff8060';
-    Font.draw(ctx, open ? 'ENTER' : 'LOCKED', px0 + shake, H - 30, { color: okCol, scale: 2, outline: '#2a1a00' });
-    Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE', px0 + shake, H - 12, { color: '#4f7f74' });
+    // --- the button that actually sends you. It used to be the word ENTER,
+    // which is not a key a phone or a tablet has.
+    const go = this.stageGoRect(), gx2 = go.x + shake;
+    ctx.fillStyle = open ? 'rgba(52,26,6,0.96)' : 'rgba(20,10,10,0.9)'; ctx.fillRect(gx2, go.y, go.w, go.h);
+    ctx.fillStyle = open ? (Math.floor(t * 2) % 2 ? '#ffe060' : '#c8a030') : '#6a4038'; ctx.fillRect(gx2, go.y, go.w, 2);
+    ctx.fillStyle = '#1a0e04'; ctx.fillRect(gx2, go.y + go.h - 1, go.w, 1);
+    this.bracket(ctx, gx2 - 2, go.y - 2, go.w + 4, go.h + 4, open ? '#ff8050' : '#5a4a48', 7);
+    Font.draw(ctx, open ? 'RELEASE' : 'SEALED', gx2 + go.w / 2, go.y + 7, { color: open ? '#ffd0a0' : '#a08070', align: 'center', scale: 2, outline: '#2a0c00' });
+    if (!Tutor.on()) Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE     ENTER  RELEASE', px0 + shake, H - 11, { color: '#4f7f74' });
+    if (Tutor.at('site') && open) Tutor.point(ctx, go);
     this.drawExit(ctx);
   },
   // ---------- loadout: the splice bay, with you in the tank ----------
@@ -1621,6 +1817,12 @@ const UI = {
     return out;
   },
   loadoutGoRect() { return { x: G.W - 150, y: G.H - 40, w: 132, h: 24 }; },
+  // the induction's dialogue bar owns the foot of the screen; the button that
+  // sends you out moves up above it rather than hiding behind it
+  stageGoRect() {
+    const px0 = G.W * 0.62, lift = (typeof Tutor !== 'undefined' && Tutor.on()) ? 48 : 0;
+    return { x: Math.round(px0), y: G.H - 42 - lift, w: Math.round(G.W - 22 - px0), h: 24 };
+  },
   // the croc turning slowly in the acid, wearing whatever you picked
   drawTankPreview(ctx, x, y, w, h, t) {
     const P = G.player;

@@ -149,7 +149,7 @@ const G = {
   init() {
     this.canvas = document.getElementById('game'); this.ctx = ctxOf(this.canvas);
     this.fx = new FXSystem(); UI.init(); Input.init(this.canvas);
-    Meta.load(); this.loadSave();
+    Meta.load(); this.loadSave(); Tutor.adopt();
     this.touchUI = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     this.scale = 1; this.rotated = false;
     World.onChunkLoad = (ch, rng) => this.onChunkLoad(ch, rng);
@@ -183,10 +183,21 @@ const G = {
     return [this.W / 2 + (clientY - cy) / s, this.H / 2 - (clientX - cx) / s];
   },
   loadSave() { try { this.save = Object.assign({ best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], research: [], data: 0 }, JSON.parse(localStorage.getItem('chompers.save') || '{}')); } catch (e) { this.save = { best: 0, bestLen: 0, runs: 0, kills: 0, bestTier: 0, artifacts: [], research: [], data: 0 }; } try { Object.assign(this.settings, JSON.parse(localStorage.getItem('chompers.settings') || '{}')); } catch (e) { } },
-  storeSave() { const P = this.player; this.save.best = Math.max(this.save.best, this.score); this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt); this.save.bestTier = Math.max(this.save.bestTier, P.tier); this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x)); this.save.kills = Math.max(this.save.kills || 0, (this.save.kills || 0)); try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
+  // a save with history in it is not put back through the induction
+  storeSave() {
+    const P = this.player;
+    // the title screen runs a real crocodile through a real map for show;
+    // none of what it does is yours, so none of it is recorded
+    if (P && !P.demo) {
+      this.save.best = Math.max(this.save.best, this.score);
+      this.save.bestLen = Math.max(this.save.bestLen, P.lengthFt);
+      this.save.bestTier = Math.max(this.save.bestTier, P.tier);
+      this.save.reach = Math.max(this.save.reach || 0, Math.round(P.x));
+    }
+    try { localStorage.setItem('chompers.save', JSON.stringify(this.save)); localStorage.setItem('chompers.settings', JSON.stringify(this.settings)); } catch (e) { } },
   startRun(demo = false, stage = null, load = null) {
     World.reset((Math.random() * 1e9) | 0);
-    this.player = new Player(); this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null; this.drop = null;
+    this.player = new Player(); this.player.demo = !!demo; this.ents = []; this.fx.clear(); this.score = 0; this.boss = null; this.banner = null; this.shedPending = false; this.deathInfo = null; this.mission = null; this.finisher = null; this.morph = null; this.drop = null;
     this.stats = { eaten: 0, kills: 0, bosses: 0, boats: 0, structures: 0, biggest: '', biggestMass: 0, kinds: {} };
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
@@ -332,18 +343,24 @@ const G = {
     }
   },
   // the creation bay and the research lab, both reached from the lab floor
-  openResearch() { this.state = 'research'; this.menuT = 0; if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; } Doc.say('research'); SFX.ui(); },
+  openResearch() { this.state = 'research'; this.menuT = 0; Tutor.pass('toresearch'); if (this.resCat === undefined) { this.resCat = 0; this.resNode = 0; } if (!Tutor.on()) Doc.say('research'); SFX.ui(); },
+  // the bay at the head of the research rack, where animals are grown
+  openCreate() {
+    this.state = 'create'; this.menuT = 0; Doc.scene = null;
+    if (this.createSel === undefined) this.createSel = 0;
+    SFX.ui();
+  },
   openLabBench() {
     this.state = 'bench'; this.menuT = 0;
     if (!this.benchTab) this.benchTab = 'vial';
-    Doc.say('bench');
+    if (!Tutor.on()) Doc.say('bench');
     if (this.benchSel === undefined) this.benchSel = 0;
     SFX.ui();
   },
   openHabitat() {
     this.state = 'habitat'; this.menuT = 0;
     Habitat.ensure();
-    Doc.say('habitat');
+    if (!Tutor.on()) Doc.say('habitat');
     if (this.habSel === undefined) this.habSel = Habitat.runnerIndex();
     if (this.habRow === undefined) this.habRow = 0;
     if (this.habHatch === undefined) this.habHatch = 0;
@@ -616,6 +633,7 @@ const G = {
     requestAnimationFrame(t => this.loop(t));
   },
   update(dt, raw) {
+    Tutor.update(raw);
     // global keys
     if (Input.hit('KeyM')) { const m = SFX.toggleMute(); if (!SFX.ctx) { SFX.init(); if (m) SFX.master && (SFX.master.gain.value = 0); } }
     // The bay shutter outlives the screen that started it. It comes down over
@@ -631,7 +649,7 @@ const G = {
         if (wp.id === 'habitat') this.openHabitat();
         else if (wp.id === 'lab') this.openLabBench();
         else this.openResearch();
-        this.wipeIn = 0.32;
+        this.wipeIn = 0.28;
       }
       if (wp.t >= wp.dur) this.labWipe = null;
       if (this.state === 'title') { this.titleT += raw; Lab.update(raw); }
@@ -666,10 +684,12 @@ const G = {
         if (Input.hit('KeyC')) { this.prevState = 'title'; this.state = 'codex'; this.codexScroll = 0; break; }
         const use = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || (hit >= 0 && hit === this.labSel);
         if (hit >= 0 && hit !== this.labSel) { this.labSel = hit; SFX.ui(); break; }
-        if (use && !this.labWipe) {
+        // on a first run the induction holds you to one door
+        { const want = Tutor.on() && Tutor.wantStation(); if (want) { const k = stn.findIndex(s3 => s3.id === want); if (k >= 0) this.labSel = k; } }
+        if (use && !this.labWipe && Tutor.allowStation(stn[this.labSel].id)) {
           SFX.init(); SFX.resume(); SFX.ui();
           const st2 = stn[this.labSel];
-          this.labWipe = { t: 0, dur: 0.62, id: st2.id, x: st2.x + st2.w / 2, y: st2.y + st2.h / 2, gone: false };
+          this.labWipe = { t: 0, dur: 0.44, id: st2.id, x: st2.x + st2.w / 2, y: st2.y + st2.h / 2, gone: false };
           SFX.clank && SFX.clank();
         }
         break;
@@ -727,6 +747,7 @@ const G = {
           if (Input.hit('ArrowDown', 'KeyS')) { this.habSel = (sel + 1) % HAB_SLOTS; break; }
           let go = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
           if (Input.mouse.clicked) for (const r of rects) if (inR(r)) { if (this.habHatch === r.i) go = true; else { this.habHatch = r.i; SFX.ui(); } }
+          if (go && !Tutor.allowHabHatch()) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; go = false; }
           if (go) {
             const spId = BASE_SPECIES[clamp(this.habHatch, 0, BASE_SPECIES.length - 1)].id;
             if (Habitat.hatch(sel, spId)) {
@@ -751,12 +772,13 @@ const G = {
         if (Input.mouse.clicked) for (let i2 = 0; i2 < rows.length; i2++) if (inR(rows[i2])) { if (row === i2) act = true; else { this.habRow = i2; SFX.ui(); } }
         if (act) {
           const r = rows[clamp(this.habRow || 0, 0, rows.length - 1)];
+          if (!Tutor.allowHabRow(r.kind)) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; break; }
           const res = UI.habApply(r, cur, sel);
           if (!res) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
-          else if (res === 'go') { SFX.pick(); this.openStages(); }
-          else if (res === 'level') { Doc.note('feed'); SFX.levelup(); this.whiteFlash(0.3); this.banner = { text: 'GREW', sub: Habitat.tag(cur) + '  LV ' + cur.lv, t: 2.2, max: 2.2, color: '#8ab820' }; }
+          else if (res === 'go') { Tutor.pass('release'); SFX.pick(); this.openStages(); }
+          else if (res === 'level') { Tutor.pass('feed'); Doc.note('feed'); SFX.levelup(); this.whiteFlash(0.3); this.banner = { text: 'GREW', sub: Habitat.tag(cur) + '  LV ' + cur.lv, t: 2.2, max: 2.2, color: '#8ab820' }; }
           else if (res === 'up') { Doc.note('point'); SFX.pick(); }
-          else if (res === 'fed') { Doc.note('feed'); SFX.ui(); }
+          else if (res === 'fed') { Tutor.pass('feed'); Doc.note('feed'); SFX.ui(); }
           else SFX.ui();
         }
         if (this.menuShake > 0) this.menuShake -= raw;
@@ -771,6 +793,14 @@ const G = {
           if (br && Input.mouse.clicked && Input.mouse.x > br.x && Input.mouse.x < br.x + br.w && Input.mouse.y > br.y && Input.mouse.y < br.y + br.h) { Doc.sceneNext(); SFX.ui(); break; }
           if (br && Input.hit('KeyT')) { Doc.sceneNext(); SFX.ui(); break; }
         }
+        // the creation bay at the head of the rack
+        {
+          const b2 = UI.resBayRect();
+          const onBay = Input.mouse.clicked && Input.mouse.x > b2.x && Input.mouse.x < b2.x + b2.w && Input.mouse.y > b2.y && Input.mouse.y < b2.y + b2.h;
+          if ((onBay || Input.hit('KeyN')) && Tutor.allowBay()) { Tutor.pass('bay'); this.openCreate(); break; }
+          if (onBay) { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; break; }
+        }
+        if (!Tutor.allowResearchRow()) { if (this.menuShake > 0) this.menuShake -= raw; break; }
         const cats = UI.resCatRects();
         if (Input.hit('ArrowLeft', 'KeyA')) { this.resCat = (this.resCat + cats.length - 1) % cats.length; this.resNode = 0; SFX.ui(); }
         if (Input.hit('ArrowRight', 'KeyD')) { this.resCat = (this.resCat + 1) % cats.length; this.resNode = 0; SFX.ui(); }
@@ -794,6 +824,35 @@ const G = {
             if (cur.nd.grant && cur.nd.grant.zone) Doc.note('zone');
             SFX.levelup(); this.whiteFlash(0.25);
             this.banner = { text: 'FUNDED', sub: cur.nd.name, t: 2.6, max: 2.6, color: cur.nd.cat.col };
+          } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+        }
+        if (this.menuShake > 0) this.menuShake -= raw;
+        break;
+      }
+      case 'create': {
+        this.menuT += raw; Lab.update(raw);
+        if (Input.hit('Escape', 'KeyH') || UI.exitHit()) { if (!Tutor.at('hatch')) { this.state = 'research'; SFX.ui(); } break; }
+        const ticks = UI.createTicks(), n2 = BASE_SPECIES.length;
+        const stepSp = d => { this.createSel = ((this.createSel || 0) + d + n2) % n2; SFX.ui(); };
+        if (Input.hit('ArrowLeft', 'KeyA')) stepSp(-1);
+        if (Input.hit('ArrowRight', 'KeyD')) stepSp(1);
+        let grow = Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ');
+        if (Input.mouse.clicked) {
+          const inR2 = r => Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h;
+          for (const a of UI.createArrows()) if (inR2(a)) { stepSp(a.id); grow = false; }
+          for (const r of ticks) if (inR2(r) && r.i !== this.createSel) { this.createSel = r.i; SFX.ui(); grow = false; }
+          if (inR2(UI.createGoRect())) grow = true;
+        }
+        if (grow) {
+          const sp2 = BASE_SPECIES[clamp(this.createSel || 0, 0, n2 - 1)];
+          const slot = UI.createSlot();
+          if (slot >= 0 && Habitat.hatch(slot, sp2.id)) {
+            Habitat.select(slot); Doc.note('hatch');
+            SFX.hatch && SFX.hatch(); SFX.levelup(); this.whiteFlash(0.4);
+            this.banner = { text: 'GROWN', sub: Habitat.tag(Habitat.at(slot)), t: 2.6, max: 2.6, color: sp2.holo || '#7affda' };
+            // the induction hands you straight over to the animal you just made
+            if (Tutor.at('hatch')) { Tutor.pass('hatch'); this.habSel = slot; this.habRow = 0; this.openHabitat(); }
+            else { this.state = 'research'; }
           } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
         }
         if (this.menuShake > 0) this.menuShake -= raw;
@@ -858,9 +917,11 @@ const G = {
         if (Input.hit('KeyQ')) stepZone(-1);
         if (Input.hit('KeyE', 'Tab')) stepZone(1);
         const rowHit = picking && Input.mouse.clicked && rows.some((r, i) => i === this.stageSel && Input.mouse.x > r.x && Input.mouse.x < r.x + r.w && Input.mouse.y > r.y && Input.mouse.y < r.y + r.h);
-        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit) {
+        const gr = UI.stageGoRect();
+        const goHit = Input.mouse.clicked && Input.mouse.x > gr.x && Input.mouse.x < gr.x + gr.w && Input.mouse.y > gr.y && Input.mouse.y < gr.y + gr.h;
+        if (Input.hit('Enter', 'Space', 'KeyZ', 'KeyJ') || rowHit || goHit) {
           const st = list[this.stageSel];
-          if (Stages.unlocked(st)) { this.openLoadout(st); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
+          if (Stages.unlocked(st)) { Tutor.pass('site'); this.openLoadout(st); } else { SFX.hurt && SFX.hurt(); this.menuShake = 0.3; }
         }
         if (this.menuShake > 0) this.menuShake -= raw;
         break;
@@ -1139,11 +1200,12 @@ const G = {
     // the lab floor itself; the three stations paint their own wall over the
     // top of it, so drawing it under them was both wasted and, while the wall
     // was a scrim, visible as the whole room ghosting through the screen.
-    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'research') { UI.drawResearch(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'title') { Lab.draw(ctx); UI.drawTitle(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'research') { UI.drawResearch(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'habitat') { UI.drawHabitat(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
-    if (this.state === 'stages') { UI.drawStages(ctx); return; }
+    if (this.state === 'create') { UI.drawCreate(ctx); Tutor.draw(ctx); UI.drawWipe(ctx); return; }
+    if (this.state === 'stages') { UI.drawStages(ctx); Tutor.draw(ctx); return; }
     if (this.state === 'loadout') { UI.drawLoadout(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
@@ -1203,7 +1265,7 @@ const G = {
     UI.drawScreenFx(ctx);
     switch (this.state) {
       case 'title': UI.drawTitle(ctx); break;   // Lab paints the room first, see render()
-      case 'stages': UI.drawStages(ctx); break;
+      case 'stages': UI.drawStages(ctx); Tutor.draw(ctx); break;
       case 'loadout': UI.drawLoadout(ctx); break;
       case 'intro': UI.drawIntro(ctx); break;
       case 'play': case 'shedding': case 'dying': UI.drawHUD(ctx); break;

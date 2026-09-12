@@ -62,7 +62,10 @@ const CrocView = {
     // 1. the animal, in its own art, into the buffer
     o.save();
     o.translate(W * 0.74, H * 0.52);
-    drawCroc(o, v.chain, parts, worldSize, { jaw: v.jaw, legPhase: v.legPhase, flipY: 1 });
+    // same rule as draw(): scale the space, not the parts, or the chain's raw
+    // node spacing no longer matches the art laid on it
+    if (worldSize !== 1) o.scale(worldSize, worldSize);
+    drawCroc(o, v.chain, parts, 1, { jaw: v.jaw, legPhase: v.legPhase, flipY: 1 });
     o.restore();
     // 2. tint through its own alpha: keeps the internal shading as luminance
     o.save();

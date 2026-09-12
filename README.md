@@ -28,8 +28,8 @@ middle of the room, a containment column with a specimen suspended in it.
 
 The menu is the furniture. Three stations, three plates, no tabs and no blurb:
 walk the selection along the room and whichever one you are standing at gets a
-targeting bracket. Choosing one drops a corrugated steel shutter over that bay,
-and the screen you asked for is behind it when it comes back up.
+targeting bracket. Choosing one cuts to it: the picture is squeezed to a lit
+line and let back out, the way a tube set changes channel.
 
 Each station is its own opaque room — block wall, strip lights along the
 ceiling, and a floor at the foot of it with a trolley, gas bottles, a stool and
@@ -51,6 +51,44 @@ or three words in a speech bubble — and every lesson is a thing you were going
 to do anyway, so doing it just pays you. Tap the bubble and he goes away and
 stays away.
 
+## The first hour
+
+A new save owns nothing at all — no animal, no colour, no map but the one
+outside the door — so the first thing that happens is that Doc walks you
+through making a crocodile. Six steps, on a rail: each one names a single
+control, lights it with a pulsing frame and a bobbing arrow, and refuses every
+other control until you use it.
+
+> RESEARCH → the **creation bay** → grow a crocodile → feed it → release it →
+> pick where it goes in the water
+
+He talks in a bar along the foot of the screen — his face in a box, what he
+said, and the one thing to do about it, with six pips showing how far along you
+are. The screens get out of its way while it is up: the station plates and the
+map's release button move above it rather than hide behind it. His optional
+course and his room patter stay quiet until the induction is finished, so there
+is only ever one voice.
+
+Two things are on the project so that the rail can never strand you: the first
+animal it grows for you is free, and so is its first meal. After that
+everything costs DATA, and DATA comes out of the water.
+
+A save with history in it — runs on the clock, animals in the tanks, anything
+funded — is never put back through the induction.
+
+## The creation bay
+
+At the head of the research rack, above the five programmes, is the bay where
+animals are actually made. It is a projector on a plate throwing a live
+crocodile into the air above it: scanlined, jittered, doubled, tinted to that
+stock's own colour, and running its own attack loop — idle, coil, lunge,
+strike, recover — with the phase called out in the corner like a readout.
+
+Arrows either side step through the stock library. A dossier on the left gives
+the animal's name, its binomial, its signature and five bars; a column on the
+right gives which enclosure it will go into, what it costs, and what you hold.
+A stock research has not funded shows **NO SAMPLE ON FILE** and an empty stage.
+
 ## The habitat
 
 Six enclosures with water in them. Each one is a window onto a real animal, at
@@ -65,7 +103,7 @@ comes back — a run feeds it, and it grows.
 - **FEED** it a slab of meat for DATA. Enough meat is a level; a level is a point.
 - **BODY / JAWS / BLOOD** — where the points go, as three rows of notches.
 - **LENGTH / GIRTH / HIDE** — its build, and every grade is a research line item.
-- **HATCH** a researched species into an empty enclosure and it is yours.
+- **HATCH** more of them in the creation bay, one per empty enclosure.
 
 ### Every species is a different animal
 
@@ -308,6 +346,15 @@ which lists every trait and your progress toward the locked ones.
 The world is authored, not shuffled. One continuous map runs from a drowned city system in the far
 west, out through the swamp, and off the edge of the continental shelf into the dark. It is split into
 **three zones**, and the zone decides what the water does to you as much as what lives in it.
+
+You pick where you go in on a **globe you turn with your thumb** — drag it, let go and it keeps
+spinning, and it settles on whatever you last chose. Only the zone you are looking at puts markers on
+the sphere, each one a staff and a diamond head carrying that site's own landmark, standing taller on
+the near face than the far. The sites are scattered across their region rather than stepped evenly
+along it, so a zone reads as a place with locations in it and not as a string of beads round the
+equator. A site you have not earned is a sealed grey pin.
+
+A **RELEASE** button sends you. It used to be the word ENTER, which is not a key a tablet has.
 
 ### Zone 1 — The Sewer Network
 

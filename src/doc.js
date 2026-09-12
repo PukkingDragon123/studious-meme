@@ -51,7 +51,7 @@ const Doc = {
   recall() { this.save().off = false; G.storeSave(); },
   done(id) { return this.save().done.indexOf(id) >= 0; },
   // the lesson he is on: the first one you have not done
-  current() { if (this.off()) return null; for (const l of DOC_LESSONS) if (!this.done(l.id)) return l; return null; },
+  current() { if (this.off() || (typeof Tutor !== 'undefined' && Tutor.on())) return null; for (const l of DOC_LESSONS) if (!this.done(l.id)) return l; return null; },
   progress() { const d = this.save(); return { got: d.done.length, tot: DOC_LESSONS.length }; },
   // Something happened. If it is what he was waiting for, pay up and move on.
   note(ev) {
