@@ -7,7 +7,7 @@
 // to a site you have already cleared.
 // ---------------------------------------------------------------------------
 const ARTIFACTS = [
-  { id: 'tag', stage: 'outfall', name: 'SUBJECT TAG', line: 'THE NUMBER THEY GAVE YOU. YOU KEPT IT.',
+  { id: 'tag', stage: 'catacomb', name: 'SUBJECT TAG', line: 'THE NUMBER THEY GAVE YOU. YOU KEPT IT.',
     boon: 'START EVERY RUN WITH 2 GENE POINTS', col: '#9ad8c0', glyph: 'tag', apply: P => { P.genePoints += 2; } },
   { id: 'oyster', stage: 'mangrove', name: "DROWNED MAN'S RING", line: 'PRISED OUT OF AN OYSTER BED WITH A FINGER STILL IN IT.',
     boon: '+8% BITE', col: '#d8c8a0', glyph: 'ring', apply: P => { P.st.bite *= 1.08; } },
@@ -51,7 +51,7 @@ for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
 
 // One standing order per site. `kind` decides which hook counts.
 const MISSIONS = {
-  outfall:    { title: 'GET OUT', line: 'REACH OPEN WATER', kind: 'reach', atX: 980, unit: 'M' },
+  catacomb:   { title: 'FIND THE WAY OUT', line: 'OPEN THE OUTFLOW', kind: 'puzzle', target: 3 },
   mangrove:   { title: 'THIN THE ROOTS', line: 'TAKE 14 FISH', kind: 'fish', target: 14 },
   camp:       { title: 'CLOSE THE CAMP', line: 'WRECK 3 BUILDS', kind: 'wreck', target: 3 },
   cypress:    { title: 'OWN THE DEEP', line: 'KILL 5 PREDATORS', kind: 'threat', target: 5 },
@@ -79,8 +79,8 @@ const MISSIONS = {
 // in your teeth. Nobody is talking to you. You are what they are talking about.
 // ---------------------------------------------------------------------------
 const STORY = {
-  outfall: ['SUBJECT 11 IS OUT OF CONTAINMENT AND IN THE STORM SYSTEM.', 'IT IS TRACKING EAST. IT IS FOLLOWING THE WATER.',
-    'IT MADE OPEN AIR. LOG THE TIME.', 'IT KEPT ITS TAG. THAT IS NOT INSTINCT.'],
+  catacomb: ['SUBJECT 11 WENT INTO THE OLD SYSTEM. THE MAPS STOP AT THE ROMAN LEVEL.', 'SOMETHING DOWN THERE IS TURNING THE OLD MECHANISMS.',
+    'THE OUTFLOW GATE IS OPEN. IT HAS NOT BEEN OPEN SINCE THE EMPIRE.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
   mangrove: ['THE ROOT LINE IS SHALLOW. IT WILL HAVE TO SURFACE TO CROSS.', 'IT IS NOT CROSSING. IT IS FEEDING.',
     'SIXTY POUNDS OF SNOOK IN ELEVEN MINUTES.', 'THAT RING CAME OFF A DIVER WE NEVER FOUND.'],
   camp: ['THERE ARE PEOPLE AT THAT CAMP. ADVISE THEM.', 'NOBODY IS ANSWERING AT THE CAMP.',
@@ -144,7 +144,7 @@ const Missions = {
     // a site you have already stripped still plays, it just has nothing left on it
     const x0 = G.player.x;
     // a "reach" order is a place, not a distance: the span depends on where the
-    // run actually starts, which for the outfall is back in the tank
+    // run actually starts
     const target = def.atX !== undefined ? Math.max(60, Math.round(def.atX - x0)) : def.target;
     G.mission = { id: stage.id, def, art, target, n: 0, done: this.has(art && art.id), claimed: this.has(art && art.id), relic: null, x0, flashT: 0, halfSaid: false };
     Story.begin(stage);

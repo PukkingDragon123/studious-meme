@@ -156,6 +156,7 @@ const UI = {
     Lairs.draw(ctx);
     Objectives.drawHud(ctx, Math.max(70, this.hazBottom || 70));
     Objectives.drawCard(ctx);
+    Puzzles.draw(ctx);
     // dispatch: the lab talking about you on an open channel, typed in
     const dp = G.dispatch;
     if (dp) {
@@ -1489,10 +1490,12 @@ const UI = {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
     const dim = c => (on ? c : mixColor(c, '#20302c', 0.62));
     switch (kind) {
-      case 'outfall':
-        px(-7, -9, 14, 9, dim('#6a6d72')); px(-7, -9, 14, 2, dim('#8b8e94'));
-        px(-4, -7, 8, 6, dim('#161c1e')); px(-4, -7, 8, 1, dim('#2a3436'));
-        px(-9, 0, 18, 2, dim('#4a4d52'));
+      case 'catacomb': case 'outfall':
+        // a roman arch with the dark behind it, and a skull sitting in the niche
+        px(-8, -12, 16, 12, dim('#7a6e5a')); px(-8, -12, 16, 2, dim('#a89a80'));
+        px(-5, -9, 10, 9, dim('#14100c')); px(-6, -10, 12, 1, dim('#c0b090'));
+        px(-2, -6, 4, 4, dim('#d8d0b8')); px(-1, -5, 1, 1, dim('#14100c')); px(1, -5, 1, 1, dim('#14100c'));
+        px(-9, 0, 18, 2, dim('#4a4236'));
         break;
       case 'mangrove':
         px(-8, -13, 16, 7, dim('#2f6a34')); px(-6, -16, 12, 4, dim('#3f8a42'));

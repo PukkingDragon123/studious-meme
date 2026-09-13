@@ -152,7 +152,10 @@ class Structure extends Entity {
     // It is welded. There is no state in which it opens; the only thing it
     // does is sit there and drip, and groan when something leans on it.
     if (this.kind === 'sluice') {
-      this.open = 0; this.lit = 0;
+      // the outflow in the catacombs answers to the mechanisms; every other
+      // gate in the system is welded
+      if (!this.puzzleGate) this.open = 0;
+      this.lit = this.puzzleGate && this.open > 0.5 ? 1 : 0;
       if (chance(dt * 1.4)) G.fx.bubbles(this.x + rand(-18, 18), this.y - 20, 1, 5);
       if (P && !P.dead && Math.abs(P.x - this.x) < 40 && chance(dt * 0.4)) SFX.clank && SFX.clank(this.pan);
     }

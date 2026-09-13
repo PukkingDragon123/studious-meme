@@ -78,62 +78,84 @@ const Waste = {
   },
 
   // ---- how it looks ------------------------------------------------------
+  // Not a slab of colour lying in the dip. What you see of a pool is what
+  // comes off it: a low bed of vapour breathing over the floor, puffs lifting
+  // out of it and thinning as they rise, a scum line where it meets the water,
+  // and for the drums a glow with motes in it. Every puff is a hash of the pool
+  // and its index, so the smoke is the same smoke every frame and drifts
+  // rather than flickers.
   COL: {
-    acid: { a: '#b8e82a', b: '#6f9a10', edge: '#e8ff80', fog: 'rgba(180,232,42,0.16)' },
-    sludge: { a: '#4a4028', b: '#2a2416', edge: '#6a5a30', fog: 'rgba(80,70,40,0.20)' },
-    rads: { a: '#3ef07a', b: '#128a44', edge: '#b8ffcf', fog: 'rgba(62,240,122,0.18)' },
+    acid: { smoke: [200, 236, 90], scum: '#c8e050', glow: null },
+    sludge: { smoke: [110, 92, 60], scum: '#5a4a2a', glow: null },
+    rads: { smoke: [110, 240, 140], scum: '#62d080', glow: '#3ef07a' },
+  },
+  // one soft pixel puff: a dithered cluster of squares with a bright core
+  puff(ctx, x, y, r, rgb, a) {
+    if (a <= 0.01) return;
+    const R = Math.max(1, Math.round(r));
+    ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a.toFixed(3) + ')';
+    // three rings of squares, sparser toward the edge, on a 2px lattice
+    for (let j = -R; j <= R; j += 2) for (let i = -R; i <= R; i += 2) {
+      const d = (i * i + j * j) / (R * R); if (d > 1) continue;
+      if (d > 0.55 && ((i + j) & 3)) continue;                        // ragged edge
+      if (d > 0.25 && ((i * 3 + j) & 5) === 5) continue;
+      ctx.fillRect(Math.round(x + i), Math.round(y + j), 2, 2);
+    }
   },
   draw(ctx, cam) {
-    const L = cam.x - G.W / cam.zoom, R = cam.x + G.W / cam.zoom;
+    const L = cam.x - G.W / cam.zoom, R = cam.x + G.W / cam.zoom, z = cam.zoom;
     this.each(L, R, p => {
       const c = this.COL[p.kind], fy = World.floorY(p.x);
-      // it lies in the dip, not on top of it: one level, and the floor decides
-      // how much of it there is at each step across.
-      const lvl = fy - (p.kind === 'sludge' ? 15 : 10);
-      const wob = Math.sin(G.t * 1.6 + p.seed * 9) * 1.5;
-      const step = 6;
-      for (let wx = p.x - p.w / 2; wx < p.x + p.w / 2; wx += step) {
-        const f = World.floorY(wx);
-        if (f <= lvl + 1) continue;
-        const top = lvl + wob * Math.sin((wx - p.x) * 0.05 + G.t * 2);
-        const [px, py] = cam.toScreen(wx, top);
-        const h = (f - top) * cam.zoom;
-        const sw = Math.ceil(step * cam.zoom) + 1;
-        ctx.fillStyle = c.b; ctx.fillRect(Math.round(px), Math.round(py), sw, Math.round(h + 4 * cam.zoom));
-        ctx.fillStyle = c.a; ctx.fillRect(Math.round(px), Math.round(py), sw, Math.max(1, Math.round(h * 0.5)));
-        ctx.fillStyle = c.edge; ctx.fillRect(Math.round(px), Math.round(py), sw, Math.max(1, Math.round(cam.zoom)));
+      const [sx, sy] = cam.toScreen(p.x, fy);
+      const hw = p.w / 2 * z;
+      // the bed: a low band of vapour hugging the floor of the dip
+      for (let k = 0; k < 6; k++) {
+        const u = (k + 0.5) / 6, bx = sx - hw + u * hw * 2, drift = Math.sin(G.t * 0.7 + p.seed * 7 + k) * 3 * z;
+        this.puff(ctx, bx + drift, sy - 5 * z, (7 + Math.sin(G.t + k) * 1.5) * z, c.smoke, 0.14);
       }
-      // bubbles coming up out of it
-      if (chance(0.02 * (p.kind === 'sludge' ? 1 : 2.5))) G.fx.bubbles(p.x + rand(-p.w / 2, p.w / 2), fy - 6, 1, 6);
-      // the drums, for the ones that are drums
+      // the scum line where it meets the water
+      ctx.globalAlpha = 0.35; ctx.fillStyle = c.scum;
+      ctx.fillRect(Math.round(sx - hw), Math.round(sy - 2 * z), Math.round(hw * 2), Math.max(1, Math.round(z)));
+      ctx.globalAlpha = 1;
+      // the drums themselves, for the pools that have them
       if (p.kind === 'rads') {
         const n = 2 + Math.floor(p.seed * 3);
         for (let k = 0; k < n; k++) {
           const dx = p.x + (ihash(p.i * 9 + k, 77) - 0.5) * p.w * 0.8;
           const [bx, by] = cam.toScreen(dx, World.floorY(dx));
-          const bw = Math.round(9 * cam.zoom), bh = Math.round(14 * cam.zoom);
-          const tip = ihash(p.i * 9 + k, 313) > 0.5;
+          const bw = Math.round(9 * z), bh = Math.round(14 * z), tip = ihash(p.i * 9 + k, 313) > 0.5;
           ctx.save(); ctx.translate(Math.round(bx), Math.round(by)); if (tip) ctx.rotate(1.35);
           ctx.fillStyle = '#4a5a2a'; ctx.fillRect(-bw / 2, -bh, bw, bh);
-          ctx.fillStyle = '#39481f'; ctx.fillRect(-bw / 2, -bh + Math.round(3 * cam.zoom), bw, Math.max(1, Math.round(cam.zoom)));
-          ctx.fillRect(-bw / 2, -Math.round(4 * cam.zoom), bw, Math.max(1, Math.round(cam.zoom)));
-          ctx.fillStyle = '#d8ff60'; ctx.fillRect(-Math.round(2 * cam.zoom), -bh + Math.round(6 * cam.zoom), Math.round(4 * cam.zoom), Math.round(4 * cam.zoom));
+          ctx.fillStyle = '#39481f'; ctx.fillRect(-bw / 2, -bh + Math.round(3 * z), bw, Math.max(1, Math.round(z))); ctx.fillRect(-bw / 2, -Math.round(4 * z), bw, Math.max(1, Math.round(z)));
+          ctx.fillStyle = '#d8ff60'; ctx.fillRect(-Math.round(2 * z), -bh + Math.round(6 * z), Math.round(4 * z), Math.round(4 * z));
           ctx.restore();
         }
-        G.fx.glow && G.fx.glow(p.x, fy - 10, p.w * 0.4, '#3ef07a', 0.08);
       }
     });
   },
-  // the haze over the top of it, drawn after the animals so they wade in it
+  // the rising smoke, drawn after the animals so they wade through it
   drawOver(ctx, cam) {
-    const L = cam.x - G.W / cam.zoom, R = cam.x + G.W / cam.zoom;
+    const L = cam.x - G.W / cam.zoom, R = cam.x + G.W / cam.zoom, z = cam.zoom, t = G.t;
     this.each(L, R, p => {
       const c = this.COL[p.kind], fy = World.floorY(p.x);
       const [sx, sy] = cam.toScreen(p.x, fy);
-      const hw = p.w / 2 * cam.zoom, hh = 46 * cam.zoom;
-      const g = ctx.createLinearGradient(0, sy - hh, 0, sy + 4);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, c.fog);
-      ctx.fillStyle = g; ctx.fillRect(Math.round(sx - hw), Math.round(sy - hh), Math.round(hw * 2), Math.round(hh + 4));
+      const hw = p.w / 2 * z;
+      const N = p.kind === 'sludge' ? 7 : 11, rise = (p.kind === 'sludge' ? 34 : 60) * z, period = p.kind === 'sludge' ? 7 : 5;
+      for (let k = 0; k < N; k++) {
+        // each puff lives on its own loop: born at the bed, climbs, spreads, fades
+        const ph = ((t / period) + ihash(p.i * 31 + k, 5)) % 1;
+        const bx = sx - hw * 0.8 + ihash(p.i * 31 + k, 11) * hw * 1.6 + Math.sin(t * 0.6 + k * 1.7 + p.seed * 9) * 6 * z * ph;
+        const by = sy - 4 * z - ph * rise;
+        const r = (4 + ph * 9) * z, a = (1 - ph) * ph * 4 * (p.kind === 'rads' ? 0.34 : 0.28);
+        this.puff(ctx, bx, by, r, c.smoke, a);
+      }
+      if (c.glow) {
+        G.fx.glow && G.fx.glow(p.x, fy - 10, p.w * 0.4, c.glow, 0.06);
+        // motes: a few bright specks lifting through the smoke
+        ctx.fillStyle = c.glow;
+        for (let k = 0; k < 6; k++) { const ph = ((t / 3) + ihash(p.i * 7 + k, 23)) % 1; ctx.globalAlpha = (1 - ph) * 0.8; ctx.fillRect(Math.round(sx - hw * 0.6 + ihash(p.i * 7 + k, 29) * hw * 1.2), Math.round(sy - 6 * z - ph * 50 * z), Math.max(1, Math.round(z)), Math.max(1, Math.round(z))); }
+        ctx.globalAlpha = 1;
+      }
     });
   },
 };

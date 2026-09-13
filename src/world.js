@@ -18,10 +18,11 @@ const World = {
     }
     const B = Biome.at(x); if (!B.indoor) return null;
     const r = B.roof + Math.sin(x * 0.02) * 3 + vnoise(x * 0.05, 21) * 6;
-    if (B.id === 'sewer' && x > -320) return r - (x + 320) * 0.45;
     return r;
   },
-  isIndoor(x) { const r = this.roofY(x); return r !== null && r < -20; },
+  // Anywhere with a roof over it is indoors, however low that roof is: a
+  // squeeze with the crown a hand above the water is still under the city.
+  isIndoor(x) { const r = this.roofY(x); if (r === null) return false; const B = Biome.at(x); return !!B.indoor || r < -20; },
   isLand(x) { return this.floorY(x) < 0; },
   surface(x) { return Water.surface(x); },
   // The wave surface in screen space, sampled once a frame and shared by the
@@ -643,9 +644,39 @@ const World = {
       for (let sx = off; sx < W; sx += Math.max(6, Math.round(14 * z))) ctx.fillRect(sx, sy, 1, course);
     }
     ctx.globalAlpha = 1;
-    // pilasters: shallow piers standing off the wall every 150 units
     const leftW = cam.toWorldX(-80), rightW = cam.toWorldX(W + 80);
+    // Under Rome the wall is not municipal brick. It is tufa block laid two
+    // thousand years ago, with blind arches every so often and, in the
+    // necropolis, rows of niches with what the niches were cut for still in
+    // them. Drawn behind everything, in the wall's own tones.
+    if (B.roman) {
+      const arch = shade(B.ground[2], 0.78), archL = shade(B.ground[2], 1.5), hole = shade(B.ground[2], 0.36);
+      for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
+        const [ax] = cam.toScreen(wx, 0), aw = Math.round(38 * z), ah = Math.round(70 * z);
+        const roofS = cam.toScreen(wx, this.roofY(wx) || -100)[1];
+        const ay = Math.round(roofS + 18 * z);
+        // the arch: a dark opening with a lit voussoir ring, pixel-stepped
+        ctx.fillStyle = hole; ctx.fillRect(Math.round(ax - aw / 2), ay + Math.round(aw / 2), aw, ah);
+        for (let k = 0; k <= 8; k++) { const a = Math.PI + k * (Math.PI / 8); const rx = ax + Math.cos(a) * aw / 2, ry = ay + aw / 2 + Math.sin(a) * aw / 2; ctx.fillStyle = k % 2 ? arch : archL; ctx.fillRect(Math.round(rx - 2 * z), Math.round(ry - 2 * z), Math.max(2, Math.round(4 * z)), Math.max(2, Math.round(4 * z))); }
+        for (let yy = ay + aw / 2; yy < ay + aw / 2 + ah; yy += Math.max(3, Math.round(6 * z))) { ctx.fillStyle = hole; ctx.fillRect(Math.round(ax - aw / 2), Math.round(yy), aw, Math.max(1, Math.round(z))); }
+        // ossuary niches in the piers between arches, three rows, skulls in most
+        if (B.id === 'necropolis') {
+          for (let row = 0; row < 3; row++) for (let col = -1; col <= 1; col += 2) {
+            const nx = Math.round(ax + col * (aw / 2 + 14 * z)), ny = Math.round(ay + 20 * z + row * 22 * z);
+            const nw = Math.round(9 * z), nh = Math.round(11 * z);
+            ctx.fillStyle = hole; ctx.fillRect(nx - nw / 2, ny, nw, nh);
+            ctx.fillStyle = archL; ctx.fillRect(nx - nw / 2, ny, nw, Math.max(1, Math.round(z)));
+            if (ihash(Math.floor(wx / 120) * 7 + row * 3 + col, 55) < 0.72) {
+              ctx.fillStyle = '#b8b09a'; ctx.fillRect(nx - Math.round(2.5 * z), ny + Math.round(3 * z), Math.round(5 * z), Math.round(5 * z));
+              ctx.fillStyle = '#2a2418'; ctx.fillRect(nx - Math.round(1.6 * z), ny + Math.round(4.4 * z), Math.max(1, Math.round(1.2 * z)), Math.max(1, Math.round(1.2 * z))); ctx.fillRect(nx + Math.round(0.4 * z), ny + Math.round(4.4 * z), Math.max(1, Math.round(1.2 * z)), Math.max(1, Math.round(1.2 * z)));
+            }
+          }
+        }
+      }
+    }
+    // pilasters: shallow piers standing off the wall every 150 units
     for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
+      if (B.roman) break;
       const [sx] = cam.toScreen(wx, 0), pw = Math.max(2, Math.round(9 * z));
       ctx.globalAlpha = 0.4;
       ctx.fillStyle = wallD; ctx.fillRect(Math.round(sx - pw / 2), 0, pw, H);
@@ -686,6 +717,23 @@ const World = {
     // ribs, hanging lamps and dripping pipes
     for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
       const r = this.roofY(wx); if (r === null) continue;
+      if (B.roman) {
+        // a rib of the vault, and one guttering torch bracket per bay
+        const [sx, sy] = cam.toScreen(wx, r), fy = cam.toScreen(wx, this.floorY(wx))[1];
+        ctx.fillStyle = shade(B.ground[0], 0.7); ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy), Math.round(8 * z), Math.round(fy - sy));
+        ctx.fillStyle = shade(B.ground[0], 1.15); ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy), Math.max(1, Math.round(1.4 * z)), Math.round(fy - sy));
+        const lit = ihash(Math.floor(wx / 150), 19) > 0.45;
+        const tx = sx + 40 * z, ty = sy + 30 * z;
+        ctx.fillStyle = '#3a3026'; ctx.fillRect(Math.round(tx - z), Math.round(ty), Math.max(1, Math.round(2 * z)), Math.round(9 * z));
+        if (lit) {
+          const fl2 = Math.sin(this.t * 13 + wx) * 0.5 + 0.5;
+          ctx.fillStyle = '#ff9a30'; ctx.fillRect(Math.round(tx - 2 * z), Math.round(ty - 4 * z - fl2 * 2 * z), Math.round(4 * z), Math.round(4 * z + fl2 * 2 * z));
+          ctx.fillStyle = '#ffe080'; ctx.fillRect(Math.round(tx - z), Math.round(ty - 2 * z), Math.round(2 * z), Math.round(2 * z));
+          ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(tx, ty, 2, tx, ty, 60 * z); g.addColorStop(0, 'rgba(255,150,60,0.20)'); g.addColorStop(1, 'rgba(255,150,60,0)'); ctx.fillStyle = g; ctx.fillRect(tx - 60 * z, ty - 60 * z, 120 * z, 120 * z); ctx.globalCompositeOperation = 'source-over';
+          if (chance(0.03)) G.fx.add({ type: 'smoke', x: wx + 40, y: r + 26, vx: rand(-3, 3), vy: -12, s: 1.2, color: '#4a4038', life: 1.6, t: 0, maxLife: 1.6 });
+        }
+        continue;
+      }
       const [sx, sy] = cam.toScreen(wx, r), fy = cam.toScreen(wx, this.floorY(wx))[1];
       ctx.fillStyle = shade(B.ground[0], 0.75); ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy), Math.round(6 * z), Math.round(fy - sy));
       ctx.fillStyle = shade(B.ground[0], 1.1); ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy), Math.max(1, Math.round(z)), Math.round(fy - sy));
@@ -1323,6 +1371,95 @@ const World = {
           for (let j = -2; j <= 2; j++) { ctx.beginPath(); ctx.moveTo(sx + j * 2 * z, top); ctx.quadraticCurveTo(sx + j * 12 * d.s * z, top + 14 * z, sx + j * 16 * d.s * z + d.dir * 6 * z, sy + 12 * z); ctx.stroke(); }
           const mw2 = Math.round(38 * d.s);
           Leaf.draw(ctx, Leaf.mass(mw2, Math.round(mw2 * 0.55), '#1b3d22', '#2f6a34', '#55a04a', d.v * 17 + 5), sx, top - 10 * z, z);
+          break; }
+        // ---- the catacombs -----------------------------------------------
+        case 'garbage': if (layer !== 1) break; {
+          // what floats: bottles, a bag, a can, a plank, a shoe, a foam cup.
+          // Each one rides the surface and turns a little in the current.
+          const wy = cam.toScreen(d.x, this.surface(d.x))[1] + Math.sin(t * 1.4 + d.ph) * 1.2 * z;
+          const s2 = d.s * z, r2 = (x, y, w2, h2, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(sx + x * s2), Math.round(wy + y * s2), Math.max(1, Math.round(w2 * s2)), Math.max(1, Math.round(h2 * s2))); };
+          const tilt = Math.sin(t * 0.9 + d.ph) * 1.5;
+          switch (d.v) {
+            case 0: r2(-2, -7, 4, 7, '#3a7a5a'); r2(-1, -9, 2, 2, '#2a5a44'); r2(-2, -7, 1, 5, '#8ad0a8'); r2(-2, -2, 4, 2, '#1f4a36'); break;      // green bottle
+            case 1: r2(-6, -4 + tilt, 12, 4, '#cfd4d8'); r2(-4, -6 + tilt, 8, 2, '#e8ecee'); r2(-6, -4 + tilt, 12, 1, '#f4f6f8'); r2(-3, -3 + tilt, 2, 1, '#9aa4aa'); break;   // bag
+            case 2: r2(-3, -5, 6, 5, '#c04030'); r2(-3, -5, 6, 1, '#e8e0d0'); r2(-2, -3, 1, 2, '#ffffff'); r2(-3, -1, 6, 1, '#7a2018'); break;    // can
+            case 3: r2(-9, -2, 18, 3, '#6a5034'); r2(-9, -2, 18, 1, '#8a6a44'); r2(-6, -1, 1, 1, '#3a2814'); r2(3, -1, 1, 1, '#3a2814'); break; // plank
+            case 4: r2(-4, -4, 8, 4, '#2a2a34'); r2(-4, -5, 5, 1, '#3a3a48'); r2(2, -6, 2, 2, '#2a2a34'); r2(-4, -1, 8, 1, '#e0e0e0'); break;   // shoe
+            default: r2(-3, -6, 6, 6, '#eeeee4'); r2(-3, -6, 1, 6, '#ffffff'); r2(-3, -1, 6, 1, '#b8b8a8'); r2(-4, -6, 8, 1, '#ffffff'); break;   // foam cup
+          }
+          // the ring it leaves on the water
+          ctx.globalAlpha = 0.25; ctx.fillStyle = '#e8f0e0'; ctx.fillRect(Math.round(sx - 7 * s2), Math.round(wy), Math.round(14 * s2), Math.max(1, Math.round(z))); ctx.globalAlpha = 1;
+          break; }
+        case 'bones': if (layer !== 0) break; {
+          // a pile: long bones lying across each other, a rib arch, and a skull
+          // sitting on top of it looking at nothing
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          const bone = '#d8d0b8', boneD = '#a89e84', boneL = '#f0ead8';
+          for (let i = 0; i < d.n; i++) {
+            const ox = (ihash(i, seed) - 0.5) * 22 * s2, len = (8 + ihash(i, seed + 3) * 8) * s2, oy = -(1 + ihash(i, seed + 5) * 3) * s2;
+            const tiltB = (ihash(i, seed + 7) - 0.5) * 0.7;
+            ctx.save(); ctx.translate(Math.round(sx + ox), Math.round(sy + oy)); ctx.rotate(tiltB);
+            ctx.fillStyle = boneD; ctx.fillRect(Math.round(-len / 2), 0, Math.round(len), Math.max(1, Math.round(1.6 * s2)));
+            ctx.fillStyle = bone; ctx.fillRect(Math.round(-len / 2), -Math.max(1, Math.round(s2 * 0.6)), Math.round(len), Math.max(1, Math.round(s2)));
+            ctx.fillStyle = boneL; ctx.fillRect(Math.round(-len / 2), -Math.max(1, Math.round(s2 * 0.6)), Math.round(len * 0.4), Math.max(1, Math.round(s2 * 0.5)));
+            // the knuckle ends
+            ctx.fillStyle = bone; ctx.fillRect(Math.round(-len / 2 - s2), -Math.round(s2), Math.max(1, Math.round(2 * s2)), Math.max(1, Math.round(3 * s2))); ctx.fillRect(Math.round(len / 2 - s2), -Math.round(s2), Math.max(1, Math.round(2 * s2)), Math.max(1, Math.round(3 * s2)));
+            ctx.restore();
+          }
+          if (d.v > 0) {
+            // ribs: a fan of curved strokes, pixel-stepped
+            const rx = sx - 4 * s2, ry = sy - 3 * s2;
+            ctx.fillStyle = bone;
+            for (let r0 = 0; r0 < 4; r0++) for (let k = 0; k < 6; k++) { const a = 0.4 + k * 0.28; ctx.fillRect(Math.round(rx + r0 * 3 * s2 + Math.cos(a) * 5 * s2), Math.round(ry - Math.sin(a) * 6 * s2), Math.max(1, Math.round(s2)), Math.max(1, Math.round(s2))); }
+          }
+          // the skull
+          const kx = sx + (ihash(seed, 9) - 0.5) * 10 * s2, ky = sy - 5 * s2;
+          ctx.fillStyle = boneD; ctx.fillRect(Math.round(kx - 3 * s2), Math.round(ky - 2 * s2), Math.round(6 * s2), Math.round(6 * s2));
+          ctx.fillStyle = bone; ctx.fillRect(Math.round(kx - 3 * s2), Math.round(ky - 3 * s2), Math.round(6 * s2), Math.round(4 * s2));
+          ctx.fillStyle = boneL; ctx.fillRect(Math.round(kx - 3 * s2), Math.round(ky - 3 * s2), Math.round(3 * s2), Math.max(1, Math.round(s2)));
+          ctx.fillStyle = '#1a1410'; ctx.fillRect(Math.round(kx - 2 * s2), Math.round(ky - s2), Math.max(1, Math.round(1.4 * s2)), Math.max(1, Math.round(1.4 * s2))); ctx.fillRect(Math.round(kx + 0.6 * s2), Math.round(ky - s2), Math.max(1, Math.round(1.4 * s2)), Math.max(1, Math.round(1.4 * s2)));
+          ctx.fillRect(Math.round(kx - s2), Math.round(ky + 1.4 * s2), Math.max(1, Math.round(2 * s2)), Math.max(1, Math.round(s2)));
+          for (let q = 0; q < 3; q++) ctx.fillRect(Math.round(kx - 2 * s2 + q * 1.6 * s2), Math.round(ky + 2.6 * s2), Math.max(1, Math.round(s2 * 0.6)), Math.max(1, Math.round(s2)));
+          break; }
+        case 'tomb': if (layer !== 0) break; {
+          // a sarcophagus on the ledge: stone chest, heavy lid, an inscription
+          // panel, and if the lid is off, what is left inside
+          const w2 = 30 * z, h2 = 14 * z, x0 = Math.round(sx - w2 / 2), y0 = Math.round(sy - h2);
+          const st = '#8a8272', stD = '#5e574a', stL = '#aca492';
+          ctx.fillStyle = stD; ctx.fillRect(x0, y0, Math.round(w2), Math.round(h2 + z));
+          ctx.fillStyle = st; ctx.fillRect(x0 + Math.round(z), y0, Math.round(w2 - 2 * z), Math.round(h2 - z));
+          ctx.fillStyle = stL; ctx.fillRect(x0 + Math.round(z), y0, Math.round(w2 - 2 * z), Math.max(1, Math.round(z)));
+          // inscription panel
+          ctx.fillStyle = stD; ctx.fillRect(x0 + Math.round(6 * z), y0 + Math.round(4 * z), Math.round(w2 - 12 * z), Math.round(6 * z));
+          ctx.fillStyle = '#3a3428'; for (let k = 0; k < 4; k++) ctx.fillRect(x0 + Math.round((8 + k * 4) * z), y0 + Math.round(6 * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(z)));
+          if (d.open) {
+            // lid slid off and leaning against the side; bones inside
+            ctx.fillStyle = st; ctx.save(); ctx.translate(x0 + Math.round(w2 + 2 * z), y0 + Math.round(h2)); ctx.rotate(-1.15); ctx.fillRect(0, -Math.round(4 * z), Math.round(w2 * 0.9), Math.round(4 * z)); ctx.restore();
+            ctx.fillStyle = '#1a160f'; ctx.fillRect(x0 + Math.round(2 * z), y0 - Math.round(2 * z), Math.round(w2 - 4 * z), Math.round(3 * z));
+            ctx.fillStyle = '#d8d0b8'; ctx.fillRect(x0 + Math.round(5 * z), y0 - Math.round(z), Math.round(4 * z), Math.round(2 * z)); ctx.fillRect(x0 + Math.round(12 * z), y0 - Math.round(z), Math.round(9 * z), Math.max(1, Math.round(z)));
+          } else {
+            // the lid, a pitched slab with a lit ridge
+            ctx.fillStyle = st; ctx.fillRect(x0 - Math.round(z), y0 - Math.round(4 * z), Math.round(w2 + 2 * z), Math.round(4 * z));
+            ctx.fillStyle = stL; ctx.fillRect(x0 - Math.round(z), y0 - Math.round(4 * z), Math.round(w2 + 2 * z), Math.max(1, Math.round(z)));
+            ctx.fillStyle = stD; ctx.fillRect(x0 - Math.round(z), y0 - Math.round(z), Math.round(w2 + 2 * z), Math.max(1, Math.round(z)));
+          }
+          if (d.v) { ctx.fillStyle = '#6a7a4a'; for (let k = 0; k < 4; k++) ctx.fillRect(x0 + Math.round((3 + k * 7) * z), y0 + Math.round((9 + (k % 2) * 3) * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z))); } // moss
+          break; }
+        case 'urn': if (layer !== 0) break; {
+          // amphorae: a pale clay body, two handles, a dark mouth, some broken
+          const s2 = d.s * z, seed = Math.floor(d.x);
+          for (let i = 0; i < d.n; i++) {
+            const ox = (i - (d.n - 1) / 2) * 11 * s2, broken = ihash(i, seed + 2) < 0.3, hh = (broken ? 7 : 12) * s2;
+            const bx = Math.round(sx + ox), by = Math.round(sy);
+            ctx.fillStyle = '#8a6a48'; ctx.fillRect(bx - Math.round(3.5 * s2), by - Math.round(hh), Math.round(7 * s2), Math.round(hh));
+            ctx.fillStyle = '#a88460'; ctx.fillRect(bx - Math.round(3.5 * s2), by - Math.round(hh), Math.round(2 * s2), Math.round(hh));
+            ctx.fillStyle = '#5e4630'; ctx.fillRect(bx - Math.round(3.5 * s2), by - Math.round(hh * 0.45), Math.round(7 * s2), Math.max(1, Math.round(s2)));
+            if (!broken) {
+              ctx.fillStyle = '#6e5238'; ctx.fillRect(bx - Math.round(2 * s2), by - Math.round(hh + 2 * s2), Math.round(4 * s2), Math.round(2 * s2));
+              ctx.fillStyle = '#1a140c'; ctx.fillRect(bx - Math.round(1.5 * s2), by - Math.round(hh + 2 * s2), Math.round(3 * s2), Math.max(1, Math.round(s2)));
+              ctx.fillStyle = '#8a6a48'; ctx.fillRect(bx - Math.round(5 * s2), by - Math.round(hh - s2), Math.max(1, Math.round(1.5 * s2)), Math.round(4 * s2)); ctx.fillRect(bx + Math.round(3.5 * s2), by - Math.round(hh - s2), Math.max(1, Math.round(1.5 * s2)), Math.round(4 * s2));
+            } else { ctx.fillStyle = '#5e4630'; for (let k = 0; k < 3; k++) ctx.fillRect(bx - Math.round(3 * s2) + Math.round(k * 2.4 * s2), by - Math.round(hh + (k % 2) * s2), Math.max(1, Math.round(s2)), Math.max(1, Math.round(2 * s2))); }
+          }
           break; }
       }
     }

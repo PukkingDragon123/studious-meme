@@ -44,25 +44,35 @@ const SEWER_SECTION = [
   [-4560, 50, -120], [-4420, 120, -96], [-4280, 170, -130], [-4140, 140, -150],
   [-4000, 80, -120], [-3860, 40, -100], [-3720, 90, -80], [-3580, 130, -70],
   [-3440, 96, -90], [-3300, 40, -110], [-3220, -40, -130], [-3140, -58, -140],
-  // ---- CONTAINMENT: the room you wake up in, and the wall you go out through
-  [-3060, -62, -230], [-2920, -60, -244], [-2780, -60, -240], [-2640, -58, -206],
-  [-2520, -54, -148], [-2430, -16, -92],                          // the breach, half flooded
-  // ---- THE ESCAPE RUN --------------------------------------------------
-  // Everything about this stretch is headroom. It is the first thing anyone
-  // plays, so it teaches the system's whole grammar in nine hundred feet:
-  // crawl, surface, haul out, climb, drop into the deep, crawl again.
-  [-2340, 70, -30], [-2250, 120, -18],                            // first pool, ceiling right down
-  [-2160, 150, -22], [-2070, 100, -34],
-  [-1980, -30, -108], [-1910, -40, -114],                         // haul out and get your breath
-  [-1830, 60, -26], [-1740, 130, -14],                            // a hand of air, and that is all
-  [-1650, 200, -70], [-1550, 240, -150],                          // it opens overhead and it is deep
-  [-1450, 180, -100], [-1350, 100, -40],
-  [-1250, -28, -104], [-1180, -38, -112],                         // a ledge that climbs
-  [-1100, 50, -24], [-1010, 120, -16],                            // the tightest run in the escape
-  [-920, 190, -60], [-830, 250, -170], [-740, 290, -230],         // the sump under the road
-  [-650, 230, -170], [-560, 150, -80], [-470, 70, -30],
-  [-380, -26, -100], [-320, -34, -106],                           // last dry ledge before the grate
-  [-240, 44, -26], [-170, 100, -20], [-100, 70, -50], [-40, 54, -110],
+  // ---- THE CATACOMBS: a labyrinth under Rome. Not a pipe you swim along but
+  // a string of vaults, each one shut off from the next by a gap only a small
+  // animal fits through. You are tipped in at the cistern and the only way is
+  // east, through the ossuary, the tomb hall, the drowned forum and the
+  // columbarium, to a gate somebody bolted shut two thousand years after the
+  // people who built this stopped caring.
+  // -- the cistern: where you land. deep, vaulted, and full of what floats
+  [-3060, 120, -150], [-2960, 170, -180], [-2860, 200, -176], [-2760, 160, -150],
+  [-2700, 60, -60],
+  [-2660, 26, -8], [-2600, 24, -6], [-2560, 28, -10],                // the first squeeze
+  // -- the ossuary: bone on the floor and bone in the walls
+  [-2500, 80, -80], [-2420, 120, -120], [-2360, -30, -130], [-2300, -34, -136], // a dry shelf of bone
+  [-2240, 70, -90], [-2200, 100, -110],
+  [-2150, 34, -12], [-2100, 30, -10], [-2060, 36, -14],              // crawl
+  // -- the tomb hall: sarcophagi on a ledge above deep still water
+  [-2000, 140, -160], [-1920, 180, -200], [-1860, -40, -190], [-1790, -44, -196], // the tomb ledge
+  [-1740, 120, -170], [-1700, 160, -150],
+  [-1650, 22, -5], [-1600, 20, -4], [-1570, 24, -8],                  // the tightest squeeze
+  // -- the drowned forum: the floor falls away, the ceiling stays low
+  [-1520, 120, -110], [-1440, 220, -130], [-1360, 280, -120], [-1280, 240, -140],
+  [-1210, 120, -100],
+  [-1160, 36, -16], [-1110, 32, -12], [-1080, 38, -18],               // crawl
+  // -- the columbarium: niches in the walls, a ledge of urns
+  [-1020, 100, -130], [-940, 130, -150], [-880, -36, -160], [-810, -40, -166], // the urn ledge
+  [-760, 90, -120], [-720, 120, -110],
+  [-680, 28, -9], [-620, 26, -7], [-580, 30, -12],                     // last squeeze
+  // -- the outflow: the way out, if it opens
+  [-520, 80, -90], [-440, 110, -110], [-360, 100, -100], [-280, 80, -90],
+  [-200, 60, -110], [-100, 70, -60], [-40, 54, -110],
   [0, 46, -190],
 ];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
@@ -219,24 +229,24 @@ const BIOMES = [
     structures: [], music: 0.55,
   },
   {
-    id: 'lab', name: 'CONTAINMENT', x0: -3200, x1: -2260,
-    sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
-    parallax: ['block', 'block', 'block'], ground: ['#3a4448', '#2a3236', '#1a2024'], grass: '#3a4448',
-    indoor: true, roof: -150, dark: 0.55,
-    plants: [['rubble', 1.2], ['pipe', 1.4], ['crate', 1]],
-    fish: [], land: [['rat', 3]], structures: [],
+    id: 'cistern', name: 'THE CISTERN', x0: -3200, x1: -1700, roman: true,
+    sky: ['#0c1210', '#1a1e16'], water: ['#5a6a3a', '#33401f', '#12180a'], scum: '#8a8a3a', fog: '#1e2018',
+    parallax: ['block', 'block', 'block'], ground: ['#5a5244', '#3e392e', '#26221b'], grass: '#4a5a34',
+    indoor: true, roof: -150, dark: 0.55, toxic: 0.22, flora: '#7a8a3a', floraMix: 0.5,
+    plants: [['garbage', 3.4], ['bones', 0.7], ['algae', 1.6], ['rubble', 1.6], ['urn', 1.2], ['weed', 0.6]],
+    fish: [['minnow', 3], ['shiner', 2], ['walkingcat', 1.2], ['cavefish', 1.4]],
+    land: [['rat', 5], ['bigrat', 1.2]], structures: [],
     music: 0.9,
   },
   {
-    id: 'sewer', name: 'STORM SEWER', x0: -2260, x1: -120,
-    sky: ['#0d1a1c', '#1a2a2c'], water: ['#4a7a5a', '#26482e', '#0c1a12'], scum: '#5a7a3a', fog: '#1c2c2e',
-    parallax: ['block', 'pipe', 'block'], ground: ['#41474a', '#31373a', '#22282a'], grass: '#3f5a3a',
-    indoor: true, roof: -120, dark: 0.45,
-    plants: [['trash', 2], ['rubble', 1.6], ['algae', 1.6], ['pipe', 1.2], ['weed', 1]],
-    fish: [['minnow', 3], ['walkingcat', 2], ['shiner', 2]],
-    land: [['rat', 6], ['opossum', 1]],
-    structures: [],
-    music: 0.6,
+    id: 'necropolis', name: 'THE NECROPOLIS', x0: -1700, x1: -120, roman: true,
+    sky: ['#0e1010', '#1c1a16'], water: ['#556236', '#2e381c', '#101408'], scum: '#8a8a3a', fog: '#1e1c18',
+    parallax: ['block', 'block', 'block'], ground: ['#5e5446', '#403a2e', '#28231b'], grass: '#4a5a34',
+    indoor: true, roof: -140, dark: 0.6, toxic: 0.14, flora: '#7a8a3a', floraMix: 0.5,
+    plants: [['bones', 1.8], ['tomb', 1.6], ['urn', 1.8], ['garbage', 1.8], ['algae', 1.4], ['rubble', 1.4]],
+    fish: [['minnow', 2.4], ['cavefish', 2], ['sludgecarp', 1.2], ['walkingcat', 1.4]],
+    land: [['rat', 5], ['bigrat', 1.6], ['opossum', 0.6]], structures: [],
+    music: 0.7,
   },
   {
     id: 'outfall', name: 'THE OUTFALL', x0: -120, x1: 1100,
@@ -427,6 +437,11 @@ const PLANT_RULES = {
   rock: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'rock', x, y, v: r() < 0.5 ? 0 : 1, s: 1.1 + r() * 1.8 }) },
   log: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'log', x, y, s: 1 + r() * 1.2 }) },
   trash: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'trash', x, y, v: Math.floor(r() * 4), s: 0.9 + r() * 0.6 }) },
+  // --- the catacombs: what two thousand years leave on the floor and the surface
+  garbage: { land: false, minD: 14, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'garbage', x: x + k * 9 + r() * 6, y: 0, v: Math.floor(r() * 6), ph: r() * TAU, s: 0.9 + r() * 0.4 }); } },
+  bones: { make: (o, x, y, r) => o.push({ type: 'bones', x, y, n: 2 + Math.floor(r() * 3), v: Math.floor(r() * 3), s: 0.5 + r() * 0.4 }) },
+  tomb: { land: true, make: (o, x, y, r) => o.push({ type: 'tomb', x, y, v: Math.floor(r() * 2), open: r() < 0.4 }) },
+  urn: { land: true, make: (o, x, y, r) => o.push({ type: 'urn', x, y, n: 1 + Math.floor(r() * 3), s: 0.8 + r() * 0.5 }) },
   rubble: { land: true, make: (o, x, y, r) => o.push({ type: 'rubble', x, y, n: 2 + Math.floor(r() * 4), s: 0.8 + r() * 0.7 }) },
   pipe: { land: true, make: (o, x, y, r) => o.push({ type: 'pipe', x, y, s: 0.9 + r() * 0.7 }) },
   root: { land: false, minD: 4, maxD: 140, make: (o, x, y, r) => o.push({ type: 'roots', x, y, n: 3 + Math.floor(r() * 4), len: 20 + r() * 44 }) },

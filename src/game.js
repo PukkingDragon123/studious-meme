@@ -226,7 +226,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -314,7 +314,6 @@ const G = {
     bay: [['buoy', -420], ['buoy', 180], ['buoy', 560], ['wreck', -260], ['crabtrap', 340]],
     seawall: [['buoy', -360], ['dock', 300], ['wreck', -560], ['sign', 120]],
     // the system: nobody decorates a sewer, but everybody leaves things in it
-    outfall: [['console', -180], ['sign', 160], ['grate', -420]],
     undercroft: [['campfire', 60], ['console', -260], ['sign', 220], ['wreck', 420]],
     shaft: [['console', 180], ['sign', -180], ['wreck', 380], ['grate', -420]],
     junction: [['console', -260], ['console', 320], ['sign', 120], ['wreck', -520], ['grate', 560]],
@@ -357,32 +356,26 @@ const G = {
     if (mx !== null) { const lead = new Mullet(mx, 30); this.add(lead); for (let i = 1; i < 5; i++) this.add(new Mullet(mx + rand(-30, 30), 30 + rand(-14, 14), lead)); }
     const dx = pick(120, 340); if (dx !== null && !World.isIndoor(dx)) Spawn.duck(dx);
   },
-  // ---------- the intro: born in a tank, out through the sewer ----------
+  // ---------- the intro: moved in a tank, out through the glass ----------
+  // The first run does not start in a room you break out of. It starts on a
+  // trolley, in a transfer tank, and goes through the glass, across a floor,
+  // down a drain and twenty seconds of chute into the Roman level. All of that
+  // is the opening sequence; what it lands you in is the cistern.
   beginIntro() {
-    const P = this.player;
-    const TANK = -2520;
-    this.intro = { phase: 'tank', t: 0, taps: 0, need: 5, prompt: 0, shake: 0 };
-    World.ensure(TANK, 2600);
-    const tank = new Structure(TANK, 'tank'); this.add(tank); this.intro.tank = tank;
-    // the people who made you, watching through the glass
-    for (const [ox, dir] of [[-72, 1], [-104, 1], [78, -1]]) {
-      const s2 = new LandAnimal(TANK + ox, 'scientist'); s2.facing = dir; s2.state = 'idle'; s2.stateT = 99; s2.watching = true; this.add(s2);
-    }
-    const desk = new Structure(TANK + 150, 'console'); this.add(desk);
-    // the grate at the end of the run
-    const grate = new Structure(-150, 'grate'); this.add(grate); this.intro.grate = grate;
-    // a few rats and roaches to eat on the way out
-    for (let i = 0; i < 9; i++) { const rx = -2150 + i * 210 + rand(-40, 40); if (World.floorY(rx) < -2) this.add(new LandAnimal(rx, 'rat')); else this.add(new Bottom(rx, 'roach')); }
-    for (let i = 0; i < 6; i++) { const rx = -2000 + i * 300; Spawn.school(rx, clamp(World.floorY(rx) - 12, 6, 30), chance(0.5) ? 'minnow' : 'shiner'); }
-    // the thing in the tank is a hatchling, and it is the smallest the game
-    // ever lets you be
-    const sz = (this.stage && this.stage.size) || 0.3;
+    const P = this.player, st = this.stage, x = st.x;
+    const sz = (st && st.size) || 0.22;
     P.size = sz; P.sizeTarget = sz; P.mass = sizeToMass(sz); P.tier = tierFor(sz);
-    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 92;
-    P.x = TANK; P.y = World.floorY(TANK) - 42; P.angle = -0.3; P.facing = 1; P.frozen = true; P.hidden = false;
-    P.chain.reset(P.x, P.y, -0.3);
-    this.cam.x = TANK; this.cam.y = World.floorY(TANK) - 46; this.cam.zoom = 2.6;
-    this.state = 'intro'; this.banner = null;
+    P.recomputeStats(); P.hp = P.maxHp; P.hunger = 92; P.sheds = 0;
+    World.ensure(x, 2600); Water.init(x); Mud.init(x);
+    P.x = x; P.y = Math.max(24, World.floorY(x) * 0.4); P.chain.reset(P.x, P.y, 0);
+    this.cam.x = x; this.cam.y = P.y;
+    this.startDiff = 0; this.intro = null;
+    // a few first meals in the cistern, and the things that live on them
+    for (let i = 0; i < 5; i++) { const rx = x - 260 + i * 130 + rand(-30, 30); Spawn.school(rx, clamp(World.floorY(rx) - 14, 8, 60), chance(0.5) ? 'minnow' : 'shiner'); }
+    for (let i = 0; i < 3; i++) { const rx = x + rand(-400, 400); if (World.floorY(rx) > 20) this.add(new Carrion(rx, World.floorY(rx) - 6, 'rat')); }
+    this.state = 'play'; this.banner = null;
+    Puzzles.begin(st);
+    Delivery.begin(st, true);
     SFX.peep();
   },
   crackTank() {
@@ -1190,7 +1183,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
