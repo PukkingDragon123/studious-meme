@@ -41,22 +41,23 @@ const SEWER_SECTION = [
   // ---- THE UNDERCROFT: somebody lives down here -------------------------
   [-8200, 120, -96], [-8060, 60, -120],
   [-7920, -28, -150], [-7800, -44, -172], [-7680, -30, -150],    // the camp ledge
-  [-7560, 50, -120], [-7420, 120, -96], [-7280, 170, -130], [-7140, 140, -150],
-  [-7000, 80, -120], [-6860, 40, -100], [-6720, 90, -80],
-  [-6660, 96, -90], [-6620, 60, -120],                            // the last of the water
-  // ---- FACILITY B: a corridor a hundred and forty feet above the system, run
-  // along the crown of the old storm relief works. Dry, lit, tiled, and dead
-  // level — poured to a tolerance nothing below it has ever been held to. It
-  // goes east and stops at a floor drain with the cover off, and under the
-  // cover is the interceptor, which only goes one way.
-  [-6600, -1400, -1690], [-6480, -1400, -1690], [-6360, -1400, -1690], [-6240, -1400, -1690],
-  [-6120, -1400, -1690], [-6040, -1400, -1690], [-5990, -1400, -1690], [-5968, -1400, -1690],
+  [-7660, 20, -130], [-7646, 60, -150],                           // the last of the water
+  // ---- FACILITY B: a floor of the old relief works they roofed over, cleaned
+  // out and filled with a building. Six rooms in a line, dead level, poured to
+  // a tolerance nothing under it has ever been held to: the transfer corridor,
+  // the habitat hall, the plant room, the access chamber with the system's own
+  // manhole set in its floor, and at the far end a loading dock with the next
+  // truck backed up to it. Two ways out of this building and only one of them
+  // is yours.
+  [-7640, -1400, -1700], [-7400, -1400, -1700], [-7100, -1400, -1700], [-6800, -1400, -1700],
+  [-6500, -1400, -1700], [-6260, -1400, -1700], [-6100, -1400, -1700], [-5990, -1400, -1700],
+  [-5968, -1400, -1700],
   // ---- THE CHUTE: the relief interceptor. A lined pipe that gives up its
   // hundred and forty feet in six steps, with a bench at the foot of each one
   // where it flattens out and catches its breath. Side inlets spit into it,
   // manhole shafts let the daylight down onto it, and it ends in a mouth in the
   // wall of the cistern with a long drop under it. Nothing climbs back up this.
-  [-5958, -980, -1420],                   // the shaft: straight down under the drain
+  [-5958, -980, -1120],                   // the head of the shaft: the drawn one rakes up under the dock
   [-5900, -960, -1080],                   // the head of the pipe
   [-5660, -807, -869],                    // the first step
   [-5410, -799, -899],                    // a bench, and a manhole over it
@@ -171,6 +172,48 @@ const MANHOLES = [
   [-2860, 0.5], [-1965, 0.3], [-980, 0.62], [-430, 0.8],            // over Rome
   [-8060, 0.34], [-9600, 0.22], [-12220, 0.2], [-16400, 0.14],      // over the system
 ];
+// ---------------------------------------------------------------------------
+// Monotone cubic interpolation. Straight lines between control points put a
+// crease at every one of them, and smoothstep flattens at every one of them,
+// which is why the system used to read as a folded paper bag. A monotone cubic
+// curves through the points and — unlike a plain Catmull-Rom — never overshoots
+// them, which matters when the next control point is a wall.
+// ---------------------------------------------------------------------------
+function buildSlopes(P) {
+  const n = P.length, d = new Float64Array(Math.max(1, n - 1)), m = new Float64Array(n);
+  for (let i = 0; i < n - 1; i++) d[i] = (P[i + 1][1] - P[i][1]) / (P[i + 1][0] - P[i][0]);
+  m[0] = d[0]; m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) * 0.5;
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+    const a = m[i] / d[i], b = m[i + 1] / d[i], ss = a * a + b * b;
+    if (ss > 9) { const t = 3 / Math.sqrt(ss); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+  }
+  return m;
+}
+function splineAt(P, m, lo, x) {
+  const a = P[lo], b = P[lo + 1], h = b[0] - a[0], t = (x - a[0]) / h, t2 = t * t, t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * a[1] + (t3 - 2 * t2 + t) * h * m[lo] + (3 * t2 - 2 * t3) * b[1] + (t3 - t2) * h * m[lo + 1];
+}
+// ---------------------------------------------------------------------------
+// Facility B, room by room, west to east. One table, read by the renderer that
+// draws the walls and by the opening that walks you down them, so the manhole
+// is never in a different place than the chamber it is set in.
+// ---------------------------------------------------------------------------
+const FACILITY = {
+  x0: -7640, x1: -5966,
+  MANHOLE: -6180,          // the cover in the floor of the access chamber
+  DOCK: -6040,             // cross this and the handlers have you
+  rooms: [
+    { id: 'bulkhead', x0: -7640, x1: -7560, name: 'WEST BULKHEAD' },
+    { id: 'corridor', x0: -7560, x1: -7080, name: 'TRANSFER CORRIDOR' },
+    { id: 'pens', x0: -7080, x1: -6440, name: 'HABITAT HALL' },
+    { id: 'plant', x0: -6440, x1: -6260, name: 'PLANT ROOM' },
+    { id: 'access', x0: -6260, x1: -6110, name: 'ACCESS CHAMBER' },
+    { id: 'dock', x0: -6110, x1: -5966, name: 'LOADING DOCK' },
+  ],
+  roomAt(x) { for (const r of this.rooms) if (x >= r.x0 && x < r.x1) return r; return null; },
+};
 const MapData = {
   x0: MAP_PROFILE[0][0], x1: MAP_PROFILE[MAP_PROFILE.length - 1][0],
   // How man-made the ground is here, 0..1. It decides two things, and both of
@@ -193,7 +236,13 @@ const MapData = {
     while (lo < hi - 1) { const m = (lo + hi) >> 1; if (P[m][0] <= x) lo = m; else hi = m; }
     const a = P[lo], b = P[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
     const bu = this.built(x);
-    const base = lerp(a[1], b[1], lerp(t * t * (3 - 2 * t), t, bu));
+    const sm = lerp(a[1], b[1], t * t * (3 - 2 * t));
+    if (bu <= 0) {
+      const wob = vnoise(x * 0.045, 11) * 6 - 3 + vnoise(x * 0.012, 3) * 10 - 5;
+      return sm + wob * (Math.abs(sm) > 8 ? 1 : 0.35);
+    }
+    if (!this._mF) this._mF = buildSlopes(P);
+    const base = lerp(sm, splineAt(P, this._mF, lo, x), bu);
     if (bu >= 1) return base;
     const wob = vnoise(x * 0.045, 11) * 6 - 3 + vnoise(x * 0.012, 3) * 10 - 5;
     return base + wob * (Math.abs(base) > 8 ? 1 : 0.35) * (1 - bu);
@@ -208,7 +257,8 @@ const MapData = {
       while (lo < hi - 1) { const m = (lo + hi) >> 1; if (R[m][0] <= x) lo = m; else hi = m; }
       const a = R[lo], b = R[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
       const bu = this.built(x);
-      const base = lerp(a[1], b[1], lerp(t * t * (3 - 2 * t), t, bu));
+      if (!this._mR) this._mR = buildSlopes(R);
+      const base = lerp(lerp(a[1], b[1], t * t * (3 - 2 * t)), splineAt(R, this._mR, lo, x), bu);
       if (bu >= 1) return base;
       return base + (vnoise(x * 0.05, 31) * 8 - 4 + Math.sin(x * 0.021) * 3) * (1 - bu);
     }
@@ -260,7 +310,7 @@ const BIOMES = [
     structures: [], music: 0.7,
   },
   {
-    id: 'shaft', name: 'THE DROP SHAFT', x0: -10400, x1: -8200,
+    id: 'shaft', name: 'THE DROP SHAFT', x0: -10400, x1: -8600,
     sky: ['#0c1618', '#1a2a2c'], water: ['#2a5a5e', '#153a3e', '#04161a'], scum: '#4a6a4a', fog: '#16262a',
     parallax: ['block', 'pipe', 'block'], ground: ['#33383c', '#252a2e', '#171b1f'], grass: '#3a5a44',
     indoor: true, roof: -520, dark: 0.5, toxic: 0.15, flora: '#6a8a3e', floraMix: 0.36,
@@ -270,7 +320,7 @@ const BIOMES = [
     structures: [], music: 0.75,
   },
   {
-    id: 'undercroft', name: 'THE UNDERCROFT', x0: -8200, x1: -6620,
+    id: 'undercroft', name: 'THE UNDERCROFT', x0: -8600, x1: -7640,
     sky: ['#0d1a1c', '#1a2a2c'], water: ['#40705c', '#20463a', '#0a1a16'], scum: '#5a7a3a', fog: '#1c2c2e',
     parallax: ['block', 'pipe', 'block'], ground: ['#3d4342', '#2d3332', '#1e2322'], grass: '#456a44',
     indoor: true, roof: -150, dark: 0.42, toxic: 0.08, flora: '#6f8a44', floraMix: 0.3,
@@ -280,7 +330,7 @@ const BIOMES = [
     structures: [], music: 0.55,
   },
   {
-    id: 'facility', name: 'FACILITY B', x0: -6620, x1: -5966, lab: true,
+    id: 'facility', name: 'FACILITY B', x0: -7640, x1: -5966, lab: true,
     sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
     parallax: ['block', 'block', 'block'], ground: ['#4a5258', '#343a40', '#1e2428'], grass: '#4a5258',
     indoor: true, roof: -1690, dark: 0.06,
@@ -496,7 +546,9 @@ const Biome = {
   authored(x0, x1, out) {
     for (let x = Math.ceil(x0 / 120) * 120; x < x1; x += 120) {
       const B = this.at(x);
-      if (B.lab) this.labBay(x, out);
+      // only the corridor and the plant room have loose equipment standing in
+      // them: a hall of pens has pens, and a loading dock has a dock
+      if (B.lab) { const r = FACILITY.roomAt(x); if (r && (r.id === 'corridor' || r.id === 'plant')) this.labBay(x, out); }
     }
   },
   // One bay of the corridor. Four of them repeat along it: a tank with its

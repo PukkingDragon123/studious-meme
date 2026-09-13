@@ -164,28 +164,39 @@ skull on top, sarcophagi with their lids on or off, amphorae, and a surface
 carrying two thousand years of what floats. A roof a hand above the water is
 still a roof, so the squeezes stay dark.
 
-You got there by transfer, and the transfer is not a cutscene. It is the
-game: a corridor of **FACILITY B**, a hundred and forty feet above the Roman
-level, drawn by the same renderer as everything else — white tile to shoulder
-height under a capping rail and a painted stripe, dark block above it, strip
-lights with their cones, doors with portholes and keypads, a hose reel in its
-cabinet, a distribution board, a spill kit, a window into the next bay lit
-green. The floor is dead level, because it is a floor. Equipment stands in
-bays on a four-metre grid — containment columns with a specimen hanging in
-each, consoles, crates, drums — laid out rather than scattered, and repeating
-the way a services drawing repeats. The trolley is a structure on castors that
-turn. The tank on it is a real tank, blue water, straps, TRANSFER / SUBJECT 11
-stencilled on the glass. The two people pushing it are people, leaning into the
-bar with their knees bent. The camera is the game camera.
+You got there by transfer, and the transfer is not a cutscene. It is the game.
+**FACILITY B** is a building, not a wall: six rooms in a line, a hundred and
+forty feet above the Roman level, dead level because they are floors, drawn by
+the same renderer as everything else.
+
+| Room | What is in it |
+| --- | --- |
+| **West bulkhead** | a blast door with a wheel on it, and the stencil over it |
+| **Transfer corridor** | white tile to shoulder height under a capping rail and a painted stripe, doors with portholes and keypads, a hose reel, a distribution board, a spill kit |
+| **Habitat hall** | a run of glass-fronted pens with crocodiles in them: shallow water, a sand bank, a heat lamp over each, feed hatches, a keeper's gantry, numbered plates, one pane cracked from the inside and one pen standing open |
+| **Plant room** | the filtration that keeps the pens alive — vessels, a manifold with valve wheels, a pump running, a puddle under the leak |
+| **Access chamber** | bare block, a sump pump and its rising main, a ladder somebody never finished, and a cast manhole set in the floor |
+| **Loading dock** | a shutter, a leveller, and the next truck backed up to it with its doors open and empty crates racked inside |
+
+The trolley is a structure on castors that turn. The tank on it is a real tank,
+blue water, straps, TRANSFER / SUBJECT 11 stencilled on the glass. The two
+people pushing it are people, leaning into the bar with their knees bent. The
+camera is the game camera.
 
 **Mash bite** and the glass cracks, then goes. The two of them run west with
-their arms up and are gone through a door. At the end of the corridor is a
-floor drain with the cover lifted off it and stood against the wall, a barrier
-round three sides of a hole with four, and cold air coming up out of it. You
-walk east and you **fall** — and what catches you is **the relief
-interceptor**.
+their arms up and are gone through a door, and you are loose in a building with
+exactly two ways out of it.
 
-That is the ride down, and it takes about twenty seconds. It is not a cutscene
+**The cover.** Stand on the manhole in the access chamber and bite it. Cast
+iron, eleven stone of it, and it goes on the sixth go — then the floor is not
+under you any more and what catches you is **the relief interceptor**.
+
+**The dock.** Keep walking east instead and you get to the end of the building,
+where two handlers are waiting beside a crate with a truck behind them. They do
+not fight you. They pick you up. **RECAPTURED — TRANSFER ORDER 11 COMPLETE**,
+and the run is over before it started.
+
+That is the ride down, and it takes about twenty seconds with the throttle held. It is not a cutscene
 either: the interceptor is three thousand units of authored map, a lined pipe
 that gives up its hundred and forty feet in six steps with a bench at the foot
 of each one. Precast rings every segment, a benched invert with the wash down
@@ -389,6 +400,20 @@ equator. A site you have not earned is a sealed grey pin.
 A **RELEASE** button sends you. It used to be the word ENTER, which is not a key a tablet has.
 
 ### Zone 1 — The Sewer Network
+
+The system is drawn as a bore, not as a room. A sewer is a section of masonry
+with a hole through it, and the hole goes somewhere: the cavity between invert
+and crown is filled with nested copies of the same section scaled toward a
+vanishing point, so the ring joints, the tide line and the light from the shafts
+all run away down the tunnel together. Nothing in that backdrop is a separate
+painting that can drift out of register with the level — every ring is the
+level's own floor and roof profile, smaller. In front of it goes the near arch:
+radial voussoirs round the crown, courses down the haunch, a rib every bay with
+a cable run sagging between the ribs, and a bulkhead lamp under every other one
+throwing the only light there is. Underground the water body goes translucent,
+because there is a pipe behind it and hiding the pipe is what made the system
+read as a wall with a pond in front of it. And the dawn mist no longer gathers
+a hundred feet under a city.
 
 West of the lab is a municipal system nobody has opened since 1974. Floor and ceiling are authored
 together, so headroom is the level design: long low runs where you have to surface between breaths,

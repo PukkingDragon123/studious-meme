@@ -111,6 +111,9 @@ class Player {
   // run. Mash to buck out of his hands before he gets there.
   hauled(by) {
     if (this.dead || this.haulT > 0 || this.netT > 0) return;
+    // the dock handlers are running their own scene; the generic "picked up,
+    // mash to buck out" banner is not part of it
+    if (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted()) return;
     this.haulT = 6.0; this.haulHp = 5 + Math.round(this.size * 6); this.haulBy = by || null; this.haulHeld = false;
     this.grabbed = false;
     G.shake(10); SFX.thud && SFX.thud(0); SFX.yell && SFX.yell(0);

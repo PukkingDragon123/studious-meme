@@ -358,7 +358,12 @@ const World = {
       g.addColorStop(1, deep);
       ctx.fillStyle = g;
     } else ctx.fillStyle = deep;
+    // In the open, water is the world below the line and there is nothing
+    // behind it. In a pipe there is a pipe behind it, and hiding the pipe is
+    // what made the system read as a wall with a pond in front of it.
+    if (this.isIndoor(cam.x)) ctx.globalAlpha = 0.7;
     ctx.fillRect(0, y0, W, H - y0 + 2);
+    ctx.globalAlpha = 1;
     // keep a little pixel grain in the ramp so it never reads as an airbrush
     ctx.save(); ctx.beginPath(); ctx.rect(0, y0, W, H - y0 + 2); ctx.clip();
     Tex.fill(ctx, Tex.dither(mixColor(mid, '#ffffff', 0.5), 0.12), cam.x * 0.6, cam.y * 0.6, z, 0.09);
@@ -485,36 +490,7 @@ const World = {
       for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (((wx % 120) + 120) % 120 < 8) { ctx.fillStyle = '#242b2f'; ctx.fillRect(sx, Math.round(sy + 38 * z), step, Math.round(40 * z)); } }
       for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (Math.abs(wx % 60) < 34) { ctx.fillStyle = '#8a7a20'; ctx.fillRect(sx, Math.round(sy + 4 * z), step, Math.max(1, Math.round(1.6 * z))); } }
     }
-    if (B.lab || B.pipe) this.drawFloorDrain(ctx, cam);
-  },
-  // The end of the corridor. A cast manhole frame set into the tiled floor
-  // with the cover lifted off it and stood against the wall, a barrier round
-  // three sides of it that nobody was expecting to need on the fourth, and
-  // under the frame the shaft, which does not have a bottom you can see.
-  drawFloorDrain(ctx, cam) {
-    const z = cam.zoom, lip = Opening.LIP;
-    const leftW = cam.toWorldX(-120), rightW = cam.toWorldX(G.W + 120);
-    if (lip < leftW || lip > rightW) return;
-    const fy = this.floorY(lip - 4);
-    const [sx, sy] = cam.toScreen(lip, fy);
-    // the frame: a cast rim along the last of the floor. The shaft under it is
-    // drawn by drawDropShaft, over the ground, so it is not drawn twice here.
-    ctx.fillStyle = '#4a5258'; ctx.fillRect(Math.round(sx - 26 * z), Math.round(sy - 4 * z), Math.round(28 * z), Math.round(6 * z));
-    ctx.fillStyle = '#6e787e'; ctx.fillRect(Math.round(sx - 26 * z), Math.round(sy - 4 * z), Math.round(28 * z), Math.max(1, Math.round(2 * z)));
-    ctx.fillStyle = '#2a3034'; ctx.fillRect(Math.round(sx - 2 * z), Math.round(sy - 4 * z), Math.round(3 * z), Math.round(26 * z));
-    // the cover, off the frame, stood on its edge against the wall
-    const cx = sx - 52 * z, cy = sy;
-    ctx.fillStyle = '#23262a'; ctx.fillRect(Math.round(cx - 13 * z), Math.round(cy - 30 * z), Math.round(26 * z), Math.round(30 * z));
-    ctx.fillStyle = '#3a3e42'; ctx.fillRect(Math.round(cx - 13 * z), Math.round(cy - 30 * z), Math.round(4 * z), Math.round(30 * z));
-    ctx.fillStyle = '#4c5258'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(cx - 8 * z), Math.round(cy - 26 * z + i * 7 * z), Math.round(16 * z), Math.max(1, Math.round(2 * z)));
-    // the barrier, round three sides of a hole with four
-    for (const ox of [-40, -14]) {
-      ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx + ox * z), Math.round(sy - 30 * z), Math.max(1, Math.round(2 * z)), Math.round(30 * z));
-    }
-    ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx - 41 * z), Math.round(sy - 30 * z), Math.round(28 * z), Math.max(1, Math.round(3 * z)));
-    ctx.fillStyle = '#1a1a1a'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(sx - 39 * z + i * 7 * z), Math.round(sy - 30 * z), Math.round(3 * z), Math.max(1, Math.round(3 * z)));
-    // and the cold air coming up out of it
-    if (chance(0.05)) G.fx.add({ type: 'smoke', x: lip + rand(2, 22), y: fy + 6, vx: rand(-4, 4), vy: -14, s: 1.1, color: '#39464a', life: 2.2, t: 0, maxLife: 2.2 });
+    if (B.lab || B.pipe) Facility.drawFloor(ctx, cam);
   },
   drawTerrain(ctx, cam) {
     if (this.isIndoor(cam.x)) { this.drawBuiltGround(ctx, cam); return; }
@@ -864,6 +840,14 @@ const World = {
     const W = G.W, H = G.H, z = cam.zoom, step = 4;
     if (!this.isIndoor(cam.toWorldX(W / 2)) && !this.isIndoor(cam.toWorldX(0)) && !this.isIndoor(cam.toWorldX(W))) return;
     const B = Biome.mixPal(cam.x);
+    // Facility B is a building and the system is a bore. Each has its own
+    // renderer; the generic indoor path below is only the fallback. Which one
+    // runs is decided by the biome the camera is actually in, never by the
+    // crossfade: the fade is 260 units wide and the loading dock is 144, so
+    // reading the blended flags drew the whole dock as sewer brick.
+    const BA = Biome.at(cam.x);
+    if (BA.lab) { Facility.draw(ctx, cam, day); return; }
+    if (typeof Sewer !== 'undefined' && Sewer.draw(ctx, cam, day)) { this.drawManholes(ctx, cam); return; }
     // --- back wall: glazed brick, courses and pilasters -------------------
     const wall = shade(B.ground[2], 1.2), wallD = shade(B.ground[2], 0.62), wallL = shade(B.ground[2], 1.55);
     ctx.fillStyle = wall; ctx.fillRect(0, 0, W, H);
@@ -1248,38 +1232,41 @@ const World = {
       }
     }
   },
-  // The shaft under the floor drain. The heightmap can only say how high the
-  // ground is at x, so a hole straight down is not something it can hold: the
-  // map turns the drop into a very short, very steep ramp, and this draws the
-  // shaft that ramp is standing in for. Rings, a ladder that stops where the
-  // ladders always stop, and the wash down one side of it.
+  // The shaft under the manhole. The heightmap can only say how high the
+  // ground is at x, so a hole that goes down and east under the loading dock
+  // is not something it can hold: this draws the shaft the map cannot, as a
+  // raking bore from the broken cover to the head of the interceptor. Rings,
+  // a ladder that stops where ladders always stop, and the wash down one side.
   drawDropShaft(ctx, cam) {
-    if (typeof Opening === 'undefined') return;
-    const z = cam.zoom, ax = Opening.LIP - 2, bx = Opening.LIP + 30;
-    if (bx < cam.toWorldX(-60) || ax > cam.toWorldX(G.W + 60)) return;
-    const top = this.floorY(ax - 12), bot = -972;
-    if (top > bot) return;
-    const [sx0, sy0] = cam.toScreen(ax, top), [sx1, sy1] = cam.toScreen(bx, bot);
-    const w = Math.max(2, Math.round(sx1 - sx0)), h = Math.round(sy1 - sy0);
-    if (sy1 < -40 || sy0 > G.H + 40) return;
-    ctx.fillStyle = '#0c0f10'; ctx.fillRect(Math.round(sx0), Math.round(sy0), w, h);
-    ctx.fillStyle = '#3a4246'; ctx.fillRect(Math.round(sx0) - Math.round(4 * z), Math.round(sy0), Math.round(4 * z), h);
-    ctx.fillStyle = '#2b3236'; ctx.fillRect(Math.round(sx1), Math.round(sy0), Math.round(4 * z), h);
-    for (let wy = top; wy < bot; wy += 22) {
-      const [, jy] = cam.toScreen(0, wy);
-      ctx.fillStyle = '#20262a'; ctx.fillRect(Math.round(sx0), Math.round(jy), w, Math.max(1, Math.round(2 * z)));
-      ctx.fillStyle = '#39433f'; ctx.fillRect(Math.round(sx0), Math.round(jy + 2 * z), w, Math.max(1, Math.round(z)));
+    if (typeof Opening === 'undefined' || !Opening.coverBroken) return;
+    const z = cam.zoom, HW = 26;
+    const mx = Opening.MANHOLE, dx = Opening.DRAIN;
+    const top = this.floorY(mx), bot = -972;
+    if (Math.max(mx, dx) + 60 < cam.toWorldX(-60) || Math.min(mx, dx) - 60 > cam.toWorldX(G.W + 60)) return;
+    const A = cam.toScreen(mx - HW, top), B = cam.toScreen(mx + HW, top);
+    const C = cam.toScreen(dx + HW + 6, bot), D = cam.toScreen(dx - HW - 6, bot);
+    const poly = () => { ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.lineTo(C[0], C[1]); ctx.lineTo(D[0], D[1]); ctx.closePath(); };
+    ctx.save(); poly(); ctx.clip();
+    ctx.fillStyle = '#0c0f10'; ctx.fillRect(0, 0, G.W, G.H);
+    // rings down the shaft, following the rake
+    const N = 14;
+    for (let i = 0; i <= N; i++) {
+      const u = i / N;
+      const lx = lerp(A[0], D[0], u), rx = lerp(B[0], C[0], u);
+      const ly = lerp(A[1], D[1], u), ry = lerp(B[1], C[1], u);
+      ctx.fillStyle = '#20262a'; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(rx, ry); ctx.lineTo(rx, ry + 3 * z); ctx.lineTo(lx, ly + 3 * z); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#39433f'; ctx.fillRect(Math.round(lx), Math.round(ly + 3 * z), Math.round(rx - lx), Math.max(1, Math.round(z)));
+      // the ladder down the west side, stopping short of the bottom
+      if (i < N - 3) { ctx.fillStyle = '#5f5849'; ctx.fillRect(Math.round(lx + 4 * z), Math.round(ly + 6 * z), Math.round(14 * z), Math.max(1, Math.round(2 * z))); }
     }
-    // the ladder: it goes most of the way and then it does not
-    for (let wy = top + 18; wy < bot - 90; wy += 15) {
-      const [, ry] = cam.toScreen(0, wy);
-      ctx.fillStyle = '#5f5849'; ctx.fillRect(Math.round(sx0 + 3 * z), Math.round(ry), Math.round(13 * z), Math.max(1, Math.round(2 * z)));
-      ctx.fillStyle = '#26231d'; ctx.fillRect(Math.round(sx0 + 3 * z), Math.round(ry + 2 * z), Math.round(13 * z), Math.max(1, Math.round(z)));
-    }
-    // what the corridor has been letting down here for years
-    ctx.fillStyle = 'rgba(120,160,150,0.16)'; ctx.fillRect(Math.round(sx0 + w * 0.55), Math.round(sy0), Math.max(1, Math.round(3 * z)), h);
-    ctx.fillStyle = 'rgba(90,120,110,0.20)'; ctx.fillRect(Math.round(sx0 + w * 0.2), Math.round(sy0), Math.max(1, Math.round(2 * z)), h);
-    if (chance(0.10)) G.fx.add({ type: 'drop', x: Opening.LIP + rand(2, 16), y: top + 10, vx: 0, vy: 120, s: 1, color: '#9ad8c0', life: 2.6 });
+    // what the building has been letting down here for years
+    ctx.fillStyle = 'rgba(120,160,150,0.14)';
+    ctx.beginPath(); ctx.moveTo(lerp(A[0], B[0], 0.55), A[1]); ctx.lineTo(lerp(A[0], B[0], 0.62), A[1]);
+    ctx.lineTo(lerp(D[0], C[0], 0.62), D[1]); ctx.lineTo(lerp(D[0], C[0], 0.55), D[1]); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // the lit lip on the near edge of the hole
+    ctx.fillStyle = '#6e787e'; ctx.fillRect(Math.round(A[0]) - Math.round(3 * z), Math.round(A[1]) - Math.round(2 * z), Math.round(B[0] - A[0]) + Math.round(6 * z), Math.max(1, Math.round(2 * z)));
+    if (chance(0.10)) G.fx.add({ type: 'drop', x: mx + rand(-18, 18), y: top + 8, vx: 22, vy: 120, s: 1, color: '#9ad8c0', life: 2.6 });
   },
   // Pipe mouths punched through the back wall. The system is a network, and a
   // network has to visibly go somewhere other than left and right.
@@ -1365,11 +1352,11 @@ const World = {
     const y0 = cam.toScreen(0, 90)[1];
     if (y0 > H) return;
     const B = Biome.mixPal(cam.x), haze = hexToRgb(mixColor(B.water[1], '#04141a', 0.45));
-    const yT = Math.max(y0, hy);
+    const yT = Math.max(y0, hy), k = this.isIndoor(cam.x) ? 0.55 : 1;
     const g = ctx.createLinearGradient(0, yT, 0, cam.toScreen(0, 760)[1]);
     g.addColorStop(0, `rgba(${haze[0]},${haze[1]},${haze[2]},0)`);
-    g.addColorStop(0.45, `rgba(${haze[0]},${haze[1]},${haze[2]},0.3)`);
-    g.addColorStop(1, `rgba(${haze[0]},${haze[1]},${haze[2]},0.45)`);
+    g.addColorStop(0.45, `rgba(${haze[0]},${haze[1]},${haze[2]},${(0.3 * k).toFixed(3)})`);
+    g.addColorStop(1, `rgba(${haze[0]},${haze[1]},${haze[2]},${(0.45 * k).toFixed(3)})`);
     ctx.fillStyle = g; ctx.fillRect(0, yT, G.W, H - yT);
   },
   drawDecor(ctx, cam, layer, day) {
@@ -2164,6 +2151,10 @@ const World = {
   },
   drawMist(ctx, cam, day) {
     const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1];
+    // Mist gathers on open water at dawn. Under the city there is no dawn, and
+    // three banks of it lying across the bore was the single messiest thing in
+    // the system: a grey stripe over the waterline that never went away.
+    if (this.isIndoor(cam.x)) return;
     // mist gathers at dawn and after sundown
     const m = Math.max(smoothstep(0.02, 0.10, day) * (1 - smoothstep(0.14, 0.24, day)), smoothstep(0.46, 0.56, day) * (1 - smoothstep(0.62, 0.76, day)));
     if (m < 0.02 || hy < -40 || hy > H + 40) return;

@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------
 const LAIRS = [
   // ---- the sewer -------------------------------------------------------
-  { id: 'broodmother', x: -6800, r: 280, warn: 760, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN HERE' },
+  { id: 'broodmother', x: -7950, r: 240, warn: 620, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN HERE' },
   { id: 'gnasher', x: -10400, r: 300, warn: 800, name: 'THE GNASHER', sign: 'bones', tell: 'THE WATER IS FULL OF BONES' },
   { id: 'sludgeking', x: -17250, r: 360, warn: 900, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
   // ---- the glades ------------------------------------------------------
