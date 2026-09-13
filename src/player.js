@@ -329,7 +329,11 @@ class Player {
     this.x += this.vx * dt; this.y += this.vy * dt;
     const fy2 = World.floorY(this.x);
     if (this.y > fy2 - 5 * this.vis) { this.y = fy2 - 5 * this.vis; if (this.vy > 0) this.vy *= -0.15; if (fy2 < 0) this.onLand = true; }
-    if (this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
+    // A ceiling on how far into the sky the animal can get. Under a roof there
+    // is already a roof to stop it, and the roof can be a long way up — the
+    // transfer corridor is a hundred and forty feet over the water — so a flat
+    // ceiling here would hold the animal below its own floor.
+    if (World.roofY(this.x) === null && this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
     // the system dead-ends on a concrete bulkhead; there is nothing west of it
     const wall = MapData.x0 + 26 * this.vis;
     if (this.x < wall) { this.x = wall; if (this.vx < 0) this.vx *= -0.2; }

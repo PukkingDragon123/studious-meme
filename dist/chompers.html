@@ -3010,45 +3010,66 @@ const Gore = {
 // squeeze, chambers that open overhead, and one shaft that drops away.
 const SEWER_SECTION = [
   // ---- THE OUTFALL SUMP: a vaulted dead end, deep and still --------------
-  [-16000, 260, -210], [-15840, 300, -230], [-15660, 330, -200], [-15480, 280, -150],
-  [-15300, 210, -110], [-15120, 170, -86], [-14940, 120, -60], [-14760, 96, -44],
-  [-14580, 130, -70], [-14400, 180, -120],
+  [-19000, 260, -210], [-18840, 300, -230], [-18660, 330, -200], [-18480, 280, -150],
+  [-18300, 210, -110], [-18120, 170, -86], [-17940, 120, -60], [-17760, 96, -44],
+  [-17580, 130, -70], [-17400, 180, -120],
   // ---- THE DEEP GALLERY: the trunk main, with ledges and side vaults -----
-  [-14300, 150, -100], [-14160, 90, -64], [-14020, 40, -50],
-  [-13900, -26, -124], [-13800, -30, -128],                        // dry maintenance ledge
-  [-13700, 36, -60], [-13560, 110, -48], [-13420, 186, -30],     // low run, barely a hand of air
-  [-13280, 120, -54], [-13140, 170, -96],
-  [-13000, 240, -180], [-12840, 300, -250], [-12680, 420, -300], // the gallery vault
-  [-12520, 280, -210], [-12360, 200, -140], [-12200, 130, -80], [-12060, 60, -54],
-  [-11920, -28, -122], [-11820, -32, -126],                        // pump house floor
-  [-11720, 40, -56], [-11580, 110, -44], [-11440, 104, -22],      // the tightest crawl in the system
-  [-11300, 130, -58], [-11160, 180, -110], [-11020, 150, -90], [-10880, 100, -62],
-  [-10740, 140, -70], [-10600, 190, -120], [-10460, 160, -96],
+  [-17300, 150, -100], [-17160, 90, -64], [-17020, 40, -50],
+  [-16900, -26, -124], [-16800, -30, -128],                        // dry maintenance ledge
+  [-16700, 36, -60], [-16560, 110, -48], [-16420, 186, -30],     // low run, barely a hand of air
+  [-16280, 120, -54], [-16140, 170, -96],
+  [-16000, 240, -180], [-15840, 300, -250], [-15680, 420, -300], // the gallery vault
+  [-15520, 280, -210], [-15360, 200, -140], [-15200, 130, -80], [-15060, 60, -54],
+  [-14920, -28, -122], [-14820, -32, -126],                        // pump house floor
+  [-14720, 40, -56], [-14580, 110, -44], [-14440, 104, -22],      // the tightest crawl in the system
+  [-14300, 130, -58], [-14160, 180, -110], [-14020, 150, -90], [-13880, 100, -62],
+  [-13740, 140, -70], [-13600, 190, -120], [-13460, 160, -96],
   // ---- JUNCTION 9: the hub, and the spokes running off it ---------------
-  [-10400, 140, -86], [-10260, 210, -160], [-10100, 300, -260],
-  [-9940, 470, -360], [-9780, 330, -300],                        // the junction vault
-  [-9620, 250, -200], [-9460, 150, -110], [-9320, 60, -70],
-  [-9200, -26, -136], [-9100, -30, -140],                         // side gallery, walkable
-  [-9000, 44, -72], [-8860, 120, -50], [-8720, 196, -28], [-8580, 140, -56],
-  [-8440, 200, -120], [-8300, 260, -190], [-8160, 220, -160], [-8020, 150, -96],
-  [-7880, 90, -60], [-7740, 130, -46], [-7600, 170, -54], [-7460, 210, -110],
+  [-13400, 140, -86], [-13260, 210, -160], [-13100, 300, -260],
+  [-12940, 470, -360], [-12780, 330, -300],                        // the junction vault
+  [-12620, 250, -200], [-12460, 150, -110], [-12320, 60, -70],
+  [-12200, -26, -136], [-12100, -30, -140],                         // side gallery, walkable
+  [-12000, 44, -72], [-11860, 120, -50], [-11720, 196, -28], [-11580, 140, -56],
+  [-11440, 200, -120], [-11300, 260, -190], [-11160, 220, -160], [-11020, 150, -96],
+  [-10880, 90, -60], [-10740, 130, -46], [-10600, 170, -54], [-10460, 210, -110],
   // ---- THE DROP SHAFT: the system falls away under the city -------------
-  [-7400, 230, -140], [-7260, 300, -220], [-7120, 420, -360], [-6980, 560, -540],
-  [-6840, 700, -760], [-6700, 920, -880], [-6560, 720, -760],    // the shaft itself
-  [-6420, 600, -600], [-6280, 460, -430], [-6140, 330, -300], [-6000, 220, -190],
-  [-5860, 140, -110], [-5720, 90, -70], [-5580, 130, -56], [-5440, 180, -80],
-  [-5300, 150, -110],
+  [-10400, 230, -140], [-10260, 300, -220], [-10120, 420, -360], [-9980, 560, -540],
+  [-9840, 700, -760], [-9700, 920, -880], [-9560, 720, -760],    // the shaft itself
+  [-9420, 600, -600], [-9280, 460, -430], [-9140, 330, -300], [-9000, 220, -190],
+  [-8860, 140, -110], [-8720, 90, -70], [-8580, 130, -56], [-8440, 180, -80],
+  [-8300, 150, -110],
   // ---- THE UNDERCROFT: somebody lives down here -------------------------
-  [-5200, 120, -96], [-5060, 60, -120],
-  [-4920, -28, -150], [-4800, -44, -172], [-4680, -30, -150],    // the camp ledge
-  [-4560, 50, -120], [-4420, 120, -96], [-4280, 170, -130], [-4140, 140, -150],
-  [-4000, 80, -120], [-3860, 40, -100], [-3720, 90, -80], [-3580, 130, -70],
-  [-3660, 96, -90], [-3620, 60, -120],
-  // ---- THE FACILITY: a corridor two floors up, over the top of the cistern.
-  // Dry, lit, tiled, and it ends at a floor drain with nothing under it. The
-  // transfer runs east along it; you go out through the glass and down the hole.
-  [-3600, -380, -650], [-3480, -382, -652], [-3360, -380, -648], [-3240, -382, -650], [-3120, -380, -648], [-3040, -384, -650], [-2980, -380, -648],
-  [-2962, -380, -648],
+  [-8200, 120, -96], [-8060, 60, -120],
+  [-7920, -28, -150], [-7800, -44, -172], [-7680, -30, -150],    // the camp ledge
+  [-7560, 50, -120], [-7420, 120, -96], [-7280, 170, -130], [-7140, 140, -150],
+  [-7000, 80, -120], [-6860, 40, -100], [-6720, 90, -80],
+  [-6660, 96, -90], [-6620, 60, -120],                            // the last of the water
+  // ---- FACILITY B: a corridor a hundred and forty feet above the system, run
+  // along the crown of the old storm relief works. Dry, lit, tiled, and dead
+  // level — poured to a tolerance nothing below it has ever been held to. It
+  // goes east and stops at a floor drain with the cover off, and under the
+  // cover is the interceptor, which only goes one way.
+  [-6600, -1400, -1690], [-6480, -1400, -1690], [-6360, -1400, -1690], [-6240, -1400, -1690],
+  [-6120, -1400, -1690], [-6040, -1400, -1690], [-5990, -1400, -1690], [-5968, -1400, -1690],
+  // ---- THE CHUTE: the relief interceptor. A lined pipe that gives up its
+  // hundred and forty feet in six steps, with a bench at the foot of each one
+  // where it flattens out and catches its breath. Side inlets spit into it,
+  // manhole shafts let the daylight down onto it, and it ends in a mouth in the
+  // wall of the cistern with a long drop under it. Nothing climbs back up this.
+  [-5958, -980, -1420],                   // the shaft: straight down under the drain
+  [-5900, -960, -1080],                   // the head of the pipe
+  [-5660, -807, -869],                    // the first step
+  [-5410, -799, -899],                    // a bench, and a manhole over it
+  [-5170, -646, -708],                    // the second step
+  [-4920, -638, -738],                    // a bench, and a side inlet
+  [-4680, -485, -547],                    // the third step
+  [-4430, -477, -577],                    // a bench, and a manhole over it
+  [-4190, -324, -386],                    // the fourth step
+  [-3940, -316, -416],                    // a bench, and a side inlet
+  [-3700, -163, -225],                    // the fifth step
+  [-3450, -155, -255],                    // the last bench, under the last manhole
+  [-3210, -42, -104],                     // the sixth step
+  [-2996, -40, -102],                     // the mouth, and a long drop under it
   // ---- THE CATACOMBS: a labyrinth under Rome. Not a pipe you swim along but
   // a string of vaults, each one shut off from the next by a gap only a small
   // animal fits through. You are tipped in at the cistern and the only way is
@@ -3057,7 +3078,7 @@ const SEWER_SECTION = [
   // people who built this stopped caring.
   // -- the cistern: where you land, from two floors up. deep, vaulted, and
   //    full of what floats
-  [-2946, 150, -170], [-2880, 200, -178], [-2800, 190, -170], [-2740, 130, -140],
+  [-2980, 150, -170], [-2880, 200, -178], [-2800, 190, -170], [-2740, 130, -140],
   [-2700, 60, -60],
   [-2660, 26, -8], [-2600, 24, -6], [-2560, 28, -10],                // the first squeeze
   // -- the ossuary: bone on the floor and bone in the walls
@@ -3141,9 +3162,29 @@ const OCEAN_CAVES = [
   [26050, 26600, 420], [27400, 27900, 760], [29100, 29700, 900],
   [30600, 31400, 1180], [32200, 32900, 1360],
 ];
+// Manhole shafts: [x, how much light reaches the cover]. Each one is a hole in
+// a street somewhere over the system, with a cast cover on it and a shaft of
+// rings under it. The ladder in a shaft stops eight feet above the crown,
+// which is exactly why it is no use to anything that cannot reach it.
+const MANHOLES = [
+  [-5410, 0.22], [-4430, 0.55], [-3450, 0.9],                       // over the interceptor
+  [-2860, 0.5], [-1965, 0.3], [-980, 0.62], [-430, 0.8],            // over Rome
+  [-8060, 0.34], [-9600, 0.22], [-12220, 0.2], [-16400, 0.14],      // over the system
+];
 const MapData = {
   x0: MAP_PROFILE[0][0], x1: MAP_PROFILE[MAP_PROFILE.length - 1][0],
-  // smooth interpolation between control points, plus fine noise for texture
+  // How man-made the ground is here, 0..1. It decides two things, and both of
+  // them are the difference between a hillside and a floor: whether the profile
+  // curves between its control points or runs dead straight to them, and
+  // whether the fine noise that gives mud its texture is applied at all.
+  // Concrete was poured to a line. Nothing under the city wobbles.
+  built(x) {
+    if (x >= 200) return 0;               // the swamp: mud, and it moves
+    if (x >= -120) return (200 - x) / 320; // the outfall: a concrete channel silting up
+    return 1;                              // the system, the works and Rome
+  },
+  // interpolation between control points, plus fine noise for texture. Built
+  // ground gets neither: straight runs, hard angles, no noise.
   floorY(x) {
     const P = MAP_PROFILE;
     if (x <= P[0][0]) return P[0][1];
@@ -3151,9 +3192,11 @@ const MapData = {
     let lo = 0, hi = P.length - 1;
     while (lo < hi - 1) { const m = (lo + hi) >> 1; if (P[m][0] <= x) lo = m; else hi = m; }
     const a = P[lo], b = P[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
-    const base = lerp(a[1], b[1], t * t * (3 - 2 * t));
+    const bu = this.built(x);
+    const base = lerp(a[1], b[1], lerp(t * t * (3 - 2 * t), t, bu));
+    if (bu >= 1) return base;
     const wob = vnoise(x * 0.045, 11) * 6 - 3 + vnoise(x * 0.012, 3) * 10 - 5;
-    return base + wob * (Math.abs(base) > 8 ? 1 : 0.35);
+    return base + wob * (Math.abs(base) > 8 ? 1 : 0.35) * (1 - bu);
   },
   // interpolated roof, or null where the sky is open
   roofY(x) {
@@ -3164,8 +3207,10 @@ const MapData = {
       let lo = 0, hi = R.length - 1;
       while (lo < hi - 1) { const m = (lo + hi) >> 1; if (R[m][0] <= x) lo = m; else hi = m; }
       const a = R[lo], b = R[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
-      const base = lerp(a[1], b[1], t * t * (3 - 2 * t));
-      return base + vnoise(x * 0.05, 31) * 8 - 4 + Math.sin(x * 0.021) * 3;
+      const bu = this.built(x);
+      const base = lerp(a[1], b[1], lerp(t * t * (3 - 2 * t), t, bu));
+      if (bu >= 1) return base;
+      return base + (vnoise(x * 0.05, 31) * 8 - 4 + Math.sin(x * 0.021) * 3) * (1 - bu);
     }
     // ocean caves: an overhang that closes over the water for a stretch
     for (const [cx0, cx1, r] of OCEAN_CAVES) {
@@ -3185,7 +3230,7 @@ const MapData = {
 const BIOMES = [
   // ===================== SEWER NETWORK ==========================
   {
-    id: 'sump', name: 'THE OUTFALL SUMP', x0: -16600, x1: -14300,
+    id: 'sump', name: 'THE OUTFALL SUMP', x0: -19600, x1: -17300,
     sky: ['#070d10', '#101a1e'], water: ['#41532c', '#25321a', '#0a0e07'], scum: '#7a8a2a', fog: '#101c1e',
     parallax: ['block', 'pipe', 'block'], ground: ['#2e3438', '#22282c', '#161a1e'], grass: '#3a4a34',
     indoor: true, roof: -200, dark: 0.72, toxic: 0.5, flora: '#6e7a2a', floraMix: 0.62,
@@ -3195,7 +3240,7 @@ const BIOMES = [
     structures: [], music: 0.9,
   },
   {
-    id: 'gallery', name: 'THE DEEP GALLERY', x0: -14300, x1: -10400,
+    id: 'gallery', name: 'THE DEEP GALLERY', x0: -17300, x1: -13400,
     sky: ['#08110f', '#131f1c'], water: ['#3f5a38', '#233420', '#0a110c'], scum: '#6a7a26', fog: '#121e1c',
     parallax: ['block', 'block', 'pipe'], ground: ['#343a3a', '#262c2c', '#181c1c'], grass: '#3f5a3a',
     indoor: true, roof: -180, dark: 0.66, toxic: 0.35, flora: '#6a7a2e', floraMix: 0.55,
@@ -3205,7 +3250,7 @@ const BIOMES = [
     structures: [], music: 0.85,
   },
   {
-    id: 'junction', name: 'JUNCTION 9', x0: -10400, x1: -7400,
+    id: 'junction', name: 'JUNCTION 9', x0: -13400, x1: -10400,
     sky: ['#0a1412', '#16241f'], water: ['#3d6048', '#21402e', '#091713'], scum: '#6a7a30', fog: '#14211d',
     parallax: ['pipe', 'block', 'pipe'], ground: ['#3a3f3c', '#2a2f2c', '#1b201e'], grass: '#4a6a3a',
     indoor: true, roof: -220, dark: 0.58, toxic: 0.25, flora: '#728030', floraMix: 0.46,
@@ -3215,7 +3260,7 @@ const BIOMES = [
     structures: [], music: 0.7,
   },
   {
-    id: 'shaft', name: 'THE DROP SHAFT', x0: -7400, x1: -5200,
+    id: 'shaft', name: 'THE DROP SHAFT', x0: -10400, x1: -8200,
     sky: ['#0c1618', '#1a2a2c'], water: ['#2a5a5e', '#153a3e', '#04161a'], scum: '#4a6a4a', fog: '#16262a',
     parallax: ['block', 'pipe', 'block'], ground: ['#33383c', '#252a2e', '#171b1f'], grass: '#3a5a44',
     indoor: true, roof: -520, dark: 0.5, toxic: 0.15, flora: '#6a8a3e', floraMix: 0.36,
@@ -3225,7 +3270,7 @@ const BIOMES = [
     structures: [], music: 0.75,
   },
   {
-    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3620,
+    id: 'undercroft', name: 'THE UNDERCROFT', x0: -8200, x1: -6620,
     sky: ['#0d1a1c', '#1a2a2c'], water: ['#40705c', '#20463a', '#0a1a16'], scum: '#5a7a3a', fog: '#1c2c2e',
     parallax: ['block', 'pipe', 'block'], ground: ['#3d4342', '#2d3332', '#1e2322'], grass: '#456a44',
     indoor: true, roof: -150, dark: 0.42, toxic: 0.08, flora: '#6f8a44', floraMix: 0.3,
@@ -3235,16 +3280,28 @@ const BIOMES = [
     structures: [], music: 0.55,
   },
   {
-    id: 'facility', name: 'FACILITY B', x0: -3620, x1: -2955, lab: true,
+    id: 'facility', name: 'FACILITY B', x0: -6620, x1: -5966, lab: true,
     sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
     parallax: ['block', 'block', 'block'], ground: ['#4a5258', '#343a40', '#1e2428'], grass: '#4a5258',
-    indoor: true, roof: -650, dark: 0.1,
+    indoor: true, roof: -1690, dark: 0.06,
     plants: [['labtank', 0.6], ['console', 0.4], ['crate', 0.2], ['cable', 0.45], ['biohaz', 0.15]],
     fish: [], land: [], structures: [],
     music: 0.9,
   },
   {
-    id: 'cistern', name: 'THE CISTERN', x0: -2955, x1: -1700, roman: true,
+    // A lined pipe, not a tunnel: precast rings, a benched invert, a wash of
+    // water down the middle of it and nothing growing anywhere. The only light
+    // is what falls down the manhole shafts it runs under.
+    id: 'chute', name: 'THE RELIEF INTERCEPTOR', x0: -5966, x1: -2985, pipe: true,
+    sky: ['#080d10', '#121a20'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
+    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#4e565a', '#373e42', '#22282c'], grass: '#4a5458',
+    indoor: true, roof: -120, dark: 0.62, toxic: 0.1,
+    plants: [['grit', 2.2], ['trash', 1.2], ['rubble', 1], ['pipe', 0.8], ['algae', 0.6]],
+    fish: [], land: [['rat', 1.2]], structures: [],
+    music: 0.8,
+  },
+  {
+    id: 'cistern', name: 'THE CISTERN', x0: -2985, x1: -1700, roman: true,
     sky: ['#0c1210', '#1a1e16'], water: ['#5a6a3a', '#33401f', '#12180a'], scum: '#8a8a3a', fog: '#1e2018',
     parallax: ['block', 'block', 'block'], ground: ['#5a5244', '#3e392e', '#26221b'], grass: '#4a5a34',
     indoor: true, roof: -150, dark: 0.55, toxic: 0.22, flora: '#7a8a3a', floraMix: 0.5,
@@ -3270,7 +3327,7 @@ const BIOMES = [
     plants: [['trash', 1.6], ['reed', 1.2], ['weed', 1.4], ['algae', 1.5], ['pipe', 0.7], ['bush', 0.5], ['rubble', 1.4]],
     fish: [['minnow', 4], ['shiner', 3], ['tilapia', 3], ['walkingcat', 2.5], ['snakehead', 1.6], ['bluegill', 2]],
     land: [['rat', 5], ['raccoon', 2], ['opossum', 1.5]],
-    structures: [['sign', 1], ['pipe', 1.5]],
+    structures: [['sign', 1], ['pipe', 1.5], ['manhole', 2.2], ['pumphouse', 1.6], ['billboard', 0.9]],
     music: 0.2,
   },
   {
@@ -3280,7 +3337,7 @@ const BIOMES = [
     plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1], ['duckweed', 1], ['palm', 0.6], ['fern', 0.8]],
     fish: [['snapper', 3], ['sheepshead', 2], ['mullet', 3], ['snook', 2], ['redfish', 1.6], ['ladyfish', 1.4], ['minnow', 2]],
     land: [['raccoon', 3], ['iguana', 2], ['rabbit', 1.5], ['fox', 1]],
-    structures: [['crabtrap', 2], ['buoy', 1], ['dock', 0.8]],
+    structures: [['crabtrap', 2], ['buoy', 1], ['dock', 0.8], ['boathouse', 0.8]],
     music: 0.4,
   },
   {
@@ -3290,7 +3347,7 @@ const BIOMES = [
     plants: [['palm', 1.4], ['bush', 1.4], ['flower', 1], ['crate', 1.2], ['reed', 0.8], ['lily', 0.6], ['post', 1.2]],
     fish: [['bluegill', 3], ['bass', 2.5], ['catfish', 2], ['mullet', 2], ['tilapia', 2], ['flgar', 1.4]],
     land: [['dog', 2], ['raccoon', 2], ['rabbit', 1]],
-    structures: [['shop', 2.4], ['dock', 2.4], ['stilthouse', 1.6], ['boatramp', 1.4], ['sign', 1]],
+    structures: [['shop', 2.4], ['dock', 2.4], ['stilthouse', 1.6], ['boatramp', 1.4], ['sign', 1], ['boathouse', 2], ['trailer', 1.8], ['watertower', 1], ['billboard', 0.8]],
     town: true, music: 0.5,
   },
   {
@@ -3300,7 +3357,7 @@ const BIOMES = [
     plants: [['cypress', 2.6], ['knee', 2], ['moss', 1.6], ['fern', 1.4], ['vine', 1.2], ['weed', 1.4], ['lily', 1.2], ['mushroom', 0.8], ['log', 1]],
     fish: [['bowfin', 2.4], ['flgar', 2.2], ['gar', 1.6], ['catfish', 2], ['bluegill', 2], ['eel', 1.4]],
     land: [['panther', 1.2], ['bear', 0.9], ['boar', 1.6], ['deer', 2], ['opossum', 1.4], ['bobcat', 1.2]],
-    structures: [['tower', 1], ['sign', 0.6]],
+    structures: [['tower', 1], ['sign', 0.6], ['trailer', 0.8], ['billboard', 0.7]],
     dark: 0.18, music: 0.8,
   },
   {
@@ -3320,7 +3377,7 @@ const BIOMES = [
     plants: [['weed', 2], ['algae', 2], ['sunkbranch', 1.6], ['shellbed', 1.4], ['root', 1.2], ['rock', 1.4], ['bush', 0.8]],
     fish: [['tarpon', 2.2], ['snook', 2], ['gar', 1.8], ['catfish', 2], ['eel', 1.6], ['shark', 1.2], ['bonnet', 1.4], ['redfish', 1.6]],
     land: [['otter', 1.6], ['coyote', 1.2], ['deer', 1.2]],
-    structures: [['buoy', 1.6], ['dock', 0.8], ['tower', 0.8]],
+    structures: [['buoy', 1.6], ['dock', 0.8], ['tower', 0.8], ['watertower', 0.9], ['billboard', 0.6]],
     music: 0.9,
   },
   {
@@ -3330,7 +3387,7 @@ const BIOMES = [
     plants: [['palm', 1.6], ['bush', 1.6], ['flower', 1.4], ['sawgrass', 1.2], ['cooler', 1], ['firewood', 1.2], ['lily', 0.8]],
     fish: [['bluegill', 3], ['bass', 2.4], ['mullet', 2], ['sunfish', 2], ['snook', 1.4]],
     land: [['dog', 1.6], ['raccoon', 2.4], ['deer', 1.6], ['bear', 1]],
-    structures: [['campsite', 2.6], ['dock', 1.2], ['boatramp', 1], ['sign', 0.8]],
+    structures: [['campsite', 2.6], ['dock', 1.2], ['boatramp', 1], ['sign', 0.8], ['trailer', 1.6], ['boathouse', 1], ['watertower', 0.7]],
     town: true, music: 0.5,
   },
   {
@@ -3340,7 +3397,7 @@ const BIOMES = [
     plants: [['seagrass', 2.6], ['shellbed', 2], ['coral', 1.4], ['algae', 1.6], ['rock', 1.4], ['sunkbranch', 1]],
     fish: [['tarpon', 2], ['shark', 1.8], ['sawfish', 1.4], ['grouper', 1.4], ['dolphin', 1.4], ['manatee', 1.4], ['redfish', 1.8], ['bonnet', 1.6]],
     land: [['otter', 1]],
-    structures: [['buoy', 2], ['crabtrap', 1.4], ['stilthouse', 1]],
+    structures: [['buoy', 2], ['crabtrap', 1.4], ['stilthouse', 1], ['boathouse', 1.2]],
     music: 1,
   },
   {
@@ -3351,7 +3408,7 @@ const BIOMES = [
     plants: [['rubble', 2.2], ['rock', 1.6], ['trash', 1.8], ['pipe', 1.4], ['algae', 1.2], ['shellbed', 1]],
     fish: [['shark', 2.2], ['tarpon', 1.6], ['sawfish', 1.6], ['grouper', 1.4], ['dolphin', 1], ['bonnet', 1.4]],
     land: [['ranger', 2], ['poacher', 2]],
-    structures: [['seawall', 3], ['sign', 0.6]],
+    structures: [['seawall', 3], ['sign', 0.6], ['pumphouse', 1.4], ['watertower', 0.8], ['manhole', 1.2]],
     town: true, kaiju: true, music: 1.2,
   },
   // ===================== OPEN OCEAN =============================
@@ -3414,11 +3471,15 @@ const Biome = {
       parallax: t > 0.5 ? b.parallax : a.parallax, plants: a.plants, fish: a.fish, land: a.land, structures: a.structures,
       flora: a.flora || b.flora || null, floraMix: lerp(a.floraMix || 0, b.floraMix || 0, t), open: t > 0.5 ? b.open : a.open,
       toxic: lerp(a.toxic || 0, b.toxic || 0, t), pressure: lerp(a.pressure || 0, b.pressure || 0, t), indoor: t > 0.5 ? b.indoor : a.indoor,
+      // These three decide which renderer draws the room, so a blend that drops
+      // them makes the last 260 units of a laboratory come out as sewer brick.
+      lab: t > 0.5 ? b.lab : a.lab, roman: t > 0.5 ? b.roman : a.roman, pipe: t > 0.5 ? b.pipe : a.pipe,
     };
   },
   // decor for one strip of ground, chosen from the biome's plant table
   decorAt(x, rng, out) {
     const B = this.at(x), fy = MapData.floorY(x), land = fy < 0, depth = fy;
+    if (B.lab) return;        // the lab is laid out, not scattered: see authored()
     const table = B.plants.filter(([k]) => {
       const w = PLANT_RULES[k]; if (!w) return false;
       return w.land === undefined || w.land === land ? (w.minD === undefined || depth >= w.minD) && (w.maxD === undefined || depth <= w.maxD) : false;
@@ -3428,6 +3489,27 @@ const Biome = {
     if (rng() > Math.min(0.97, tot * 0.28)) return;
     let r = rng() * tot;
     for (const e of table) { r -= e[1]; if (r <= 0) { PLANT_RULES[e[0]].make(out, x + rng() * 10, fy, rng, B); return; } }
+  },
+  // Everything in the world that was set out rather than grown, placed once per
+  // chunk on its own grid so it never depends on where the sampler happened to
+  // land. Today that is the laboratory corridor, which is laid out in bays.
+  authored(x0, x1, out) {
+    for (let x = Math.ceil(x0 / 120) * 120; x < x1; x += 120) {
+      const B = this.at(x);
+      if (B.lab) this.labBay(x, out);
+    }
+  },
+  // One bay of the corridor. Four of them repeat along it: a tank with its
+  // console, a stack of crates and a drum, a pair of tanks, and a run of cable
+  // off the tray. Every piece sits on the floor at its own x, which in here is
+  // the same number all the way along.
+  labBay(x, out) {
+    const bay = ((Math.floor(x / 120) % 4) + 4) % 4;
+    const put = (type, ox, f) => { const px = x + ox; out.push(Object.assign({ type, x: px, y: MapData.floorY(px), ph: (ox % 7) * 0.9 }, f || {})); };
+    if (bay === 0) { put('labtank', 12, { v: 0 }); put('console', 54, { v: 0 }); put('crate', 98, { v: 1 }); }
+    else if (bay === 1) { put('crate', 16, { v: 0 }); put('crate', 32, { v: 1 }); put('biohaz', 74); put('console', 104, { v: 1 }); }
+    else if (bay === 2) { put('labtank', 14, { v: 1 }); put('labtank', 58, { v: 2 }); put('console', 100, { v: 2 }); }
+    else { put('biohaz', 14); put('crate', 46, { v: 2 }); put('labtank', 86, { v: 3 }); }
   },
 };
 // how each plant is placed. land: true = only dry ground, false = only water
@@ -3478,6 +3560,8 @@ const PLANT_RULES = {
   flower: { land: true, make: (o, x, y, r) => o.push({ type: 'flower', x, y, c: Math.floor(r() * 4), n: 1 + Math.floor(r() * 3) }) },
   mushroom: { land: true, make: (o, x, y, r) => o.push({ type: 'mushroom', x, y, n: 2 + Math.floor(r() * 3), c: Math.floor(r() * 2) }) },
   crate: { land: true, make: (o, x, y, r) => o.push({ type: 'crate', x, y, v: Math.floor(r() * 3) }) },
+  // what a pipe collects: a bank of washed grit against one side of the invert
+  grit: { land: true, make: (o, x, y, r) => o.push({ type: 'grit', x, y, n: 3 + Math.floor(r() * 4), s: 0.8 + r() * 0.8, side: r() < 0.5 ? -1 : 1 }) },
   post: { land: true, make: (o, x, y, r) => o.push({ type: 'post', x, y, h: 16 + r() * 16 }) },
   cooler: { land: true, make: (o, x, y, r) => o.push({ type: 'cooler', x, y, v: Math.floor(r() * 2) }) },
   firewood: { land: true, make: (o, x, y, r) => o.push({ type: 'firewood', x, y }) },
@@ -3738,6 +3822,7 @@ const World = {
     const rng = mulberry32((ci * 104729 + 12345) >>> 0);   // the map is fixed, so decor is too
     const x0 = ci * this.CHUNK, x1 = x0 + this.CHUNK, decor = [];
     for (let x = x0; x < x1; x += 6) Biome.decorAt(x, rng, decor);
+    Biome.authored(x0, x1, decor);
     const ch = { ci, x0, x1, decor, visits };
     this.chunks.set(ci, ch);
     if (this.onChunkLoad) this.onChunkLoad(ch, rng);
@@ -4124,14 +4209,67 @@ const World = {
       // a vertical face where the floor jumps: draw the drop as blockwork with a coping
       if (i > 0) { const dy = sy - pts[i - 1][1]; if (Math.abs(dy) > 6 * z) { const top = Math.min(sy, pts[i - 1][1]); ctx.fillStyle = shade(g1, 0.7); ctx.fillRect(sx - 1, Math.round(top), 2, Math.round(Math.abs(dy))); ctx.fillStyle = mixColor(g0, '#ffffff', 0.22); ctx.fillRect(sx - 1, Math.round(top), 2, Math.max(1, Math.round(2 * z))); } }
     }
+    // under the crown of a pipe the ground below the invert is fill too, and
+    // the invert itself is a benched channel with the wash running down it
+    if (B.pipe) {
+      ctx.save(); cap(13 * z); ctx.clip(); this.buriedGround(ctx, cam); ctx.restore();
+      this.pipeLining(ctx, cam, 1);
+      ctx.save(); cap(0); ctx.beginPath();
+      ctx.moveTo(pts[0][0], H + 30); for (const p of pts) ctx.lineTo(p[0], p[1]); ctx.lineTo(pts[last][0], H + 30); ctx.closePath(); ctx.clip();
+      for (let i = 0; i < pts.length; i++) {
+        const [sx, sy, wx] = pts[i];
+        // the channel: a wet strip down the middle, benches either side of it
+        ctx.fillStyle = '#2e3a38'; ctx.fillRect(sx, Math.round(sy), step, Math.ceil(7 * z));
+        ctx.fillStyle = '#3d5450'; ctx.fillRect(sx, Math.round(sy + 1 * z), step, Math.max(1, Math.round(2 * z)));
+        if (((wx % 26) + 26) % 26 < 3) { ctx.fillStyle = '#22292c'; ctx.fillRect(sx, Math.round(sy), Math.max(1, Math.round(1.6 * z)), Math.ceil(13 * z)); }
+      }
+      ctx.restore();
+    }
     // in the lab the floor is tiled, with a painted line and a drain grate now and then
     if (B.lab) {
       ctx.save(); cap(0); ctx.clip();
       const tile = Tex.get('labtile', 24, (x, S) => { x.fillStyle = '#39454a'; x.fillRect(0, 0, S, S); x.fillStyle = '#2a3438'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(12, 0, 1, S); x.fillRect(0, 12, S, 1); x.fillStyle = '#44525a'; x.fillRect(1, 1, 5, 1); });
       ctx.globalAlpha = 1; Tex.fill(ctx, tile, cam.x, cam.y, z, 1);
       ctx.restore();
+      // and under the tile a slab, not more tile: this is what you see when
+      // the floor ends and you are looking at the edge of it
+      cap(12 * z); ctx.fillStyle = '#7d8388'; ctx.fill();
+      cap(15 * z); ctx.fillStyle = '#5c6469'; ctx.fill();
+      cap(34 * z); ctx.fillStyle = '#2b3236'; ctx.fill();
+      cap(38 * z); ctx.fillStyle = '#1b2124'; ctx.fill();
+      for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (((wx % 120) + 120) % 120 < 8) { ctx.fillStyle = '#242b2f'; ctx.fillRect(sx, Math.round(sy + 38 * z), step, Math.round(40 * z)); } }
       for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (Math.abs(wx % 60) < 34) { ctx.fillStyle = '#8a7a20'; ctx.fillRect(sx, Math.round(sy + 4 * z), step, Math.max(1, Math.round(1.6 * z))); } }
     }
+    if (B.lab || B.pipe) this.drawFloorDrain(ctx, cam);
+  },
+  // The end of the corridor. A cast manhole frame set into the tiled floor
+  // with the cover lifted off it and stood against the wall, a barrier round
+  // three sides of it that nobody was expecting to need on the fourth, and
+  // under the frame the shaft, which does not have a bottom you can see.
+  drawFloorDrain(ctx, cam) {
+    const z = cam.zoom, lip = Opening.LIP;
+    const leftW = cam.toWorldX(-120), rightW = cam.toWorldX(G.W + 120);
+    if (lip < leftW || lip > rightW) return;
+    const fy = this.floorY(lip - 4);
+    const [sx, sy] = cam.toScreen(lip, fy);
+    // the frame: a cast rim along the last of the floor. The shaft under it is
+    // drawn by drawDropShaft, over the ground, so it is not drawn twice here.
+    ctx.fillStyle = '#4a5258'; ctx.fillRect(Math.round(sx - 26 * z), Math.round(sy - 4 * z), Math.round(28 * z), Math.round(6 * z));
+    ctx.fillStyle = '#6e787e'; ctx.fillRect(Math.round(sx - 26 * z), Math.round(sy - 4 * z), Math.round(28 * z), Math.max(1, Math.round(2 * z)));
+    ctx.fillStyle = '#2a3034'; ctx.fillRect(Math.round(sx - 2 * z), Math.round(sy - 4 * z), Math.round(3 * z), Math.round(26 * z));
+    // the cover, off the frame, stood on its edge against the wall
+    const cx = sx - 52 * z, cy = sy;
+    ctx.fillStyle = '#23262a'; ctx.fillRect(Math.round(cx - 13 * z), Math.round(cy - 30 * z), Math.round(26 * z), Math.round(30 * z));
+    ctx.fillStyle = '#3a3e42'; ctx.fillRect(Math.round(cx - 13 * z), Math.round(cy - 30 * z), Math.round(4 * z), Math.round(30 * z));
+    ctx.fillStyle = '#4c5258'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(cx - 8 * z), Math.round(cy - 26 * z + i * 7 * z), Math.round(16 * z), Math.max(1, Math.round(2 * z)));
+    // the barrier, round three sides of a hole with four
+    for (const ox of [-40, -14]) {
+      ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx + ox * z), Math.round(sy - 30 * z), Math.max(1, Math.round(2 * z)), Math.round(30 * z));
+    }
+    ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx - 41 * z), Math.round(sy - 30 * z), Math.round(28 * z), Math.max(1, Math.round(3 * z)));
+    ctx.fillStyle = '#1a1a1a'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(sx - 39 * z + i * 7 * z), Math.round(sy - 30 * z), Math.round(3 * z), Math.max(1, Math.round(3 * z)));
+    // and the cold air coming up out of it
+    if (chance(0.05)) G.fx.add({ type: 'smoke', x: lip + rand(2, 22), y: fy + 6, vx: rand(-4, 4), vy: -14, s: 1.1, color: '#39464a', life: 2.2, t: 0, maxLife: 2.2 });
   },
   drawTerrain(ctx, cam) {
     if (this.isIndoor(cam.x)) { this.drawBuiltGround(ctx, cam); return; }
@@ -4344,6 +4482,139 @@ const World = {
     }
   },
   // concrete shell of the lab and sewer: ceiling, back wall, ribs and lamps
+  // The made ground a pipe is buried in. Above the crown and below the invert
+  // there is no rock: there is fill, in courses, with two thousand years of
+  // other people's work laid through it — clay drains, brick footings, a duct
+  // bank, a gas main somebody abandoned. Drawn into whatever is clipped.
+  buriedGround(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    ctx.fillStyle = '#1d1c1a'; ctx.fillRect(0, 0, W, H);
+    const band = 17, leftW = cam.toWorldX(-60), rightW = cam.toWorldX(W + 60);
+    const wy0 = cam.toWorld(0, -20)[1], wy1 = cam.toWorld(0, H + 20)[1];
+    for (let wy = Math.floor(wy0 / band) * band; wy < wy1; wy += band) {
+      const h = ihash(Math.floor(wy / band), 401);
+      const [, sy] = cam.toScreen(0, wy);
+      ctx.fillStyle = h < 0.3 ? '#26241f' : h < 0.55 ? '#181816' : h < 0.8 ? '#211f1b' : '#2b2620';
+      ctx.fillRect(0, Math.round(sy), W, Math.ceil(band * z));
+      ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.fillRect(0, Math.round(sy), W, Math.max(1, Math.round(z)));
+    }
+    // gravel and brick rubble through the fill
+    const grit = Tex.get('fill|grit', 32, (x, S) => {
+      for (let i = 0; i < 90; i++) { const gx = ihash(i, 7) * S, gy = ihash(i, 8) * S, v = ihash(i, 9);
+        x.fillStyle = v < 0.4 ? 'rgba(120,104,84,0.5)' : v < 0.75 ? 'rgba(70,58,46,0.6)' : 'rgba(150,96,70,0.4)';
+        x.fillRect(gx | 0, gy | 0, 1 + (v > 0.9 ? 1 : 0), 1); }
+    });
+    Tex.fill(ctx, grit, cam.x, cam.y, z, 0.55);
+    // what was laid in the ground before the pipe was
+    for (let wx = Math.floor(leftW / 170) * 170; wx < rightW; wx += 170) {
+      const k = Math.floor(wx / 170), h = ihash(k, 411);
+      const wy = wy0 + ihash(k, 412) * (wy1 - wy0);
+      const [sx, sy] = cam.toScreen(wx, wy);
+      if (h < 0.3) {                                   // an old clay drain, cut through
+        const r = (7 + ihash(k, 413) * 5) * z;
+        Shape.oct(ctx, sx, sy, r + 2 * z, '#6a4a34'); Shape.oct(ctx, sx, sy, r, '#8a6446'); Shape.oct(ctx, sx, sy, r * 0.6, '#120e0a');
+      } else if (h < 0.55) {                           // a brick footing
+        const bw = 34 * z, bh = 16 * z;
+        for (let ry = 0; ry < 3; ry++) for (let rx = 0; rx < 4; rx++) {
+          ctx.fillStyle = (rx + ry) % 2 ? '#5c3a2c' : '#6a4434';
+          ctx.fillRect(Math.round(sx - bw / 2 + rx * bw / 4 + (ry % 2 ? 2 * z : 0)), Math.round(sy + ry * bh / 3), Math.ceil(bw / 4 - z), Math.ceil(bh / 3 - z));
+        }
+      } else if (h < 0.78) {                           // a duct bank: four ways, in concrete
+        const dw = 26 * z, dh = 18 * z;
+        ctx.fillStyle = '#3e3a34'; ctx.fillRect(Math.round(sx - dw / 2), Math.round(sy), Math.round(dw), Math.round(dh));
+        for (let i = 0; i < 4; i++) Shape.oct(ctx, sx - dw / 2 + dw * (0.25 + (i % 2) * 0.5), sy + dh * (i < 2 ? 0.32 : 0.7), 4 * z, '#14100c');
+      } else if (h < 0.9) {                            // a main, still in service, still leaking
+        ctx.fillStyle = '#4a4640'; ctx.fillRect(Math.round(sx - 30 * z), Math.round(sy), Math.round(60 * z), Math.round(9 * z));
+        ctx.fillStyle = '#5e5a52'; ctx.fillRect(Math.round(sx - 30 * z), Math.round(sy), Math.round(60 * z), Math.max(1, Math.round(2 * z)));
+        ctx.fillStyle = '#2a2622'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy - 2 * z), Math.round(8 * z), Math.round(13 * z));
+      }
+    }
+  },
+  // The lining, seen edge on: the wall thickness of the pipe itself, a band of
+  // pale concrete following the crown and the invert with a ring joint in it
+  // every segment. It is the one line that tells you this is a pipe and not a
+  // hole, so it is drawn last and it is drawn light.
+  pipeLining(ctx, cam, dir) {
+    const W = G.W, z = cam.zoom, step = 3, th = 13;
+    for (let sx = -step; sx <= W + step; sx += step) {
+      const wx = cam.toWorldX(sx), r = dir < 0 ? this.roofY(wx) : this.floorY(wx);
+      if (r === null) continue;
+      const [, sy] = cam.toScreen(wx, r);
+      const y0 = dir < 0 ? sy - th * z : sy;
+      ctx.fillStyle = '#5b6166'; ctx.fillRect(sx, Math.round(y0), step, Math.ceil(th * z));
+      ctx.fillStyle = dir < 0 ? '#787f84' : '#6d757a'; ctx.fillRect(sx, Math.round(dir < 0 ? sy - 3 * z : sy), step, Math.max(1, Math.round(3 * z)));
+      ctx.fillStyle = '#3b4145'; ctx.fillRect(sx, Math.round(dir < 0 ? y0 : sy + th * z - 2 * z), step, Math.max(1, Math.round(2 * z)));
+      // a ring joint every 26 units: this pipe was laid in segments
+      if (((wx % 26) + 26) % 26 < 3) { ctx.fillStyle = '#333a3e'; ctx.fillRect(sx, Math.round(y0), Math.max(1, Math.round(1.6 * z)), Math.ceil(th * z)); }
+    }
+  },
+  // Manhole shafts. Every one of them is a hole in a street with a cast cover
+  // on it, a shaft of rings under the cover and a ladder down the side of the
+  // shaft whose bottom rung stops well short of the crown — which is the whole
+  // reason a thing your size cannot use one. What comes down is light and rain.
+  drawManholes(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    const leftW = cam.toWorldX(-90), rightW = cam.toWorldX(W + 90);
+    for (const [mx, lit] of MANHOLES) {
+      if (mx < leftW || mx > rightW) continue;
+      const r = this.roofY(mx); if (r === null) continue;
+      const rad = 17, top = r - 150;
+      const [sx, sy] = cam.toScreen(mx, r);
+      const [, ty] = cam.toScreen(mx, top);
+      const x0 = Math.round(sx - rad * z), wdt = Math.ceil(rad * 2 * z);
+      // the bore of the shaft, and the rings it is built out of
+      ctx.fillStyle = '#12100e'; ctx.fillRect(x0, Math.round(ty), wdt, Math.round(sy - ty));
+      ctx.fillStyle = '#3a3a36'; ctx.fillRect(x0 - Math.round(3 * z), Math.round(ty), Math.round(3 * z), Math.round(sy - ty));
+      ctx.fillStyle = '#2c2c28'; ctx.fillRect(Math.round(sx + rad * z), Math.round(ty), Math.round(3 * z), Math.round(sy - ty));
+      for (let wy = top; wy < r; wy += 24) {
+        const [, jy] = cam.toScreen(mx, wy);
+        ctx.fillStyle = '#26251f'; ctx.fillRect(x0, Math.round(jy), wdt, Math.max(1, Math.round(2 * z)));
+        ctx.fillStyle = '#443f36'; ctx.fillRect(x0, Math.round(jy + 2 * z), wdt, Math.max(1, Math.round(z)));
+      }
+      // the ladder, down one side, stopping short
+      for (let wy = top + 16; wy < r - 54; wy += 15) {
+        const [, ry] = cam.toScreen(mx, wy);
+        ctx.fillStyle = '#6a6252'; ctx.fillRect(Math.round(sx - 7 * z), Math.round(ry), Math.round(14 * z), Math.max(1, Math.round(2 * z)));
+        ctx.fillStyle = '#2a2620'; ctx.fillRect(Math.round(sx - 7 * z), Math.round(ry + 2 * z), Math.round(14 * z), Math.max(1, Math.round(z)));
+      }
+      // the cover, and the daylight round the edge of it
+      const day = clamp(lit * (0.35 + 0.65 * World.light(G.day)), 0, 1);
+      ctx.fillStyle = '#1a1a16'; ctx.fillRect(x0 - Math.round(4 * z), Math.round(ty - 9 * z), wdt + Math.round(8 * z), Math.round(9 * z));
+      ctx.fillStyle = '#3c3a32'; ctx.fillRect(x0 - Math.round(2 * z), Math.round(ty - 7 * z), wdt + Math.round(4 * z), Math.round(5 * z));
+      for (let i = 0; i < 5; i++) { ctx.fillStyle = '#54514a'; ctx.fillRect(Math.round(sx - rad * z + 3 * z + i * 7 * z), Math.round(ty - 6 * z), Math.max(1, Math.round(3 * z)), Math.max(1, Math.round(3 * z))); }
+      // the cast frame where the shaft breaks through the crown: the one line
+      // that says a hole in the ceiling is a hole and not a stain
+      ctx.fillStyle = '#787f84'; ctx.fillRect(x0 - Math.round(5 * z), Math.round(sy - 3 * z), wdt + Math.round(10 * z), Math.max(1, Math.round(3 * z)));
+      ctx.fillStyle = '#3b4145'; ctx.fillRect(x0 - Math.round(5 * z), Math.round(sy), wdt + Math.round(10 * z), Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#0c0e0e'; ctx.fillRect(x0, Math.round(sy - 3 * z), wdt, Math.max(1, Math.round(3 * z)));
+      if (day > 0.04) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        // the light through the slots in the cover, spreading as it falls, and
+        // strongest where it comes through the crown
+        const fy0 = this.floorY(mx), [, fS] = cam.toScreen(mx, fy0);
+        const g = ctx.createLinearGradient(0, ty, 0, fS + 10 * z);
+        g.addColorStop(0, `rgba(210,230,244,${(0.78 * day).toFixed(3)})`);
+        g.addColorStop(0.5, `rgba(200,222,238,${(0.44 * day).toFixed(3)})`);
+        g.addColorStop(0.82, `rgba(192,216,234,${(0.22 * day).toFixed(3)})`);
+        g.addColorStop(1, 'rgba(180,206,226,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(sx - 9 * z, ty); ctx.lineTo(sx + 9 * z, ty);
+        ctx.lineTo(sx + 34 * z, fS + 10 * z); ctx.lineTo(sx - 34 * z, fS + 10 * z);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+        // and a puddle of it on the invert
+        const gy = fS;
+        if (gy > -40 && gy < H + 40) {
+          ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          const p = ctx.createRadialGradient(sx, gy, 1, sx, gy, 44 * z);
+          p.addColorStop(0, `rgba(196,218,236,${(0.34 * day).toFixed(3)})`); p.addColorStop(1, 'rgba(190,214,232,0)');
+          ctx.fillStyle = p; ctx.fillRect(sx - 44 * z, gy - 26 * z, 88 * z, 52 * z); ctx.restore();
+        }
+        if (chance(0.06)) G.fx.add({ type: 'drop', x: mx + rand(-10, 10), y: top + 20, vx: rand(-3, 3), vy: 60, s: 1, color: '#a8c4d0', life: 3.4 });
+      }
+    }
+  },
   drawIndoor(ctx, cam, day) {
     const W = G.W, H = G.H, z = cam.zoom, step = 4;
     if (!this.isIndoor(cam.toWorldX(W / 2)) && !this.isIndoor(cam.toWorldX(0)) && !this.isIndoor(cam.toWorldX(W))) return;
@@ -4377,13 +4648,23 @@ const World = {
       const roofS = cam.toScreen(0, this.roofY(cam.x) || -650)[1], floorS = cam.toScreen(0, this.floorY(cam.x))[1];
       // upper wall: dark painted block
       ctx.fillStyle = '#1e262b'; ctx.fillRect(0, 0, W, H);
-      // tile band: from a little above the floor to two metres up
+      // tile band: from a little above the floor to two metres up. It is the
+      // only bright surface in the game and it is meant to be: you spend the
+      // first minute of a run looking at it.
       const tileTop = floorS - 150 * z, tileBot = floorS + 6 * z;
-      const tile = Tex.get('labwall', 32, (x, S) => { x.fillStyle = '#c8d0cc'; x.fillRect(0, 0, S, S); x.fillStyle = '#9aa6a4'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(16, 0, 1, S); x.fillRect(0, 16, S, 1); x.fillStyle = '#dce4e0'; x.fillRect(2, 2, 8, 1); x.fillRect(18, 18, 8, 1); });
+      const tile = Tex.get('labwall2', 32, (x, S) => {
+        x.fillStyle = '#b9c5c0'; x.fillRect(0, 0, S, S);
+        x.fillStyle = '#94a29e'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(16, 0, 1, S); x.fillRect(0, 16, S, 1);
+        x.fillStyle = '#d2ded8'; x.fillRect(1, 1, 14, 1); x.fillRect(17, 17, 14, 1); x.fillRect(1, 1, 1, 14); x.fillRect(17, 17, 1, 14);
+        x.fillStyle = '#a7b4af'; x.fillRect(10, 8, 3, 1); x.fillRect(24, 22, 4, 1);
+      });
       ctx.save(); ctx.beginPath(); ctx.rect(0, tileTop, W, tileBot - tileTop); ctx.clip();
-      Tex.fill(ctx, tile, cam.x, cam.y, z, 0.62); ctx.restore();
-      ctx.fillStyle = '#6a7a80'; ctx.fillRect(0, Math.round(tileTop), W, Math.max(1, Math.round(2 * z)));
+      Tex.fill(ctx, tile, cam.x, cam.y, z, 0.94); ctx.restore();
+      // the dado: a capping rail over the tile, then the painted stripe
+      ctx.fillStyle = '#8e9ca0'; ctx.fillRect(0, Math.round(tileTop - 4 * z), W, Math.max(1, Math.round(4 * z)));
+      ctx.fillStyle = '#c2ccce'; ctx.fillRect(0, Math.round(tileTop - 4 * z), W, Math.max(1, Math.round(z)));
       ctx.fillStyle = '#2a8a70'; ctx.fillRect(0, Math.round(tileTop + 6 * z), W, Math.max(1, Math.round(3 * z)));       // the coloured stripe every facility has
+      ctx.fillStyle = '#1d5f4e'; ctx.fillRect(0, Math.round(tileTop + 9 * z), W, Math.max(1, Math.round(z)));
       // grime where the floor meets the wall
       ctx.fillStyle = 'rgba(30,26,20,0.35)'; ctx.fillRect(0, Math.round(floorS - 8 * z), W, Math.round(8 * z));
       // ducting, cable tray and conduit along the crown
@@ -4402,8 +4683,9 @@ const World = {
         ctx.fillStyle = on ? '#e8f4ee' : '#4a5a58'; ctx.fillRect(Math.round(sx - lw / 2 + 2 * z), Math.round(ly + 4 * z), Math.round(lw - 4 * z), Math.max(1, Math.round(2 * z)));
         if (on) { const g = ctx.createLinearGradient(0, ly, 0, floorS); g.addColorStop(0, 'rgba(210,240,230,0.16)'); g.addColorStop(1, 'rgba(210,240,230,0)'); ctx.fillStyle = g; ctx.fillRect(Math.round(sx - lw / 2 - 20 * z), Math.round(ly), Math.round(lw + 40 * z), Math.round(floorS - ly)); }
       }
-      // doors, every 240, with a porthole and a keypad
-      for (let wx = Math.floor(leftW / 240) * 240 + 120; wx < rightW; wx += 240) {
+      // doors, every 480, with a porthole and a keypad
+      for (let wx = Math.floor(leftW / 480) * 480 + 240; wx < rightW; wx += 480) {
+        if (!Biome.at(wx).lab) continue;
         const [sx] = cam.toScreen(wx, 0), dw = 44 * z, dh = 92 * z, dy = floorS - dh;
         ctx.fillStyle = '#2f3a40'; ctx.fillRect(Math.round(sx - dw / 2 - 3 * z), Math.round(dy - 3 * z), Math.round(dw + 6 * z), Math.round(dh + 3 * z));
         ctx.fillStyle = '#4a5860'; ctx.fillRect(Math.round(sx - dw / 2), Math.round(dy), Math.round(dw), Math.round(dh));
@@ -4417,14 +4699,73 @@ const World = {
         ctx.fillStyle = '#c8d0cc'; ctx.fillRect(Math.round(sx - 16 * z), Math.round(dy - 14 * z), Math.round(32 * z), Math.round(8 * z));
         ctx.fillStyle = '#1e262b'; for (let k = 0; k < 5; k++) ctx.fillRect(Math.round(sx - 13 * z + k * 6 * z), Math.round(dy - 11 * z), Math.round(3 * z), Math.round(2 * z));
       }
+      // fittings, on the grid, at the height the shot actually sees: a hose reel
+      // in its cabinet, a panel with its door shut, a socket and a spill kit.
+      for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
+        if (!Biome.at(wx).lab) continue;
+        const [sx] = cam.toScreen(wx, 0), kind = ((Math.floor(wx / 120) % 4) + 4) % 4;
+        const by = floorS - 96 * z;
+        if (kind === 0) {                                     // hose reel, in a cabinet
+          ctx.fillStyle = '#a03024'; ctx.fillRect(Math.round(sx - 13 * z), Math.round(by), Math.round(26 * z), Math.round(26 * z));
+          ctx.fillStyle = '#c04434'; ctx.fillRect(Math.round(sx - 13 * z), Math.round(by), Math.round(26 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#2a1a16'; ctx.fillRect(Math.round(sx - 9 * z), Math.round(by + 5 * z), Math.round(18 * z), Math.round(17 * z));
+          ctx.fillStyle = '#d8d0c0'; for (let r = 6; r >= 2; r -= 2) { ctx.fillRect(Math.round(sx - r * z), Math.round(by + 13 * z - r * z), Math.round(2 * r * z), Math.max(1, Math.round(z))); ctx.fillRect(Math.round(sx - r * z), Math.round(by + 13 * z + r * z), Math.round(2 * r * z), Math.max(1, Math.round(z))); }
+        } else if (kind === 1) {                              // a distribution board
+          ctx.fillStyle = '#39444a'; ctx.fillRect(Math.round(sx - 15 * z), Math.round(by + 2 * z), Math.round(30 * z), Math.round(22 * z));
+          ctx.fillStyle = '#4b585e'; ctx.fillRect(Math.round(sx - 15 * z), Math.round(by + 2 * z), Math.round(30 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#28323a'; ctx.fillRect(Math.round(sx - 12 * z), Math.round(by + 6 * z), Math.round(24 * z), Math.round(14 * z));
+          for (let i = 0; i < 5; i++) { ctx.fillStyle = ihash(i + Math.floor(wx / 120), 61) > 0.4 ? '#40c878' : '#c8a020'; ctx.fillRect(Math.round(sx - 10 * z + i * 4.4 * z), Math.round(by + 9 * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(3 * z))); }
+        } else if (kind === 2) {                              // a spill kit and a socket
+          ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx - 9 * z), Math.round(by + 10 * z), Math.round(18 * z), Math.round(14 * z));
+          ctx.fillStyle = '#e0c040'; ctx.fillRect(Math.round(sx - 9 * z), Math.round(by + 10 * z), Math.round(18 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#1a1a1a'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(by + 14 * z), Math.round(8 * z), Math.round(6 * z));
+          ctx.fillStyle = '#b8c0bc'; ctx.fillRect(Math.round(sx + 16 * z), Math.round(by + 16 * z), Math.round(7 * z), Math.round(8 * z));
+          ctx.fillStyle = '#2a3236'; ctx.fillRect(Math.round(sx + 18 * z), Math.round(by + 18 * z), Math.max(1, Math.round(z)), Math.round(3 * z)); ctx.fillRect(Math.round(sx + 20 * z), Math.round(by + 18 * z), Math.max(1, Math.round(z)), Math.round(3 * z));
+        } else {                                              // a window into the next bay, lit green
+          ctx.fillStyle = '#2f3a40'; ctx.fillRect(Math.round(sx - 22 * z), Math.round(by - 6 * z), Math.round(44 * z), Math.round(34 * z));
+          ctx.fillStyle = '#0e1a1e'; ctx.fillRect(Math.round(sx - 19 * z), Math.round(by - 3 * z), Math.round(38 * z), Math.round(28 * z));
+          ctx.fillStyle = 'rgba(90,200,160,0.18)'; ctx.fillRect(Math.round(sx - 19 * z), Math.round(by - 3 * z), Math.round(38 * z), Math.round(28 * z));
+          ctx.fillStyle = '#1c6a86'; ctx.fillRect(Math.round(sx - 12 * z), Math.round(by + 4 * z), Math.round(9 * z), Math.round(21 * z));
+          ctx.fillStyle = '#227058'; ctx.fillRect(Math.round(sx + 3 * z), Math.round(by + 9 * z), Math.round(11 * z), Math.round(16 * z));
+          ctx.fillStyle = '#3a4448'; ctx.fillRect(Math.round(sx - 19 * z), Math.round(by + 11 * z), Math.round(38 * z), Math.max(1, Math.round(z)));
+        }
+      }
       // hazard stripe along the base of the wall, and a warning placard now and then
       for (let wx = Math.floor(leftW / 24) * 24; wx < rightW; wx += 24) { const [sx] = cam.toScreen(wx, 0); ctx.fillStyle = (Math.floor(wx / 24) & 1) ? '#c8a020' : '#1a1a1a'; ctx.fillRect(Math.round(sx), Math.round(floorS - 3 * z), Math.round(24 * z) + 1, Math.max(1, Math.round(3 * z))); }
       for (let wx = Math.floor(leftW / 300) * 300 + 40; wx < rightW; wx += 300) {
+        if (!Biome.at(wx).lab) continue;
         const [sx] = cam.toScreen(wx, 0), py = tileTop - 30 * z;
         ctx.fillStyle = '#e0c040'; ctx.fillRect(Math.round(sx - 10 * z), Math.round(py), Math.round(20 * z), Math.round(20 * z));
         ctx.fillStyle = '#1a1a1a'; ctx.fillRect(Math.round(sx - 6 * z), Math.round(py + 4 * z), Math.round(12 * z), Math.round(12 * z));
         ctx.fillStyle = '#e0c040'; for (let k = 0; k < 3; k++) { const a = k * TAU / 3 - Math.PI / 2; ctx.fillRect(Math.round(sx + Math.cos(a) * 4 * z) - 1, Math.round(py + 10 * z + Math.sin(a) * 4 * z) - 1, Math.max(2, Math.round(3 * z)), Math.max(2, Math.round(3 * z))); }
       }
+    } else if (B.pipe) {
+      // THE INTERCEPTOR. Precast rings, a benched invert and nothing else: no
+      // brick, no niches, no growth. The back of the pipe is the back of the
+      // pipe, lit by whatever falls down the shafts.
+      ctx.fillStyle = '#1b2124'; ctx.fillRect(0, 0, W, H);
+      for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
+        const [sx] = cam.toScreen(wx, 0);
+        ctx.fillStyle = '#232a2e'; ctx.fillRect(Math.round(sx), 0, Math.max(1, Math.round(2.4 * z)), H);
+        ctx.fillStyle = '#141a1d'; ctx.fillRect(Math.round(sx + 2.4 * z), 0, Math.max(1, Math.round(z)), H);
+      }
+      // step irons up the back of the pipe at every access: the system was
+      // built for men to get into, which is the joke of being in it as this
+      for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
+        if (ihash(Math.floor(wx / 26), 205) > 0.22 || !Biome.at(wx).pipe) continue;
+        const rf = this.roofY(wx), fl2 = this.floorY(wx); if (rf === null) continue;
+        const [sx] = cam.toScreen(wx, 0);
+        for (let wy = fl2 - 14; wy > rf + 6; wy -= 14) {
+          const [, ry] = cam.toScreen(wx, wy);
+          ctx.fillStyle = '#575043'; ctx.fillRect(Math.round(sx - 5 * z), Math.round(ry), Math.round(10 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#2a2822'; ctx.fillRect(Math.round(sx - 5 * z), Math.round(ry + 2 * z), Math.round(10 * z), Math.max(1, Math.round(z)));
+        }
+      }
+      // the wash down the middle of it, and the tide marks either side
+      const fS = cam.toScreen(0, this.floorY(cam.x))[1], rS = cam.toScreen(0, this.roofY(cam.x) || -100)[1];
+      ctx.fillStyle = 'rgba(40,60,54,0.5)'; ctx.fillRect(0, Math.round(fS - 22 * z), W, Math.round(22 * z));
+      ctx.fillStyle = 'rgba(122,150,120,0.22)'; ctx.fillRect(0, Math.round(fS - 22 * z), W, Math.max(1, Math.round(z)));
+      ctx.fillStyle = 'rgba(0,0,0,0.30)'; ctx.fillRect(0, Math.round(rS), W, Math.round(Math.max(0, fS - rS) * 0.45));
     } else if (B.roman) {
       const arch = shade(B.ground[2], 0.78), archL = shade(B.ground[2], 1.5), hole = shade(B.ground[2], 0.36);
       for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
@@ -4474,6 +4815,9 @@ const World = {
     for (let sx = -step; sx <= W + step; sx += step) { const wx = cam.toWorldX(sx), r = this.roofY(wx); ctx.lineTo(sx, r === null ? -20 : cam.toScreen(wx, r)[1]); }
     ctx.lineTo(W + 4, -10); ctx.closePath();
     ctx.fillStyle = slab; ctx.fill();
+    // above the crown of a pipe there is no rock: there is fill, in courses,
+    // with everything anybody ever laid in a street running through it
+    if (B.pipe) { ctx.save(); ctx.clip(); this.buriedGround(ctx, cam); ctx.restore(); this.pipeLining(ctx, cam, -1); }
     // segment joints: short ticks up into the slab every 26 units of arch
     for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
       const r = this.roofY(wx); if (r === null) continue;
@@ -4493,7 +4837,7 @@ const World = {
     // ribs, hanging lamps and dripping pipes
     for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
       const r = this.roofY(wx); if (r === null) continue;
-      if (B.lab) continue;
+      if (B.lab || B.pipe) continue;
       if (B.roman) {
         // a rib of the vault, and one guttering torch bracket per bay
         const [sx, sy] = cam.toScreen(wx, r), fy = cam.toScreen(wx, this.floorY(wx))[1];
@@ -4532,6 +4876,7 @@ const World = {
       if (on) { ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(lsx, lsy + 6 * z, 2, lsx, lsy + 6 * z, 70 * z); g.addColorStop(0, 'rgba(255,224,150,0.22)'); g.addColorStop(1, 'rgba(255,224,150,0)'); ctx.fillStyle = g; ctx.fillRect(lsx - 70 * z, lsy, 140 * z, 150 * z); ctx.globalCompositeOperation = 'source-over'; }
       if (chance(0.02)) G.fx.add({ type: 'drop', x: lx + rand(-30, 30), y: lr + 8, vx: 0, vy: 20, s: 1, color: '#9ab0b8', life: 3 });
     }
+    this.drawManholes(ctx, cam);
   },
   // The deep is not an empty black rectangle. Below the light there is marine
   // snow drifting down forever, the far side of the canyon showing as a flat
@@ -4636,6 +4981,7 @@ const World = {
   drawTunnelFloor(ctx, cam) {
     const W = G.W, H = G.H, z = cam.zoom, step = Math.max(2, Math.round(3 * z));
     const B = Biome.mixPal(cam.x);
+    this.drawDropShaft(ctx, cam);
     const cap = shade(B.ground[0], 1.18), capD = shade(B.ground[0], 0.62), joint = shade(B.ground[2], 0.7);
     const slime = mixColor(B.scum, '#1a2a12', 0.35);
     for (let sx = 0; sx <= W; sx += step) {
@@ -4657,11 +5003,45 @@ const World = {
       }
     }
   },
+  // The shaft under the floor drain. The heightmap can only say how high the
+  // ground is at x, so a hole straight down is not something it can hold: the
+  // map turns the drop into a very short, very steep ramp, and this draws the
+  // shaft that ramp is standing in for. Rings, a ladder that stops where the
+  // ladders always stop, and the wash down one side of it.
+  drawDropShaft(ctx, cam) {
+    if (typeof Opening === 'undefined') return;
+    const z = cam.zoom, ax = Opening.LIP - 2, bx = Opening.LIP + 30;
+    if (bx < cam.toWorldX(-60) || ax > cam.toWorldX(G.W + 60)) return;
+    const top = this.floorY(ax - 12), bot = -972;
+    if (top > bot) return;
+    const [sx0, sy0] = cam.toScreen(ax, top), [sx1, sy1] = cam.toScreen(bx, bot);
+    const w = Math.max(2, Math.round(sx1 - sx0)), h = Math.round(sy1 - sy0);
+    if (sy1 < -40 || sy0 > G.H + 40) return;
+    ctx.fillStyle = '#0c0f10'; ctx.fillRect(Math.round(sx0), Math.round(sy0), w, h);
+    ctx.fillStyle = '#3a4246'; ctx.fillRect(Math.round(sx0) - Math.round(4 * z), Math.round(sy0), Math.round(4 * z), h);
+    ctx.fillStyle = '#2b3236'; ctx.fillRect(Math.round(sx1), Math.round(sy0), Math.round(4 * z), h);
+    for (let wy = top; wy < bot; wy += 22) {
+      const [, jy] = cam.toScreen(0, wy);
+      ctx.fillStyle = '#20262a'; ctx.fillRect(Math.round(sx0), Math.round(jy), w, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#39433f'; ctx.fillRect(Math.round(sx0), Math.round(jy + 2 * z), w, Math.max(1, Math.round(z)));
+    }
+    // the ladder: it goes most of the way and then it does not
+    for (let wy = top + 18; wy < bot - 90; wy += 15) {
+      const [, ry] = cam.toScreen(0, wy);
+      ctx.fillStyle = '#5f5849'; ctx.fillRect(Math.round(sx0 + 3 * z), Math.round(ry), Math.round(13 * z), Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#26231d'; ctx.fillRect(Math.round(sx0 + 3 * z), Math.round(ry + 2 * z), Math.round(13 * z), Math.max(1, Math.round(z)));
+    }
+    // what the corridor has been letting down here for years
+    ctx.fillStyle = 'rgba(120,160,150,0.16)'; ctx.fillRect(Math.round(sx0 + w * 0.55), Math.round(sy0), Math.max(1, Math.round(3 * z)), h);
+    ctx.fillStyle = 'rgba(90,120,110,0.20)'; ctx.fillRect(Math.round(sx0 + w * 0.2), Math.round(sy0), Math.max(1, Math.round(2 * z)), h);
+    if (chance(0.10)) G.fx.add({ type: 'drop', x: Opening.LIP + rand(2, 16), y: top + 10, vx: 0, vy: 120, s: 1, color: '#9ad8c0', life: 2.6 });
+  },
   // Pipe mouths punched through the back wall. The system is a network, and a
   // network has to visibly go somewhere other than left and right.
   drawTunnelPipes(ctx, cam) {
     const W = G.W, H = G.H, z = cam.zoom;
     const B = Biome.mixPal(cam.x);
+    if (B.lab) return;        // a laboratory wall does not have sewer mouths in it
     const left = cam.toWorldX(-140), right = cam.toWorldX(W + 140);
     const rim = shade(B.ground[0], 0.9), rimL = shade(B.ground[0], 1.25), bore = shade(B.ground[2], 0.34);
     for (let wx = Math.floor(left / 260) * 260; wx < right; wx += 260) {
@@ -4954,6 +5334,19 @@ const World = {
           else if (d.v === 1) { ctx.fillStyle = '#8a3a2a'; ctx.fillRect(Math.round(sx - 5 * s2), Math.round(sy - 4 * s2), Math.round(10 * s2), Math.round(4 * s2)); ctx.fillStyle = '#b05a44'; ctx.fillRect(Math.round(sx - 5 * s2), Math.round(sy - 4 * s2), Math.round(10 * s2), Math.max(1, Math.round(s2))); }
           else if (d.v === 2) { ctx.fillStyle = '#c0c8c8'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(sx - 4 * s2 + i * 2.5 * s2), Math.round(sy - 3 * s2 - ihash(i, 9) * 2 * s2), Math.max(1, Math.round(2 * s2)), Math.max(1, Math.round(3 * s2))); }
           else { Shape.blob(ctx, sx, sy - 4 * s2, 4 * s2, '#4a4a4a'); Shape.blob(ctx, sx, sy - 4 * s2, 2 * s2, '#6a6a6a'); }
+          break; }
+        case 'grit': if (layer !== 0) break; {
+          // a bank of washed grit against one side of the invert, with whatever
+          // was heavy enough to stop with it
+          const sd = d.side, s2 = d.s * z;
+          for (let i = 0; i < d.n; i++) {
+            const ox = sd * (2 + i * 5) * s2, hh = (5 - i * 0.7) * s2;
+            if (hh <= 0) continue;
+            ctx.fillStyle = i % 2 ? '#4c4a40' : '#413f36';
+            ctx.fillRect(Math.round(sx + ox), Math.round(sy - hh), Math.ceil(6 * s2), Math.ceil(hh + z));
+            ctx.fillStyle = '#5e5b4e'; ctx.fillRect(Math.round(sx + ox), Math.round(sy - hh), Math.ceil(6 * s2), Math.max(1, Math.round(z)));
+          }
+          ctx.fillStyle = '#6a6656'; ctx.fillRect(Math.round(sx - 2 * s2), Math.round(sy - z), Math.ceil(3 * s2), Math.max(1, Math.round(z)));
           break; }
         case 'rubble': if (layer !== 0) break; {
           for (let i = 0; i < d.n; i++) { const ox = (ihash(i, Math.floor(d.x)) - 0.5) * 26 * z * d.s, hh = (3 + ihash(i, 71) * 5) * d.s * z;
@@ -6350,7 +6743,7 @@ const Research = {
 // face of it you are looking at, what the water does to you, and what is
 // waiting at the bottom of it.
 const ZONES = [
-  { id: 'sewer', n: 1, name: 'THE SEWER NETWORK', sub: 'WHERE YOU WOKE UP. NO SKY, NO WAY BACK UP.', col: '#8ab820', x0: -16600, x1: -120 },
+  { id: 'sewer', n: 1, name: 'THE SEWER NETWORK', sub: 'WHERE YOU WOKE UP. NO SKY, NO WAY BACK UP.', col: '#8ab820', x0: -19600, x1: -120 },
   { id: 'glades', n: 2, name: 'THE EVERGLADES', sub: 'PAST THE GRATE. OPEN WATER, OPEN SEASON.', col: '#7fffd8', x0: -120, x1: 19000 },
   { id: 'ocean', n: 3, name: 'THE OPEN OCEAN', sub: 'PAST THE SEAWALL. SALT, DEPTH, AND NOTHING TO HOLD ON TO.', col: '#60a8ff', x0: 19000, x1: 99999 },
 ];
@@ -6359,12 +6752,12 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
   // ---- ZONE 1: THE SEWER NETWORK. Where you wake up and where it is learned.
-  { id: 'catacomb', zone: 'sewer', lat: 0.14, lon: 2.68, name: 'THE CATACOMBS', sub: 'A LABYRINTH UNDER ROME. FIND THE WAY OUT.', x: -3520, size: 0.22, diff: 0, intro: true },
-  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 0.4, diff: 0.8, need: { deep: 2200 } },
-  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 0.7, diff: 1.6, need: { deep: 4000 } },
-  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 1.2, diff: 2.4, need: { deep: 5400 } },
-  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -13000, size: 2.0, diff: 3.2, need: { deep: 7200 } },
-  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -15500, size: 3.0, diff: 4.2, need: { deep: 10000 } },
+  { id: 'catacomb', zone: 'sewer', lat: 0.14, lon: 2.68, name: 'THE CATACOMBS', sub: 'A LABYRINTH UNDER ROME. FIND THE WAY OUT.', x: -6520, size: 0.22, diff: 0, intro: true },
+  { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -7800, size: 0.4, diff: 0.8, need: { deep: 2200 } },
+  { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -8700, size: 0.7, diff: 1.6, need: { deep: 4000 } },
+  { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -12000, size: 1.2, diff: 2.4, need: { deep: 5400 } },
+  { id: 'gallery', zone: 'sewer', lat: 0.08, lon: 3.46, name: 'THE DEEP GALLERY', sub: 'THE TRUNK MAIN. IT RUNS FOR MILES.', x: -16000, size: 2.0, diff: 3.2, need: { deep: 7200 } },
+  { id: 'sump', survey: true, zone: 'sewer', lat: -0.28, lon: 3.22, name: 'THE OUTFALL SUMP', sub: 'THE END OF THE LINE. EVERYTHING SETTLES HERE.', x: -18500, size: 3.0, diff: 4.2, need: { deep: 10000 } },
   // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
   { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
   { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },
@@ -8141,6 +8534,24 @@ class Structure extends Entity {
         break;
       }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
+      // --- the buildings on the bank -------------------------------------
+      // A municipal water tower: four legs, a tank with the town's name
+      // half gone off it, and a light on top for the aircraft nobody flies.
+      case 'watertower': { this.name = 'WATER TOWER'; this.hp = 900; this.armor = 30; this.r = 26 * this.ss; this.deckY = -104; this.town = ['LOXAHATCHEE', 'BELLE GLADE', 'PAHOKEE', 'CLEWISTON'][Math.floor(this.seed * 4)]; break; }
+      // A pump station: a concrete box with a screened intake running out into
+      // the channel, a vent turning on the roof and a door that is always shut.
+      case 'pumphouse': { this.name = 'PUMP STATION'; this.hp = 700; this.armor = 45; this.ss = 1; this.r = 34; this.dir = World.floorY(x - 60) < 0 ? 1 : -1; this.vent = 0; break; }
+      // A boathouse: a tin roof over a slip, a boat in the slip, a light on
+      // the gable and a bench along the walkway.
+      case 'boathouse': { this.name = 'BOATHOUSE'; this.hp = 260; this.deckY = -26; this.w = 78; this.r = 44 * this.ss; this.dir = World.floorY(x - 70) < 0 ? 1 : -1; this.pilings = []; for (let i = 0; i < 5; i++) this.pilings.push({ ox: -30 + i * 15, hp: 50, dead: false }); break; }
+      // A single-wide on blocks: skirting, a porch, an air conditioner in the
+      // window and a dish on the end nobody has pointed at anything since.
+      case 'trailer': { this.name = 'TRAILER'; this.hp = 240; this.r = 40 * this.ss; this.v = Math.floor(this.seed * 3); break; }
+      // A billboard on two poles, for something forty miles up the road.
+      case 'billboard': { this.name = 'BILLBOARD'; this.hp = 150; this.r = 30 * this.ss; this.v = Math.floor(this.seed * 3); break; }
+      // A manhole in what is left of a road: a cast frame, a cover, and the
+      // system you came out of directly under it.
+      case 'manhole': { this.name = 'MANHOLE'; this.hp = 260; this.armor = 60; this.ss = 1; this.r = 18; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'transport': { this.name = 'TRANSPORT TANK'; this.hp = 9999; this.armor = 999; this.r = 30; this.cracks = 0; this.broken = false; this.roll = 0; this.layer = 0; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
@@ -8660,6 +9071,130 @@ class Structure extends Entity {
         if (hull) { ctx.globalAlpha = 0.3; px(-L / 2, -20, L, 20, '#000000'); ctx.globalAlpha = 1; }
         break;
       }
+      case 'watertower': {
+        const dY = this.deckY, tw = 30, th = 30;
+        // four legs, braced, standing in whatever is under them
+        const gy = (fy - y) / ss;
+        for (const [lx, k] of [[-16, 0], [-6, 1], [6, 1], [16, 0]]) {
+          px(lx - 1.5, dY + th, 3, gy - dY - th, k ? '#5a6068' : '#6b7178');
+          px(lx - 1.5, dY + th, 1, gy - dY - th, '#828a92');
+        }
+        for (let i = 0; i < 3; i++) { const by = dY + th + 8 + i * 14; if (by > gy) break; ctx.strokeStyle = '#5a6068'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-16, by); ctx.lineTo(16, by + 9); ctx.moveTo(16, by); ctx.lineTo(-16, by + 9); ctx.stroke(); px(-16, by, 32, 1, '#6b7178'); }
+        // the tank, with a skirt, a rolled top and a hatch on it
+        px(-tw / 2, dY, tw, th, '#8e9aa0');
+        px(-tw / 2, dY, tw, 3, '#aab6bc');
+        px(-tw / 2, dY + th - 4, tw, 4, '#6b757c');
+        px(-tw / 2 - 2, dY + th - 2, tw + 4, 3, '#5a636a');
+        for (let i = 0; i < 4; i++) px(-tw / 2 + 2 + i * 7, dY + 4, 1, th - 9, '#7b868c');
+        px(-4, dY - 4, 8, 4, '#6b757c'); px(-3, dY - 5, 6, 1, '#99a4aa');
+        // the name, in blocks: legible as lettering, unreadable as words
+        for (let i = 0; i < 7; i++) { const h2 = 5 + (ihash(i, Math.round(this.x)) > 0.5 ? 1 : 0); px(-11 + i * 3.2, dY + 11, 2, h2, ihash(i, 31) > 0.25 ? '#2c3a44' : '#5d6a70'); }
+        // rust down the seam, a ladder up one leg, the light on top
+        px(2, dY + 4, 1, th - 8, '#8a5a34'); px(-7, dY + 6, 1, th - 12, '#7a5030');
+        for (let i = 0; i < 9; i++) px(15, dY + th + i * 8, 5, 1, '#4e555c');
+        const blink = Math.sin(this.t * 2.2) > 0.4;
+        px(-1, dY - 9, 2, 4, '#4e555c'); px(-1.5, dY - 11, 3, 2, blink ? '#ff4030' : '#602018');
+        if (blink) G.fx.glow(this.x, y + (dY - 10) * ss, 7 * ss, '#ff4030', 0.10);
+        break;
+      }
+      case 'pumphouse': {
+        const d = this.dir, gy = (fy - y) / ss;
+        // the intake, out into the channel and down under the water
+        px(d * 14, -8, d * 30, 7, '#6a6a62'); px(d * 14, -8, d * 30, 2, '#82827a');
+        px(d * 40, -8, 5, Math.max(4, gy + 12), '#5a5a52');
+        for (let i = 0; i < 4; i++) px(d * 42, -4 + i * 4, 3, 1, '#3a3a34');
+        // the box: poured concrete, a stained band at the bottom
+        px(-22, -46, 44, 46, '#9a9a90'); px(-22, -46, 44, 3, '#b4b4a8');
+        px(-22, -10, 44, 10, '#7e7e74'); px(-22, -46, 3, 46, '#aaaaa0');
+        for (let i = 0; i < 5; i++) px(-22, -40 + i * 9, 44, 1, '#8a8a80');
+        // the roof, a vent turning on it, a door, a louvre and a sign
+        px(-25, -50, 50, 5, '#6e6e66'); px(-25, -50, 50, 2, '#8e8e86');
+        const vr = this.t * 2.4;
+        px(-9, -58, 10, 8, '#5e6a6e'); px(-9, -59, 10, 2, '#7e8a8e');
+        for (let i = 0; i < 3; i++) { const a = vr + i * TAU / 3; px(-4 + Math.cos(a) * 4, -55 + Math.sin(a) * 2, 2, 2, '#93a0a4'); }
+        px(6, -44, 13, 20, '#2f3a40'); for (let i = 0; i < 4; i++) px(7, -42 + i * 5, 11, 2, '#48555c');
+        px(-16, -34, 12, 26, '#4a4a44'); px(-16, -34, 12, 2, '#63635c'); px(-6, -22, 2, 2, '#c8c8b8');
+        px(-14, -42, 9, 6, '#c8a020'); px(-13, -41, 7, 4, '#1a1a1a');
+        break;
+      }
+      case 'boathouse': {
+        const d = this.dir, dY = this.deckY, W2 = this.w;
+        for (const p of this.pilings) piling(p.ox * d, dY, (fy - y) / ss, p.dead);
+        // the walkway down one side of the slip
+        px(-W2 / 2, dY, W2, 3, woodD); px(-W2 / 2, dY, W2, 2, wood);
+        // the frame and the tin roof over it
+        for (const ox of [-W2 / 2 + 4, W2 / 2 - 6]) { px(ox, dY - 34, 3, 34, wood); px(ox, dY - 34, 1, 34, woodL); }
+        px(-W2 / 2 - 4, dY - 40, W2 + 8, 4, '#7e8a8c');
+        for (let i = 0; i < W2 + 8; i += 5) px(-W2 / 2 - 4 + i, dY - 40, 1, 4, '#5e6a6c');
+        px(-W2 / 2 - 4, dY - 41, W2 + 8, 1, '#9aa6a8');
+        px(-W2 / 2 - 5, dY - 37, W2 + 10, 2, '#4e5a5c');
+        // the gable end, boarded, with a light under it
+        px(-W2 / 2 - 4, dY - 40, 10, 16, '#5d4630'); for (let i = 0; i < 4; i++) px(-W2 / 2 - 4, dY - 38 + i * 4, 10, 1, '#41301f');
+        px(-W2 / 2 + 2, dY - 24, 3, 3, this.lightOn ? '#ffd070' : '#4a4438');
+        if (this.lightOn) G.fx.glow(this.x + (-W2 / 2 + 3) * ss, y + (dY - 23) * ss, 16 * ss, '#ffd070', 0.12);
+        // the boat in the slip, on its lines
+        const bob = Math.sin(this.t * 1.1) * 1.2, bx = 6 * d;
+        px(bx - 17, dY + 12 + bob, 34, 6, '#b8bcc0'); px(bx - 17, dY + 12 + bob, 34, 2, '#d8dce0');
+        px(bx - 19, dY + 13 + bob, 3, 4, '#b8bcc0'); px(bx + 16, dY + 13 + bob, 3, 4, '#9aa0a4');
+        px(bx - 6, dY + 8 + bob, 12, 4, '#6a7076'); px(bx + 8, dY + 6 + bob, 3, 6, '#3a4046');
+        px(bx - 14, dY + 3 + bob, 1, 9 + bob, '#8a8a7a'); px(bx + 12, dY + 3 + bob, 1, 9 + bob, '#8a8a7a');
+        // a bench and two cans on the walkway
+        px(-W2 / 2 + 8, dY - 8, 14, 2, wood); px(-W2 / 2 + 9, dY - 6, 1, 6, woodD); px(-W2 / 2 + 20, dY - 6, 1, 6, woodD);
+        px(W2 / 2 - 16, dY - 7, 5, 7, '#3a6a4a'); px(W2 / 2 - 10, dY - 6, 5, 6, '#a03a2a');
+        break;
+      }
+      case 'trailer': {
+        const cols = [['#c8c4b4', '#a8a498'], ['#b8c4c0', '#98a4a0'], ['#c0b8a4', '#a09884']][this.v];
+        // blocks under it, and the skirting that hides most of them
+        for (const ox of [-26, 0, 26]) px(ox - 4, -8, 8, 8, '#6a6a62');
+        px(-34, -10, 68, 10, '#5a5a52'); px(-34, -10, 68, 2, '#6e6e66');
+        // the body, ribbed, with a stripe down it
+        px(-36, -40, 72, 31, cols[0]); px(-36, -40, 72, 3, '#e0dcd0');
+        for (let i = 0; i < 24; i++) px(-36 + i * 3, -37, 1, 28, cols[1]);
+        px(-36, -26, 72, 3, '#6a7a86'); px(-36, -25, 72, 1, '#8a9aa6');
+        // the roof, curved, with an aerial and a dish
+        px(-38, -44, 76, 5, '#d8d4c8'); px(-38, -44, 76, 2, '#f0ece0');
+        px(20, -52, 1, 8, '#5a5a52'); px(16, -56, 9, 5, '#c8c4b4'); px(20, -54, 2, 2, '#4a4a44');
+        // a door with three steps, two windows, and the air conditioner
+        px(-6, -36, 13, 27, '#8a7a60'); px(-6, -36, 13, 2, '#a89878'); px(4, -24, 2, 2, '#e0d8b0');
+        px(-8, -9, 17, 3, '#7a7a70'); px(-6, -6, 13, 3, '#6a6a60'); px(-4, -3, 9, 3, '#5a5a52');
+        for (const ox of [-28, 14]) { px(ox, -34, 12, 10, '#2a3238'); px(ox, -34, 12, 2, '#49545c'); px(ox + 1, -33, 4, 4, 'rgba(200,224,232,0.45)'); }
+        px(-30, -24, 10, 8, '#9aa0a0'); px(-30, -24, 10, 2, '#b4baba'); for (let i = 0; i < 3; i++) px(-29, -22 + i * 2, 8, 1, '#6a7070');
+        // a chair and a cooler outside, because somebody lives here
+        px(20, -16, 7, 2, '#3a6a4a'); px(20, -14, 1, 5, '#2a4a34'); px(26, -14, 1, 5, '#2a4a34'); px(20, -21, 1, 5, '#3a6a4a');
+        px(30, -7, 8, 7, '#d8d8d0'); px(30, -7, 8, 2, '#3a6a9a');
+        break;
+      }
+      case 'billboard': {
+        const gy = (fy - y) / ss;
+        px(-14, -30, 4, gy + 30, '#5a5a52'); px(10, -30, 4, gy + 30, '#5a5a52');
+        px(-14, -30, 1, gy + 30, '#76766c'); px(10, -30, 1, gy + 30, '#76766c');
+        px(-32, -62, 64, 34, '#efe9dc'); px(-32, -62, 64, 2, '#ffffff'); px(-32, -30, 64, 3, '#8a8a80');
+        // the poster: a shape, a band of type, a corner peeling off
+        const art = [['#c83a2a', '#f0c040'], ['#2a6ac8', '#e0e8f0'], ['#2a8a4a', '#f0e0a0']][this.v];
+        px(-29, -59, 26, 22, art[0]); px(-29, -59, 26, 3, art[1]);
+        for (let i = 0; i < 5; i++) px(0, -57 + i * 5, 20 - i * 2, 3, i % 2 ? '#33383c' : '#5a6166');
+        px(22, -62, 10, 9, '#d8d2c4'); px(22, -62, 10, 1, '#b8b2a4');
+        px(-32, -62, 4, 5, '#c8c2b4');
+        if (this.lightOn) { for (const ox of [-18, 6]) { px(ox, -68, 8, 3, '#4a4a44'); px(ox + 1, -66, 6, 1, '#ffe8a0'); } G.fx.glow(this.x, y - 56 * ss, 30 * ss, '#ffe8a0', 0.07); }
+        break;
+      }
+      case 'manhole': {
+        // What is left of a road, the frame set into it, the cover in the
+        // frame, and the system breathing up through the slots in the cover.
+        px(-30, -3, 60, 7, '#4e4e4a'); px(-30, -3, 60, 2, '#63635c');
+        px(-30, 3, 60, 2, '#373734');
+        for (let i = 0; i < 7; i++) px(-27 + i * 8, -1, 4, 1, '#3c3c38');
+        for (let i = 0; i < 3; i++) px(-22 + i * 17, -3, 1, 6, '#3a3a36');       // cracks
+        px(-17, -7, 34, 5, '#7a7568'); px(-17, -7, 34, 2, '#98927f');            // the collar
+        px(-14, -11, 28, 5, '#585349'); px(-14, -11, 28, 2, '#6f6a5f');          // the frame
+        px(-12, -13, 24, 3, '#4a463d'); px(-12, -13, 24, 1, '#635e53');          // the cover
+        for (let i = 0; i < 5; i++) px(-9 + i * 4.4, -12, 3, 2, '#5b5649');      // the pattern on it
+        px(-3, -14, 6, 1, '#2c2a25');                                            // the lifting slot
+        px(-19, -8, 3, 3, '#98927f'); px(16, -8, 3, 3, '#98927f');
+        if (chance(0.18)) G.fx.add({ type: 'smoke', x: this.x + rand(-6, 6), y: this.y - 12, vx: rand(-4, 4), vy: -rand(8, 18), s: rand(1.4, 2.6), color: '#7f8a8c', life: rand(1.2, 2.4), t: 0, maxLife: 2 });
+        break;
+      }
       case 'campfire': {
         ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-7, -2, 14, 3);
         ctx.fillStyle = '#4a3524'; ctx.fillRect(-6, -5, 5, 4); ctx.fillRect(1, -5, 5, 4);
@@ -8696,6 +9231,10 @@ function trySpawnStructure(x, rng, difficulty) {
     if (k === 'stilthouse') return open && fy < 320;
     if (k === 'crabtrap' || k === 'buoy') return open;
     if (k === 'wreck') return fy > 150 && World.floorY(x - 90) > 110 && World.floorY(x + 90) > 110;
+    if (k === 'boathouse') return land && (deepAt(120) || deepAt(-120));
+    if (k === 'pumphouse') return land && (deepAt(100) || deepAt(-100));
+    // a tower, a trailer, a board and a road want ground that stays flat
+    if (k === 'watertower' || k === 'trailer' || k === 'billboard' || k === 'manhole') return land && World.floorY(x - 40) < -4 && World.floorY(x + 40) < -4;
     return land;
   });
   if (!table.length) return false;
@@ -8735,6 +9274,22 @@ function trySpawnStructure(x, rng, difficulty) {
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;
     case 'wreck': G.add(new Structure(x, 'wreck')); return true;
     case 'seawall': { const st = new Structure(x, 'seawall'); G.add(st); return true; }
+    case 'watertower': G.add(new Structure(x, 'watertower')); return true;
+    case 'pumphouse': G.add(new Structure(x, 'pumphouse')); return true;
+    case 'billboard': G.add(new Structure(x, 'billboard')); return true;
+    case 'manhole': G.add(new Structure(x, 'manhole')); return true;
+    case 'boathouse': {
+      const s = new Structure(x, 'boathouse');
+      if (rng() < 0.55) s.addOccupant(rng() < 0.6 ? 'fisherman' : 'tourist', -s.dir * 22, s.deckY);
+      G.add(s); return true;
+    }
+    case 'trailer': {
+      const s = new Structure(x, 'trailer');
+      const n = randi(0, 2); for (let i = 0; i < n; i++) s.addOccupant(rng() < 0.5 ? 'camper' : 'tourist', 24 + i * 15, 0, i === 0 ? 'sit' : null);
+      G.add(s);
+      if (rng() < 0.35) G.add(new LandAnimal(x + 54, 'dog'));
+      return true;
+    }
     case 'sign': case 'pipe': G.add(new Structure(x, 'sign')); return true;
   }
   return false;
@@ -9568,7 +10123,11 @@ class Player {
     this.x += this.vx * dt; this.y += this.vy * dt;
     const fy2 = World.floorY(this.x);
     if (this.y > fy2 - 5 * this.vis) { this.y = fy2 - 5 * this.vis; if (this.vy > 0) this.vy *= -0.15; if (fy2 < 0) this.onLand = true; }
-    if (this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
+    // A ceiling on how far into the sky the animal can get. Under a roof there
+    // is already a roof to stop it, and the roof can be a long way up — the
+    // transfer corridor is a hundred and forty feet over the water — so a flat
+    // ceiling here would hold the animal below its own floor.
+    if (World.roofY(this.x) === null && this.y < -700) { this.y = -700; this.vy = Math.max(this.vy, 0); }
     // the system dead-ends on a concrete bulkhead; there is nothing west of it
     const wall = MapData.x0 + 26 * this.vis;
     if (this.x < wall) { this.x = wall; if (this.vx < 0) this.vx *= -0.2; }
@@ -11408,9 +11967,9 @@ const Labyrinth = {
 // ---------------------------------------------------------------------------
 const LAIRS = [
   // ---- the sewer -------------------------------------------------------
-  { id: 'broodmother', x: -3800, r: 280, warn: 760, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN HERE' },
-  { id: 'gnasher', x: -7400, r: 300, warn: 800, name: 'THE GNASHER', sign: 'bones', tell: 'THE WATER IS FULL OF BONES' },
-  { id: 'sludgeking', x: -14250, r: 360, warn: 900, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
+  { id: 'broodmother', x: -6800, r: 280, warn: 760, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN HERE' },
+  { id: 'gnasher', x: -10400, r: 300, warn: 800, name: 'THE GNASHER', sign: 'bones', tell: 'THE WATER IS FULL OF BONES' },
+  { id: 'sludgeking', x: -17250, r: 360, warn: 900, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
   // ---- the glades ------------------------------------------------------
   { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
   { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
@@ -11447,7 +12006,7 @@ const Lairs = {
     const P = G.player;
     if (!P || P.dead || G.state !== 'play') return;
     // nothing holds territory in the facility, and nothing is announced while you are still in the tank
-    if ((typeof Opening !== 'undefined' && Opening.on) || Biome.at(P.x).lab) return;
+    if ((typeof Opening !== 'undefined' && Opening.on) || Biome.at(P.x).lab || Biome.at(P.x).pipe) return;
     if (this.armT > 0) { this.armT -= dt; return; }
     const L = this.near(P.x);
     if (!L || this.cleared[L.id]) return;
@@ -11553,11 +12112,11 @@ const Objectives = {
     }
   },
 
-  update(dt) { if (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry') return; if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
+  update(dt) { if (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted()) return; if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
 
   // ---- the card a run opens on ------------------------------------------
   drawCard(ctx) {
-    if (this.cardT <= 0 || !this.stage || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return 0;
+    if (this.cardT <= 0 || !this.stage || (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted())) return 0;
     const W = G.W, H = G.H, st = this.stage;
     const k = clamp(Math.min(this.cardT * 1.6, (6.5 - this.cardT) * 2.6), 0, 1);
     const w = 236, h = 30 + this.list.length * 15;
@@ -11591,6 +12150,8 @@ const Objectives = {
   // ---- the same list, small, for the rest of the run --------------------
   drawHud(ctx, y) {
     if (!this.list.length) return y;
+    // nothing on the list is anything you can do while you are in the pipe
+    if (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted()) return y;
     // while the card is up it is saying all of this already
     if (this.cardT > 0.6) return y;
     const W = 158;
@@ -12116,21 +12677,27 @@ const Abilities = {
 // ---------------------------------------------------------------------------
 // THE TRANSFER.
 //
-// No cutscene. The opening is the game: a corridor in Facility B two floors
-// above the Roman level, a transport tank on a trolley, two people pushing it
-// east toward another building, and you inside it. It is all real — the
-// corridor is map, the trolley is a structure, the people are people, and the
-// camera is the game's camera — which is why you can break it.
+// No cutscene. The opening is the game: a corridor in Facility B a hundred and
+// forty feet above the old relief works, a transport tank on a trolley, two
+// people pushing it east toward another building, and you inside it. It is all
+// real — the corridor is map, the trolley is a structure, the people are
+// people, and the camera is the game's camera — which is why you can break it.
 //
 // Mash bite and the glass cracks, then goes. The two of them run. You are on a
-// tiled floor with a drain at the far end of it and nothing under the drain
-// but the cistern, two floors down. There is no second act to this: you walk
-// east and you fall.
+// tiled floor with a floor drain at the end of it and the cover off the drain,
+// and under the cover is the interceptor: a lined pipe that gives up its
+// hundred and forty feet in six steps and puts what it is given into the
+// cistern under Rome. The ride down takes about twenty seconds. It is drawn
+// with the same world, the same physics and the same camera as everything
+// else, because it is the same world.
 // ---------------------------------------------------------------------------
 const Opening = {
+  // the corridor lip, the middle of the drain, and the mouth in the cistern wall
+  LIP: -5968, DRAIN: -5955, MOUTH: -2996,
   on: false, cart: null, crew: [], phase: null, t: 0, taps: 0, need: 7, prompt: 0, fell: false, splashed: false, stage: null,
+  slideV: 0, air: 0, rideT: 0, hintT: 0, fall: 0,
 
-  reset() { this.on = false; this.cart = null; this.crew = []; this.phase = null; this.t = 0; this.taps = 0; this.prompt = 0; this.fell = false; this.splashed = false; this.stage = null; },
+  reset() { this.on = false; this.cart = null; this.crew = []; this.phase = null; this.t = 0; this.taps = 0; this.prompt = 0; this.fell = false; this.splashed = false; this.stage = null; this.slideV = 0; this.air = 0; this.rideT = 0; this.hintT = 0; this.fall = 0; },
 
   begin(stage) {
     this.reset();
@@ -12153,8 +12720,8 @@ const Opening = {
     SFX.peep && SFX.peep();
   },
 
-  // the disposal for every other sewer site: no corridor, no chute — a hatch in
-  // the crown of the vault opens over the water and you come out of it
+  // the disposal for every other sewer site: no corridor, no interceptor — a
+  // hatch in the crown of the vault opens over the water and you come out of it
   hatch(stage) {
     const P = G.player, x = stage.x;
     const r = World.roofY(x);
@@ -12165,54 +12732,162 @@ const Opening = {
     G.banner = { text: 'DISPOSAL HATCH', sub: 'IN THE SYSTEM. THERE IS NO DOOR ON THE OTHER END.', t: 4, max: 4, color: '#8ab820' };
   },
 
+  // true while the animal is being carried, dropped or ridden down: the HUD,
+  // the alarm and the wildlife all stand off for the length of it
+  scripted() { return this.on && this.phase !== 'loose'; },
+
   update(dt) {
     if (!this.on) return;
     const P = G.player, c = this.cart;
     this.t += dt;
-    if (this.phase === 'carry') {
-      // the trolley rolls east at a walking pace and stops short of the drain
-      const stopX = -3060;
-      c.vx = c.x < stopX ? approach(c.vx, 42, dt * 60) : approach(c.vx, 0, dt * 120);
-      c.x += c.vx * dt; c.y = World.floorY(c.x); c.roll = (c.roll || 0) + c.vx * dt;
-      // you ride in it, curled in the water, and the camera rides with you
-      P.frozen = true; P.x = c.x + Math.sin(this.t * 2.3) * 2; P.y = c.y - 42 + Math.cos(this.t * 1.7) * 1.5;
-      P.angle = Math.sin(this.t * 1.1) * 0.15 + (this.taps > 0 ? Math.sin(this.t * 14) * 0.08 * Math.min(1, this.taps / 3) : 0);
-      P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.4 + this.taps * 0.1, false);
-      P.jaw = 0.1 + Math.abs(Math.sin(this.t * 3)) * 0.2;
-      // the crew keep their hands on the bar
-      for (const w of this.crew) { w.x = c.x + w.pushOff; w.facing = 1; w.vx = c.vx; w.y = World.floorY(w.x) - w.groundOff; w.anim.push = 1; w.anim.speed = clamp(c.vx / 40, 0, 1); w.anim.phase += dt * (1 + c.vx * 0.12); w.anim.expr = this.taps >= 4 ? 'alert' : 'calm'; }
-      this.prompt += dt;
-      // the glass
-      const tapped = Input.bitePressed() || Input.mouse.clicked || (Input.touch && Input.touch.bite);
-      if (tapped && this.t > 1.0) {
-        this.taps++; c.cracks = this.taps / this.need;
-        G.shake(3 + this.taps * 1.4); G.hitstop(0.04); SFX.crack && SFX.crack(this.taps);
-        for (let i = 0; i < 4 + this.taps * 3; i++) G.fx.add({ type: 'splinter', x: c.x + rand(-14, 14), y: c.y - 44 + rand(-16, 16), vx: rand(-80, 80), vy: rand(-110, 20), s: 1, w: randi(1, 3), color: choice(['#cfeef4', '#9fc4cc', '#e8f4f8']), rot: rand(TAU), vr: rand(-8, 8), life: rand(0.8, 1.6) });
-        if (this.taps >= 3) for (const w of this.crew) { w.anim.expr = 'alert'; }
-        if (this.taps >= this.need) this.breach();
-      }
-      // given long enough, the pressure finishes what you started
-      if (this.t > 28 && this.taps < this.need) { this.taps = this.need; this.breach(); }
-    } else if (this.phase === 'loose') {
-      // the floor ends at the drain: past it there is nothing but air
-      // the two of them run for the west door and are gone through it
-      const doorX = this.stage.x - 50;
-      for (const w of this.crew) { if (w.remove) continue; w.state = 'flee'; w.stateT = 40; w.fleeDir = -1; w.panicked = true; w.anim.expr = 'scared'; if (w.x < doorX) { w.remove = true; SFX.clank && SFX.clank(-0.6); G.fx.smoke(w.x, w.y, 3, '#8a9aa0'); } }
-      if (!this.fell && P.x > -2962 && P.y > -340) {
-        this.fell = true; G.banner = { text: 'DOWN', sub: '', t: 1.4, max: 1.4, color: '#c8b070' };
-        SFX.breach && SFX.breach(); G.slowmo(0.5, 0.5);
-      }
-      if (this.fell && !this.splashed && P.inWater) {
-        this.splashed = true; this.phase = 'done'; this.on = false;
-        G.shake(10); G.fx.splash && G.fx.splash(P.x, 2.6, 0); Water.splash && Water.splash(P.x, 200, 50); SFX.splash && SFX.splash(2.5);
-        G.banner = { text: 'UNDER ROME', sub: 'THE MAPS STOP HERE. FIND THE WAY OUT.', t: 4.5, max: 4.5, color: '#c8b070' };
-        P.invuln = 2;
-      }
-    }
+    if (this.phase === 'carry') this.carry(dt);
+    else if (this.phase === 'loose') this.loose(dt);
+    else if (this.phase === 'drop') this.drop(dt);
+    else if (this.phase === 'slide') this.slide(dt);
+    else if (this.phase === 'launch') this.launch(dt);
   },
+
+  carry(dt) {
+    const P = G.player, c = this.cart;
+    // the trolley rolls east at a walking pace and stops short of the drain
+    const stopX = this.stage.x + 460;
+    c.vx = c.x < stopX ? approach(c.vx, 42, dt * 60) : approach(c.vx, 0, dt * 120);
+    c.x += c.vx * dt; c.y = World.floorY(c.x); c.roll = (c.roll || 0) + c.vx * dt;
+    // you ride in it, curled in the water, and the camera rides with you
+    P.frozen = true; P.x = c.x + Math.sin(this.t * 2.3) * 2; P.y = c.y - 42 + Math.cos(this.t * 1.7) * 1.5;
+    P.angle = Math.sin(this.t * 1.1) * 0.15 + (this.taps > 0 ? Math.sin(this.t * 14) * 0.08 * Math.min(1, this.taps / 3) : 0);
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.4 + this.taps * 0.1, false);
+    P.jaw = 0.1 + Math.abs(Math.sin(this.t * 3)) * 0.2;
+    // the crew keep their hands on the bar
+    for (const w of this.crew) { w.x = c.x + w.pushOff; w.facing = 1; w.vx = c.vx; w.y = World.floorY(w.x) - w.groundOff; w.anim.push = 1; w.anim.speed = clamp(c.vx / 40, 0, 1); w.anim.phase += dt * (1 + c.vx * 0.12); w.anim.expr = this.taps >= 4 ? 'alert' : 'calm'; }
+    this.prompt += dt;
+    // the glass
+    const tapped = Input.bitePressed() || Input.mouse.clicked || (Input.touch && Input.touch.bite);
+    if (tapped && this.t > 1.0) {
+      this.taps++; c.cracks = this.taps / this.need;
+      G.shake(3 + this.taps * 1.4); G.hitstop(0.04); SFX.crack && SFX.crack(this.taps);
+      for (let i = 0; i < 4 + this.taps * 3; i++) G.fx.add({ type: 'splinter', x: c.x + rand(-14, 14), y: c.y - 44 + rand(-16, 16), vx: rand(-80, 80), vy: rand(-110, 20), s: 1, w: randi(1, 3), color: choice(['#cfeef4', '#9fc4cc', '#e8f4f8']), rot: rand(TAU), vr: rand(-8, 8), life: rand(0.8, 1.6) });
+      if (this.taps >= 3) for (const w of this.crew) { w.anim.expr = 'alert'; }
+      if (this.taps >= this.need) this.breach();
+    }
+    // given long enough, the pressure finishes what you started
+    if (this.t > 28 && this.taps < this.need) { this.taps = this.need; this.breach(); }
+  },
+
+  loose(dt) {
+    const P = G.player;
+    // the two of them run for the west door and are gone through it
+    const doorX = this.stage.x - 50;
+    for (const w of this.crew) { if (w.remove) continue; w.state = 'flee'; w.stateT = 40; w.fleeDir = -1; w.panicked = true; w.anim.expr = 'scared'; if (w.x < doorX) { w.remove = true; SFX.clank && SFX.clank(-0.6); G.fx.smoke(w.x, w.y, 3, '#8a9aa0'); } }
+    // the floor ends at the drain, and the drain has no cover on it
+    if (P.x > this.LIP - 2) {
+      this.fell = true; this.phase = 'drop'; this.t = 0;
+      P.frozen = true; P.invuln = 999; P.vy = Math.max(P.vy, 30); P.vx = 0;
+      G.banner = { text: 'DOWN', sub: '', t: 1.4, max: 1.4, color: '#c8b070' };
+      SFX.breach && SFX.breach(); G.slowmo(0.45, 0.6); G.shake(4);
+      for (let i = 0; i < 18; i++) G.fx.add({ type: 'drop', x: P.x + rand(-8, 8), y: P.y, vx: rand(-30, 30), vy: rand(40, 180), s: 1, color: '#8ce8a0', life: 1.4 });
+    }
+    this.hintT += dt;
+    if (this.hintT > 14 && !this.nagged) { this.nagged = true; G.banner = { text: 'EAST', sub: 'THE FLOOR ENDS AT THE DRAIN', t: 3, max: 3, color: '#c8b070' }; }
+  },
+
+  // Straight down the shaft under the drain, turning as you go, until the head
+  // of the pipe comes up to meet you.
+  drop(dt) {
+    const P = G.player;
+    // a frozen animal has its velocity cleared for it every frame, so the fall
+    // is carried here and handed back for the camera to lead on
+    P.frozen = true;
+    this.fall += 1150 * dt; P.y += this.fall * dt;
+    P.x = approach(P.x, this.DRAIN, dt * 120);
+    P.vx = 0; P.vy = this.fall;
+    P.angle = lerp(P.angle, 1.05, 1 - Math.exp(-dt * 3.2));
+    P.facing = 1; P.jaw = 0.35;
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.2, false);
+    if (chance(dt * 20)) G.fx.add({ type: 'drop', x: P.x + rand(-10, 10), y: P.y - rand(0, 40), vx: rand(-14, 14), vy: rand(120, 240), s: 1, color: '#9ad8c0', life: 1 });
+    G.fx.glow && G.fx.glow(P.x, P.y, 14 * P.vis, '#a8e0c8', 0.12);
+    // the rim is still under you for the first tenth of a second: do not call
+    // the corridor floor a landing
+    const gy = World.floorY(P.x) - 4 * P.vis;
+    if (this.t > 0.18 && P.y >= gy) this.startSlide();
+  },
+
+  startSlide() {
+    const P = G.player;
+    this.phase = 'slide'; this.t = 0; this.rideT = 0; this.slideV = 80; this.air = 0;
+    P.y = World.floorY(P.x) - 4 * P.vis; P.vy = 0; this.fall = 0;
+    G.shake(7); SFX.thud && SFX.thud(0); SFX.splash && SFX.splash(1.2);
+    G.fx.splash && G.fx.splash(P.x, 1.2, 0);
+    G.banner = { text: 'THE INTERCEPTOR', sub: 'IT ONLY GOES ONE WAY', t: 3.4, max: 3.4, color: '#7fd8c0' };
+  },
+
+  // Twenty seconds of lined pipe. The floor is real map, the physics are the
+  // game's, and the only thing the script does is hold you facing down it and
+  // keep a hand on the throttle so the ride reads.
+  slide(dt) {
+    const P = G.player;
+    this.rideT += dt;
+    P.frozen = true;
+    const fy = World.floorY(P.x), slope = (World.floorY(P.x + 26) - fy) / 26;
+    // steep pipe, faster ride; the benches at the foot of each step slow you
+    const steer = Input.axis()[0];
+    const target = clamp(69 + Math.max(0, slope) * 140 + steer * 32, 48, 196);
+    this.slideV = approach(this.slideV, target, dt * (slope > 0.3 ? 140 : 50));
+    P.x += this.slideV * dt;
+    P.vx = this.slideV;                       // so the camera leads down the pipe
+    // gravity does the rest: where the floor falls away faster than you do, you
+    // leave it, and you come down again on the bench at the bottom of the step
+    this.fall += 1150 * dt; P.y += this.fall * dt; P.vy = this.fall;
+    const gy = World.floorY(P.x) - 4 * P.vis;
+    if (P.y >= gy) {
+      if (this.air > 0.18 && this.fall > 150) {
+        G.shake(Math.min(8, this.fall / 50)); SFX.thud && SFX.thud(0);
+        for (let i = 0; i < 10; i++) G.fx.add({ type: 'drop', x: P.x + rand(-8, 8), y: gy, vx: rand(-70, 70), vy: rand(-120, -20), s: 1, color: '#9ad8c0', life: 0.7 });
+      }
+      P.y = gy; this.fall = 0; P.vy = 0; this.air = 0;
+    } else this.air += dt;
+    // nose down the pipe, and up a little while airborne
+    const aim = Math.atan2(slope, 1) * (this.air > 0.12 ? 0.45 : 1) + (this.air > 0.12 ? 0.18 : 0);
+    P.angle = lerp(P.angle, aim, 1 - Math.exp(-dt * 9));
+    P.facing = 1; P.jaw = 0.2 + Math.abs(Math.sin(this.rideT * 5)) * 0.2;
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.5 + this.slideV / 160, false);
+    // the wash you are riding on, and the grit coming off the invert
+    if (this.air <= 0.02) {
+      if (chance(dt * 34)) G.fx.add({ type: 'drop', x: P.x - rand(0, 14), y: gy - rand(0, 5), vx: -this.slideV * rand(0.2, 0.5), vy: rand(-90, -20), s: 1, color: choice(['#9ad8c0', '#cfe8dc', '#7fb8a0']), life: rand(0.5, 1) });
+      if (chance(dt * 8)) G.fx.smoke && G.fx.smoke(P.x - 10, gy - 2, 1, '#5a6a60');
+    }
+    if (chance(dt * 2.2)) SFX.clank && SFX.clank(rand(-0.5, 0.5));
+    // a wet animal in a dark pipe: keep a highlight on it or it is a smudge
+    G.fx.glow && G.fx.glow(P.x, P.y, 13 * P.vis, '#a8e0c8', 0.10);
+    if (P.x > this.MOUTH) this.launchOut();
+  },
+
+  launchOut() {
+    const P = G.player;
+    this.phase = 'launch'; this.t = 0;
+    P.frozen = false; P.invuln = 4;
+    P.vx = this.slideV * 1.15; P.vy = -30; this.fall = 0;
+    G.slowmo(0.45, 0.7); G.shake(6);
+    G.banner = { text: 'OUT', sub: '', t: 1.2, max: 1.2, color: '#c8b070' };
+    for (let i = 0; i < 30; i++) G.fx.add({ type: 'drop', x: P.x + rand(-10, 6), y: P.y + rand(-8, 6), vx: rand(40, 220), vy: rand(-90, 60), s: 1, color: choice(['#9ad8c0', '#cfe8dc']), life: rand(0.8, 1.8) });
+  },
+
+  launch(dt) {
+    const P = G.player;
+    if (!this.splashed && P.inWater) {
+      this.splashed = true; this.phase = 'done'; this.on = false;
+      G.shake(10); G.fx.splash && G.fx.splash(P.x, 2.6, 0); Water.splash && Water.splash(P.x, 200, 50); SFX.splash && SFX.splash(2.5);
+      G.banner = { text: 'UNDER ROME', sub: 'THE MAPS STOP HERE. FIND THE WAY OUT.', t: 4.5, max: 4.5, color: '#c8b070' };
+      P.invuln = 2;
+    }
+    // a bad bounce off the lip: if it has not found water in four seconds, it
+    // is on the cistern floor somewhere, and the run starts anyway
+    if (this.t > 4 && !this.splashed) { this.splashed = true; this.phase = 'done'; this.on = false; G.banner = { text: 'UNDER ROME', sub: 'THE MAPS STOP HERE. FIND THE WAY OUT.', t: 4.5, max: 4.5, color: '#c8b070' }; }
+  },
+
   breach() {
     const P = G.player, c = this.cart;
-    this.phase = 'loose'; this.t = 0;
+    this.phase = 'loose'; this.t = 0; this.hintT = 0;
     c.broken = true; c.cracks = 1; P.inTank = null; P.frozen = false; P.invuln = 2.5;
     P.y = c.y - 6 * P.vis; P.vx = 90; P.vy = -60;
     G.whiteFlash(0.6); G.shake(16); G.slowmo(0.3, 0.9); SFX.hatch && SFX.hatch(); SFX.splinter && SFX.splinter(0);
@@ -12224,14 +12899,29 @@ const Opening = {
     G.banner = { text: 'BREACH', sub: 'THE DRAIN IS EAST', t: 3.4, max: 3.4, color: '#ff8c40' };
   },
 
-  // the one prompt the opening has, and the state of the glass
+  // the one prompt the opening has, the state of the glass, and how far down
+  // the pipe has taken you
   draw(ctx) {
-    if (!this.on || this.phase !== 'carry' || this.t < 1.0) return;
-    const W = G.W, H = G.H, k = Math.floor(G.t * 3) % 2;
-    Font.draw(ctx, 'MASH BITE', W / 2, H - 58, { color: k ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#0a1a08' });
-    ctx.fillStyle = '#1a1210'; ctx.fillRect(W / 2 - 41, H - 42, 82, 6);
-    ctx.fillStyle = '#cfeef4'; ctx.fillRect(W / 2 - 40, H - 41, Math.round(80 * (1 - this.taps / this.need)), 4);
-    Font.draw(ctx, 'GLASS', W / 2, H - 33, { color: '#6f8f88', align: 'center' });
+    if (!this.on) return;
+    const W = G.W, H = G.H;
+    if (this.phase === 'carry' && this.t > 1.0) {
+      const k = Math.floor(G.t * 3) % 2;
+      Font.draw(ctx, 'MASH BITE', W / 2, H - 58, { color: k ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#0a1a08' });
+      ctx.fillStyle = '#1a1210'; ctx.fillRect(W / 2 - 41, H - 42, 82, 6);
+      ctx.fillStyle = '#cfeef4'; ctx.fillRect(W / 2 - 40, H - 41, Math.round(80 * (1 - this.taps / this.need)), 4);
+      Font.draw(ctx, 'GLASS', W / 2, H - 33, { color: '#6f8f88', align: 'center' });
+      return;
+    }
+    if (this.phase === 'slide') {
+      // a depth gauge: how much pipe is left under you
+      const P = G.player, u = clamp((P.x - this.DRAIN) / (this.MOUTH - this.DRAIN), 0, 1);
+      ctx.fillStyle = 'rgba(6,14,14,0.6)'; ctx.fillRect(W - 18, 40, 8, 120);
+      ctx.fillStyle = '#2a3a34'; ctx.fillRect(W - 17, 41, 6, 118);
+      ctx.fillStyle = '#7fd8c0'; ctx.fillRect(W - 17, 41, 6, Math.round(118 * u));
+      ctx.fillStyle = '#cfe8dc'; ctx.fillRect(W - 19, Math.round(41 + 118 * u) - 1, 10, 2);
+      Font.draw(ctx, Math.round((1 - u) * 140) + 'FT', W - 14, 166, { color: '#7fd8c0', align: 'center' });
+      if (this.rideT < 3.2 && Math.floor(G.t * 3) % 2) Font.draw(ctx, 'HOLD RIGHT TO GO FASTER', W / 2, H - 40, { color: '#cfe8dc', align: 'center', outline: '#0a1a08' });
+    }
   },
 };
 
@@ -12298,7 +12988,9 @@ const Waste = {
     if (h > 0.62) return null;                                 // most gaps are clean-ish
     const x = i * this.SPACING + (ihash(i, 907) - 0.5) * 280;
     const B = Biome.at(x);
-    if (!B || !B.indoor) return null;                           // the system only
+    // the system only, and not the parts of it somebody still mops: a
+    // laboratory corridor and a lined interceptor have no pools in them
+    if (!B || !B.indoor || B.lab || B.pipe) return null;
     const k = ihash(i, 131);
     const kind = k < 0.34 ? 'acid' : k < 0.68 ? 'sludge' : 'rads';
     const w = 90 + ihash(i, 433) * (kind === 'rads' ? 120 : 190);
@@ -16123,7 +16815,7 @@ const G = {
     const table = B.land.map(([k, w]) => { const sp = SPECIES[k]; const hard = sp ? sizeClassOf(sp.ft) : 1; return [k, hard > 3 && D < 1.6 ? w * 0.2 : w]; });
     // the facility is staffed by the two you arrive with and nobody else, and
     // the sewer only ever has the people who live down there
-    if (B.lab || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return;
+    if (B.lab || (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted())) return;
     if (!B.indoor) {
       if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
       if (B.id === 'campground') table.push(['camper', 3]);
@@ -16651,7 +17343,7 @@ const G = {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
     // the trolley ride is framed close, on the tank and the two pushing it
-    const tz2 = Opening.on && Opening.phase === 'carry' ? 1.75 : tz;
+    const tz2 = Opening.on && Opening.phase === 'carry' ? 1.75 : Opening.on && Opening.phase === 'slide' ? Math.min(tz, 1.1) : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole
@@ -16671,7 +17363,15 @@ const G = {
     // outdoors the camera never climbs into empty sky. Indoors it is the roof
     // that bounds it, so a corridor two floors up can be looked at
     const roof = World.isIndoor(c.x) ? World.roofY(c.x) : null;
-    c.y = Math.max(c.y, roof === null ? -(this.H / 2) / c.zoom + 30 : roof + (this.H / 2) / c.zoom - 24);
+    if (roof === null) c.y = Math.max(c.y, -(this.H / 2) / c.zoom + 30);
+    else {
+      // A run of pipe shorter than the shot cannot be framed by pushing the
+      // camera down off the crown: do that and the animal ends up pinned to
+      // the top edge. Centre the run instead, and only hold the crown down
+      // when there is enough headroom for it to matter.
+      const half = (this.H / 2) / c.zoom, fl = World.floorY(c.x);
+      c.y = fl - roof < half * 1.7 ? (roof + fl) / 2 : Math.max(c.y, roof + half - 24);
+    }
     // and land the camera on a whole device pixel, so the ground, its grain and
     // everything standing on it share one grid instead of sliding against it
     const q = Math.max(0.001, c.zoom * (this.rs || 1));

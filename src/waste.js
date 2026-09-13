@@ -60,7 +60,9 @@ const Waste = {
     if (h > 0.62) return null;                                 // most gaps are clean-ish
     const x = i * this.SPACING + (ihash(i, 907) - 0.5) * 280;
     const B = Biome.at(x);
-    if (!B || !B.indoor) return null;                           // the system only
+    // the system only, and not the parts of it somebody still mops: a
+    // laboratory corridor and a lined interceptor have no pools in them
+    if (!B || !B.indoor || B.lab || B.pipe) return null;
     const k = ihash(i, 131);
     const kind = k < 0.34 ? 'acid' : k < 0.68 ? 'sludge' : 'rads';
     const w = 90 + ihash(i, 433) * (kind === 'rads' ? 120 : 190);

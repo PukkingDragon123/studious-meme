@@ -67,6 +67,7 @@ const World = {
     const rng = mulberry32((ci * 104729 + 12345) >>> 0);   // the map is fixed, so decor is too
     const x0 = ci * this.CHUNK, x1 = x0 + this.CHUNK, decor = [];
     for (let x = x0; x < x1; x += 6) Biome.decorAt(x, rng, decor);
+    Biome.authored(x0, x1, decor);
     const ch = { ci, x0, x1, decor, visits };
     this.chunks.set(ci, ch);
     if (this.onChunkLoad) this.onChunkLoad(ch, rng);
@@ -453,14 +454,67 @@ const World = {
       // a vertical face where the floor jumps: draw the drop as blockwork with a coping
       if (i > 0) { const dy = sy - pts[i - 1][1]; if (Math.abs(dy) > 6 * z) { const top = Math.min(sy, pts[i - 1][1]); ctx.fillStyle = shade(g1, 0.7); ctx.fillRect(sx - 1, Math.round(top), 2, Math.round(Math.abs(dy))); ctx.fillStyle = mixColor(g0, '#ffffff', 0.22); ctx.fillRect(sx - 1, Math.round(top), 2, Math.max(1, Math.round(2 * z))); } }
     }
+    // under the crown of a pipe the ground below the invert is fill too, and
+    // the invert itself is a benched channel with the wash running down it
+    if (B.pipe) {
+      ctx.save(); cap(13 * z); ctx.clip(); this.buriedGround(ctx, cam); ctx.restore();
+      this.pipeLining(ctx, cam, 1);
+      ctx.save(); cap(0); ctx.beginPath();
+      ctx.moveTo(pts[0][0], H + 30); for (const p of pts) ctx.lineTo(p[0], p[1]); ctx.lineTo(pts[last][0], H + 30); ctx.closePath(); ctx.clip();
+      for (let i = 0; i < pts.length; i++) {
+        const [sx, sy, wx] = pts[i];
+        // the channel: a wet strip down the middle, benches either side of it
+        ctx.fillStyle = '#2e3a38'; ctx.fillRect(sx, Math.round(sy), step, Math.ceil(7 * z));
+        ctx.fillStyle = '#3d5450'; ctx.fillRect(sx, Math.round(sy + 1 * z), step, Math.max(1, Math.round(2 * z)));
+        if (((wx % 26) + 26) % 26 < 3) { ctx.fillStyle = '#22292c'; ctx.fillRect(sx, Math.round(sy), Math.max(1, Math.round(1.6 * z)), Math.ceil(13 * z)); }
+      }
+      ctx.restore();
+    }
     // in the lab the floor is tiled, with a painted line and a drain grate now and then
     if (B.lab) {
       ctx.save(); cap(0); ctx.clip();
       const tile = Tex.get('labtile', 24, (x, S) => { x.fillStyle = '#39454a'; x.fillRect(0, 0, S, S); x.fillStyle = '#2a3438'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(12, 0, 1, S); x.fillRect(0, 12, S, 1); x.fillStyle = '#44525a'; x.fillRect(1, 1, 5, 1); });
       ctx.globalAlpha = 1; Tex.fill(ctx, tile, cam.x, cam.y, z, 1);
       ctx.restore();
+      // and under the tile a slab, not more tile: this is what you see when
+      // the floor ends and you are looking at the edge of it
+      cap(12 * z); ctx.fillStyle = '#7d8388'; ctx.fill();
+      cap(15 * z); ctx.fillStyle = '#5c6469'; ctx.fill();
+      cap(34 * z); ctx.fillStyle = '#2b3236'; ctx.fill();
+      cap(38 * z); ctx.fillStyle = '#1b2124'; ctx.fill();
+      for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (((wx % 120) + 120) % 120 < 8) { ctx.fillStyle = '#242b2f'; ctx.fillRect(sx, Math.round(sy + 38 * z), step, Math.round(40 * z)); } }
       for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (Math.abs(wx % 60) < 34) { ctx.fillStyle = '#8a7a20'; ctx.fillRect(sx, Math.round(sy + 4 * z), step, Math.max(1, Math.round(1.6 * z))); } }
     }
+    if (B.lab || B.pipe) this.drawFloorDrain(ctx, cam);
+  },
+  // The end of the corridor. A cast manhole frame set into the tiled floor
+  // with the cover lifted off it and stood against the wall, a barrier round
+  // three sides of it that nobody was expecting to need on the fourth, and
+  // under the frame the shaft, which does not have a bottom you can see.
+  drawFloorDrain(ctx, cam) {
+    const z = cam.zoom, lip = Opening.LIP;
+    const leftW = cam.toWorldX(-120), rightW = cam.toWorldX(G.W + 120);
+    if (lip < leftW || lip > rightW) return;
+    const fy = this.floorY(lip - 4);
+    const [sx, sy] = cam.toScreen(lip, fy);
+    // the frame: a cast rim along the last of the floor. The shaft under it is
+    // drawn by drawDropShaft, over the ground, so it is not drawn twice here.
+    ctx.fillStyle = '#4a5258'; ctx.fillRect(Math.round(sx - 26 * z), Math.round(sy - 4 * z), Math.round(28 * z), Math.round(6 * z));
+    ctx.fillStyle = '#6e787e'; ctx.fillRect(Math.round(sx - 26 * z), Math.round(sy - 4 * z), Math.round(28 * z), Math.max(1, Math.round(2 * z)));
+    ctx.fillStyle = '#2a3034'; ctx.fillRect(Math.round(sx - 2 * z), Math.round(sy - 4 * z), Math.round(3 * z), Math.round(26 * z));
+    // the cover, off the frame, stood on its edge against the wall
+    const cx = sx - 52 * z, cy = sy;
+    ctx.fillStyle = '#23262a'; ctx.fillRect(Math.round(cx - 13 * z), Math.round(cy - 30 * z), Math.round(26 * z), Math.round(30 * z));
+    ctx.fillStyle = '#3a3e42'; ctx.fillRect(Math.round(cx - 13 * z), Math.round(cy - 30 * z), Math.round(4 * z), Math.round(30 * z));
+    ctx.fillStyle = '#4c5258'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(cx - 8 * z), Math.round(cy - 26 * z + i * 7 * z), Math.round(16 * z), Math.max(1, Math.round(2 * z)));
+    // the barrier, round three sides of a hole with four
+    for (const ox of [-40, -14]) {
+      ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx + ox * z), Math.round(sy - 30 * z), Math.max(1, Math.round(2 * z)), Math.round(30 * z));
+    }
+    ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx - 41 * z), Math.round(sy - 30 * z), Math.round(28 * z), Math.max(1, Math.round(3 * z)));
+    ctx.fillStyle = '#1a1a1a'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(sx - 39 * z + i * 7 * z), Math.round(sy - 30 * z), Math.round(3 * z), Math.max(1, Math.round(3 * z)));
+    // and the cold air coming up out of it
+    if (chance(0.05)) G.fx.add({ type: 'smoke', x: lip + rand(2, 22), y: fy + 6, vx: rand(-4, 4), vy: -14, s: 1.1, color: '#39464a', life: 2.2, t: 0, maxLife: 2.2 });
   },
   drawTerrain(ctx, cam) {
     if (this.isIndoor(cam.x)) { this.drawBuiltGround(ctx, cam); return; }
@@ -673,6 +727,139 @@ const World = {
     }
   },
   // concrete shell of the lab and sewer: ceiling, back wall, ribs and lamps
+  // The made ground a pipe is buried in. Above the crown and below the invert
+  // there is no rock: there is fill, in courses, with two thousand years of
+  // other people's work laid through it — clay drains, brick footings, a duct
+  // bank, a gas main somebody abandoned. Drawn into whatever is clipped.
+  buriedGround(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    ctx.fillStyle = '#1d1c1a'; ctx.fillRect(0, 0, W, H);
+    const band = 17, leftW = cam.toWorldX(-60), rightW = cam.toWorldX(W + 60);
+    const wy0 = cam.toWorld(0, -20)[1], wy1 = cam.toWorld(0, H + 20)[1];
+    for (let wy = Math.floor(wy0 / band) * band; wy < wy1; wy += band) {
+      const h = ihash(Math.floor(wy / band), 401);
+      const [, sy] = cam.toScreen(0, wy);
+      ctx.fillStyle = h < 0.3 ? '#26241f' : h < 0.55 ? '#181816' : h < 0.8 ? '#211f1b' : '#2b2620';
+      ctx.fillRect(0, Math.round(sy), W, Math.ceil(band * z));
+      ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.fillRect(0, Math.round(sy), W, Math.max(1, Math.round(z)));
+    }
+    // gravel and brick rubble through the fill
+    const grit = Tex.get('fill|grit', 32, (x, S) => {
+      for (let i = 0; i < 90; i++) { const gx = ihash(i, 7) * S, gy = ihash(i, 8) * S, v = ihash(i, 9);
+        x.fillStyle = v < 0.4 ? 'rgba(120,104,84,0.5)' : v < 0.75 ? 'rgba(70,58,46,0.6)' : 'rgba(150,96,70,0.4)';
+        x.fillRect(gx | 0, gy | 0, 1 + (v > 0.9 ? 1 : 0), 1); }
+    });
+    Tex.fill(ctx, grit, cam.x, cam.y, z, 0.55);
+    // what was laid in the ground before the pipe was
+    for (let wx = Math.floor(leftW / 170) * 170; wx < rightW; wx += 170) {
+      const k = Math.floor(wx / 170), h = ihash(k, 411);
+      const wy = wy0 + ihash(k, 412) * (wy1 - wy0);
+      const [sx, sy] = cam.toScreen(wx, wy);
+      if (h < 0.3) {                                   // an old clay drain, cut through
+        const r = (7 + ihash(k, 413) * 5) * z;
+        Shape.oct(ctx, sx, sy, r + 2 * z, '#6a4a34'); Shape.oct(ctx, sx, sy, r, '#8a6446'); Shape.oct(ctx, sx, sy, r * 0.6, '#120e0a');
+      } else if (h < 0.55) {                           // a brick footing
+        const bw = 34 * z, bh = 16 * z;
+        for (let ry = 0; ry < 3; ry++) for (let rx = 0; rx < 4; rx++) {
+          ctx.fillStyle = (rx + ry) % 2 ? '#5c3a2c' : '#6a4434';
+          ctx.fillRect(Math.round(sx - bw / 2 + rx * bw / 4 + (ry % 2 ? 2 * z : 0)), Math.round(sy + ry * bh / 3), Math.ceil(bw / 4 - z), Math.ceil(bh / 3 - z));
+        }
+      } else if (h < 0.78) {                           // a duct bank: four ways, in concrete
+        const dw = 26 * z, dh = 18 * z;
+        ctx.fillStyle = '#3e3a34'; ctx.fillRect(Math.round(sx - dw / 2), Math.round(sy), Math.round(dw), Math.round(dh));
+        for (let i = 0; i < 4; i++) Shape.oct(ctx, sx - dw / 2 + dw * (0.25 + (i % 2) * 0.5), sy + dh * (i < 2 ? 0.32 : 0.7), 4 * z, '#14100c');
+      } else if (h < 0.9) {                            // a main, still in service, still leaking
+        ctx.fillStyle = '#4a4640'; ctx.fillRect(Math.round(sx - 30 * z), Math.round(sy), Math.round(60 * z), Math.round(9 * z));
+        ctx.fillStyle = '#5e5a52'; ctx.fillRect(Math.round(sx - 30 * z), Math.round(sy), Math.round(60 * z), Math.max(1, Math.round(2 * z)));
+        ctx.fillStyle = '#2a2622'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy - 2 * z), Math.round(8 * z), Math.round(13 * z));
+      }
+    }
+  },
+  // The lining, seen edge on: the wall thickness of the pipe itself, a band of
+  // pale concrete following the crown and the invert with a ring joint in it
+  // every segment. It is the one line that tells you this is a pipe and not a
+  // hole, so it is drawn last and it is drawn light.
+  pipeLining(ctx, cam, dir) {
+    const W = G.W, z = cam.zoom, step = 3, th = 13;
+    for (let sx = -step; sx <= W + step; sx += step) {
+      const wx = cam.toWorldX(sx), r = dir < 0 ? this.roofY(wx) : this.floorY(wx);
+      if (r === null) continue;
+      const [, sy] = cam.toScreen(wx, r);
+      const y0 = dir < 0 ? sy - th * z : sy;
+      ctx.fillStyle = '#5b6166'; ctx.fillRect(sx, Math.round(y0), step, Math.ceil(th * z));
+      ctx.fillStyle = dir < 0 ? '#787f84' : '#6d757a'; ctx.fillRect(sx, Math.round(dir < 0 ? sy - 3 * z : sy), step, Math.max(1, Math.round(3 * z)));
+      ctx.fillStyle = '#3b4145'; ctx.fillRect(sx, Math.round(dir < 0 ? y0 : sy + th * z - 2 * z), step, Math.max(1, Math.round(2 * z)));
+      // a ring joint every 26 units: this pipe was laid in segments
+      if (((wx % 26) + 26) % 26 < 3) { ctx.fillStyle = '#333a3e'; ctx.fillRect(sx, Math.round(y0), Math.max(1, Math.round(1.6 * z)), Math.ceil(th * z)); }
+    }
+  },
+  // Manhole shafts. Every one of them is a hole in a street with a cast cover
+  // on it, a shaft of rings under the cover and a ladder down the side of the
+  // shaft whose bottom rung stops well short of the crown — which is the whole
+  // reason a thing your size cannot use one. What comes down is light and rain.
+  drawManholes(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    const leftW = cam.toWorldX(-90), rightW = cam.toWorldX(W + 90);
+    for (const [mx, lit] of MANHOLES) {
+      if (mx < leftW || mx > rightW) continue;
+      const r = this.roofY(mx); if (r === null) continue;
+      const rad = 17, top = r - 150;
+      const [sx, sy] = cam.toScreen(mx, r);
+      const [, ty] = cam.toScreen(mx, top);
+      const x0 = Math.round(sx - rad * z), wdt = Math.ceil(rad * 2 * z);
+      // the bore of the shaft, and the rings it is built out of
+      ctx.fillStyle = '#12100e'; ctx.fillRect(x0, Math.round(ty), wdt, Math.round(sy - ty));
+      ctx.fillStyle = '#3a3a36'; ctx.fillRect(x0 - Math.round(3 * z), Math.round(ty), Math.round(3 * z), Math.round(sy - ty));
+      ctx.fillStyle = '#2c2c28'; ctx.fillRect(Math.round(sx + rad * z), Math.round(ty), Math.round(3 * z), Math.round(sy - ty));
+      for (let wy = top; wy < r; wy += 24) {
+        const [, jy] = cam.toScreen(mx, wy);
+        ctx.fillStyle = '#26251f'; ctx.fillRect(x0, Math.round(jy), wdt, Math.max(1, Math.round(2 * z)));
+        ctx.fillStyle = '#443f36'; ctx.fillRect(x0, Math.round(jy + 2 * z), wdt, Math.max(1, Math.round(z)));
+      }
+      // the ladder, down one side, stopping short
+      for (let wy = top + 16; wy < r - 54; wy += 15) {
+        const [, ry] = cam.toScreen(mx, wy);
+        ctx.fillStyle = '#6a6252'; ctx.fillRect(Math.round(sx - 7 * z), Math.round(ry), Math.round(14 * z), Math.max(1, Math.round(2 * z)));
+        ctx.fillStyle = '#2a2620'; ctx.fillRect(Math.round(sx - 7 * z), Math.round(ry + 2 * z), Math.round(14 * z), Math.max(1, Math.round(z)));
+      }
+      // the cover, and the daylight round the edge of it
+      const day = clamp(lit * (0.35 + 0.65 * World.light(G.day)), 0, 1);
+      ctx.fillStyle = '#1a1a16'; ctx.fillRect(x0 - Math.round(4 * z), Math.round(ty - 9 * z), wdt + Math.round(8 * z), Math.round(9 * z));
+      ctx.fillStyle = '#3c3a32'; ctx.fillRect(x0 - Math.round(2 * z), Math.round(ty - 7 * z), wdt + Math.round(4 * z), Math.round(5 * z));
+      for (let i = 0; i < 5; i++) { ctx.fillStyle = '#54514a'; ctx.fillRect(Math.round(sx - rad * z + 3 * z + i * 7 * z), Math.round(ty - 6 * z), Math.max(1, Math.round(3 * z)), Math.max(1, Math.round(3 * z))); }
+      // the cast frame where the shaft breaks through the crown: the one line
+      // that says a hole in the ceiling is a hole and not a stain
+      ctx.fillStyle = '#787f84'; ctx.fillRect(x0 - Math.round(5 * z), Math.round(sy - 3 * z), wdt + Math.round(10 * z), Math.max(1, Math.round(3 * z)));
+      ctx.fillStyle = '#3b4145'; ctx.fillRect(x0 - Math.round(5 * z), Math.round(sy), wdt + Math.round(10 * z), Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#0c0e0e'; ctx.fillRect(x0, Math.round(sy - 3 * z), wdt, Math.max(1, Math.round(3 * z)));
+      if (day > 0.04) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        // the light through the slots in the cover, spreading as it falls, and
+        // strongest where it comes through the crown
+        const fy0 = this.floorY(mx), [, fS] = cam.toScreen(mx, fy0);
+        const g = ctx.createLinearGradient(0, ty, 0, fS + 10 * z);
+        g.addColorStop(0, `rgba(210,230,244,${(0.78 * day).toFixed(3)})`);
+        g.addColorStop(0.5, `rgba(200,222,238,${(0.44 * day).toFixed(3)})`);
+        g.addColorStop(0.82, `rgba(192,216,234,${(0.22 * day).toFixed(3)})`);
+        g.addColorStop(1, 'rgba(180,206,226,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(sx - 9 * z, ty); ctx.lineTo(sx + 9 * z, ty);
+        ctx.lineTo(sx + 34 * z, fS + 10 * z); ctx.lineTo(sx - 34 * z, fS + 10 * z);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+        // and a puddle of it on the invert
+        const gy = fS;
+        if (gy > -40 && gy < H + 40) {
+          ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          const p = ctx.createRadialGradient(sx, gy, 1, sx, gy, 44 * z);
+          p.addColorStop(0, `rgba(196,218,236,${(0.34 * day).toFixed(3)})`); p.addColorStop(1, 'rgba(190,214,232,0)');
+          ctx.fillStyle = p; ctx.fillRect(sx - 44 * z, gy - 26 * z, 88 * z, 52 * z); ctx.restore();
+        }
+        if (chance(0.06)) G.fx.add({ type: 'drop', x: mx + rand(-10, 10), y: top + 20, vx: rand(-3, 3), vy: 60, s: 1, color: '#a8c4d0', life: 3.4 });
+      }
+    }
+  },
   drawIndoor(ctx, cam, day) {
     const W = G.W, H = G.H, z = cam.zoom, step = 4;
     if (!this.isIndoor(cam.toWorldX(W / 2)) && !this.isIndoor(cam.toWorldX(0)) && !this.isIndoor(cam.toWorldX(W))) return;
@@ -706,13 +893,23 @@ const World = {
       const roofS = cam.toScreen(0, this.roofY(cam.x) || -650)[1], floorS = cam.toScreen(0, this.floorY(cam.x))[1];
       // upper wall: dark painted block
       ctx.fillStyle = '#1e262b'; ctx.fillRect(0, 0, W, H);
-      // tile band: from a little above the floor to two metres up
+      // tile band: from a little above the floor to two metres up. It is the
+      // only bright surface in the game and it is meant to be: you spend the
+      // first minute of a run looking at it.
       const tileTop = floorS - 150 * z, tileBot = floorS + 6 * z;
-      const tile = Tex.get('labwall', 32, (x, S) => { x.fillStyle = '#c8d0cc'; x.fillRect(0, 0, S, S); x.fillStyle = '#9aa6a4'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(16, 0, 1, S); x.fillRect(0, 16, S, 1); x.fillStyle = '#dce4e0'; x.fillRect(2, 2, 8, 1); x.fillRect(18, 18, 8, 1); });
+      const tile = Tex.get('labwall2', 32, (x, S) => {
+        x.fillStyle = '#b9c5c0'; x.fillRect(0, 0, S, S);
+        x.fillStyle = '#94a29e'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(16, 0, 1, S); x.fillRect(0, 16, S, 1);
+        x.fillStyle = '#d2ded8'; x.fillRect(1, 1, 14, 1); x.fillRect(17, 17, 14, 1); x.fillRect(1, 1, 1, 14); x.fillRect(17, 17, 1, 14);
+        x.fillStyle = '#a7b4af'; x.fillRect(10, 8, 3, 1); x.fillRect(24, 22, 4, 1);
+      });
       ctx.save(); ctx.beginPath(); ctx.rect(0, tileTop, W, tileBot - tileTop); ctx.clip();
-      Tex.fill(ctx, tile, cam.x, cam.y, z, 0.62); ctx.restore();
-      ctx.fillStyle = '#6a7a80'; ctx.fillRect(0, Math.round(tileTop), W, Math.max(1, Math.round(2 * z)));
+      Tex.fill(ctx, tile, cam.x, cam.y, z, 0.94); ctx.restore();
+      // the dado: a capping rail over the tile, then the painted stripe
+      ctx.fillStyle = '#8e9ca0'; ctx.fillRect(0, Math.round(tileTop - 4 * z), W, Math.max(1, Math.round(4 * z)));
+      ctx.fillStyle = '#c2ccce'; ctx.fillRect(0, Math.round(tileTop - 4 * z), W, Math.max(1, Math.round(z)));
       ctx.fillStyle = '#2a8a70'; ctx.fillRect(0, Math.round(tileTop + 6 * z), W, Math.max(1, Math.round(3 * z)));       // the coloured stripe every facility has
+      ctx.fillStyle = '#1d5f4e'; ctx.fillRect(0, Math.round(tileTop + 9 * z), W, Math.max(1, Math.round(z)));
       // grime where the floor meets the wall
       ctx.fillStyle = 'rgba(30,26,20,0.35)'; ctx.fillRect(0, Math.round(floorS - 8 * z), W, Math.round(8 * z));
       // ducting, cable tray and conduit along the crown
@@ -731,8 +928,9 @@ const World = {
         ctx.fillStyle = on ? '#e8f4ee' : '#4a5a58'; ctx.fillRect(Math.round(sx - lw / 2 + 2 * z), Math.round(ly + 4 * z), Math.round(lw - 4 * z), Math.max(1, Math.round(2 * z)));
         if (on) { const g = ctx.createLinearGradient(0, ly, 0, floorS); g.addColorStop(0, 'rgba(210,240,230,0.16)'); g.addColorStop(1, 'rgba(210,240,230,0)'); ctx.fillStyle = g; ctx.fillRect(Math.round(sx - lw / 2 - 20 * z), Math.round(ly), Math.round(lw + 40 * z), Math.round(floorS - ly)); }
       }
-      // doors, every 240, with a porthole and a keypad
-      for (let wx = Math.floor(leftW / 240) * 240 + 120; wx < rightW; wx += 240) {
+      // doors, every 480, with a porthole and a keypad
+      for (let wx = Math.floor(leftW / 480) * 480 + 240; wx < rightW; wx += 480) {
+        if (!Biome.at(wx).lab) continue;
         const [sx] = cam.toScreen(wx, 0), dw = 44 * z, dh = 92 * z, dy = floorS - dh;
         ctx.fillStyle = '#2f3a40'; ctx.fillRect(Math.round(sx - dw / 2 - 3 * z), Math.round(dy - 3 * z), Math.round(dw + 6 * z), Math.round(dh + 3 * z));
         ctx.fillStyle = '#4a5860'; ctx.fillRect(Math.round(sx - dw / 2), Math.round(dy), Math.round(dw), Math.round(dh));
@@ -746,14 +944,73 @@ const World = {
         ctx.fillStyle = '#c8d0cc'; ctx.fillRect(Math.round(sx - 16 * z), Math.round(dy - 14 * z), Math.round(32 * z), Math.round(8 * z));
         ctx.fillStyle = '#1e262b'; for (let k = 0; k < 5; k++) ctx.fillRect(Math.round(sx - 13 * z + k * 6 * z), Math.round(dy - 11 * z), Math.round(3 * z), Math.round(2 * z));
       }
+      // fittings, on the grid, at the height the shot actually sees: a hose reel
+      // in its cabinet, a panel with its door shut, a socket and a spill kit.
+      for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
+        if (!Biome.at(wx).lab) continue;
+        const [sx] = cam.toScreen(wx, 0), kind = ((Math.floor(wx / 120) % 4) + 4) % 4;
+        const by = floorS - 96 * z;
+        if (kind === 0) {                                     // hose reel, in a cabinet
+          ctx.fillStyle = '#a03024'; ctx.fillRect(Math.round(sx - 13 * z), Math.round(by), Math.round(26 * z), Math.round(26 * z));
+          ctx.fillStyle = '#c04434'; ctx.fillRect(Math.round(sx - 13 * z), Math.round(by), Math.round(26 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#2a1a16'; ctx.fillRect(Math.round(sx - 9 * z), Math.round(by + 5 * z), Math.round(18 * z), Math.round(17 * z));
+          ctx.fillStyle = '#d8d0c0'; for (let r = 6; r >= 2; r -= 2) { ctx.fillRect(Math.round(sx - r * z), Math.round(by + 13 * z - r * z), Math.round(2 * r * z), Math.max(1, Math.round(z))); ctx.fillRect(Math.round(sx - r * z), Math.round(by + 13 * z + r * z), Math.round(2 * r * z), Math.max(1, Math.round(z))); }
+        } else if (kind === 1) {                              // a distribution board
+          ctx.fillStyle = '#39444a'; ctx.fillRect(Math.round(sx - 15 * z), Math.round(by + 2 * z), Math.round(30 * z), Math.round(22 * z));
+          ctx.fillStyle = '#4b585e'; ctx.fillRect(Math.round(sx - 15 * z), Math.round(by + 2 * z), Math.round(30 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#28323a'; ctx.fillRect(Math.round(sx - 12 * z), Math.round(by + 6 * z), Math.round(24 * z), Math.round(14 * z));
+          for (let i = 0; i < 5; i++) { ctx.fillStyle = ihash(i + Math.floor(wx / 120), 61) > 0.4 ? '#40c878' : '#c8a020'; ctx.fillRect(Math.round(sx - 10 * z + i * 4.4 * z), Math.round(by + 9 * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(3 * z))); }
+        } else if (kind === 2) {                              // a spill kit and a socket
+          ctx.fillStyle = '#c8a020'; ctx.fillRect(Math.round(sx - 9 * z), Math.round(by + 10 * z), Math.round(18 * z), Math.round(14 * z));
+          ctx.fillStyle = '#e0c040'; ctx.fillRect(Math.round(sx - 9 * z), Math.round(by + 10 * z), Math.round(18 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#1a1a1a'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(by + 14 * z), Math.round(8 * z), Math.round(6 * z));
+          ctx.fillStyle = '#b8c0bc'; ctx.fillRect(Math.round(sx + 16 * z), Math.round(by + 16 * z), Math.round(7 * z), Math.round(8 * z));
+          ctx.fillStyle = '#2a3236'; ctx.fillRect(Math.round(sx + 18 * z), Math.round(by + 18 * z), Math.max(1, Math.round(z)), Math.round(3 * z)); ctx.fillRect(Math.round(sx + 20 * z), Math.round(by + 18 * z), Math.max(1, Math.round(z)), Math.round(3 * z));
+        } else {                                              // a window into the next bay, lit green
+          ctx.fillStyle = '#2f3a40'; ctx.fillRect(Math.round(sx - 22 * z), Math.round(by - 6 * z), Math.round(44 * z), Math.round(34 * z));
+          ctx.fillStyle = '#0e1a1e'; ctx.fillRect(Math.round(sx - 19 * z), Math.round(by - 3 * z), Math.round(38 * z), Math.round(28 * z));
+          ctx.fillStyle = 'rgba(90,200,160,0.18)'; ctx.fillRect(Math.round(sx - 19 * z), Math.round(by - 3 * z), Math.round(38 * z), Math.round(28 * z));
+          ctx.fillStyle = '#1c6a86'; ctx.fillRect(Math.round(sx - 12 * z), Math.round(by + 4 * z), Math.round(9 * z), Math.round(21 * z));
+          ctx.fillStyle = '#227058'; ctx.fillRect(Math.round(sx + 3 * z), Math.round(by + 9 * z), Math.round(11 * z), Math.round(16 * z));
+          ctx.fillStyle = '#3a4448'; ctx.fillRect(Math.round(sx - 19 * z), Math.round(by + 11 * z), Math.round(38 * z), Math.max(1, Math.round(z)));
+        }
+      }
       // hazard stripe along the base of the wall, and a warning placard now and then
       for (let wx = Math.floor(leftW / 24) * 24; wx < rightW; wx += 24) { const [sx] = cam.toScreen(wx, 0); ctx.fillStyle = (Math.floor(wx / 24) & 1) ? '#c8a020' : '#1a1a1a'; ctx.fillRect(Math.round(sx), Math.round(floorS - 3 * z), Math.round(24 * z) + 1, Math.max(1, Math.round(3 * z))); }
       for (let wx = Math.floor(leftW / 300) * 300 + 40; wx < rightW; wx += 300) {
+        if (!Biome.at(wx).lab) continue;
         const [sx] = cam.toScreen(wx, 0), py = tileTop - 30 * z;
         ctx.fillStyle = '#e0c040'; ctx.fillRect(Math.round(sx - 10 * z), Math.round(py), Math.round(20 * z), Math.round(20 * z));
         ctx.fillStyle = '#1a1a1a'; ctx.fillRect(Math.round(sx - 6 * z), Math.round(py + 4 * z), Math.round(12 * z), Math.round(12 * z));
         ctx.fillStyle = '#e0c040'; for (let k = 0; k < 3; k++) { const a = k * TAU / 3 - Math.PI / 2; ctx.fillRect(Math.round(sx + Math.cos(a) * 4 * z) - 1, Math.round(py + 10 * z + Math.sin(a) * 4 * z) - 1, Math.max(2, Math.round(3 * z)), Math.max(2, Math.round(3 * z))); }
       }
+    } else if (B.pipe) {
+      // THE INTERCEPTOR. Precast rings, a benched invert and nothing else: no
+      // brick, no niches, no growth. The back of the pipe is the back of the
+      // pipe, lit by whatever falls down the shafts.
+      ctx.fillStyle = '#1b2124'; ctx.fillRect(0, 0, W, H);
+      for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
+        const [sx] = cam.toScreen(wx, 0);
+        ctx.fillStyle = '#232a2e'; ctx.fillRect(Math.round(sx), 0, Math.max(1, Math.round(2.4 * z)), H);
+        ctx.fillStyle = '#141a1d'; ctx.fillRect(Math.round(sx + 2.4 * z), 0, Math.max(1, Math.round(z)), H);
+      }
+      // step irons up the back of the pipe at every access: the system was
+      // built for men to get into, which is the joke of being in it as this
+      for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
+        if (ihash(Math.floor(wx / 26), 205) > 0.22 || !Biome.at(wx).pipe) continue;
+        const rf = this.roofY(wx), fl2 = this.floorY(wx); if (rf === null) continue;
+        const [sx] = cam.toScreen(wx, 0);
+        for (let wy = fl2 - 14; wy > rf + 6; wy -= 14) {
+          const [, ry] = cam.toScreen(wx, wy);
+          ctx.fillStyle = '#575043'; ctx.fillRect(Math.round(sx - 5 * z), Math.round(ry), Math.round(10 * z), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#2a2822'; ctx.fillRect(Math.round(sx - 5 * z), Math.round(ry + 2 * z), Math.round(10 * z), Math.max(1, Math.round(z)));
+        }
+      }
+      // the wash down the middle of it, and the tide marks either side
+      const fS = cam.toScreen(0, this.floorY(cam.x))[1], rS = cam.toScreen(0, this.roofY(cam.x) || -100)[1];
+      ctx.fillStyle = 'rgba(40,60,54,0.5)'; ctx.fillRect(0, Math.round(fS - 22 * z), W, Math.round(22 * z));
+      ctx.fillStyle = 'rgba(122,150,120,0.22)'; ctx.fillRect(0, Math.round(fS - 22 * z), W, Math.max(1, Math.round(z)));
+      ctx.fillStyle = 'rgba(0,0,0,0.30)'; ctx.fillRect(0, Math.round(rS), W, Math.round(Math.max(0, fS - rS) * 0.45));
     } else if (B.roman) {
       const arch = shade(B.ground[2], 0.78), archL = shade(B.ground[2], 1.5), hole = shade(B.ground[2], 0.36);
       for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
@@ -803,6 +1060,9 @@ const World = {
     for (let sx = -step; sx <= W + step; sx += step) { const wx = cam.toWorldX(sx), r = this.roofY(wx); ctx.lineTo(sx, r === null ? -20 : cam.toScreen(wx, r)[1]); }
     ctx.lineTo(W + 4, -10); ctx.closePath();
     ctx.fillStyle = slab; ctx.fill();
+    // above the crown of a pipe there is no rock: there is fill, in courses,
+    // with everything anybody ever laid in a street running through it
+    if (B.pipe) { ctx.save(); ctx.clip(); this.buriedGround(ctx, cam); ctx.restore(); this.pipeLining(ctx, cam, -1); }
     // segment joints: short ticks up into the slab every 26 units of arch
     for (let wx = Math.floor(leftW / 26) * 26; wx < rightW; wx += 26) {
       const r = this.roofY(wx); if (r === null) continue;
@@ -822,7 +1082,7 @@ const World = {
     // ribs, hanging lamps and dripping pipes
     for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
       const r = this.roofY(wx); if (r === null) continue;
-      if (B.lab) continue;
+      if (B.lab || B.pipe) continue;
       if (B.roman) {
         // a rib of the vault, and one guttering torch bracket per bay
         const [sx, sy] = cam.toScreen(wx, r), fy = cam.toScreen(wx, this.floorY(wx))[1];
@@ -861,6 +1121,7 @@ const World = {
       if (on) { ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(lsx, lsy + 6 * z, 2, lsx, lsy + 6 * z, 70 * z); g.addColorStop(0, 'rgba(255,224,150,0.22)'); g.addColorStop(1, 'rgba(255,224,150,0)'); ctx.fillStyle = g; ctx.fillRect(lsx - 70 * z, lsy, 140 * z, 150 * z); ctx.globalCompositeOperation = 'source-over'; }
       if (chance(0.02)) G.fx.add({ type: 'drop', x: lx + rand(-30, 30), y: lr + 8, vx: 0, vy: 20, s: 1, color: '#9ab0b8', life: 3 });
     }
+    this.drawManholes(ctx, cam);
   },
   // The deep is not an empty black rectangle. Below the light there is marine
   // snow drifting down forever, the far side of the canyon showing as a flat
@@ -965,6 +1226,7 @@ const World = {
   drawTunnelFloor(ctx, cam) {
     const W = G.W, H = G.H, z = cam.zoom, step = Math.max(2, Math.round(3 * z));
     const B = Biome.mixPal(cam.x);
+    this.drawDropShaft(ctx, cam);
     const cap = shade(B.ground[0], 1.18), capD = shade(B.ground[0], 0.62), joint = shade(B.ground[2], 0.7);
     const slime = mixColor(B.scum, '#1a2a12', 0.35);
     for (let sx = 0; sx <= W; sx += step) {
@@ -986,11 +1248,45 @@ const World = {
       }
     }
   },
+  // The shaft under the floor drain. The heightmap can only say how high the
+  // ground is at x, so a hole straight down is not something it can hold: the
+  // map turns the drop into a very short, very steep ramp, and this draws the
+  // shaft that ramp is standing in for. Rings, a ladder that stops where the
+  // ladders always stop, and the wash down one side of it.
+  drawDropShaft(ctx, cam) {
+    if (typeof Opening === 'undefined') return;
+    const z = cam.zoom, ax = Opening.LIP - 2, bx = Opening.LIP + 30;
+    if (bx < cam.toWorldX(-60) || ax > cam.toWorldX(G.W + 60)) return;
+    const top = this.floorY(ax - 12), bot = -972;
+    if (top > bot) return;
+    const [sx0, sy0] = cam.toScreen(ax, top), [sx1, sy1] = cam.toScreen(bx, bot);
+    const w = Math.max(2, Math.round(sx1 - sx0)), h = Math.round(sy1 - sy0);
+    if (sy1 < -40 || sy0 > G.H + 40) return;
+    ctx.fillStyle = '#0c0f10'; ctx.fillRect(Math.round(sx0), Math.round(sy0), w, h);
+    ctx.fillStyle = '#3a4246'; ctx.fillRect(Math.round(sx0) - Math.round(4 * z), Math.round(sy0), Math.round(4 * z), h);
+    ctx.fillStyle = '#2b3236'; ctx.fillRect(Math.round(sx1), Math.round(sy0), Math.round(4 * z), h);
+    for (let wy = top; wy < bot; wy += 22) {
+      const [, jy] = cam.toScreen(0, wy);
+      ctx.fillStyle = '#20262a'; ctx.fillRect(Math.round(sx0), Math.round(jy), w, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#39433f'; ctx.fillRect(Math.round(sx0), Math.round(jy + 2 * z), w, Math.max(1, Math.round(z)));
+    }
+    // the ladder: it goes most of the way and then it does not
+    for (let wy = top + 18; wy < bot - 90; wy += 15) {
+      const [, ry] = cam.toScreen(0, wy);
+      ctx.fillStyle = '#5f5849'; ctx.fillRect(Math.round(sx0 + 3 * z), Math.round(ry), Math.round(13 * z), Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#26231d'; ctx.fillRect(Math.round(sx0 + 3 * z), Math.round(ry + 2 * z), Math.round(13 * z), Math.max(1, Math.round(z)));
+    }
+    // what the corridor has been letting down here for years
+    ctx.fillStyle = 'rgba(120,160,150,0.16)'; ctx.fillRect(Math.round(sx0 + w * 0.55), Math.round(sy0), Math.max(1, Math.round(3 * z)), h);
+    ctx.fillStyle = 'rgba(90,120,110,0.20)'; ctx.fillRect(Math.round(sx0 + w * 0.2), Math.round(sy0), Math.max(1, Math.round(2 * z)), h);
+    if (chance(0.10)) G.fx.add({ type: 'drop', x: Opening.LIP + rand(2, 16), y: top + 10, vx: 0, vy: 120, s: 1, color: '#9ad8c0', life: 2.6 });
+  },
   // Pipe mouths punched through the back wall. The system is a network, and a
   // network has to visibly go somewhere other than left and right.
   drawTunnelPipes(ctx, cam) {
     const W = G.W, H = G.H, z = cam.zoom;
     const B = Biome.mixPal(cam.x);
+    if (B.lab) return;        // a laboratory wall does not have sewer mouths in it
     const left = cam.toWorldX(-140), right = cam.toWorldX(W + 140);
     const rim = shade(B.ground[0], 0.9), rimL = shade(B.ground[0], 1.25), bore = shade(B.ground[2], 0.34);
     for (let wx = Math.floor(left / 260) * 260; wx < right; wx += 260) {
@@ -1283,6 +1579,19 @@ const World = {
           else if (d.v === 1) { ctx.fillStyle = '#8a3a2a'; ctx.fillRect(Math.round(sx - 5 * s2), Math.round(sy - 4 * s2), Math.round(10 * s2), Math.round(4 * s2)); ctx.fillStyle = '#b05a44'; ctx.fillRect(Math.round(sx - 5 * s2), Math.round(sy - 4 * s2), Math.round(10 * s2), Math.max(1, Math.round(s2))); }
           else if (d.v === 2) { ctx.fillStyle = '#c0c8c8'; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(sx - 4 * s2 + i * 2.5 * s2), Math.round(sy - 3 * s2 - ihash(i, 9) * 2 * s2), Math.max(1, Math.round(2 * s2)), Math.max(1, Math.round(3 * s2))); }
           else { Shape.blob(ctx, sx, sy - 4 * s2, 4 * s2, '#4a4a4a'); Shape.blob(ctx, sx, sy - 4 * s2, 2 * s2, '#6a6a6a'); }
+          break; }
+        case 'grit': if (layer !== 0) break; {
+          // a bank of washed grit against one side of the invert, with whatever
+          // was heavy enough to stop with it
+          const sd = d.side, s2 = d.s * z;
+          for (let i = 0; i < d.n; i++) {
+            const ox = sd * (2 + i * 5) * s2, hh = (5 - i * 0.7) * s2;
+            if (hh <= 0) continue;
+            ctx.fillStyle = i % 2 ? '#4c4a40' : '#413f36';
+            ctx.fillRect(Math.round(sx + ox), Math.round(sy - hh), Math.ceil(6 * s2), Math.ceil(hh + z));
+            ctx.fillStyle = '#5e5b4e'; ctx.fillRect(Math.round(sx + ox), Math.round(sy - hh), Math.ceil(6 * s2), Math.max(1, Math.round(z)));
+          }
+          ctx.fillStyle = '#6a6656'; ctx.fillRect(Math.round(sx - 2 * s2), Math.round(sy - z), Math.ceil(3 * s2), Math.max(1, Math.round(z)));
           break; }
         case 'rubble': if (layer !== 0) break; {
           for (let i = 0; i < d.n; i++) { const ox = (ihash(i, Math.floor(d.x)) - 0.5) * 26 * z * d.s, hh = (3 + ihash(i, 71) * 5) * d.s * z;

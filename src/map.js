@@ -10,45 +10,66 @@
 // squeeze, chambers that open overhead, and one shaft that drops away.
 const SEWER_SECTION = [
   // ---- THE OUTFALL SUMP: a vaulted dead end, deep and still --------------
-  [-16000, 260, -210], [-15840, 300, -230], [-15660, 330, -200], [-15480, 280, -150],
-  [-15300, 210, -110], [-15120, 170, -86], [-14940, 120, -60], [-14760, 96, -44],
-  [-14580, 130, -70], [-14400, 180, -120],
+  [-19000, 260, -210], [-18840, 300, -230], [-18660, 330, -200], [-18480, 280, -150],
+  [-18300, 210, -110], [-18120, 170, -86], [-17940, 120, -60], [-17760, 96, -44],
+  [-17580, 130, -70], [-17400, 180, -120],
   // ---- THE DEEP GALLERY: the trunk main, with ledges and side vaults -----
-  [-14300, 150, -100], [-14160, 90, -64], [-14020, 40, -50],
-  [-13900, -26, -124], [-13800, -30, -128],                        // dry maintenance ledge
-  [-13700, 36, -60], [-13560, 110, -48], [-13420, 186, -30],     // low run, barely a hand of air
-  [-13280, 120, -54], [-13140, 170, -96],
-  [-13000, 240, -180], [-12840, 300, -250], [-12680, 420, -300], // the gallery vault
-  [-12520, 280, -210], [-12360, 200, -140], [-12200, 130, -80], [-12060, 60, -54],
-  [-11920, -28, -122], [-11820, -32, -126],                        // pump house floor
-  [-11720, 40, -56], [-11580, 110, -44], [-11440, 104, -22],      // the tightest crawl in the system
-  [-11300, 130, -58], [-11160, 180, -110], [-11020, 150, -90], [-10880, 100, -62],
-  [-10740, 140, -70], [-10600, 190, -120], [-10460, 160, -96],
+  [-17300, 150, -100], [-17160, 90, -64], [-17020, 40, -50],
+  [-16900, -26, -124], [-16800, -30, -128],                        // dry maintenance ledge
+  [-16700, 36, -60], [-16560, 110, -48], [-16420, 186, -30],     // low run, barely a hand of air
+  [-16280, 120, -54], [-16140, 170, -96],
+  [-16000, 240, -180], [-15840, 300, -250], [-15680, 420, -300], // the gallery vault
+  [-15520, 280, -210], [-15360, 200, -140], [-15200, 130, -80], [-15060, 60, -54],
+  [-14920, -28, -122], [-14820, -32, -126],                        // pump house floor
+  [-14720, 40, -56], [-14580, 110, -44], [-14440, 104, -22],      // the tightest crawl in the system
+  [-14300, 130, -58], [-14160, 180, -110], [-14020, 150, -90], [-13880, 100, -62],
+  [-13740, 140, -70], [-13600, 190, -120], [-13460, 160, -96],
   // ---- JUNCTION 9: the hub, and the spokes running off it ---------------
-  [-10400, 140, -86], [-10260, 210, -160], [-10100, 300, -260],
-  [-9940, 470, -360], [-9780, 330, -300],                        // the junction vault
-  [-9620, 250, -200], [-9460, 150, -110], [-9320, 60, -70],
-  [-9200, -26, -136], [-9100, -30, -140],                         // side gallery, walkable
-  [-9000, 44, -72], [-8860, 120, -50], [-8720, 196, -28], [-8580, 140, -56],
-  [-8440, 200, -120], [-8300, 260, -190], [-8160, 220, -160], [-8020, 150, -96],
-  [-7880, 90, -60], [-7740, 130, -46], [-7600, 170, -54], [-7460, 210, -110],
+  [-13400, 140, -86], [-13260, 210, -160], [-13100, 300, -260],
+  [-12940, 470, -360], [-12780, 330, -300],                        // the junction vault
+  [-12620, 250, -200], [-12460, 150, -110], [-12320, 60, -70],
+  [-12200, -26, -136], [-12100, -30, -140],                         // side gallery, walkable
+  [-12000, 44, -72], [-11860, 120, -50], [-11720, 196, -28], [-11580, 140, -56],
+  [-11440, 200, -120], [-11300, 260, -190], [-11160, 220, -160], [-11020, 150, -96],
+  [-10880, 90, -60], [-10740, 130, -46], [-10600, 170, -54], [-10460, 210, -110],
   // ---- THE DROP SHAFT: the system falls away under the city -------------
-  [-7400, 230, -140], [-7260, 300, -220], [-7120, 420, -360], [-6980, 560, -540],
-  [-6840, 700, -760], [-6700, 920, -880], [-6560, 720, -760],    // the shaft itself
-  [-6420, 600, -600], [-6280, 460, -430], [-6140, 330, -300], [-6000, 220, -190],
-  [-5860, 140, -110], [-5720, 90, -70], [-5580, 130, -56], [-5440, 180, -80],
-  [-5300, 150, -110],
+  [-10400, 230, -140], [-10260, 300, -220], [-10120, 420, -360], [-9980, 560, -540],
+  [-9840, 700, -760], [-9700, 920, -880], [-9560, 720, -760],    // the shaft itself
+  [-9420, 600, -600], [-9280, 460, -430], [-9140, 330, -300], [-9000, 220, -190],
+  [-8860, 140, -110], [-8720, 90, -70], [-8580, 130, -56], [-8440, 180, -80],
+  [-8300, 150, -110],
   // ---- THE UNDERCROFT: somebody lives down here -------------------------
-  [-5200, 120, -96], [-5060, 60, -120],
-  [-4920, -28, -150], [-4800, -44, -172], [-4680, -30, -150],    // the camp ledge
-  [-4560, 50, -120], [-4420, 120, -96], [-4280, 170, -130], [-4140, 140, -150],
-  [-4000, 80, -120], [-3860, 40, -100], [-3720, 90, -80], [-3580, 130, -70],
-  [-3660, 96, -90], [-3620, 60, -120],
-  // ---- THE FACILITY: a corridor two floors up, over the top of the cistern.
-  // Dry, lit, tiled, and it ends at a floor drain with nothing under it. The
-  // transfer runs east along it; you go out through the glass and down the hole.
-  [-3600, -380, -650], [-3480, -382, -652], [-3360, -380, -648], [-3240, -382, -650], [-3120, -380, -648], [-3040, -384, -650], [-2980, -380, -648],
-  [-2962, -380, -648],
+  [-8200, 120, -96], [-8060, 60, -120],
+  [-7920, -28, -150], [-7800, -44, -172], [-7680, -30, -150],    // the camp ledge
+  [-7560, 50, -120], [-7420, 120, -96], [-7280, 170, -130], [-7140, 140, -150],
+  [-7000, 80, -120], [-6860, 40, -100], [-6720, 90, -80],
+  [-6660, 96, -90], [-6620, 60, -120],                            // the last of the water
+  // ---- FACILITY B: a corridor a hundred and forty feet above the system, run
+  // along the crown of the old storm relief works. Dry, lit, tiled, and dead
+  // level — poured to a tolerance nothing below it has ever been held to. It
+  // goes east and stops at a floor drain with the cover off, and under the
+  // cover is the interceptor, which only goes one way.
+  [-6600, -1400, -1690], [-6480, -1400, -1690], [-6360, -1400, -1690], [-6240, -1400, -1690],
+  [-6120, -1400, -1690], [-6040, -1400, -1690], [-5990, -1400, -1690], [-5968, -1400, -1690],
+  // ---- THE CHUTE: the relief interceptor. A lined pipe that gives up its
+  // hundred and forty feet in six steps, with a bench at the foot of each one
+  // where it flattens out and catches its breath. Side inlets spit into it,
+  // manhole shafts let the daylight down onto it, and it ends in a mouth in the
+  // wall of the cistern with a long drop under it. Nothing climbs back up this.
+  [-5958, -980, -1420],                   // the shaft: straight down under the drain
+  [-5900, -960, -1080],                   // the head of the pipe
+  [-5660, -807, -869],                    // the first step
+  [-5410, -799, -899],                    // a bench, and a manhole over it
+  [-5170, -646, -708],                    // the second step
+  [-4920, -638, -738],                    // a bench, and a side inlet
+  [-4680, -485, -547],                    // the third step
+  [-4430, -477, -577],                    // a bench, and a manhole over it
+  [-4190, -324, -386],                    // the fourth step
+  [-3940, -316, -416],                    // a bench, and a side inlet
+  [-3700, -163, -225],                    // the fifth step
+  [-3450, -155, -255],                    // the last bench, under the last manhole
+  [-3210, -42, -104],                     // the sixth step
+  [-2996, -40, -102],                     // the mouth, and a long drop under it
   // ---- THE CATACOMBS: a labyrinth under Rome. Not a pipe you swim along but
   // a string of vaults, each one shut off from the next by a gap only a small
   // animal fits through. You are tipped in at the cistern and the only way is
@@ -57,7 +78,7 @@ const SEWER_SECTION = [
   // people who built this stopped caring.
   // -- the cistern: where you land, from two floors up. deep, vaulted, and
   //    full of what floats
-  [-2946, 150, -170], [-2880, 200, -178], [-2800, 190, -170], [-2740, 130, -140],
+  [-2980, 150, -170], [-2880, 200, -178], [-2800, 190, -170], [-2740, 130, -140],
   [-2700, 60, -60],
   [-2660, 26, -8], [-2600, 24, -6], [-2560, 28, -10],                // the first squeeze
   // -- the ossuary: bone on the floor and bone in the walls
@@ -141,9 +162,29 @@ const OCEAN_CAVES = [
   [26050, 26600, 420], [27400, 27900, 760], [29100, 29700, 900],
   [30600, 31400, 1180], [32200, 32900, 1360],
 ];
+// Manhole shafts: [x, how much light reaches the cover]. Each one is a hole in
+// a street somewhere over the system, with a cast cover on it and a shaft of
+// rings under it. The ladder in a shaft stops eight feet above the crown,
+// which is exactly why it is no use to anything that cannot reach it.
+const MANHOLES = [
+  [-5410, 0.22], [-4430, 0.55], [-3450, 0.9],                       // over the interceptor
+  [-2860, 0.5], [-1965, 0.3], [-980, 0.62], [-430, 0.8],            // over Rome
+  [-8060, 0.34], [-9600, 0.22], [-12220, 0.2], [-16400, 0.14],      // over the system
+];
 const MapData = {
   x0: MAP_PROFILE[0][0], x1: MAP_PROFILE[MAP_PROFILE.length - 1][0],
-  // smooth interpolation between control points, plus fine noise for texture
+  // How man-made the ground is here, 0..1. It decides two things, and both of
+  // them are the difference between a hillside and a floor: whether the profile
+  // curves between its control points or runs dead straight to them, and
+  // whether the fine noise that gives mud its texture is applied at all.
+  // Concrete was poured to a line. Nothing under the city wobbles.
+  built(x) {
+    if (x >= 200) return 0;               // the swamp: mud, and it moves
+    if (x >= -120) return (200 - x) / 320; // the outfall: a concrete channel silting up
+    return 1;                              // the system, the works and Rome
+  },
+  // interpolation between control points, plus fine noise for texture. Built
+  // ground gets neither: straight runs, hard angles, no noise.
   floorY(x) {
     const P = MAP_PROFILE;
     if (x <= P[0][0]) return P[0][1];
@@ -151,9 +192,11 @@ const MapData = {
     let lo = 0, hi = P.length - 1;
     while (lo < hi - 1) { const m = (lo + hi) >> 1; if (P[m][0] <= x) lo = m; else hi = m; }
     const a = P[lo], b = P[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
-    const base = lerp(a[1], b[1], t * t * (3 - 2 * t));
+    const bu = this.built(x);
+    const base = lerp(a[1], b[1], lerp(t * t * (3 - 2 * t), t, bu));
+    if (bu >= 1) return base;
     const wob = vnoise(x * 0.045, 11) * 6 - 3 + vnoise(x * 0.012, 3) * 10 - 5;
-    return base + wob * (Math.abs(base) > 8 ? 1 : 0.35);
+    return base + wob * (Math.abs(base) > 8 ? 1 : 0.35) * (1 - bu);
   },
   // interpolated roof, or null where the sky is open
   roofY(x) {
@@ -164,8 +207,10 @@ const MapData = {
       let lo = 0, hi = R.length - 1;
       while (lo < hi - 1) { const m = (lo + hi) >> 1; if (R[m][0] <= x) lo = m; else hi = m; }
       const a = R[lo], b = R[lo + 1], t = (x - a[0]) / (b[0] - a[0]);
-      const base = lerp(a[1], b[1], t * t * (3 - 2 * t));
-      return base + vnoise(x * 0.05, 31) * 8 - 4 + Math.sin(x * 0.021) * 3;
+      const bu = this.built(x);
+      const base = lerp(a[1], b[1], lerp(t * t * (3 - 2 * t), t, bu));
+      if (bu >= 1) return base;
+      return base + (vnoise(x * 0.05, 31) * 8 - 4 + Math.sin(x * 0.021) * 3) * (1 - bu);
     }
     // ocean caves: an overhang that closes over the water for a stretch
     for (const [cx0, cx1, r] of OCEAN_CAVES) {
@@ -185,7 +230,7 @@ const MapData = {
 const BIOMES = [
   // ===================== SEWER NETWORK ==========================
   {
-    id: 'sump', name: 'THE OUTFALL SUMP', x0: -16600, x1: -14300,
+    id: 'sump', name: 'THE OUTFALL SUMP', x0: -19600, x1: -17300,
     sky: ['#070d10', '#101a1e'], water: ['#41532c', '#25321a', '#0a0e07'], scum: '#7a8a2a', fog: '#101c1e',
     parallax: ['block', 'pipe', 'block'], ground: ['#2e3438', '#22282c', '#161a1e'], grass: '#3a4a34',
     indoor: true, roof: -200, dark: 0.72, toxic: 0.5, flora: '#6e7a2a', floraMix: 0.62,
@@ -195,7 +240,7 @@ const BIOMES = [
     structures: [], music: 0.9,
   },
   {
-    id: 'gallery', name: 'THE DEEP GALLERY', x0: -14300, x1: -10400,
+    id: 'gallery', name: 'THE DEEP GALLERY', x0: -17300, x1: -13400,
     sky: ['#08110f', '#131f1c'], water: ['#3f5a38', '#233420', '#0a110c'], scum: '#6a7a26', fog: '#121e1c',
     parallax: ['block', 'block', 'pipe'], ground: ['#343a3a', '#262c2c', '#181c1c'], grass: '#3f5a3a',
     indoor: true, roof: -180, dark: 0.66, toxic: 0.35, flora: '#6a7a2e', floraMix: 0.55,
@@ -205,7 +250,7 @@ const BIOMES = [
     structures: [], music: 0.85,
   },
   {
-    id: 'junction', name: 'JUNCTION 9', x0: -10400, x1: -7400,
+    id: 'junction', name: 'JUNCTION 9', x0: -13400, x1: -10400,
     sky: ['#0a1412', '#16241f'], water: ['#3d6048', '#21402e', '#091713'], scum: '#6a7a30', fog: '#14211d',
     parallax: ['pipe', 'block', 'pipe'], ground: ['#3a3f3c', '#2a2f2c', '#1b201e'], grass: '#4a6a3a',
     indoor: true, roof: -220, dark: 0.58, toxic: 0.25, flora: '#728030', floraMix: 0.46,
@@ -215,7 +260,7 @@ const BIOMES = [
     structures: [], music: 0.7,
   },
   {
-    id: 'shaft', name: 'THE DROP SHAFT', x0: -7400, x1: -5200,
+    id: 'shaft', name: 'THE DROP SHAFT', x0: -10400, x1: -8200,
     sky: ['#0c1618', '#1a2a2c'], water: ['#2a5a5e', '#153a3e', '#04161a'], scum: '#4a6a4a', fog: '#16262a',
     parallax: ['block', 'pipe', 'block'], ground: ['#33383c', '#252a2e', '#171b1f'], grass: '#3a5a44',
     indoor: true, roof: -520, dark: 0.5, toxic: 0.15, flora: '#6a8a3e', floraMix: 0.36,
@@ -225,7 +270,7 @@ const BIOMES = [
     structures: [], music: 0.75,
   },
   {
-    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3620,
+    id: 'undercroft', name: 'THE UNDERCROFT', x0: -8200, x1: -6620,
     sky: ['#0d1a1c', '#1a2a2c'], water: ['#40705c', '#20463a', '#0a1a16'], scum: '#5a7a3a', fog: '#1c2c2e',
     parallax: ['block', 'pipe', 'block'], ground: ['#3d4342', '#2d3332', '#1e2322'], grass: '#456a44',
     indoor: true, roof: -150, dark: 0.42, toxic: 0.08, flora: '#6f8a44', floraMix: 0.3,
@@ -235,16 +280,28 @@ const BIOMES = [
     structures: [], music: 0.55,
   },
   {
-    id: 'facility', name: 'FACILITY B', x0: -3620, x1: -2955, lab: true,
+    id: 'facility', name: 'FACILITY B', x0: -6620, x1: -5966, lab: true,
     sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
     parallax: ['block', 'block', 'block'], ground: ['#4a5258', '#343a40', '#1e2428'], grass: '#4a5258',
-    indoor: true, roof: -650, dark: 0.1,
+    indoor: true, roof: -1690, dark: 0.06,
     plants: [['labtank', 0.6], ['console', 0.4], ['crate', 0.2], ['cable', 0.45], ['biohaz', 0.15]],
     fish: [], land: [], structures: [],
     music: 0.9,
   },
   {
-    id: 'cistern', name: 'THE CISTERN', x0: -2955, x1: -1700, roman: true,
+    // A lined pipe, not a tunnel: precast rings, a benched invert, a wash of
+    // water down the middle of it and nothing growing anywhere. The only light
+    // is what falls down the manhole shafts it runs under.
+    id: 'chute', name: 'THE RELIEF INTERCEPTOR', x0: -5966, x1: -2985, pipe: true,
+    sky: ['#080d10', '#121a20'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
+    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#4e565a', '#373e42', '#22282c'], grass: '#4a5458',
+    indoor: true, roof: -120, dark: 0.62, toxic: 0.1,
+    plants: [['grit', 2.2], ['trash', 1.2], ['rubble', 1], ['pipe', 0.8], ['algae', 0.6]],
+    fish: [], land: [['rat', 1.2]], structures: [],
+    music: 0.8,
+  },
+  {
+    id: 'cistern', name: 'THE CISTERN', x0: -2985, x1: -1700, roman: true,
     sky: ['#0c1210', '#1a1e16'], water: ['#5a6a3a', '#33401f', '#12180a'], scum: '#8a8a3a', fog: '#1e2018',
     parallax: ['block', 'block', 'block'], ground: ['#5a5244', '#3e392e', '#26221b'], grass: '#4a5a34',
     indoor: true, roof: -150, dark: 0.55, toxic: 0.22, flora: '#7a8a3a', floraMix: 0.5,
@@ -270,7 +327,7 @@ const BIOMES = [
     plants: [['trash', 1.6], ['reed', 1.2], ['weed', 1.4], ['algae', 1.5], ['pipe', 0.7], ['bush', 0.5], ['rubble', 1.4]],
     fish: [['minnow', 4], ['shiner', 3], ['tilapia', 3], ['walkingcat', 2.5], ['snakehead', 1.6], ['bluegill', 2]],
     land: [['rat', 5], ['raccoon', 2], ['opossum', 1.5]],
-    structures: [['sign', 1], ['pipe', 1.5]],
+    structures: [['sign', 1], ['pipe', 1.5], ['manhole', 2.2], ['pumphouse', 1.6], ['billboard', 0.9]],
     music: 0.2,
   },
   {
@@ -280,7 +337,7 @@ const BIOMES = [
     plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1], ['duckweed', 1], ['palm', 0.6], ['fern', 0.8]],
     fish: [['snapper', 3], ['sheepshead', 2], ['mullet', 3], ['snook', 2], ['redfish', 1.6], ['ladyfish', 1.4], ['minnow', 2]],
     land: [['raccoon', 3], ['iguana', 2], ['rabbit', 1.5], ['fox', 1]],
-    structures: [['crabtrap', 2], ['buoy', 1], ['dock', 0.8]],
+    structures: [['crabtrap', 2], ['buoy', 1], ['dock', 0.8], ['boathouse', 0.8]],
     music: 0.4,
   },
   {
@@ -290,7 +347,7 @@ const BIOMES = [
     plants: [['palm', 1.4], ['bush', 1.4], ['flower', 1], ['crate', 1.2], ['reed', 0.8], ['lily', 0.6], ['post', 1.2]],
     fish: [['bluegill', 3], ['bass', 2.5], ['catfish', 2], ['mullet', 2], ['tilapia', 2], ['flgar', 1.4]],
     land: [['dog', 2], ['raccoon', 2], ['rabbit', 1]],
-    structures: [['shop', 2.4], ['dock', 2.4], ['stilthouse', 1.6], ['boatramp', 1.4], ['sign', 1]],
+    structures: [['shop', 2.4], ['dock', 2.4], ['stilthouse', 1.6], ['boatramp', 1.4], ['sign', 1], ['boathouse', 2], ['trailer', 1.8], ['watertower', 1], ['billboard', 0.8]],
     town: true, music: 0.5,
   },
   {
@@ -300,7 +357,7 @@ const BIOMES = [
     plants: [['cypress', 2.6], ['knee', 2], ['moss', 1.6], ['fern', 1.4], ['vine', 1.2], ['weed', 1.4], ['lily', 1.2], ['mushroom', 0.8], ['log', 1]],
     fish: [['bowfin', 2.4], ['flgar', 2.2], ['gar', 1.6], ['catfish', 2], ['bluegill', 2], ['eel', 1.4]],
     land: [['panther', 1.2], ['bear', 0.9], ['boar', 1.6], ['deer', 2], ['opossum', 1.4], ['bobcat', 1.2]],
-    structures: [['tower', 1], ['sign', 0.6]],
+    structures: [['tower', 1], ['sign', 0.6], ['trailer', 0.8], ['billboard', 0.7]],
     dark: 0.18, music: 0.8,
   },
   {
@@ -320,7 +377,7 @@ const BIOMES = [
     plants: [['weed', 2], ['algae', 2], ['sunkbranch', 1.6], ['shellbed', 1.4], ['root', 1.2], ['rock', 1.4], ['bush', 0.8]],
     fish: [['tarpon', 2.2], ['snook', 2], ['gar', 1.8], ['catfish', 2], ['eel', 1.6], ['shark', 1.2], ['bonnet', 1.4], ['redfish', 1.6]],
     land: [['otter', 1.6], ['coyote', 1.2], ['deer', 1.2]],
-    structures: [['buoy', 1.6], ['dock', 0.8], ['tower', 0.8]],
+    structures: [['buoy', 1.6], ['dock', 0.8], ['tower', 0.8], ['watertower', 0.9], ['billboard', 0.6]],
     music: 0.9,
   },
   {
@@ -330,7 +387,7 @@ const BIOMES = [
     plants: [['palm', 1.6], ['bush', 1.6], ['flower', 1.4], ['sawgrass', 1.2], ['cooler', 1], ['firewood', 1.2], ['lily', 0.8]],
     fish: [['bluegill', 3], ['bass', 2.4], ['mullet', 2], ['sunfish', 2], ['snook', 1.4]],
     land: [['dog', 1.6], ['raccoon', 2.4], ['deer', 1.6], ['bear', 1]],
-    structures: [['campsite', 2.6], ['dock', 1.2], ['boatramp', 1], ['sign', 0.8]],
+    structures: [['campsite', 2.6], ['dock', 1.2], ['boatramp', 1], ['sign', 0.8], ['trailer', 1.6], ['boathouse', 1], ['watertower', 0.7]],
     town: true, music: 0.5,
   },
   {
@@ -340,7 +397,7 @@ const BIOMES = [
     plants: [['seagrass', 2.6], ['shellbed', 2], ['coral', 1.4], ['algae', 1.6], ['rock', 1.4], ['sunkbranch', 1]],
     fish: [['tarpon', 2], ['shark', 1.8], ['sawfish', 1.4], ['grouper', 1.4], ['dolphin', 1.4], ['manatee', 1.4], ['redfish', 1.8], ['bonnet', 1.6]],
     land: [['otter', 1]],
-    structures: [['buoy', 2], ['crabtrap', 1.4], ['stilthouse', 1]],
+    structures: [['buoy', 2], ['crabtrap', 1.4], ['stilthouse', 1], ['boathouse', 1.2]],
     music: 1,
   },
   {
@@ -351,7 +408,7 @@ const BIOMES = [
     plants: [['rubble', 2.2], ['rock', 1.6], ['trash', 1.8], ['pipe', 1.4], ['algae', 1.2], ['shellbed', 1]],
     fish: [['shark', 2.2], ['tarpon', 1.6], ['sawfish', 1.6], ['grouper', 1.4], ['dolphin', 1], ['bonnet', 1.4]],
     land: [['ranger', 2], ['poacher', 2]],
-    structures: [['seawall', 3], ['sign', 0.6]],
+    structures: [['seawall', 3], ['sign', 0.6], ['pumphouse', 1.4], ['watertower', 0.8], ['manhole', 1.2]],
     town: true, kaiju: true, music: 1.2,
   },
   // ===================== OPEN OCEAN =============================
@@ -414,11 +471,15 @@ const Biome = {
       parallax: t > 0.5 ? b.parallax : a.parallax, plants: a.plants, fish: a.fish, land: a.land, structures: a.structures,
       flora: a.flora || b.flora || null, floraMix: lerp(a.floraMix || 0, b.floraMix || 0, t), open: t > 0.5 ? b.open : a.open,
       toxic: lerp(a.toxic || 0, b.toxic || 0, t), pressure: lerp(a.pressure || 0, b.pressure || 0, t), indoor: t > 0.5 ? b.indoor : a.indoor,
+      // These three decide which renderer draws the room, so a blend that drops
+      // them makes the last 260 units of a laboratory come out as sewer brick.
+      lab: t > 0.5 ? b.lab : a.lab, roman: t > 0.5 ? b.roman : a.roman, pipe: t > 0.5 ? b.pipe : a.pipe,
     };
   },
   // decor for one strip of ground, chosen from the biome's plant table
   decorAt(x, rng, out) {
     const B = this.at(x), fy = MapData.floorY(x), land = fy < 0, depth = fy;
+    if (B.lab) return;        // the lab is laid out, not scattered: see authored()
     const table = B.plants.filter(([k]) => {
       const w = PLANT_RULES[k]; if (!w) return false;
       return w.land === undefined || w.land === land ? (w.minD === undefined || depth >= w.minD) && (w.maxD === undefined || depth <= w.maxD) : false;
@@ -428,6 +489,27 @@ const Biome = {
     if (rng() > Math.min(0.97, tot * 0.28)) return;
     let r = rng() * tot;
     for (const e of table) { r -= e[1]; if (r <= 0) { PLANT_RULES[e[0]].make(out, x + rng() * 10, fy, rng, B); return; } }
+  },
+  // Everything in the world that was set out rather than grown, placed once per
+  // chunk on its own grid so it never depends on where the sampler happened to
+  // land. Today that is the laboratory corridor, which is laid out in bays.
+  authored(x0, x1, out) {
+    for (let x = Math.ceil(x0 / 120) * 120; x < x1; x += 120) {
+      const B = this.at(x);
+      if (B.lab) this.labBay(x, out);
+    }
+  },
+  // One bay of the corridor. Four of them repeat along it: a tank with its
+  // console, a stack of crates and a drum, a pair of tanks, and a run of cable
+  // off the tray. Every piece sits on the floor at its own x, which in here is
+  // the same number all the way along.
+  labBay(x, out) {
+    const bay = ((Math.floor(x / 120) % 4) + 4) % 4;
+    const put = (type, ox, f) => { const px = x + ox; out.push(Object.assign({ type, x: px, y: MapData.floorY(px), ph: (ox % 7) * 0.9 }, f || {})); };
+    if (bay === 0) { put('labtank', 12, { v: 0 }); put('console', 54, { v: 0 }); put('crate', 98, { v: 1 }); }
+    else if (bay === 1) { put('crate', 16, { v: 0 }); put('crate', 32, { v: 1 }); put('biohaz', 74); put('console', 104, { v: 1 }); }
+    else if (bay === 2) { put('labtank', 14, { v: 1 }); put('labtank', 58, { v: 2 }); put('console', 100, { v: 2 }); }
+    else { put('biohaz', 14); put('crate', 46, { v: 2 }); put('labtank', 86, { v: 3 }); }
   },
 };
 // how each plant is placed. land: true = only dry ground, false = only water
@@ -478,6 +560,8 @@ const PLANT_RULES = {
   flower: { land: true, make: (o, x, y, r) => o.push({ type: 'flower', x, y, c: Math.floor(r() * 4), n: 1 + Math.floor(r() * 3) }) },
   mushroom: { land: true, make: (o, x, y, r) => o.push({ type: 'mushroom', x, y, n: 2 + Math.floor(r() * 3), c: Math.floor(r() * 2) }) },
   crate: { land: true, make: (o, x, y, r) => o.push({ type: 'crate', x, y, v: Math.floor(r() * 3) }) },
+  // what a pipe collects: a bank of washed grit against one side of the invert
+  grit: { land: true, make: (o, x, y, r) => o.push({ type: 'grit', x, y, n: 3 + Math.floor(r() * 4), s: 0.8 + r() * 0.8, side: r() < 0.5 ? -1 : 1 }) },
   post: { land: true, make: (o, x, y, r) => o.push({ type: 'post', x, y, h: 16 + r() * 16 }) },
   cooler: { land: true, make: (o, x, y, r) => o.push({ type: 'cooler', x, y, v: Math.floor(r() * 2) }) },
   firewood: { land: true, make: (o, x, y, r) => o.push({ type: 'firewood', x, y }) },

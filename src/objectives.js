@@ -51,11 +51,11 @@ const Objectives = {
     }
   },
 
-  update(dt) { if (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry') return; if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
+  update(dt) { if (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted()) return; if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
 
   // ---- the card a run opens on ------------------------------------------
   drawCard(ctx) {
-    if (this.cardT <= 0 || !this.stage || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return 0;
+    if (this.cardT <= 0 || !this.stage || (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted())) return 0;
     const W = G.W, H = G.H, st = this.stage;
     const k = clamp(Math.min(this.cardT * 1.6, (6.5 - this.cardT) * 2.6), 0, 1);
     const w = 236, h = 30 + this.list.length * 15;
@@ -89,6 +89,8 @@ const Objectives = {
   // ---- the same list, small, for the rest of the run --------------------
   drawHud(ctx, y) {
     if (!this.list.length) return y;
+    // nothing on the list is anything you can do while you are in the pipe
+    if (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted()) return y;
     // while the card is up it is saying all of this already
     if (this.cardT > 0.6) return y;
     const W = 158;

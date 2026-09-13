@@ -34,6 +34,24 @@ class Structure extends Entity {
         break;
       }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
+      // --- the buildings on the bank -------------------------------------
+      // A municipal water tower: four legs, a tank with the town's name
+      // half gone off it, and a light on top for the aircraft nobody flies.
+      case 'watertower': { this.name = 'WATER TOWER'; this.hp = 900; this.armor = 30; this.r = 26 * this.ss; this.deckY = -104; this.town = ['LOXAHATCHEE', 'BELLE GLADE', 'PAHOKEE', 'CLEWISTON'][Math.floor(this.seed * 4)]; break; }
+      // A pump station: a concrete box with a screened intake running out into
+      // the channel, a vent turning on the roof and a door that is always shut.
+      case 'pumphouse': { this.name = 'PUMP STATION'; this.hp = 700; this.armor = 45; this.ss = 1; this.r = 34; this.dir = World.floorY(x - 60) < 0 ? 1 : -1; this.vent = 0; break; }
+      // A boathouse: a tin roof over a slip, a boat in the slip, a light on
+      // the gable and a bench along the walkway.
+      case 'boathouse': { this.name = 'BOATHOUSE'; this.hp = 260; this.deckY = -26; this.w = 78; this.r = 44 * this.ss; this.dir = World.floorY(x - 70) < 0 ? 1 : -1; this.pilings = []; for (let i = 0; i < 5; i++) this.pilings.push({ ox: -30 + i * 15, hp: 50, dead: false }); break; }
+      // A single-wide on blocks: skirting, a porch, an air conditioner in the
+      // window and a dish on the end nobody has pointed at anything since.
+      case 'trailer': { this.name = 'TRAILER'; this.hp = 240; this.r = 40 * this.ss; this.v = Math.floor(this.seed * 3); break; }
+      // A billboard on two poles, for something forty miles up the road.
+      case 'billboard': { this.name = 'BILLBOARD'; this.hp = 150; this.r = 30 * this.ss; this.v = Math.floor(this.seed * 3); break; }
+      // A manhole in what is left of a road: a cast frame, a cover, and the
+      // system you came out of directly under it.
+      case 'manhole': { this.name = 'MANHOLE'; this.hp = 260; this.armor = 60; this.ss = 1; this.r = 18; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
       case 'transport': { this.name = 'TRANSPORT TANK'; this.hp = 9999; this.armor = 999; this.r = 30; this.cracks = 0; this.broken = false; this.roll = 0; this.layer = 0; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
@@ -553,6 +571,130 @@ class Structure extends Entity {
         if (hull) { ctx.globalAlpha = 0.3; px(-L / 2, -20, L, 20, '#000000'); ctx.globalAlpha = 1; }
         break;
       }
+      case 'watertower': {
+        const dY = this.deckY, tw = 30, th = 30;
+        // four legs, braced, standing in whatever is under them
+        const gy = (fy - y) / ss;
+        for (const [lx, k] of [[-16, 0], [-6, 1], [6, 1], [16, 0]]) {
+          px(lx - 1.5, dY + th, 3, gy - dY - th, k ? '#5a6068' : '#6b7178');
+          px(lx - 1.5, dY + th, 1, gy - dY - th, '#828a92');
+        }
+        for (let i = 0; i < 3; i++) { const by = dY + th + 8 + i * 14; if (by > gy) break; ctx.strokeStyle = '#5a6068'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-16, by); ctx.lineTo(16, by + 9); ctx.moveTo(16, by); ctx.lineTo(-16, by + 9); ctx.stroke(); px(-16, by, 32, 1, '#6b7178'); }
+        // the tank, with a skirt, a rolled top and a hatch on it
+        px(-tw / 2, dY, tw, th, '#8e9aa0');
+        px(-tw / 2, dY, tw, 3, '#aab6bc');
+        px(-tw / 2, dY + th - 4, tw, 4, '#6b757c');
+        px(-tw / 2 - 2, dY + th - 2, tw + 4, 3, '#5a636a');
+        for (let i = 0; i < 4; i++) px(-tw / 2 + 2 + i * 7, dY + 4, 1, th - 9, '#7b868c');
+        px(-4, dY - 4, 8, 4, '#6b757c'); px(-3, dY - 5, 6, 1, '#99a4aa');
+        // the name, in blocks: legible as lettering, unreadable as words
+        for (let i = 0; i < 7; i++) { const h2 = 5 + (ihash(i, Math.round(this.x)) > 0.5 ? 1 : 0); px(-11 + i * 3.2, dY + 11, 2, h2, ihash(i, 31) > 0.25 ? '#2c3a44' : '#5d6a70'); }
+        // rust down the seam, a ladder up one leg, the light on top
+        px(2, dY + 4, 1, th - 8, '#8a5a34'); px(-7, dY + 6, 1, th - 12, '#7a5030');
+        for (let i = 0; i < 9; i++) px(15, dY + th + i * 8, 5, 1, '#4e555c');
+        const blink = Math.sin(this.t * 2.2) > 0.4;
+        px(-1, dY - 9, 2, 4, '#4e555c'); px(-1.5, dY - 11, 3, 2, blink ? '#ff4030' : '#602018');
+        if (blink) G.fx.glow(this.x, y + (dY - 10) * ss, 7 * ss, '#ff4030', 0.10);
+        break;
+      }
+      case 'pumphouse': {
+        const d = this.dir, gy = (fy - y) / ss;
+        // the intake, out into the channel and down under the water
+        px(d * 14, -8, d * 30, 7, '#6a6a62'); px(d * 14, -8, d * 30, 2, '#82827a');
+        px(d * 40, -8, 5, Math.max(4, gy + 12), '#5a5a52');
+        for (let i = 0; i < 4; i++) px(d * 42, -4 + i * 4, 3, 1, '#3a3a34');
+        // the box: poured concrete, a stained band at the bottom
+        px(-22, -46, 44, 46, '#9a9a90'); px(-22, -46, 44, 3, '#b4b4a8');
+        px(-22, -10, 44, 10, '#7e7e74'); px(-22, -46, 3, 46, '#aaaaa0');
+        for (let i = 0; i < 5; i++) px(-22, -40 + i * 9, 44, 1, '#8a8a80');
+        // the roof, a vent turning on it, a door, a louvre and a sign
+        px(-25, -50, 50, 5, '#6e6e66'); px(-25, -50, 50, 2, '#8e8e86');
+        const vr = this.t * 2.4;
+        px(-9, -58, 10, 8, '#5e6a6e'); px(-9, -59, 10, 2, '#7e8a8e');
+        for (let i = 0; i < 3; i++) { const a = vr + i * TAU / 3; px(-4 + Math.cos(a) * 4, -55 + Math.sin(a) * 2, 2, 2, '#93a0a4'); }
+        px(6, -44, 13, 20, '#2f3a40'); for (let i = 0; i < 4; i++) px(7, -42 + i * 5, 11, 2, '#48555c');
+        px(-16, -34, 12, 26, '#4a4a44'); px(-16, -34, 12, 2, '#63635c'); px(-6, -22, 2, 2, '#c8c8b8');
+        px(-14, -42, 9, 6, '#c8a020'); px(-13, -41, 7, 4, '#1a1a1a');
+        break;
+      }
+      case 'boathouse': {
+        const d = this.dir, dY = this.deckY, W2 = this.w;
+        for (const p of this.pilings) piling(p.ox * d, dY, (fy - y) / ss, p.dead);
+        // the walkway down one side of the slip
+        px(-W2 / 2, dY, W2, 3, woodD); px(-W2 / 2, dY, W2, 2, wood);
+        // the frame and the tin roof over it
+        for (const ox of [-W2 / 2 + 4, W2 / 2 - 6]) { px(ox, dY - 34, 3, 34, wood); px(ox, dY - 34, 1, 34, woodL); }
+        px(-W2 / 2 - 4, dY - 40, W2 + 8, 4, '#7e8a8c');
+        for (let i = 0; i < W2 + 8; i += 5) px(-W2 / 2 - 4 + i, dY - 40, 1, 4, '#5e6a6c');
+        px(-W2 / 2 - 4, dY - 41, W2 + 8, 1, '#9aa6a8');
+        px(-W2 / 2 - 5, dY - 37, W2 + 10, 2, '#4e5a5c');
+        // the gable end, boarded, with a light under it
+        px(-W2 / 2 - 4, dY - 40, 10, 16, '#5d4630'); for (let i = 0; i < 4; i++) px(-W2 / 2 - 4, dY - 38 + i * 4, 10, 1, '#41301f');
+        px(-W2 / 2 + 2, dY - 24, 3, 3, this.lightOn ? '#ffd070' : '#4a4438');
+        if (this.lightOn) G.fx.glow(this.x + (-W2 / 2 + 3) * ss, y + (dY - 23) * ss, 16 * ss, '#ffd070', 0.12);
+        // the boat in the slip, on its lines
+        const bob = Math.sin(this.t * 1.1) * 1.2, bx = 6 * d;
+        px(bx - 17, dY + 12 + bob, 34, 6, '#b8bcc0'); px(bx - 17, dY + 12 + bob, 34, 2, '#d8dce0');
+        px(bx - 19, dY + 13 + bob, 3, 4, '#b8bcc0'); px(bx + 16, dY + 13 + bob, 3, 4, '#9aa0a4');
+        px(bx - 6, dY + 8 + bob, 12, 4, '#6a7076'); px(bx + 8, dY + 6 + bob, 3, 6, '#3a4046');
+        px(bx - 14, dY + 3 + bob, 1, 9 + bob, '#8a8a7a'); px(bx + 12, dY + 3 + bob, 1, 9 + bob, '#8a8a7a');
+        // a bench and two cans on the walkway
+        px(-W2 / 2 + 8, dY - 8, 14, 2, wood); px(-W2 / 2 + 9, dY - 6, 1, 6, woodD); px(-W2 / 2 + 20, dY - 6, 1, 6, woodD);
+        px(W2 / 2 - 16, dY - 7, 5, 7, '#3a6a4a'); px(W2 / 2 - 10, dY - 6, 5, 6, '#a03a2a');
+        break;
+      }
+      case 'trailer': {
+        const cols = [['#c8c4b4', '#a8a498'], ['#b8c4c0', '#98a4a0'], ['#c0b8a4', '#a09884']][this.v];
+        // blocks under it, and the skirting that hides most of them
+        for (const ox of [-26, 0, 26]) px(ox - 4, -8, 8, 8, '#6a6a62');
+        px(-34, -10, 68, 10, '#5a5a52'); px(-34, -10, 68, 2, '#6e6e66');
+        // the body, ribbed, with a stripe down it
+        px(-36, -40, 72, 31, cols[0]); px(-36, -40, 72, 3, '#e0dcd0');
+        for (let i = 0; i < 24; i++) px(-36 + i * 3, -37, 1, 28, cols[1]);
+        px(-36, -26, 72, 3, '#6a7a86'); px(-36, -25, 72, 1, '#8a9aa6');
+        // the roof, curved, with an aerial and a dish
+        px(-38, -44, 76, 5, '#d8d4c8'); px(-38, -44, 76, 2, '#f0ece0');
+        px(20, -52, 1, 8, '#5a5a52'); px(16, -56, 9, 5, '#c8c4b4'); px(20, -54, 2, 2, '#4a4a44');
+        // a door with three steps, two windows, and the air conditioner
+        px(-6, -36, 13, 27, '#8a7a60'); px(-6, -36, 13, 2, '#a89878'); px(4, -24, 2, 2, '#e0d8b0');
+        px(-8, -9, 17, 3, '#7a7a70'); px(-6, -6, 13, 3, '#6a6a60'); px(-4, -3, 9, 3, '#5a5a52');
+        for (const ox of [-28, 14]) { px(ox, -34, 12, 10, '#2a3238'); px(ox, -34, 12, 2, '#49545c'); px(ox + 1, -33, 4, 4, 'rgba(200,224,232,0.45)'); }
+        px(-30, -24, 10, 8, '#9aa0a0'); px(-30, -24, 10, 2, '#b4baba'); for (let i = 0; i < 3; i++) px(-29, -22 + i * 2, 8, 1, '#6a7070');
+        // a chair and a cooler outside, because somebody lives here
+        px(20, -16, 7, 2, '#3a6a4a'); px(20, -14, 1, 5, '#2a4a34'); px(26, -14, 1, 5, '#2a4a34'); px(20, -21, 1, 5, '#3a6a4a');
+        px(30, -7, 8, 7, '#d8d8d0'); px(30, -7, 8, 2, '#3a6a9a');
+        break;
+      }
+      case 'billboard': {
+        const gy = (fy - y) / ss;
+        px(-14, -30, 4, gy + 30, '#5a5a52'); px(10, -30, 4, gy + 30, '#5a5a52');
+        px(-14, -30, 1, gy + 30, '#76766c'); px(10, -30, 1, gy + 30, '#76766c');
+        px(-32, -62, 64, 34, '#efe9dc'); px(-32, -62, 64, 2, '#ffffff'); px(-32, -30, 64, 3, '#8a8a80');
+        // the poster: a shape, a band of type, a corner peeling off
+        const art = [['#c83a2a', '#f0c040'], ['#2a6ac8', '#e0e8f0'], ['#2a8a4a', '#f0e0a0']][this.v];
+        px(-29, -59, 26, 22, art[0]); px(-29, -59, 26, 3, art[1]);
+        for (let i = 0; i < 5; i++) px(0, -57 + i * 5, 20 - i * 2, 3, i % 2 ? '#33383c' : '#5a6166');
+        px(22, -62, 10, 9, '#d8d2c4'); px(22, -62, 10, 1, '#b8b2a4');
+        px(-32, -62, 4, 5, '#c8c2b4');
+        if (this.lightOn) { for (const ox of [-18, 6]) { px(ox, -68, 8, 3, '#4a4a44'); px(ox + 1, -66, 6, 1, '#ffe8a0'); } G.fx.glow(this.x, y - 56 * ss, 30 * ss, '#ffe8a0', 0.07); }
+        break;
+      }
+      case 'manhole': {
+        // What is left of a road, the frame set into it, the cover in the
+        // frame, and the system breathing up through the slots in the cover.
+        px(-30, -3, 60, 7, '#4e4e4a'); px(-30, -3, 60, 2, '#63635c');
+        px(-30, 3, 60, 2, '#373734');
+        for (let i = 0; i < 7; i++) px(-27 + i * 8, -1, 4, 1, '#3c3c38');
+        for (let i = 0; i < 3; i++) px(-22 + i * 17, -3, 1, 6, '#3a3a36');       // cracks
+        px(-17, -7, 34, 5, '#7a7568'); px(-17, -7, 34, 2, '#98927f');            // the collar
+        px(-14, -11, 28, 5, '#585349'); px(-14, -11, 28, 2, '#6f6a5f');          // the frame
+        px(-12, -13, 24, 3, '#4a463d'); px(-12, -13, 24, 1, '#635e53');          // the cover
+        for (let i = 0; i < 5; i++) px(-9 + i * 4.4, -12, 3, 2, '#5b5649');      // the pattern on it
+        px(-3, -14, 6, 1, '#2c2a25');                                            // the lifting slot
+        px(-19, -8, 3, 3, '#98927f'); px(16, -8, 3, 3, '#98927f');
+        if (chance(0.18)) G.fx.add({ type: 'smoke', x: this.x + rand(-6, 6), y: this.y - 12, vx: rand(-4, 4), vy: -rand(8, 18), s: rand(1.4, 2.6), color: '#7f8a8c', life: rand(1.2, 2.4), t: 0, maxLife: 2 });
+        break;
+      }
       case 'campfire': {
         ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-7, -2, 14, 3);
         ctx.fillStyle = '#4a3524'; ctx.fillRect(-6, -5, 5, 4); ctx.fillRect(1, -5, 5, 4);
@@ -589,6 +731,10 @@ function trySpawnStructure(x, rng, difficulty) {
     if (k === 'stilthouse') return open && fy < 320;
     if (k === 'crabtrap' || k === 'buoy') return open;
     if (k === 'wreck') return fy > 150 && World.floorY(x - 90) > 110 && World.floorY(x + 90) > 110;
+    if (k === 'boathouse') return land && (deepAt(120) || deepAt(-120));
+    if (k === 'pumphouse') return land && (deepAt(100) || deepAt(-100));
+    // a tower, a trailer, a board and a road want ground that stays flat
+    if (k === 'watertower' || k === 'trailer' || k === 'billboard' || k === 'manhole') return land && World.floorY(x - 40) < -4 && World.floorY(x + 40) < -4;
     return land;
   });
   if (!table.length) return false;
@@ -628,6 +774,22 @@ function trySpawnStructure(x, rng, difficulty) {
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;
     case 'wreck': G.add(new Structure(x, 'wreck')); return true;
     case 'seawall': { const st = new Structure(x, 'seawall'); G.add(st); return true; }
+    case 'watertower': G.add(new Structure(x, 'watertower')); return true;
+    case 'pumphouse': G.add(new Structure(x, 'pumphouse')); return true;
+    case 'billboard': G.add(new Structure(x, 'billboard')); return true;
+    case 'manhole': G.add(new Structure(x, 'manhole')); return true;
+    case 'boathouse': {
+      const s = new Structure(x, 'boathouse');
+      if (rng() < 0.55) s.addOccupant(rng() < 0.6 ? 'fisherman' : 'tourist', -s.dir * 22, s.deckY);
+      G.add(s); return true;
+    }
+    case 'trailer': {
+      const s = new Structure(x, 'trailer');
+      const n = randi(0, 2); for (let i = 0; i < n; i++) s.addOccupant(rng() < 0.5 ? 'camper' : 'tourist', 24 + i * 15, 0, i === 0 ? 'sit' : null);
+      G.add(s);
+      if (rng() < 0.35) G.add(new LandAnimal(x + 54, 'dog'));
+      return true;
+    }
     case 'sign': case 'pipe': G.add(new Structure(x, 'sign')); return true;
   }
   return false;

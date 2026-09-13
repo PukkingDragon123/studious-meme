@@ -165,20 +165,39 @@ carrying two thousand years of what floats. A roof a hand above the water is
 still a roof, so the squeezes stay dark.
 
 You got there by transfer, and the transfer is not a cutscene. It is the
-game: a corridor of **FACILITY B** two floors above the Roman level, drawn by
-the same renderer as everything else — white tile band and dark upper wall,
-strip lights with their cones, doors with portholes and keypads every few
-metres, containment columns with a specimen hanging in each, consoles, cable
-trays, biohazard drums, a painted line down the floor. The trolley is a
-structure on castors that turn. The tank on it is a real tank, blue water,
-straps, TRANSFER / SUBJECT 11 stencilled on the glass. The two people pushing
-it are people, leaning into the bar with their knees bent. The camera is the
-game camera. **Mash bite** and the glass cracks, then goes: the two of them
-run west with their arms up and are gone through a door, and you are on a
-tiled floor with a drain at the far end and nothing under the drain but the
-cistern, two floors down. There is no chute and no slide. You walk east and
-you **fall**, and the splash is your first location. Every other sewer site
-puts you in through a hatch in the crown of the vault instead.
+game: a corridor of **FACILITY B**, a hundred and forty feet above the Roman
+level, drawn by the same renderer as everything else — white tile to shoulder
+height under a capping rail and a painted stripe, dark block above it, strip
+lights with their cones, doors with portholes and keypads, a hose reel in its
+cabinet, a distribution board, a spill kit, a window into the next bay lit
+green. The floor is dead level, because it is a floor. Equipment stands in
+bays on a four-metre grid — containment columns with a specimen hanging in
+each, consoles, crates, drums — laid out rather than scattered, and repeating
+the way a services drawing repeats. The trolley is a structure on castors that
+turn. The tank on it is a real tank, blue water, straps, TRANSFER / SUBJECT 11
+stencilled on the glass. The two people pushing it are people, leaning into the
+bar with their knees bent. The camera is the game camera.
+
+**Mash bite** and the glass cracks, then goes. The two of them run west with
+their arms up and are gone through a door. At the end of the corridor is a
+floor drain with the cover lifted off it and stood against the wall, a barrier
+round three sides of a hole with four, and cold air coming up out of it. You
+walk east and you **fall** — and what catches you is **the relief
+interceptor**.
+
+That is the ride down, and it takes about twenty seconds. It is not a cutscene
+either: the interceptor is three thousand units of authored map, a lined pipe
+that gives up its hundred and forty feet in six steps with a bench at the foot
+of each one. Precast rings every segment, a benched invert with the wash down
+the middle of it, banks of washed grit, step irons up the back, side inlets
+spitting in as you pass, and three **manhole shafts** overhead — cast cover,
+rings, a ladder whose bottom rung stops well short of the crown, and a cone of
+daylight that lands on the invert in front of you. Where the floor falls away
+faster than you do you leave it and come down on the next bench. Hold right to
+go faster. A gauge on the edge of the screen counts the feet off. The pipe ends
+in a mouth in the wall of the cistern with a long drop under it, and the splash
+is your first location. Every other sewer site puts you in through a hatch in
+the crown of the vault instead.
 
 The way out is a system. Three mechanisms, each in its own chamber, each a
 small game you start by biting it: **the cistern valve** turned on a beat, **the
@@ -249,6 +268,17 @@ the place by afterwards. The biggest is **THE CAUSEWAY**: four lanes on concrete
 piers with its middle span in the water, lamp standards still on the parapet,
 rebar hanging out of the tear. The shadow under the deck is the best cover for
 miles.
+
+The bank has buildings on it now, and they are buildings rather than props. A
+**water tower** on four braced legs with a town name half gone off the tank and
+a light on top for the aircraft nobody flies. A **pump station**: a concrete box
+with a screened intake running out into the channel and a vent turning on the
+roof. A **boathouse** — a tin roof over a slip with a boat on its lines in the
+slip, a bench and two cans on the walkway, a light on the gable. A **trailer**
+on blocks, ribbed, skirted, air conditioner in the window and a dish on the
+end nobody has pointed at anything since. A **billboard** on two poles for
+something forty miles up the road. And a **manhole**, set in what is left of a
+road, breathing the system you came out of straight back up at you.
 
 ## The animals are animals
 
@@ -363,13 +393,17 @@ A **RELEASE** button sends you. It used to be the word ENTER, which is not a key
 West of the lab is a municipal system nobody has opened since 1974. Floor and ceiling are authored
 together, so headroom is the level design: long low runs where you have to surface between breaths,
 crawls that pinch down to a hand of air, vaulted chambers, dry maintenance ledges to haul out on, and
-one shaft that drops eight hundred feet under the city. The concrete is dressed with capping courses,
-expansion joints, slime at the standing waterline and pipe mouths punched through the back wall —
-some of them still running. The water is toxic, and it builds a **FILTH** meter that eventually starts
+one shaft that drops eight hundred feet under the city. None of it wobbles. Ground that was poured
+runs dead straight between its control points and carries none of the fine noise that gives mud its
+texture, so a floor reads as a floor and a hillside stays outside. The concrete is dressed with
+capping courses, expansion joints, slime at the standing waterline and pipe mouths punched through
+the back wall — some of them still running. Manhole shafts break the crown here and there, and the
+light down them is the only daylight in the zone. The water is toxic, and it builds a **FILTH** meter that eventually starts
 taking health. Lamplight, not sunlight, comes down through the scum.
 
 | Site | What it is |
 | --- | --- |
+| **The Relief Interceptor** | the lined pipe you came down. Six steps, five benches, three manholes, one way |
 | **The Undercroft** | brick vault under the city, lit by wall lamps, with people living in the pipes |
 | **The Drop Shaft** | the system falls away: a vertical chamber down to six hundred feet |
 | **Junction 9** | nine mains meet at a sealed vault. Something is in the vault |

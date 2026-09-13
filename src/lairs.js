@@ -15,9 +15,9 @@
 // ---------------------------------------------------------------------------
 const LAIRS = [
   // ---- the sewer -------------------------------------------------------
-  { id: 'broodmother', x: -3800, r: 280, warn: 760, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN HERE' },
-  { id: 'gnasher', x: -7400, r: 300, warn: 800, name: 'THE GNASHER', sign: 'bones', tell: 'THE WATER IS FULL OF BONES' },
-  { id: 'sludgeking', x: -14250, r: 360, warn: 900, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
+  { id: 'broodmother', x: -6800, r: 280, warn: 760, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN HERE' },
+  { id: 'gnasher', x: -10400, r: 300, warn: 800, name: 'THE GNASHER', sign: 'bones', tell: 'THE WATER IS FULL OF BONES' },
+  { id: 'sludgeking', x: -17250, r: 360, warn: 900, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
   // ---- the glades ------------------------------------------------------
   { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
   { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
@@ -54,7 +54,7 @@ const Lairs = {
     const P = G.player;
     if (!P || P.dead || G.state !== 'play') return;
     // nothing holds territory in the facility, and nothing is announced while you are still in the tank
-    if ((typeof Opening !== 'undefined' && Opening.on) || Biome.at(P.x).lab) return;
+    if ((typeof Opening !== 'undefined' && Opening.on) || Biome.at(P.x).lab || Biome.at(P.x).pipe) return;
     if (this.armT > 0) { this.armT -= dt; return; }
     const L = this.near(P.x);
     if (!L || this.cleared[L.id]) return;

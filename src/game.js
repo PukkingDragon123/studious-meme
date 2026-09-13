@@ -674,7 +674,7 @@ const G = {
     const table = B.land.map(([k, w]) => { const sp = SPECIES[k]; const hard = sp ? sizeClassOf(sp.ft) : 1; return [k, hard > 3 && D < 1.6 ? w * 0.2 : w]; });
     // the facility is staffed by the two you arrive with and nobody else, and
     // the sewer only ever has the people who live down there
-    if (B.lab || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return;
+    if (B.lab || (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted())) return;
     if (!B.indoor) {
       if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
       if (B.id === 'campground') table.push(['camper', 3]);
@@ -1202,7 +1202,7 @@ const G = {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
     // the trolley ride is framed close, on the tank and the two pushing it
-    const tz2 = Opening.on && Opening.phase === 'carry' ? 1.75 : tz;
+    const tz2 = Opening.on && Opening.phase === 'carry' ? 1.75 : Opening.on && Opening.phase === 'slide' ? Math.min(tz, 1.1) : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole
@@ -1222,7 +1222,15 @@ const G = {
     // outdoors the camera never climbs into empty sky. Indoors it is the roof
     // that bounds it, so a corridor two floors up can be looked at
     const roof = World.isIndoor(c.x) ? World.roofY(c.x) : null;
-    c.y = Math.max(c.y, roof === null ? -(this.H / 2) / c.zoom + 30 : roof + (this.H / 2) / c.zoom - 24);
+    if (roof === null) c.y = Math.max(c.y, -(this.H / 2) / c.zoom + 30);
+    else {
+      // A run of pipe shorter than the shot cannot be framed by pushing the
+      // camera down off the crown: do that and the animal ends up pinned to
+      // the top edge. Centre the run instead, and only hold the crown down
+      // when there is enough headroom for it to matter.
+      const half = (this.H / 2) / c.zoom, fl = World.floorY(c.x);
+      c.y = fl - roof < half * 1.7 ? (roof + fl) / 2 : Math.max(c.y, roof + half - 24);
+    }
     // and land the camera on a whole device pixel, so the ground, its grain and
     // everything standing on it share one grid instead of sliding against it
     const q = Math.max(0.001, c.zoom * (this.rs || 1));
