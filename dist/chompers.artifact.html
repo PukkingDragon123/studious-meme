@@ -11908,7 +11908,11 @@ const Waste = {
         this.puff(ctx, bx, by, r, c.smoke, a);
       }
       if (c.glow) {
-        G.fx.glow && G.fx.glow(p.x, fy - 10, p.w * 0.4, c.glow, 0.06);
+        // a soft glow off the drums — a gradient, not a particle star, which is
+        // what used to throw a giant green diamond over the whole chamber
+        const gl = ctx.createRadialGradient(sx, sy - 8 * z, 2, sx, sy - 8 * z, hw * 0.9);
+        gl.addColorStop(0, 'rgba(62,240,122,0.16)'); gl.addColorStop(1, 'rgba(62,240,122,0)');
+        ctx.fillStyle = gl; ctx.fillRect(Math.round(sx - hw), Math.round(sy - 8 * z - hw * 0.9), Math.round(hw * 2), Math.round(hw * 1.8));
         // motes: a few bright specks lifting through the smoke
         ctx.fillStyle = c.glow;
         for (let k = 0; k < 6; k++) { const ph = ((t / 3) + ihash(p.i * 7 + k, 23)) % 1; ctx.globalAlpha = (1 - ph) * 0.8; ctx.fillRect(Math.round(sx - hw * 0.6 + ihash(p.i * 7 + k, 29) * hw * 1.2), Math.round(sy - 6 * z - ph * 50 * z), Math.max(1, Math.round(z)), Math.max(1, Math.round(z))); }

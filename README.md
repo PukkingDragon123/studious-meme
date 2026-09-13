@@ -152,229 +152,31 @@ its own animated glyph once you have carried it out, sealed and grey until then,
 with the site it comes from written under it and what it gives you along the
 foot. Eighteen slots, and the count in the corner is the game's long score.
 
-## The storm drain, and how you got out
+## The catacombs, and how you got there
 
-The game starts in the system. **THE STORM DRAIN** is the first site and the
-only one open on a new save: you come round in the tank, in CONTAINMENT, with
-the lights out and the door shut. You break the glass, you go out through the
-wall, and then there is nine hundred feet of storm sewer between you and
-daylight. The everglades are not a place you start — they are a place the lab
-has to survey before it will put you in them, and the open ocean after that.
+The game starts under Rome. **THE CATACOMBS** is the first site and the only one
+open on a new save: a labyrinth authored as a string of vaults — the cistern
+you land in, the ossuary, the tomb hall, the drowned forum, the columbarium,
+the outflow — each shut off from the next by a squeeze only a small animal
+fits through. Tufa block and blind arches on the walls, niches with what they
+were cut for still in them, torch brackets in the piers, bone piles with a
+skull on top, sarcophagi with their lids on or off, amphorae, and a surface
+carrying two thousand years of what floats. A roof a hand above the water is
+still a roof, so the squeezes stay dark.
 
-That stretch is authored as headroom, because headroom is the whole grammar of
-this system and it is the first thing anybody plays. It teaches all of it in
-one run: a pool with the ceiling right down on the water, a dry ledge to haul
-out on and get your breath, a crawl with a hand of air over it, a basin that
-opens overhead and drops to three hundred feet, a second ledge that climbs, the
-tightest run in the game, the sump under the road — and then the grate. Floor
-and ceiling are authored together in one table so they can never drift apart.
+You got there by transfer. The opening is a trolley, a tank a size too big,
+and two people in hard hats wheeling it to another building. **Mash bite** and
+the glass cracks, then goes; they run with their arms up; you cross the flooded
+floor to a drain, drop in, and ride twenty seconds of a chute so narrow that
+either wall is a scrape — lean to stay off them — and splash into the cistern.
+`ESC` skips it once you are in the tank.
 
-Every other site in the glades and the ocean comes out of a helicopter. Sewer
-sites do not: those come out of a lab, in a tank, on a trolley.
-
-## The drop
-
-Picking any other site on the map puts you in the water, and the way you get
-there is the helicopter. A transport crosses the site with a containment crate slung
-under it, holds at fifty feet while the rotor wash flattens the water and the
-reeds, drops the crate, and the crate breaks open. The site card types itself
-on, the pilot talks, and the camera hands over to gameplay when the animal
-swims out. `ESC` skips it. There is nothing between the map and the helicopter.
-
-## Play
-
-No build step, no dependencies, no assets. Open `index.html` in a browser, or serve the folder:
-
-```
-python3 -m http.server 8000
-# then open http://localhost:8000
-```
-
-`node build.js` bundles everything into two single files in `dist/`: `chompers.html` (a complete
-standalone page you can open from disk or host anywhere) and `chompers.artifact.html` (the same game
-as a fragment for hosts that supply their own document shell).
-
-## Controls
-
-| Action | Keyboard | Touch |
-| --- | --- | --- |
-| Swim | `WASD` / arrows (on land: `UP` hops) | left thumb anywhere on the left half |
-| Bite | `SPACE` / `J` / right mouse | `BITE` pad (hold to keep chomping) |
-| Death roll (while latched) | `SPACE` again | `BITE` pad again |
-| Speed up (hold) | `SHIFT` / `K` | `SPEED` pad |
-| Leap (aim up, then press) | `W`/`UP` + `SHIFT` | flick up + `SPEED` pad |
-| Brace (parry) | `L` / `V` | `BRACE` pad |
-| Steer with the mouse | hold left mouse | - |
-| Pause / settings | `P` / `ESC` | `II` button |
-| Gene tree | `G` / `E` / `TAB` | tap the gene chip |
-| Spin the globe | drag, or hold `LEFT` / `RIGHT` | drag anywhere on the sphere |
-| Site select: change site / change zone | `UP` / `DOWN`, `Q` / `E` | tap a pin |
-| Back out of a screen | `ESC` | the **X** in the top-right corner |
-| Trait codex | `C` | via pause |
-| Break the tank | mash `SPACE` | tap |
-| Help | `H` | via pause |
-| Mute | `M` | via pause |
-
-On a phone held upright the canvas turns sideways automatically so the game fills the screen; touch
-input is mapped through the rotation. The touch pads can be switched off in the pause menu. A phone
-has no escape key, so every screen that can be backed out of carries the same **X** in the same
-corner, and it is only drawn on touch.
-
-The globe is a thing you turn rather than a carousel that turns for you: drag it with a finger or the
-mouse and it keeps spinning when you let go, then settles. Only the zone you are looking at puts
-markers on the sphere — eighteen pins at once read as a line of dots strung round the equator, four or
-five read as places. Each stands on the surface as a **landmark pin**: a staff with a diamond head
-carrying that site's own icon, tallest on the near face, the selected one ringed, ticked and named.
-
-The sphere is painted a pixel at a time, so it used to re-derive every pixel's latitude and longitude
-from scratch sixty times a second, allocating a colour array for each one. None of that depends on the
-spin, so it is worked out once into a lookup and read back after; and the site select no longer
-simulates and renders an entire swamp behind a screen that paints over it.
-
-## How a run works
-
-- **You start in a tank, in the sewer.** A containment lab, acid, and scientists on the other side of the glass. Mash bite to crack it, drop into the drain, and follow the storm sewer east past the rats.
-- **Chew through the outfall grate** and the Everglades are out there — once the lab has surveyed them.
-- **A run opens on a card**: the place, and three things to do in it. The same three lines live in the corner afterwards and tick themselves off. They name the objective, never the button.
-- **Eat** anything you can get past your own head and it goes in whole — but nothing goes straight down. A mouthful sits crossways in the jaws and has to be **chewed**: mash bite, watch the CHEW meter, and take a hard hit while it is full and the lot drops on the floor as meat. Bigger prey takes bites first, bleeds, loses limbs and comes apart.
-- **Scavenge.** At the size you start, hunting is mostly finding: carcasses lie on the bottom of every stretch of map, thickest in the system.
-- **Latch** onto medium prey with a bite, then bite again to **death roll**. The roll is a rhythm, not a reflex test: a **jaw-lock gauge** sweeps a needle across a wide window and you bite in time with it. The window is most of the bar, missing a beat only costs payout, and you never lose the grip.
-- **Hunger** drains constantly. Starving drains your health. Keep eating.
-- **Gene points** drop from every meal. Press `G` at any moment, in the middle of a fight if you want, and spend them.
-- **Grow** through twelve size tiers: Hatchling, Juvenile, Sub-adult, Adult, Bull, Elder, Ancient, Titan, Leviathan, Sarcosuchus, Deinosuchus, Swamp God. Each one plays a **transformation**: the body seizes, a seam of light runs head to tail splitting the old hide off plate by plate, and the animal bursts out a third bigger than it settles at. Two free gene points at the far end. `ESC` skips it.
-- **Predators** hunt you while you are small and flee when you are big.
-- **Speed up** by holding the speed button: a sustained run that drinks stamina. Aim **up** and press it instead and it becomes a leap — same pool, so opening the throttle costs you the jump.
-- **Brace** just before a hit lands to parry it: no damage, and whatever swung at you takes a counter and a long stagger. Brace late and it is only armour, and a whiffed brace costs you the cooldown.
-- **Bosses hold territory.** Nothing arrives on a timer. Each of the ten owns a stretch of water, always the same stretch, and the approach tells you before it does: bones on the floor, silt in the water, a sound off in the dark, a skull on the edge of the screen with a distance under it. Swim into the middle of it and it wakes up; stay out and it never touches you; kill it and its water is quiet for good. Each walks down three or four **phase breaks** — at every break it goes briefly untouchable, comes back faster and harder, and calls in help.
-- **The water itself is a hazard** in two of the three zones. Sewer water fills a **FILTH** meter that eventually starts eating health and smears the screen greasy green; past the depth your body is rated for, a **PRESSURE** meter fills, the view closes in and shivers, and the hull starts to give. Genes, relics and two research treatments raise both ratings.
-- **Execute a boss.** Take one to its last sliver and it **staggers**. Close in, bite, and the fight cuts to an **execution**: bars close in, the camera frames the pair, and three to five prompts come up on big key caps with a bar draining under each. You get three whole misses, and landing one prompt is enough. Every hit is a held impact frame with a blood wash over the lens.
-- **Every site has one standing order.** Finish it and a **relic** surfaces nearby with a beacon on it. Swim to it and it is yours permanently — relics are the only progression that outlives a run, and they stack across every future run.
-- Death is permanent, but the traits and relics you unlock are not.
-
-## The gene network
-
-Splicing happens on a bench. The screen is a room — tiled wall, a lit bench
-along the bottom with a rack of tubes and a centrifuge turning on it, and the
-animal itself hanging in a holding tank down the left wearing every gene you
-have given it, with its length, its tier and a bead for every splice etched on
-the glass. The network is laid out in what is left.
-
-
-
-Forty-nine nodes on a hex grid, four rings out from one primordial cell, and a gene can be taken
-whenever it touches something you already own. It is a graph rather than a tree: the average node
-touches four others, so almost every gene has more than one way in.
-
-- **Spines** (24) — six lineages, four genes deep, running straight out along their own axis. Ring 4
-  is the apex.
-- **Hybrids** (6) — ring 2, sitting on the edge between two neighbouring lineages.
-- **Minor adaptations** (12) — ring 3, two flanking every lineage. Cheap, low strain, and adjacent to
-  *both* lineages either side of them: these are the lateral roads that turn the tree into a network.
-  You can travel around a ring on them instead of straight out.
-- **Chimeras** (6) — ring 4, halfway between two apexes. The strongest genes in the game and the only
-  ones that fuse two lineages at full depth.
-
-Everything you splice shows on the animal: tusks, plates, keeled scutes, stripes, a glow behind the
-eyes. Taking an apex or a chimera plays a full transformation.
-
-Fifteen of the nodes cannot be bought at all. They are **trial-locked**: every apex, every chimera and
-three of the spine genes want you to have played a particular way this run — tear twelve limbs off,
-land twenty leaps, eat twenty birds, parry twelve blows, walk 900m on land, hunt a minute after dark,
-dive 400m down. Trials count live and reset with the run, so a gene at the end of the tree is a record
-of what you did, not something you saved up for. Locked nodes wear a padlock and a ring of progress
-pips; the detail panel names the trial and how far along you are.
-
-| Lineage | Theme | Apex |
-| --- | --- | --- |
-| **Ripper** | bite damage, bleeding, death rolls, blood frenzy | Apex Ripper: colossal jaws that hit everything in reach |
-| **Bulwark** | armor, plating, iron stomach | Living Fortress: attackers take 40% back and nothing can move you |
-| **Phantom** | speed, ambush, stealth | Wraith: two dashes, higher leaps, slow-motion breaches |
-| **Abyssal** | venom, regeneration, lure | Leviathan: shockwaves, toxic blood, venom immunity |
-| **Colossus** | growth, swallowing, bulk | Titan: quaking bites and a crushing ram |
-| **Savage** | land speed, night vision, people | Man-Eater: people panic, boats break like sticks |
-
-Every gene carries a **downside** as well as an upside — serrated teeth thin the skull, plating slows
-you down, an apex gene costs you a quarter of your health — and a **strain** load. Your body only
-tolerates so much at once (the limit grows as you do), and past it the splices start fighting: health
-bleeds away, and enough of it kills you outright. You can also only ever carry **one apex gene**, and
-every extra lineage in you marks the next gene up by 32%, so a scattered build is the expensive one.
-
-The tree also asks for a body, not just points. A gene has a **size gate**: the first ring will not
-take in a hatchling, the second wants a JUVENILE, the third an ADULT, the fourth an ELDER; hybrids
-want a SUB-ADULT, chimeras an ANCIENT, and an apex will not go into anything under a TITAN. Locked cells carry a small blue bar and the panel
-names the tier you are short of. Growing and splicing are one problem, not two.
-
-**Affinity** is the quiet half of the system. Rolling and dismembering feeds Ripper, ambush kills feed
-Phantom, taking hits feeds Bulwark, eating big meals feeds Colossus, and hunting people and land
-animals feeds Savage. Each lineage's genes get up to 50% cheaper as its affinity climbs, so the
-crocodile you end up with is the one you actually played.
-
-## Evolution paths
-
-Four tiered paths, five nodes each, ending in an evolution that changes how you play.
-
-| Path | Theme | Evolution |
-| --- | --- | --- |
-| **Ripper** | bite damage, bleeding, death rolls, blood frenzy, crits | Apex Ripper: colossal jaws that hit everything in reach |
-| **Behemoth** | armor, HP, iron stomach, bull rush | Titan: grow faster, enemies flee in terror |
-| **Phantom** | speed, ambush crits, stealth, shadow dash | Wraith: higher leaps, slow-motion breaches, afterimages |
-| **Abyssal** | venom, regeneration, lure, toxic blood | Leviathan: periodic shockwaves |
-
-## Being seen
-
-A crocodile's whole life is the difference between being in the water and being
-in the open, so that difference is a number now, and it is the number the game
-is about.
-
-**CONCEALMENT** is what the water is doing for you at this instant: how deep you
-are, whether there is weed over you, whether there is a roof, how black the
-biome is, how late it is — minus everything you give away by moving. It is not
-a stat you buy. It is where you chose to be and how fast you chose to go. Deep
-and still is hidden. Deep and sprinting is a wake with something under it.
-
-**THE ALARM** is what the people on the surface have worked out, and it only
-moves when somebody actually sees something. A man on a bank has to be close
-enough, facing roughly your way, and looking at water that is not hiding you —
-miss any one and he carries on with his day. A question mark over his head means
-he half saw something; an exclamation mark means he is sure, and he shouts, and
-everyone within three hundred feet turns round. Taking a person where nobody can
-see it is worth almost nothing. Taking one in front of four others is the
-loudest thing you can do in this game.
-
-| Alarm | What it means |
-| --- | --- |
-| **UNSEEN** | nobody has anything |
-| **SOMETHING IN THE WATER** | one report, nobody sure |
-| **SIGHTED** | armed people will now shoot at you on sight |
-| **CAPTURE CREW INBOUND** | it has been called in |
-
-**CAPTURE** is the fail state that is not death. Past three quarters the site
-calls it in and a boat comes out with a spotlight and a net gun. They do not
-want you dead — there is a tank back at the facility with your name stencilled
-on it. A net that lands gives you four seconds of thrashing to tear it; if you
-do not, the run ends **CAPTURED**, and that is worse than being eaten.
-
-And a person who has seen you and can see how small you are does not run and
-does not shoot past his own boots. He wades in. Above about four feet of
-crocodile he **punches** — a real hit, real knockback, and he will keep doing it.
-Below that he does not bother hitting you at all: he gets his arms under you,
-tucks you under one of them and **walks**, and where he is walking is a crate.
-Mash to buck out of his hands before he gets there, or the run ends **TAKEN**.
-
-It comes down on its own while nobody finds anything, but slower each time they
-have called it in.
-
-## The water is not the same everywhere
-
-Each zone changes what the stealth game even is.
-
-- **The sewer** is dark and roofed, so concealment is nearly free — and you are
-  locked in (below).
-- **The Everglades** is where the people are: banks, camps, tours, traplines,
-  boats. Concealment is cheap but there is always somebody to spend it on.
-- **The ocean** is clear. Depth stops hiding you out on the shelf — you are a
-  shadow on white sand — and the only thing that helps is putting something
-  solid between you and the sky. That is what the wrecks are for.
+The way out is a system. Three mechanisms, each in its own chamber, each a
+small game you start by biting it: **the cistern valve** turned on a beat, **the
+ossuary levers** thrown in the order the lamps showed you, **the counterweight**
+held and let go in the band. A miss costs a notch, not your life. Engage all
+three and the outflow gate opens, and the site's relic surfaces on the way to
+it. The everglades are past that, once the lab has surveyed them.
 
 ## The delivery
 
@@ -403,7 +205,9 @@ when you cannot see either end of it.
 
 The system is not just dark water. **Acid** pools off a plating line eat you
 where you sit. **Sludge** fills your blood with filth and holds onto you.
-And the **drums** — still leaking, glowing green through the muck — do neither:
+What you see of a pool is what comes off it: a bed of vapour breathing over
+the floor, puffs lifting and thinning, a scum line where it meets the water.
+And the **drums** — still leaking, glowing green through the smoke — do neither:
 they fill a **DOSE** meter, and when it tops out something gets grafted onto you
 that you did not choose. Eight forced splices, and every one is a trade: runaway
 growth that starves you, a tumourous hide that slows you, glowing blood that
@@ -450,6 +254,18 @@ rebar hanging out of the tear. The shadow under the deck is the best cover for
 miles.
 
 ## The animals are animals
+
+The mammals have skeletons now. A quadruped in profile is a deep chest, a
+shallower barrel, a round haunch that sits higher, a neck out of the chest to
+carry the head, withers on the tall ones; forelegs hang nearly straight, hind
+legs are a Z with the hock bent back; the gait is diagonal pairs that open into
+a bound past a run, and standing still the chest breathes. Rats are rats.
+
+The crocodile is slower — it cruises, it does not sprint — the leap is off the
+table for now, and its bite is the strike the hologram in the lab runs: the
+head draws back and the jaw cracks open, the whole animal whips forward, the
+jaws close, and it settles. On land the spine works with the legs in the
+lateral S of a real high walk.
 
 No cartoon eyes. The white sclera with a big roving pupil in it is a human
 face, and putting one on a deer, a bass and a heron alike is what made
