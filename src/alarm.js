@@ -38,6 +38,8 @@ const Alarm = {
   // 0 is standing on a bank in daylight. 1 is a shape under four feet of tannin
   // with weed over it. Everything in between is a judgement you are making.
   concealment(P) {
+    // STILL WATER: dead still, and nothing is looking at you
+    if (P.vanishT > 0) return 1;
     if (!P || P.dead) return 1;
     const surf = World.surface(P.x), fy = World.floorY(P.x);
     let c = 0;

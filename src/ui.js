@@ -157,6 +157,7 @@ const UI = {
     Objectives.drawHud(ctx, Math.max(70, this.hazBottom || 70));
     Objectives.drawCard(ctx);
     Puzzles.draw(ctx);
+    Abilities.draw(ctx);
     // dispatch: the lab talking about you on an open channel, typed in
     const dp = G.dispatch;
     if (dp) {
@@ -498,8 +499,9 @@ const UI = {
       if (own) { ctx.globalCompositeOperation = 'lighter'; this.hex(ctx, c.sx, c.sy, r * 1.3, rgba(col, 0.12), null); ctx.globalCompositeOperation = 'source-over'; }
       this.hex(ctx, c.sx, c.sy, r, own ? rgba(col, 0.3) : afford ? 'rgba(14,30,28,0.95)' : 'rgba(10,16,18,0.9)', own ? col : afford ? mixColor(col, '#ffffff', 0.2) : open ? shade(col, 0.55) : '#2a3a38', sel ? 2 : 1);
       // icon
-      const ic = L ? ICONS[L.icon] : ICONS.croc;
-      if (ic && !g.minor) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
+      const ic = L ? ICONS[L.icon] : ICONS.croc, sk = SKILL_BY_GENE[g.id];
+      if (sk) SkillArt.draw(ctx, sk.id, c.sx, c.sy - 2, r * 1.2, t, { dim: !own && !open, alpha: own ? 1 : open ? 0.9 : 0.5 });
+      else if (ic && !g.minor) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
       // a minor is a bead, not a portrait: a single dot in its lineage colour
       if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
       // a chimera gets a second ring: it is the far end of two lineages at once
@@ -578,7 +580,9 @@ const UI = {
     const descL = Math.ceil(Font.width(g.desc, 1) / (pw - 16)) + 1, downL = g.down ? Math.ceil(Font.width(g.down, 1) / (pw - 16)) + 1 : 0;
     let phh2 = 30 + descL * 9 + 3 + (downL ? downL * 9 + 3 : 0) + 8;
     if (Trials.of(g) && !Genome.has(P, g.id)) phh2 += 22;
-    phh2 = clamp(phh2, 62, 132);
+    // a gene that hands you an ability has three more lines to say
+    if (SKILL_BY_GENE[g.id]) phh2 += 9 * (Math.ceil(Font.width('ABILITY: ' + SKILL_BY_GENE[g.id].name + '  [1]. ' + SKILL_BY_GENE[g.id].line, 1) / (pw - 44)) + 1) + 4;
+    phh2 = clamp(phh2, 62, 172);
     this.panel(ctx, px3, py3, pw, phh2, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
     const kind = !L ? 'ORIGIN' : g.chimera ? LINEAGES[g.lin2].name + ' CHIMERA' : g.hybrid ? LINEAGES[g.lin2].name + ' HYBRID' : g.minor ? 'MINOR ADAPTATION' : g.apex ? 'APEX' : 'TIER ' + g.ring;
@@ -589,6 +593,15 @@ const UI = {
     panY += Font.drawWrapped(ctx, g.desc, px3 + 8, panY, pw - 16, { color: '#9ef0c8', lineHeight: 9 }) * 9 + 3;
     if (g.down) panY += Font.drawWrapped(ctx, g.down, px3 + 8, panY, pw - 16, { color: '#ff8a7a', lineHeight: 9 }) * 9 + 3;
     if (g.load) Font.draw(ctx, '+' + g.load + ' STRAIN', px3 + pw - 8, py3 + 18, { color: '#ffb060', align: 'right' });
+    {
+      const sk = SKILL_BY_GENE[g.id];
+      if (sk) {
+        const slot = Abilities.list(P).findIndex(q => q.id === sk.id);
+        SkillArt.draw(ctx, sk.id, px3 + pw - 22, panY + 12, 24, t);
+        panY += Font.drawWrapped(ctx, 'ABILITY: ' + sk.name + (slot >= 0 ? '  [' + (slot + 1) + ']' : '') + '. ' + sk.line, px3 + 8, panY, pw - 44, { color: sk.col, lineHeight: 9 }) * 9 + 3;
+        phh2 = Math.max(phh2, panY - py3 + 8);
+      }
+    }
     const cost = Genome.cost(P, g);
     const tprog = Trials.progress(P, g);
     if (tprog && !own) {

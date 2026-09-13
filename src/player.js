@@ -13,7 +13,7 @@ class Player {
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
-    this.mouth = null;
+    this.mouth = null; this.vanishT = 0; this.pounceT = 0; this.pounceMul = 1;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -359,6 +359,7 @@ class Player {
     else this.legPhase += dt * (2 + swim * 7);
     // shaking what you have just bitten, and the blood that stays on the teeth
     if (this.headShakeT > 0) this.headShakeT -= dt;
+    if (this.pounceT > 0) this.pounceT -= dt;
     if (this.goreT > 0) this.goreT -= dt * 0.25;
     if (this.snapT > 0) this.snapT -= dt;
     // jaws: the strike script, read off how much of the bite is left
@@ -528,6 +529,10 @@ class Player {
     const maw = (this.size * 0.62 + 0.2) * this.st.swallow;
     if ((fishy && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
+    // a pounce that connects lands the next bite harder
+    if (this.pounceT > 0) { dmg *= this.pounceMul; crit = true; this.pounceT = 0; }
+    // a bite out of dead stillness is an ambush whether the gene says so or not
+    if (this.vanishT > 0) { dmg *= 2; crit = true; this.vanishT = 0; }
     if (this.st.fishSlayer > 1 && e.type === 'fish') dmg *= this.st.fishSlayer;
     if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= this.st.ambushMul; crit = true; this.lastKillHow = 'ambush'; Trials.bump(this, 'ambush'); }
     // a skirmisher does not crit by luck, it crits on a rhythm

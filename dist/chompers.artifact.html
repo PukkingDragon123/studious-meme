@@ -1040,6 +1040,15 @@ const R = {
       for (; i < x1; i += step) if (i >= 0 && i < o.w) c.fillRect(i, j, 1, 1);
     }
   },
+  // the first opaque row in column i, read off the canvas: used to lay a
+  // highlight along whatever silhouette the blobs added up to
+  top(o, i) {
+    if (i < 0 || i >= o.w) return null;
+    if (!o._img || o._imgW !== o.w) { o._img = o.x.getImageData(0, 0, o.w, o.h).data; o._imgW = o.w; }
+    const d = o._img;
+    for (let j = 0; j < o.h; j++) if (d[(j * o.w + i) * 4 + 3] > 40) return j;
+    return null;
+  },
   hi: c => mixColor(c, '#ffffff', 0.28), hi2: c => mixColor(c, '#ffffff', 0.5), lo: c => shade(c, 0.72), lo2: c => shade(c, 0.5),
   ol: c => mixColor(shade(c, 0.42), '#181410', 0.34),
   // solid disc
@@ -1438,30 +1447,63 @@ function buildQuad(s) {
   const L = s.len, H = Math.max(6, Math.round(L * (s.h || 0.46) * 0.99)), OL = R.ol(s.body), parts = {};
   const legLen = Math.max(4, Math.round(H * (0.34 + (s.legs || 0.5) * 0.66)));
   const hs = Math.max(3, Math.round(H * (s.headK || 0.46)));
+  // how far the neck carries the head up and forward of the chest
+  const neck = s.neck !== undefined ? s.neck : (s.legs || 0.5) > 0.7 ? 0.55 : 0.25;
   {
-    const o = R.mk(L + 6, H + 8), cx = 3 + L / 2, cy = 4 + H / 2, belly = s.belly || R.hi(s.body);
+    // A mammal in profile is not one ellipse. It is a deep chest at the front,
+    // a shallower barrel behind it, a round haunch that sits a little higher,
+    // and a neck that rises out of the chest to carry the head. The parts are
+    // laid down back to front so each mass overlaps the one behind it, and one
+    // fur texture runs across all of them so they read as one hide.
+    const o = R.mk(L + 10, H + 14), cx = 5 + L / 2, cy = 8 + H / 2, belly = s.belly || R.hi(s.body);
     const coat = s.coat || (s.pattern === 'bands' ? 'hide' : 'fur');
-    R.blob(o, cx, cy, L / 2, H / 2, s.body, { tex: coat, seed: L * 3 + 11, pat: (i, j, u, v) => {
+    const pat = (i, j, u, v) => {
       if (s.pattern === 'spots' && ((ihash(Math.floor(i / 3) * 7 + Math.floor(j / 3), 11) > 0.72))) return s.spot || '#f0ead8';
       if (s.pattern === 'stripes' && Math.floor((i + j * 0.3) / 3) % 3 === 0 && v < 0.3) return R.lo2(s.body);
       if (s.pattern === 'bands' && Math.floor(i / 4) % 2 === 0 && v < 0.4) return R.lo(s.body);
-      if (v > 0.52 && u * u + v * v < 0.94) return v > 0.78 ? R.lo(belly) : belly;
+      if (s.pattern === 'blotch' && ihash(Math.floor(i / 4) * 13 + Math.floor(j / 4), 19) > 0.8) return R.lo(s.body);
       return null;
-    } });
-    // haunch and shoulder masses: without them every quad is one flat ellipse
-    const hq = { tex: coat, seed: L * 5 + 21, hl: false, hx: -0.1 };
-    R.blob(o, cx - L * 0.27, cy + H * 0.05, L * 0.23, H * 0.45, s.body, hq);
-    R.blob(o, cx + L * 0.25, cy + H * 0.02, L * 0.2, H * 0.42, s.body, { tex: coat, seed: L * 5 + 7, hl: false, hx: 0.3 });
-    // crease where the shoulder meets the barrel
-    for (let j = -Math.round(H * 0.22); j <= Math.round(H * 0.3); j++) R.px(o, cx + L * 0.12, cy + j, R.lo2(s.body), 1, 1);
-    // neck stub reaching toward the head
-    for (let k = 0; k < 5; k++) {
-      const u = k / 4;
-      R.blob(o, cx + L * (0.3 + u * 0.14), cy - H * (0.06 + u * 0.3), L * (0.12 - u * 0.03), H * (0.3 - u * 0.06), s.head || s.body, { tex: coat, seed: L + 3 + k, hl: false });
+    };
+    const T = (seed, extra) => Object.assign({ tex: coat, seed, hl: false, pat }, extra || {});
+    // haunch: round, high, at the back
+    R.blob(o, cx - L * 0.30, cy - H * 0.04, L * 0.22, H * 0.50, s.body, T(L * 5 + 21, { hx: -0.2 }));
+    // barrel: the long shallow middle, belly hanging lower toward the back
+    R.blob(o, cx - L * 0.02, cy + H * 0.06, L * 0.34, H * 0.42, s.body, T(L * 3 + 11));
+    // chest: the deepest mass, forward, where the forelegs hang
+    R.blob(o, cx + L * 0.26, cy + H * 0.02, L * 0.21, H * 0.50, s.body, T(L * 5 + 7, { hx: 0.3 }));
+    // withers: a low rise over the shoulders that a deer has and a rat does not
+    if ((s.legs || 0.5) > 0.6) R.blob(o, cx + L * 0.16, cy - H * 0.36, L * 0.13, H * 0.16, s.body, T(L + 9));
+    // the belly: a lighter run along the underside of the barrel and chest,
+    // dithered into the flank so there is no hard line
+    for (let i = Math.round(cx - L * 0.28); i <= Math.round(cx + L * 0.40); i++) {
+      const u = (i - cx) / (L / 2);
+      const depth = H * 0.5 * (u > 0.3 ? 0.96 : 0.86 - (u + 0.6) * 0.06);
+      for (let j = Math.round(cy + depth * 0.45); j <= Math.round(cy + depth); j++) {
+        if (!R.inside(o, i, j)) continue;
+        const f = (j - (cy + depth * 0.45)) / (depth * 0.55);
+        const bay = BAYER4[(j & 3) * 4 + (i & 3)] * 0.0625;
+        if (f + bay * 0.5 > 0.35) R.px(o, i, j, f > 0.85 ? R.lo(belly) : belly);
+      }
     }
-    if (s.mane) R.px(o, cx, cy - H / 2 - 2, s.mane, L * 0.3, 3);
+    // the back: a lit line along the spine, broken so it is hair not a rule
+    for (let i = Math.round(cx - L * 0.44); i <= Math.round(cx + L * 0.38); i++) {
+      if (((i * 5) & 7) < 2) continue;
+      const top = R.top(o, i); if (top === null) continue;
+      R.px(o, i, top, R.hi(s.body));
+    }
+    if (s.mane) R.px(o, cx + L * 0.05, cy - H / 2 - 2, s.mane, L * 0.3, 3);
+    // the neck: a wedge rising from the chest toward where the head pivots
+    {
+      const nx0 = cx + L * 0.36, ny0 = cy - H * 0.12, nx1 = cx + L * (0.42 + neck * 0.14), ny1 = cy - H * (0.30 + neck * 0.55);
+      const steps = 6;
+      for (let k = 0; k <= steps; k++) {
+        const u = k / steps, w = H * (0.30 - u * 0.10), hgt = H * (0.28 - u * 0.06);
+        R.blob(o, lerp(nx0, nx1, u), lerp(ny0, ny1, u), Math.max(2, w), Math.max(2, hgt), s.head || s.body, T(L + 3 + k));
+      }
+    }
     R.outline(o, OL);
     parts.body = R.part(o, cx, cy);
+    parts.neckX = L * (0.42 + neck * 0.14); parts.neckY = -H * (0.30 + neck * 0.55);
   }
   { // head: round skull, snout blob, ears, big eye, nose
     const sn = Math.round(hs * (0.5 + (s.snout || 0.4) * 1.15)), hc = s.head || s.body, o = R.mk(hs * 2 + sn + 8, hs * 2 + 12), hx = 3 + hs, hy = 8 + hs;
@@ -1493,32 +1535,33 @@ function buildQuad(s) {
     R.outline(o, OL);
     parts.head = R.part(o, hx - hs * 0.5, hy + hs * 0.55);   // pivot at the base of the skull
   }
-  { // tapered limb: thigh into shank, lit down the leading edge, real foot at the bottom
-    const lc = s.legCol || s.body, lw = Math.max(2, Math.round(H * 0.16));
-    let cxFoot = 0;
-    const o = R.mk(lw + 8, legLen + 6), cx = 4 + lw / 2;
+  // Two legs, not one. A foreleg hangs nearly straight: shoulder, a slight
+  // elbow, a thin cannon and the foot. A hind leg is a Z: the thigh runs down
+  // and forward, the hock bends it back, the cannon drops to the foot. Both
+  // are built as stacks of rows so the joints are real bends in the outline.
+  const makeLeg = (hind) => {
+    const lc = s.legCol || s.body, lw = Math.max(2, Math.round(H * (hind ? 0.20 : 0.16)));
+    const o = R.mk(lw + 12, legLen + 6), cx = 6 + lw / 2;
     const lit = R.hi(lc), shd = R.lo(lc), foot = s.hoof || R.lo2(lc);
-    // Two segments with a joint between them. A single straight taper is a
-    // stilt; a thigh that carries back to a hock and a thin cannon bone under
-    // it is what makes a mammal's leg read as a leg.
-    const knee = Math.round(legLen * 0.46), sweep = Math.max(1, lw * 0.5);
+    const knee = Math.round(legLen * (hind ? 0.5 : 0.42)), sweep = Math.max(1, lw * (hind ? 1.1 : 0.4));
     for (let j = 0; j < legLen; j++) {
-      const u = j / Math.max(1, legLen);
       let w, off;
-      if (j < knee) { const k = j / Math.max(1, knee); w = Math.max(1.4, lw * (1 - k * 0.42)); off = -sweep * k; }
-      else { const k = (j - knee) / Math.max(1, legLen - knee); w = Math.max(1.1, lw * 0.56 * (1 - k * 0.3)); off = -sweep + sweep * 0.55 * k; }
+      if (j < knee) { const k = j / Math.max(1, knee); w = Math.max(1.4, lw * (1 - k * (hind ? 0.5 : 0.35))); off = hind ? sweep * k : -sweep * k * 0.6; }
+      else { const k = (j - knee) / Math.max(1, legLen - knee); w = Math.max(1.1, lw * (hind ? 0.46 : 0.56) * (1 - k * 0.25)); off = hind ? sweep - sweep * 0.9 * k : -sweep * 0.6 + sweep * 0.4 * k; }
       R.px(o, cx + off - w / 2, 1 + j, lc, w, 1);
       R.px(o, cx + off - w / 2, 1 + j, lit, Math.max(1, w * 0.34), 1);
       R.px(o, cx + off + w / 2 - Math.max(1, w * 0.28), 1 + j, shd, Math.max(1, w * 0.28), 1);
       if (j === knee) R.px(o, cx + off - w / 2, 1 + j, R.lo2(lc), w, 1);
-      if (u > 0.98) break;
     }
     const pw = Math.max(2, Math.round(lw * 0.8) + 1), fy = 1 + legLen;
-    cxFoot = cx - sweep * 0.45;
+    const cxFoot = cx + (hind ? sweep * 0.1 : -sweep * 0.2);
     R.px(o, cxFoot - pw / 2, fy - 1, foot, pw, 2);
-    if (!s.hoof) { R.px(o, cxFoot - pw / 2 - 1, fy, foot, pw + 1, 1); R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), 1, 1); R.px(o, cxFoot - pw / 2 + 2, fy + 1, R.lo2(foot), 1, 1); }
+    if (!s.hoof) { R.px(o, cxFoot - pw / 2 - 1, fy, foot, pw + 2, 1); R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), 1, 1); R.px(o, cxFoot - pw / 2 + 2, fy + 1, R.lo2(foot), 1, 1); }
     else R.px(o, cxFoot - pw / 2, fy + 1, R.lo2(foot), pw, 1);
-    R.outline(o, OL); parts.leg = R.part(o, cx, 1); }
+    R.outline(o, OL);
+    return R.part(o, cx, 1);
+  };
+  parts.leg = makeLeg(false); parts.hind = makeLeg(true);
   { const tl = s.tail === 'long' || s.tail === 'bushy' || s.tail === 'naked' ? Math.round(L * (s.tail === 'naked' ? 0.62 : 0.5)) : s.tail === 'none' ? 0 : Math.round(L * 0.14), tc = s.tailCol || s.body;
     if (tl) {
       const bushy = s.tail === 'bushy', naked = s.tail === 'naked', o = R.mk(tl + 4, (bushy ? 11 : 7)), th = bushy ? 3.2 : naked ? 1.15 : 1.5;
@@ -1540,14 +1583,29 @@ function buildQuad(s) {
   const rig = { kind: 'quad', parts, len: L + hs * 1.2, height: H + legLen, foot: H * 0.35 + legLen };
   rig.pose = anim => {
     const ph = anim.phase || 0, sp = clamp(anim.speed || 0, 0, 1.3), P = parts, out = [];
-    const hipY = H * 0.34, bob = Math.abs(Math.sin(ph)) * -1.5 * sp, gait = a => Math.sin(ph + a) * 0.6 * sp;
-    out.push({ p: P.leg, x: -L * 0.32, y: hipY + bob, a: gait(Math.PI), alpha: 0.75, id: 'leg2', kind: 'leg' });
-    out.push({ p: P.leg, x: L * 0.3, y: hipY + bob, a: gait(0), alpha: 0.75, id: 'leg3', kind: 'leg' });
-    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.15 + bob, a: (s.tail === 'naked' ? 0.24 : s.tail === 'long' ? 0.95 : -0.25) + Math.sin(ph * 0.7) * (s.tail === 'naked' ? 0.1 : 0.2), id: 'tail', kind: 'tail' });
-    out.push({ p: P.body, x: 0, y: bob, a: 0, id: 'body', kind: 'body' });
-    out.push({ p: P.leg, x: -L * 0.3, y: hipY + bob, a: gait(0), id: 'leg0', kind: 'leg' });
-    out.push({ p: P.leg, x: L * 0.34, y: hipY + bob, a: gait(Math.PI), id: 'leg1', kind: 'leg' });
-    out.push({ p: P.head, x: L * 0.41, y: -H * 0.33 + bob, a: (anim.graze || 0) * 0.95 - 0.06 + Math.sin(ph * 0.5) * 0.03, id: 'head', kind: 'head' });
+    // A walk is diagonal pairs: left fore with right hind, then the other two.
+    // Past a run it opens into a bound, the legs reaching further and the body
+    // rocking. Standing still, the legs are under the animal and the chest
+    // breathes.
+    const run = clamp((sp - 0.8) / 0.5, 0, 1);
+    const throwF = (0.55 + run * 0.5) * Math.min(1, sp * 1.4), throwH = (0.7 + run * 0.6) * Math.min(1, sp * 1.4);
+    const bob = Math.abs(Math.sin(ph)) * -1.6 * sp - Math.sin(anim.phase * 0.5) * 0.3 * (1 - Math.min(1, sp * 3));
+    const rock = Math.sin(ph) * 0.06 * run;
+    const hipY = H * 0.30, shY = H * 0.28;
+    const fore = (a, near) => ({ p: P.leg, x: L * 0.29 + Math.sin(ph + a) * 1.5 * sp, y: shY + bob, a: Math.sin(ph + a) * throwF + rock, alpha: near ? 1 : 0.72, id: near ? 'leg1' : 'leg3', kind: 'leg' });
+    const hind = (a, near) => ({ p: P.hind, x: -L * 0.31 + Math.sin(ph + a) * 1.5 * sp, y: hipY + bob, a: Math.sin(ph + a) * throwH + rock, alpha: near ? 1 : 0.72, id: near ? 'leg0' : 'leg2', kind: 'leg' });
+    // far side first, so the near legs draw over the body
+    out.push(hind(0, false));
+    out.push(fore(Math.PI, false));
+    if (P.tail) out.push({ p: P.tail, x: -L * 0.47, y: -H * 0.12 + bob, a: (s.tail === 'naked' ? 0.24 : s.tail === 'long' ? 0.42 : s.tail === 'bushy' ? 0.6 : -0.25) + Math.sin(ph * 0.7) * (s.tail === 'naked' ? 0.1 : 0.2) + run * 0.25, id: 'tail', kind: 'tail' });
+    const breathe = sp < 0.1 ? 1 + Math.sin((anim.phase || 0) * 1.6) * 0.02 : 1;
+    out.push({ p: P.body, x: 0, y: bob, a: rock, sx: 1, sy: breathe, id: 'body', kind: 'body' });
+    out.push(hind(Math.PI, true));
+    out.push(fore(0, true));
+    // the head rides the neck: it drops to graze, lifts and turns when alert,
+    // and nods a little with each stride
+    const alert = anim.alert || 0, graze = anim.graze || 0;
+    out.push({ p: P.head, x: P.neckX, y: P.neckY + bob * 0.7, a: graze * 0.95 - alert * 0.28 - 0.06 + Math.sin(ph) * 0.05 * sp + rock, id: 'head', kind: 'head' });
     return out;
   };
   rig.main = parts.body;
@@ -8846,7 +8904,7 @@ class Player {
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
-    this.mouth = null;
+    this.mouth = null; this.vanishT = 0; this.pounceT = 0; this.pounceMul = 1;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -9192,6 +9250,7 @@ class Player {
     else this.legPhase += dt * (2 + swim * 7);
     // shaking what you have just bitten, and the blood that stays on the teeth
     if (this.headShakeT > 0) this.headShakeT -= dt;
+    if (this.pounceT > 0) this.pounceT -= dt;
     if (this.goreT > 0) this.goreT -= dt * 0.25;
     if (this.snapT > 0) this.snapT -= dt;
     // jaws: the strike script, read off how much of the bite is left
@@ -9361,6 +9420,10 @@ class Player {
     const maw = (this.size * 0.62 + 0.2) * this.st.swallow;
     if ((fishy && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
+    // a pounce that connects lands the next bite harder
+    if (this.pounceT > 0) { dmg *= this.pounceMul; crit = true; this.pounceT = 0; }
+    // a bite out of dead stillness is an ambush whether the gene says so or not
+    if (this.vanishT > 0) { dmg *= 2; crit = true; this.vanishT = 0; }
     if (this.st.fishSlayer > 1 && e.type === 'fish') dmg *= this.st.fishSlayer;
     if (this.st.ambush && (!e.aware || this.ambushReady)) { dmg *= this.st.ambushMul; crit = true; this.lastKillHow = 'ambush'; Trials.bump(this, 'ambush'); }
     // a skirmisher does not crit by luck, it crits on a rhythm
@@ -10778,6 +10841,8 @@ const Alarm = {
   // 0 is standing on a bank in daylight. 1 is a shape under four feet of tannin
   // with weed over it. Everything in between is a judgement you are making.
   concealment(P) {
+    // STILL WATER: dead still, and nothing is looking at you
+    if (P.vanishT > 0) return 1;
     if (!P || P.dead) return 1;
     const surf = World.surface(P.x), fy = World.floorY(P.x);
     let c = 0;
@@ -11411,6 +11476,282 @@ const Puzzles = {
       pips(Q.got, Q.need, y0 + 26);
     }
     if (Q.miss) Font.draw(ctx, 'SLIPS ' + Q.miss, bx + bw + 10, y0 - 17, { color: '#ff8c40', align: 'right' });
+  },
+};
+
+/* ===== src/abilities.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// ABILITIES.
+//
+// Genes used to be numbers: a gene made a bite bigger or a hide thicker and
+// that was the whole of it. Eight of them now hand you something to DO — a
+// clamp that will not let go, a drain that drinks what you are holding, a gob
+// of venom, a shockwave, a pounce, a ram, a pulse of light, a stillness that
+// makes you disappear. Each has a key, a cooldown, a big animated icon, and
+// most of them are a small game while they run: a beat to hit, a bar to hold,
+// a button to mash. Missing the game does not fail the ability. It makes it
+// smaller.
+// ---------------------------------------------------------------------------
+const SKILLS = [
+  { id: 'latch', name: 'BITE DOWN', gene: 'ripper:rollmaster', cd: 6, qte: 'mash', col: '#ff5a3a',
+    line: 'Clamp on whatever is in reach and hang on. Every press tightens the jaws and tears.' },
+  { id: 'leech', name: 'LIFE LEECH', gene: 'ripper:frenzy', cd: 10, qte: 'beat', col: '#e0304a',
+    line: 'Drink what you are holding. Bite on the pulse and its blood is yours.' },
+  { id: 'spit', name: 'VENOM SPIT', gene: 'abyssal:venom', cd: 7, qte: 'hold', col: '#8af040',
+    line: 'Hold to draw the glands, let go to spit. Everything in the spray is poisoned.' },
+  { id: 'shock', name: 'SHOCKWAVE', gene: 'abyssal:leviathan', cd: 14, qte: 'hold', col: '#40f0c8',
+    line: 'Hold, release in the band, and the water throws everything near you.' },
+  { id: 'pounce', name: 'POUNCE', gene: 'savage:claws', cd: 5, qte: 'timing', col: '#ffc040',
+    line: 'A lunge off the legs. Hit the mark and it lands twice as hard.' },
+  { id: 'ram', name: 'BULL RAM', gene: 'colossus:bulk', cd: 8, qte: 'mash', col: '#e0b050',
+    line: 'Put your mass into a charge. Mash to keep it alive; what you hit is thrown.' },
+  { id: 'lure', name: 'LURE PULSE', gene: 'abyssal:lure', cd: 12, qte: null, col: '#7affda',
+    line: 'One pulse of light. Small things come to see what it was.' },
+  { id: 'vanish', name: 'STILL WATER', gene: 'phantom:silent', cd: 12, qte: null, col: '#8cb8ff',
+    line: 'Go dead still. For four seconds nothing sees you, and your next bite is an ambush.' },
+];
+const SKILL_BY_ID = {}; for (const k of SKILLS) SKILL_BY_ID[k.id] = k;
+const SKILL_BY_GENE = {}; for (const k of SKILLS) SKILL_BY_GENE[k.gene] = k;
+
+// ---- the icons: big, in colour, alive -------------------------------------
+// Each is a 12x12 pixel design drawn into a box, and each has its own motion:
+// the jaws close, the drop falls, the rings spread. Drawn with fillRects so
+// they stay on the grid at any scale.
+const SkillArt = {
+  draw(ctx, id, cx, cy, box, t, opts = {}) {
+    const k = SKILL_BY_ID[id]; if (!k) return;
+    const s = box / 12, px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(cx - box / 2 + x * s), Math.round(cy - box / 2 + y * s), Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))); };
+    const dim = opts.dim ? 0.35 : 1, a = ctx.globalAlpha;
+    ctx.globalAlpha = a * (opts.alpha === undefined ? 1 : opts.alpha);
+    // the plate behind every icon: dark, with the skill colour as a rim
+    px(0, 0, 12, 12, opts.dim ? '#141a1c' : mixColor(k.col, '#0a1214', 0.82));
+    px(0, 0, 12, 1, k.col); px(0, 11, 12, 1, shade(k.col, 0.5)); px(0, 0, 1, 12, shade(k.col, 0.8)); px(11, 0, 1, 12, shade(k.col, 0.5));
+    const C = opts.dim ? mixColor(k.col, '#141a1c', 0.6) : k.col, L = mixColor(C, '#ffffff', 0.5), D = shade(C, 0.55);
+    const ph = t * 2.6;
+    switch (id) {
+      case 'latch': {        // two jaws closing on a bone
+        const gap = 1 + Math.round((Math.sin(ph) * 0.5 + 0.5) * 3);
+        px(2, 2, 8, 2, C); px(2, 8, 8, 2, C); px(2, 4 - 0, 8, 1, D); px(2, 7, 8, 1, D);
+        for (let i = 0; i < 4; i++) { px(3 + i * 2, 4, 1, 1 + (gap < 2 ? 1 : 0), L); px(3 + i * 2, 7 - (gap < 2 ? 1 : 0), 1, 1 + (gap < 2 ? 1 : 0), L); }
+        px(1, 5 + Math.round(gap / 3), 10, 1, '#e8e0c8');
+        break; }
+      case 'leech': {        // a heart with a drop leaving it and a pulse
+        const beat = Math.sin(ph * 1.5) > 0.6 ? 1 : 0;
+        px(3 - beat, 3 - beat, 3 + beat, 3 + beat, C); px(6, 3 - beat, 3 + beat, 3 + beat, C); px(3 - beat, 5, 6 + beat * 2, 3, C); px(5, 8, 2, 2, C);
+        px(3, 3, 1, 1, L);
+        const dy = (t * 3) % 4; px(8, 7 + Math.round(dy), 1, 2, L);
+        break; }
+      case 'spit': {         // a gob leaving a mouth in an arc
+        px(1, 6, 4, 3, D); px(1, 6, 4, 1, C);
+        const u = (t * 1.4) % 1; const gx = 4 + u * 7, gy = 5 - Math.sin(u * Math.PI) * 4;
+        px(Math.round(gx), Math.round(gy), 2, 2, L); px(Math.round(gx) - 1, Math.round(gy) + 1, 1, 1, C);
+        for (let i = 1; i < 4; i++) { const uu = Math.max(0, u - i * 0.12); px(Math.round(4 + uu * 7), Math.round(5 - Math.sin(uu * Math.PI) * 4) + 1, 1, 1, D); }
+        break; }
+      case 'shock': {        // rings spreading from a point
+        const r = 1 + ((t * 4) % 5);
+        for (const rr of [r, r - 2.5]) { if (rr < 0.5) continue; const R2 = Math.round(rr); for (let a2 = 0; a2 < 12; a2++) { const ang = a2 / 12 * TAU; px(6 + Math.round(Math.cos(ang) * R2) - 0.5, 6 + Math.round(Math.sin(ang) * R2 * 0.7) - 0.5, 1, 1, rr === r ? L : C); } }
+        px(5.5, 5.5, 1, 1, '#ffffff');
+        break; }
+      case 'pounce': {       // a claw slash
+        const w = (Math.sin(ph) * 0.5 + 0.5);
+        for (let i = 0; i < 3; i++) { const x0 = 2 + i * 3, len = 5 + Math.round(w * 3); for (let j = 0; j < len; j++) px(x0 + Math.round(j * 0.5), 9 - j, 1, 1, j > len - 2 ? L : C); }
+        px(1, 10, 10, 1, D);
+        break; }
+      case 'ram': {          // a skull-front with speed lines
+        const sh = Math.round(Math.sin(ph * 2) * 1);
+        px(5 + sh, 2, 5, 6, C); px(5 + sh, 2, 5, 1, L); px(6 + sh, 4, 1, 1, '#0a0806'); px(8 + sh, 4, 1, 1, '#0a0806'); px(6 + sh, 7, 3, 1, D);
+        for (let i = 0; i < 3; i++) px(1, 3 + i * 2, 3 - (i === 1 ? 0 : 1) + sh, 1, i === 1 ? L : D);
+        break; }
+      case 'lure': {         // an orb on a stalk, glowing in pulses
+        const g = Math.sin(ph) * 0.5 + 0.5;
+        px(3, 9, 6, 2, D); px(6, 5, 1, 4, D);
+        px(5, 3, 3, 3, C); px(5.5, 3.5, 2, 2, L); if (g > 0.5) { px(4, 2, 5, 5, mixColor(C, '#000000', 0.2)); px(5, 3, 3, 3, L); px(6, 4, 1, 1, '#ffffff'); }
+        break; }
+      case 'vanish': {       // an eye that closes
+        const shut = (Math.sin(ph * 0.8) * 0.5 + 0.5) > 0.7;
+        px(2, 5, 8, 3, shut ? D : L); px(1, 6, 10, 1, shut ? D : L);
+        if (!shut) { px(5, 5, 2, 3, C); px(5, 5, 1, 1, '#0a0806'); } else px(2, 6, 8, 1, C);
+        for (let i = 0; i < 3; i++) px(3 + i * 3, 2 + (i % 2), 1, 1, mixColor(C, '#ffffff', 0.3));
+        break; }
+    }
+    ctx.globalAlpha = a;
+  },
+};
+
+const Abilities = {
+  cd: {}, active: null, flash: {},
+
+  reset() { this.cd = {}; this.active = null; this.flash = {}; },
+  // the skills this animal has, in the order the genes were taken
+  list(P) {
+    const out = [];
+    for (const id of P.genes || []) { const k = SKILL_BY_GENE[id]; if (k) out.push(k); }
+    return out.slice(0, 4);
+  },
+  ready(k) { return !(this.cd[k.id] > 0); },
+
+  update(dt) {
+    const P = G.player; if (!P || P.dead) return;
+    for (const id in this.cd) if (this.cd[id] > 0) this.cd[id] -= dt;
+    for (const id in this.flash) if (this.flash[id] > 0) this.flash[id] -= dt;
+    if (P.vanishT > 0) { P.vanishT -= dt; if (P.vanishT <= 0) G.fx.text(P.x, P.y - 20 * P.vis, 'SEEN', { color: '#8cb8ff', life: 0.8 }); }
+    if (this.active) { this.tick(dt); return; }
+    if (G.state !== 'play' || P.frozen || Puzzles.qte) return;
+    const ks = this.list(P);
+    for (let i = 0; i < ks.length; i++) {
+      if (Input.hit('Digit' + (i + 1), 'Numpad' + (i + 1))) this.use(ks[i]);
+    }
+  },
+  use(k) {
+    const P = G.player;
+    if (!this.ready(k)) { G.fx.text(P.x, P.y - 20 * P.vis, 'NOT YET', { color: '#7f9a90', life: 0.6 }); SFX.hurt && SFX.hurt(); return; }
+    this.cd[k.id] = k.cd; this.flash[k.id] = 0.4;
+    SFX.pick && SFX.pick();
+    G.fx.text(P.x, P.y - 26 * P.vis, k.name, { color: k.col, scale: 2, life: 1.1 });
+    if (!k.qte) { this.fire(k, 1); return; }
+    // the game: what it is depends on the skill
+    const Q = { k, type: k.qte, t: 0, got: 0, miss: 0, done: false, score: 0,
+      pos: 0, dir: 1, band: [0.5, 0.7], flash: 0,
+      held: false, lift: 0, target: [0.6, 0.8],
+      beatT: 0, period: 0.62, window: 0.16, beats: 0, need: k.qte === 'mash' ? 8 : k.qte === 'beat' ? 5 : 1, life: k.qte === 'mash' ? 3.2 : k.qte === 'beat' ? 4.2 : 3 };
+    if (k.id === 'latch' || k.id === 'leech') {
+      // both want something in the jaws first
+      let target = P.latched || null;
+      if (!target) { let bd = 1e9; for (const e of G.ents) { if (e.dead || e.remove || !e.latchable || e.type === 'gib' || e.type === 'proj') continue; const d = e.nearestDist ? e.nearestDist(P.x, P.y) : dist(P.x, P.y, e.x, e.y); if (d < P.biteRange * 1.8 && d < bd) { bd = d; target = e; } } }
+      if (!target) { G.fx.text(P.x, P.y - 20 * P.vis, 'NOTHING IN REACH', { color: '#7f9a90', life: 0.8 }); this.cd[k.id] = 0.6; return; }
+      Q.target = target; P.latched = target; P.rollT = 0;
+    }
+    this.active = Q;
+    P.vx *= 0.5; P.vy *= 0.5;
+  },
+  tick(dt) {
+    const Q = this.active, P = G.player, k = Q.k;
+    Q.t += dt; if (Q.flash > 0) Q.flash -= dt;
+    if (Q.target && (Q.target.dead || Q.target.remove)) { this.finish(Q, Math.max(0.5, Q.got / Q.need)); return; }
+    const press = Input.bitePressed() || Input.mouse.clicked || Input.hit('Digit1', 'Digit2', 'Digit3', 'Digit4');
+    const down = Input.down('Space', 'KeyZ', 'KeyJ') || Input.mouse.down || (Input.touch && Input.touch.biteHeld);
+    if (Q.type === 'mash') {
+      if (press) { Q.got++; Q.flash = 0.12; this.pulse(k, Q, 1 / Q.need); }
+      if (Q.got >= Q.need || Q.t > Q.life) this.finish(Q, Q.got / Q.need);
+    } else if (Q.type === 'beat') {
+      Q.beatT += dt;
+      if (Q.beatT >= Q.period) { Q.beatT -= Q.period; Q.beats++; SFX.ui && SFX.ui(); }
+      const dist2 = Math.min(Q.beatT, Q.period - Q.beatT);
+      if (press) {
+        if (dist2 < Q.window) { Q.got++; Q.flash = 0.15; this.pulse(k, Q, 1 / Q.need); } else { Q.miss++; SFX.hurt && SFX.hurt(); G.shake(2); }
+      }
+      if (Q.got >= Q.need || Q.t > Q.life) this.finish(Q, Q.got / Q.need);
+    } else if (Q.type === 'hold') {
+      if (down) { Q.held = true; Q.lift = Math.min(1, Q.lift + dt * 0.7); if (chance(dt * 20)) G.fx.glow(P.x + rand(-10, 10) * P.vis, P.y + rand(-6, 6) * P.vis, 2 + Q.lift * 4, k.col, 0.5); }
+      else if (Q.held || Q.t > Q.life) {
+        const inBand = Q.lift >= Q.target[0] && Q.lift <= Q.target[1];
+        this.finish(Q, inBand ? 1 : Math.max(0.25, Q.lift * 0.6));
+      }
+    } else if (Q.type === 'timing') {
+      Q.pos += Q.dir * dt * 1.6; if (Q.pos > 1) { Q.pos = 1; Q.dir = -1; } if (Q.pos < 0) { Q.pos = 0; Q.dir = 1; }
+      if (press) { const hit = Q.pos >= Q.band[0] && Q.pos <= Q.band[1]; this.finish(Q, hit ? 1 : 0.5); }
+      else if (Q.t > Q.life) this.finish(Q, 0.4);
+    }
+  },
+  // a per-beat effect for the games that pay out as they go
+  pulse(k, Q, frac) {
+    const P = G.player, e = Q.target;
+    if (k.id === 'latch' && e && e.takeDamage) {
+      e.takeDamage(P.biteDmg * 0.55, P, { dx: 0, dy: 0, pierce: true });
+      e.stun = Math.max(e.stun || 0, 0.4); G.shake(3); SFX.crunch && SFX.crunch(P.size, e.pan); G.fx.blood(e.x, e.y, 3, 0, 0, 30, e.bloodColors);
+      P.headShakeT = 0.2; P.goreT = Math.max(P.goreT, 2);
+    }
+    if (k.id === 'leech' && e && e.takeDamage) {
+      const d = e.takeDamage(P.biteDmg * 0.5, P, { dx: 0, dy: 0, pierce: true });
+      P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.06); P.hunger = Math.min(100, P.hunger + 6);
+      G.fx.blood(e.x, e.y, 4, sign(P.x - e.x) * 40, 0, 40, e.bloodColors);
+      for (let i = 0; i < 3; i++) G.fx.add({ type: 'spark', x: e.x, y: e.y, vx: (P.x - e.x) * 2, vy: (P.y - e.y) * 2, s: 1, color: '#ff4a5a', life: 0.4 });
+      G.fx.text(P.x, P.y - 16 * P.vis, '+HP', { color: '#ff6a7a', life: 0.6 }); SFX.gulp && SFX.gulp(P.size, 0);
+    }
+    if (k.id === 'ram') {
+      const fx = Math.cos(P.angle), fy = Math.sin(P.angle);
+      P.vx += fx * 220; P.vy += fy * 120; G.shake(2);
+      for (const o of G.ents) { if (o.dead || o.remove || o.type === 'gib' || o.type === 'proj' || !o.takeDamage) continue; if ((o.nearestDist ? o.nearestDist(P.x, P.y) : dist(P.x, P.y, o.x, o.y) - o.r * o.size) < 14 * P.vis) { o.takeDamage(P.biteDmg * 0.8 * P.st.ramMul, P, { dx: fx, dy: fy }); o.knock(fx, fy, 260); SFX.thud && SFX.thud(o.pan); G.fx.shock(o.x, o.y, 14 * P.vis, '#e0b050', 0.3); } }
+    }
+  },
+  finish(Q, quality) {
+    this.active = null;
+    this.fire(Q.k, clamp(quality, 0, 1));
+  },
+  // the payoff, scaled by how well the game went
+  fire(k, q) {
+    const P = G.player, fx = Math.cos(P.angle), fy = Math.sin(P.angle);
+    const grade = q >= 0.99 ? 'PERFECT' : q >= 0.7 ? 'GOOD' : q >= 0.4 ? 'WEAK' : 'SLIPPED';
+    if (k.qte) G.fx.text(P.x, P.y - 34 * P.vis, grade, { color: q >= 0.7 ? '#8ce8a0' : '#ffb060', scale: q >= 0.99 ? 3 : 2, life: 1.2 });
+    switch (k.id) {
+      case 'latch': if (P.latched && !P.latched.dead) { P.latched.stun = Math.max(P.latched.stun || 0, 1.2 * q); } break;
+      case 'leech': break;
+      case 'spit': {
+        const R = (70 + 90 * q) * Math.sqrt(P.vis), [sx, sy] = P.snout;
+        for (let i = 0; i < 18; i++) G.fx.add({ type: 'drop', x: sx, y: sy, vx: fx * rand(120, 260) + rand(-40, 40), vy: fy * rand(120, 260) + rand(-40, 40), s: 1, color: choice(['#8af040', '#5ac020', '#c8ff70']), life: 0.7 });
+        for (const o of G.ents) { if (o.dead || o.remove || o.type === 'gib' || o.type === 'proj' || !o.takeDamage) continue; const dx = o.x - sx, dy = o.y - sy, d = Math.hypot(dx, dy); if (d > R) continue; if ((dx * fx + dy * fy) / (d || 1) < 0.5) continue; o.poison = Math.max(o.poison || 0, 4 * q + 1); o.poisonDmg = P.biteDmg * 0.35; o.takeDamage(P.biteDmg * 0.4 * q, P, { dx: fx, dy: fy }); G.fx.text(o.x, o.y - 10, 'POISONED', { color: '#8af040', life: 0.8 }); }
+        SFX.gulp && SFX.gulp(P.size, 0);
+        break; }
+      case 'shock': { const R = (60 + 110 * q) * Math.sqrt(P.vis); G.fx.shock(P.x, P.y, R, '#40f0c8', 0.6); G.shake(8 * q); SFX.roar && SFX.roar(P.size, 0);
+        for (const o of G.ents) { if (o.dead || o.remove || o.type === 'gib' || o.type === 'proj' || !o.takeDamage) continue; const dx = o.x - P.x, dy = o.y - P.y, d = Math.hypot(dx, dy) || 1; if (d > R) continue; o.takeDamage(P.biteDmg * (0.6 + q), P, { dx: dx / d, dy: dy / d, pierce: true }); o.knock(dx / d, dy / d, 200 + 200 * q); o.stun = Math.max(o.stun || 0, 0.8); }
+        break; }
+      case 'pounce': { P.vx += fx * (280 + 220 * q); P.vy += fy * 120 - 60; P.pounceT = 0.5; P.pounceMul = 1 + q; G.fx.smoke(P.x, P.y + 4 * P.vis, 4, '#8a7a5a'); SFX.dash && SFX.dash();
+        for (const o of G.ents) { if (o.dead || o.remove || o.type === 'gib' || o.type === 'proj' || !o.takeDamage) continue; const dx = o.x - P.x, dy = o.y - P.y, d = Math.hypot(dx, dy); if (d > 40 * P.vis || dx * fx < 0) continue; o.takeDamage(P.biteDmg * (1 + q), P, { dx: fx, dy: fy, crit: q >= 0.99 }); o.knock(fx, -0.4, 180); }
+        break; }
+      case 'ram': break;
+      case 'lure': { G.fx.glow(P.x, P.y, 40 * P.vis, '#7affda', 0.9); G.fx.shock(P.x, P.y, 90, '#7affda', 0.3); SFX.ui && SFX.ui();
+        for (const o of G.ents) { if (o.dead || o.remove || o.type !== 'fish' || o.sizeClass > P.size * 0.6) continue; if (dist(P.x, P.y, o.x, o.y) < 320) { o.state = 'lured'; o.aware = false; } }
+        break; }
+      case 'vanish': { P.vanishT = 4; P.vx = 0; P.vy = 0; P.ambushReady = true; P.stillT = 1; G.fx.bubbles(P.x, P.y, 8, 12 * P.vis); SFX.ui && SFX.ui(); break; }
+    }
+  },
+
+  // ---- the HUD: a row of icons, keys under them, the game over the top -------
+  draw(ctx) {
+    const P = G.player; if (!P || P.dead) return;
+    const ks = this.list(P); if (!ks.length) return;
+    const W = G.W, H = G.H, box = 22, gap = 6;
+    const x0 = W - 10 - ks.length * (box + gap) + gap, y0 = H - 52;
+    for (let i = 0; i < ks.length; i++) {
+      const k = ks[i], x = x0 + i * (box + gap) + box / 2, y = y0 + box / 2;
+      const cd = Math.max(0, this.cd[k.id] || 0), f = k.cd ? clamp(cd / k.cd, 0, 1) : 0;
+      SkillArt.draw(ctx, k.id, x, y, box, G.t, { dim: f > 0 });
+      if (f > 0) { ctx.fillStyle = 'rgba(4,8,10,0.6)'; ctx.fillRect(Math.round(x - box / 2), Math.round(y - box / 2), box, Math.round(box * f)); }
+      if (this.flash[k.id] > 0) { ctx.globalAlpha = this.flash[k.id] * 2; ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(x - box / 2), Math.round(y - box / 2), box, box); ctx.globalAlpha = 1; }
+      ctx.fillStyle = '#0a1214'; ctx.fillRect(Math.round(x - 4), Math.round(y + box / 2 + 1), 8, 8);
+      Font.draw(ctx, String(i + 1), x, y + box / 2 + 2, { color: f > 0 ? '#5f6f68' : '#e8f0e0', align: 'center' });
+    }
+    if (P.vanishT > 0) Font.draw(ctx, 'UNSEEN ' + P.vanishT.toFixed(1), x0, y0 - 10, { color: '#8cb8ff' });
+    // the game
+    const Q = this.active; if (!Q) return;
+    const bw = 180, bx = W / 2 - bw / 2, y = H - 106;
+    ctx.fillStyle = 'rgba(6,10,12,0.82)'; ctx.fillRect(bx - 40, y - 20, bw + 80, 52);
+    ctx.fillStyle = Q.k.col; ctx.fillRect(bx - 40, y - 20, bw + 80, 2);
+    SkillArt.draw(ctx, Q.k.id, bx - 22, y + 6, 28, G.t);
+    Font.draw(ctx, Q.k.name, W / 2, y - 15, { color: Q.k.col, align: 'center' });
+    if (Q.type === 'mash') {
+      ctx.fillStyle = '#1a1210'; ctx.fillRect(bx, y, bw, 8);
+      ctx.fillStyle = Q.flash > 0 ? '#ffffff' : Q.k.col; ctx.fillRect(bx, y, Math.round(bw * Q.got / Q.need), 8);
+      Font.draw(ctx, 'MASH BITE', W / 2, y + 12, { color: '#cfe8e0', align: 'center' });
+    } else if (Q.type === 'beat') {
+      // a pulse: a ring that closes on the centre once per beat; hit it small
+      const u = Q.beatT / Q.period, r = 6 + (1 - u) * 60;
+      ctx.strokeStyle = Q.flash > 0 ? '#ffffff' : Q.k.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(W / 2, y + 4, r, 0, TAU); ctx.stroke();
+      ctx.fillStyle = Q.k.col; ctx.fillRect(W / 2 - 6, y - 2, 12, 12);
+      Font.draw(ctx, 'BITE ON THE PULSE', W / 2, y + 16, { color: '#cfe8e0', align: 'center' });
+      for (let i = 0; i < Q.need; i++) { ctx.fillStyle = i < Q.got ? '#8ce8a0' : '#2a2418'; ctx.fillRect(bx + i * 12, y + 26, 8, 4); }
+    } else if (Q.type === 'hold') {
+      ctx.fillStyle = '#1a1210'; ctx.fillRect(bx, y, bw, 8);
+      ctx.fillStyle = '#4a7a4a'; ctx.fillRect(bx + Math.round(Q.target[0] * bw), y, Math.round((Q.target[1] - Q.target[0]) * bw), 8);
+      ctx.fillStyle = Q.k.col; ctx.fillRect(bx, y + 1, Math.round(Q.lift * bw), 6);
+      Font.draw(ctx, Q.held ? 'LET GO IN THE GREEN' : 'HOLD BITE', W / 2, y + 12, { color: '#cfe8e0', align: 'center' });
+    } else if (Q.type === 'timing') {
+      ctx.fillStyle = '#1a1210'; ctx.fillRect(bx, y, bw, 8);
+      ctx.fillStyle = '#4a7a4a'; ctx.fillRect(bx + Math.round(Q.band[0] * bw), y, Math.round((Q.band[1] - Q.band[0]) * bw), 8);
+      ctx.fillStyle = '#ffe060'; ctx.fillRect(bx + Math.round(Q.pos * bw) - 1, y - 3, 3, 14);
+      Font.draw(ctx, 'BITE ON THE MARK', W / 2, y + 12, { color: '#cfe8e0', align: 'center' });
+    }
   },
 };
 
@@ -13085,6 +13426,7 @@ const UI = {
     Objectives.drawHud(ctx, Math.max(70, this.hazBottom || 70));
     Objectives.drawCard(ctx);
     Puzzles.draw(ctx);
+    Abilities.draw(ctx);
     // dispatch: the lab talking about you on an open channel, typed in
     const dp = G.dispatch;
     if (dp) {
@@ -13426,8 +13768,9 @@ const UI = {
       if (own) { ctx.globalCompositeOperation = 'lighter'; this.hex(ctx, c.sx, c.sy, r * 1.3, rgba(col, 0.12), null); ctx.globalCompositeOperation = 'source-over'; }
       this.hex(ctx, c.sx, c.sy, r, own ? rgba(col, 0.3) : afford ? 'rgba(14,30,28,0.95)' : 'rgba(10,16,18,0.9)', own ? col : afford ? mixColor(col, '#ffffff', 0.2) : open ? shade(col, 0.55) : '#2a3a38', sel ? 2 : 1);
       // icon
-      const ic = L ? ICONS[L.icon] : ICONS.croc;
-      if (ic && !g.minor) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
+      const ic = L ? ICONS[L.icon] : ICONS.croc, sk = SKILL_BY_GENE[g.id];
+      if (sk) SkillArt.draw(ctx, sk.id, c.sx, c.sy - 2, r * 1.2, t, { dim: !own && !open, alpha: own ? 1 : open ? 0.9 : 0.5 });
+      else if (ic && !g.minor) drawIcon(ctx, ic, c.sx, c.sy - 3, r * 1.05, t + c.sx * 0.02, { alpha: own ? 1 : open ? 0.85 : 0.28 });
       // a minor is a bead, not a portrait: a single dot in its lineage colour
       if (g.minor) { ctx.fillStyle = own ? col : open ? shade(col, 0.7) : '#2e3e3c'; ctx.fillRect(Math.round(c.sx) - 2, Math.round(c.sy) - 2, 4, 4); }
       // a chimera gets a second ring: it is the far end of two lineages at once
@@ -13506,7 +13849,9 @@ const UI = {
     const descL = Math.ceil(Font.width(g.desc, 1) / (pw - 16)) + 1, downL = g.down ? Math.ceil(Font.width(g.down, 1) / (pw - 16)) + 1 : 0;
     let phh2 = 30 + descL * 9 + 3 + (downL ? downL * 9 + 3 : 0) + 8;
     if (Trials.of(g) && !Genome.has(P, g.id)) phh2 += 22;
-    phh2 = clamp(phh2, 62, 132);
+    // a gene that hands you an ability has three more lines to say
+    if (SKILL_BY_GENE[g.id]) phh2 += 9 * (Math.ceil(Font.width('ABILITY: ' + SKILL_BY_GENE[g.id].name + '  [1]. ' + SKILL_BY_GENE[g.id].line, 1) / (pw - 44)) + 1) + 4;
+    phh2 = clamp(phh2, 62, 172);
     this.panel(ctx, px3, py3, pw, phh2, 'rgba(6,12,14,0.95)', own ? col : shade(col, 0.6));
     Font.draw(ctx, g.name, px3 + 8, py3 + 7, { color: col });
     const kind = !L ? 'ORIGIN' : g.chimera ? LINEAGES[g.lin2].name + ' CHIMERA' : g.hybrid ? LINEAGES[g.lin2].name + ' HYBRID' : g.minor ? 'MINOR ADAPTATION' : g.apex ? 'APEX' : 'TIER ' + g.ring;
@@ -13517,6 +13862,15 @@ const UI = {
     panY += Font.drawWrapped(ctx, g.desc, px3 + 8, panY, pw - 16, { color: '#9ef0c8', lineHeight: 9 }) * 9 + 3;
     if (g.down) panY += Font.drawWrapped(ctx, g.down, px3 + 8, panY, pw - 16, { color: '#ff8a7a', lineHeight: 9 }) * 9 + 3;
     if (g.load) Font.draw(ctx, '+' + g.load + ' STRAIN', px3 + pw - 8, py3 + 18, { color: '#ffb060', align: 'right' });
+    {
+      const sk = SKILL_BY_GENE[g.id];
+      if (sk) {
+        const slot = Abilities.list(P).findIndex(q => q.id === sk.id);
+        SkillArt.draw(ctx, sk.id, px3 + pw - 22, panY + 12, 24, t);
+        panY += Font.drawWrapped(ctx, 'ABILITY: ' + sk.name + (slot >= 0 ? '  [' + (slot + 1) + ']' : '') + '. ' + sk.line, px3 + 8, panY, pw - 44, { color: sk.col, lineHeight: 9 }) * 9 + 3;
+        phh2 = Math.max(phh2, panY - py3 + 8);
+      }
+    }
     const cost = Genome.cost(P, g);
     const tprog = Trials.progress(P, g);
     if (tprog && !own) {
@@ -15356,7 +15710,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -16313,7 +16667,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
