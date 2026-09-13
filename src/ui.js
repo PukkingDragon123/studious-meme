@@ -1504,12 +1504,14 @@ const UI = {
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + a), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
     const dim = c => (on ? c : mixColor(c, '#20302c', 0.62));
     switch (kind) {
-      case 'catacomb': case 'outfall':
-        // a roman arch with the dark behind it, and a skull sitting in the niche
-        px(-8, -12, 16, 12, dim('#7a6e5a')); px(-8, -12, 16, 2, dim('#a89a80'));
-        px(-5, -9, 10, 9, dim('#14100c')); px(-6, -10, 12, 1, dim('#c0b090'));
-        px(-2, -6, 4, 4, dim('#d8d0b8')); px(-1, -5, 1, 1, dim('#14100c')); px(1, -5, 1, 1, dim('#14100c'));
-        px(-9, 0, 18, 2, dim('#4a4236'));
+      case 'facility': case 'catacomb': case 'outfall':
+        // a lit corridor with a tank on a trolley in it
+        px(-11, -15, 22, 15, dim('#26323a')); px(-11, -15, 22, 2, dim('#39464f'));
+        px(-11, -6, 22, 6, dim('#b9c5c0')); px(-11, -6, 22, 1, dim('#8e9ca0'));
+        px(-4, -13, 9, 8, dim('#1c6a86')); px(-4, -13, 9, 1, dim('#3aa4c0'));
+        px(-3, -10, 6, 2, dim('#8fe0f0'));
+        px(-7, -14, 3, 1, dim('#e8f4ee')); px(5, -14, 3, 1, dim('#e8f4ee'));
+        px(-11, 0, 22, 2, dim('#2a3236'));
         break;
       case 'mangrove':
         px(-8, -13, 16, 7, dim('#2f6a34')); px(-6, -16, 12, 4, dim('#3f8a42'));
@@ -1544,42 +1546,35 @@ const UI = {
         px(-3, -3, 7, 1, dim('#20a040')); px(-2, -15, 1, 2, dim('#40ff60'));
         px(-11, 1, 22, 1, dim('#2a7a8a'));
         break;
-      // ---- zone 1: the sewer network ----
-      case 'undercroft':
-        px(-11, -14, 22, 3, dim('#5a6060')); px(-11, -11, 22, 1, dim('#33393a'));
-        px(-8, -10, 3, 10, dim('#3f4547')); px(5, -10, 3, 10, dim('#3f4547'));
-        px(-4, -6, 8, 6, dim('#7a4a22')); px(-4, -6, 8, 1, dim('#a06a30'));
-        px(-2, -9, 1, 3, dim('#ff9030')); px(0, -8, 1, 2, dim('#ffc060'));
-        px(-11, 0, 22, 2, dim('#2e3436'));
+      // ---- zone 1: the river ----
+      case 'plunge':
+        // a headwall with the pipe in it, and the pool it has dug out
+        px(-12, -15, 24, 9, dim('#6b6a5e')); px(-12, -15, 24, 1, dim('#94928010'.slice(0,7)));
+        px(-4, -12, 8, 6, dim('#14181a')); px(-4, -12, 8, 1, dim('#9aa0a0'));
+        px(-1, -9, 2, 9, dim('#7fd0d8'));
+        px(-12, -4, 24, 5, dim('#2f6a76')); px(-12, -4, 24, 1, dim('#66b0b4'));
+        px(-9, -2, 3, 1, dim('#8fd8dc')); px(6, -3, 3, 1, dim('#8fd8dc'));
         break;
-      case 'shaft':
-        px(-9, -15, 4, 16, dim('#4a5052')); px(5, -15, 4, 16, dim('#4a5052'));
-        px(-9, -15, 4, 1, dim('#757c7e')); px(5, -15, 4, 1, dim('#757c7e'));
-        for (let k = -13; k < 1; k += 4) { px(-5, k, 10, 1, dim('#252b2c')); }
-        px(-5, -15, 10, 15, dim('#101718'));
-        px(-2, -4, 4, 5, dim('#2a6a5a')); px(-2, -4, 4, 1, dim('#46a88a'));
+      case 'gorge':
+        px(-12, -16, 8, 20, dim('#5f6058')); px(-12, -16, 8, 1, dim('#8a8b80'));
+        px(5, -16, 7, 19, dim('#54554e')); px(5, -16, 7, 1, dim('#7e7f75'));
+        for (let k = -13; k < 3; k += 4) { px(-12, k, 8, 1, dim('#3a3b36')); px(5, k + 2, 7, 1, dim('#3a3b36')); }
+        px(-4, -3, 9, 5, dim('#2f6a76')); px(-4, -3, 9, 1, dim('#5ea0a8'));
+        px(-3, -9, 2, 2, dim('#4a6a34')); px(2, -12, 2, 2, dim('#4a6a34'));
         break;
-      case 'junction':
-        px(-3, -14, 6, 15, dim('#3f4547'));
-        px(-12, -10, 24, 4, dim('#4a5052')); px(-12, -10, 24, 1, dim('#727a7c'));
-        px(-12, -3, 24, 4, dim('#4a5052')); px(-12, -3, 24, 1, dim('#727a7c'));
-        px(-10, -9, 2, 2, dim('#0c1212')); px(8, -9, 2, 2, dim('#0c1212'));
-        px(-10, -2, 2, 2, dim('#0c1212')); px(8, -2, 2, 2, dim('#0c1212'));
-        px(-2, -12, 4, 4, dim('#7a8a2a')); px(-1, -11, 2, 2, dim('#b4c840'));
+      case 'rapids':
+        px(-12, -2, 24, 4, dim('#4e9a92')); px(-12, -2, 24, 1, dim('#9fe0d4'));
+        for (const [ox, oy, w] of [[-9, -5, 5], [-2, -7, 6], [5, -4, 5], [-6, -1, 4], [3, -1, 5]]) {
+          px(ox, oy, w, 4, dim('#77766a')); px(ox, oy, w, 1, dim('#a8a698'));
+        }
+        px(-11, -8, 3, 1, dim('#e8fffa')); px(7, -9, 3, 1, dim('#e8fffa'));
         break;
-      case 'gallery':
-        px(-12, -15, 24, 4, dim('#545a5c')); px(-12, -15, 24, 1, dim('#7c8486'));
-        for (let i = -10; i <= 9; i += 5) px(i, -11, 1, 12, dim('#3a4042'));
-        px(-12, -11, 24, 1, dim('#2a3032'));
-        px(-12, -2, 24, 3, dim('#3a5a2e')); px(-12, -2, 24, 1, dim('#587a3a'));
-        px(-6, -8, 3, 1, dim('#96b03a')); px(3, -6, 3, 1, dim('#96b03a'));
-        break;
-      case 'sump':
-        px(-12, -4, 24, 5, dim('#31401f')); px(-12, -4, 24, 1, dim('#5c7a2a'));
-        px(-9, -14, 5, 11, dim('#4a5052')); px(-9, -14, 5, 2, dim('#767e80'));
-        px(-8, -5, 3, 3, dim('#8ba82a'));
-        px(2, -9, 8, 3, dim('#3f4547')); px(2, -9, 8, 1, dim('#6a7274'));
-        px(4, -6, 1, 4, dim('#6a8a2a')); px(7, -6, 1, 3, dim('#6a8a2a'));
+      case 'oxbow':
+        px(-12, -3, 24, 5, dim('#4a7a52')); px(-12, -3, 24, 1, dim('#7cb079'));
+        px(-12, 2, 24, 2, dim('#63523a'));
+        px(-11, -6, 14, 3, dim('#5d4a30')); px(-11, -6, 14, 1, dim('#7c6440'));
+        for (let i = -8; i <= 8; i += 4) px(i, -12, 1, 6, dim('#3f6a2a'));
+        px(4, -10, 6, 2, dim('#3a5a24'));
         break;
       // ---- zone 3: the open ocean ----
       case 'shelf':

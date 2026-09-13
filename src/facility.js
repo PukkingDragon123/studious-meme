@@ -54,7 +54,7 @@ const Facility = {
     // ceiling: a coffered soffit with services under it
     this.ceiling(ctx, cam, roofS, leftW, rightW);
     // the tiled dado, which is most of what the camera ever sees
-    const tileTop = floorS - 150 * z, tileBot = floorS + 6 * z;
+    const tileTop = floorS - 104 * z, tileBot = floorS + 6 * z;
     const tile = Tex.get('fbtile', 32, (x, S) => {
       x.fillStyle = C.tile; x.fillRect(0, 0, S, S);
       x.fillStyle = C.tileD; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(16, 0, 1, S); x.fillRect(0, 16, S, 1);
@@ -68,6 +68,7 @@ const Facility = {
     px(0, tileTop + 6 * z, W, 3 * z, C.stripe);
     px(0, tileTop + 9 * z, W, z, C.stripeD);
     px(0, floorS - 8 * z, W, 8 * z, 'rgba(28,24,18,0.30)');           // grime at the skirting
+    this.upperWall(ctx, cam, tileTop, roofS, leftW, rightW);
 
     // --- the rooms --------------------------------------------------------
     for (const r of FACILITY.rooms) {
@@ -127,6 +128,175 @@ const Facility = {
       // and the sign painted on the slab beside it
       px(sx - 44 * z, sy - 2 * z, 10 * z, 2 * z, C.warn);
       px(sx + 34 * z, sy - 2 * z, 10 * z, 2 * z, C.warn);
+    }
+  },
+
+  // --- THE UPPER WALL ---------------------------------------------------
+  // Above the dado a building is never blank. It is conduit, trunking, signs
+  // nobody reads, a camera, a hose reel, and a louvre where the air comes in.
+  // The band between the soffit and the handrail is a third of every shot in
+  // this level, so it gets the same treatment as the floor.
+  upperWall(ctx, cam, tileTop, roofS, leftW, rightW) {
+    const W = G.W, z = cam.zoom, C = this.C;
+    const px = (x, y, w, h, c) => this.px(ctx, x, y, w, h, c);
+    const top = roofS + 12 * z, bot = tileTop - 4 * z;
+    if (bot - top < 6) return;
+    const fy = bot - 74 * z;                     // where everything hangs from
+    // the wall itself: painted blockwork, coursed, with the roller marks in it
+    ctx.save(); ctx.beginPath(); ctx.rect(0, top, W, bot - top); ctx.clip();
+    const blk = Tex.get('fbblock', 48, (x, S) => {
+      x.fillStyle = '#39474d'; x.fillRect(0, 0, S, S);
+      x.fillStyle = '#313e44';
+      for (let y = 0; y < S; y += 12) { x.fillRect(0, y, S, 1); const o = ((y / 12) | 0) % 2 ? 12 : 0; for (let xx = o; xx < S; xx += 24) x.fillRect(xx, y, 1, 12); }
+      x.fillStyle = 'rgba(255,255,255,0.05)'; for (let y = 1; y < S; y += 12) x.fillRect(0, y, S, 1);
+      for (let i = 0; i < 26; i++) { x.fillStyle = ihash(i, 71) > 0.5 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.06)'; x.fillRect((ihash(i, 72) * S) | 0, (ihash(i, 73) * S) | 0, 3, 2); }
+    });
+    Tex.fill(ctx, blk, cam.x, cam.y, z, 1);
+    // two trunking runs the length of the building, clipped to the wall
+    for (const [off, col, hi] of [[50, '#4e5a60', '#6c7a80'], [61, '#3f4d54', '#59686f']]) {
+      const y = fy + off * z;
+      if (y > bot) continue;
+      px(0, y, W, 7 * z, col); px(0, y, W, 1.6 * z, hi); px(0, y + 6 * z, W, 1.4 * z, '#2a3338');
+      for (let wx = Math.floor(leftW / 42) * 42; wx < rightW; wx += 42) { const [cx] = cam.toScreen(wx, 0); px(cx, y - 1.4 * z, 4 * z, 9 * z, '#6e7c82'); }
+    }
+    // a single conduit dropping to each socket, and the sockets themselves
+    for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
+      const [cx] = cam.toScreen(wx, 0), k = Math.floor(wx / 120);
+      const dy = fy + 68 * z, len = Math.max(2, (bot - dy) * (0.4 + ihash(k, 81) * 0.4));
+      px(cx + 30 * z, dy, 2.4 * z, len, '#59686f');
+      px(cx + 27 * z, dy + len, 9 * z, 8 * z, '#2e3a40');
+      px(cx + 28 * z, dy + len + 1.5 * z, 7 * z, 3 * z, ihash(k, 82) > 0.5 ? '#2a8a70' : '#8a7a20');
+    }
+    ctx.restore();
+    // --- the fittings, one per 120 units, on a fixed world grid -----------
+    for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
+      const [cx] = cam.toScreen(wx, 0), k = Math.floor(wx / 120), pick = Math.abs(k) % 6;
+      const y = fy;
+      if (y + 60 * z < 0 || y > G.H) continue;
+      if (pick === 0) {
+        // an observation window into a room you are not going into
+        px(cx, y, 76 * z, 46 * z, '#20292e');
+        px(cx + 3 * z, y + 3 * z, 70 * z, 40 * z, 'rgba(96,150,146,0.30)');
+        px(cx + 3 * z, y + 3 * z, 70 * z, 2 * z, 'rgba(200,240,236,0.35)');
+        for (let i = 0; i < 3; i++) px(cx + (10 + i * 22) * z, y + 20 * z, 14 * z, 20 * z, 'rgba(16,26,30,0.5)');
+        px(cx + 30 * z, y + 8 * z, 18 * z, 4 * z, 'rgba(230,255,250,0.30)');   // a lamp inside
+        px(cx, y + 44 * z, 76 * z, 3 * z, '#4b5a60');
+      } else if (pick === 1) {
+        // a louvred supply grille with the duct coming out of the soffit
+        px(cx + 10 * z, Math.max(top, y - 62 * z), 12 * z, 62 * z, '#495860');
+        px(cx, y, 62 * z, 34 * z, '#54636a');
+        px(cx, y, 62 * z, 2 * z, '#75848b');
+        for (let i = 0; i < 6; i++) { px(cx + 3 * z, y + (4 + i * 5) * z, 56 * z, 3 * z, '#38454c'); px(cx + 3 * z, y + (4 + i * 5) * z, 56 * z, z, '#66757c'); }
+        px(cx, y + 33 * z, 62 * z, 2 * z, '#2c363b');
+      } else if (pick === 2) {
+        // a sign nobody has read since the day it went up
+        px(cx + 8 * z, y + 6 * z, 54 * z, 26 * z, '#d6d2c2');
+        px(cx + 8 * z, y + 6 * z, 54 * z, 2 * z, '#efebd8');
+        px(cx + 12 * z, y + 11 * z, 16 * z, 16 * z, ihash(k, 91) > 0.5 ? '#b8341e' : '#1f6ea8');
+        px(cx + 18 * z, y + 14 * z, 4 * z, 8 * z, '#f0ece0');
+        px(cx + 18 * z, y + 23 * z, 4 * z, 2 * z, '#f0ece0');
+        for (let i = 0; i < 4; i++) px(cx + 32 * z, y + (12 + i * 4) * z, (14 - i * 2) * z, 1.6 * z, '#585448');
+      } else if (pick === 3) {
+        // the camera that watched the trolley go past
+        px(cx + 26 * z, y, 4 * z, 12 * z, '#3d474c');
+        px(cx + 18 * z, y + 11 * z, 22 * z, 10 * z, '#59666c');
+        px(cx + 16 * z, y + 13 * z, 4 * z, 6 * z, '#10181c');
+        px(cx + 16 * z, y + 14 * z, 2 * z, 3 * z, '#9fe0d4');
+        px(cx + 36 * z, y + 12 * z, 3 * z, 3 * z, Math.sin(World.t * 2.4 + k) > 0 ? '#ff5a40' : '#5a2018');
+      } else if (pick === 4) {
+        // a hose reel, and the extinguisher bracketed beside it
+        px(cx + 6 * z, y + 4 * z, 40 * z, 40 * z, '#8d2a1c');
+        px(cx + 10 * z, y + 8 * z, 32 * z, 32 * z, '#a8372a');
+        px(cx + 20 * z, y + 18 * z, 12 * z, 12 * z, '#5c1c12');
+        for (let i = 0; i < 4; i++) px(cx + (13 + i * 4) * z, y + 11 * z, 2 * z, 26 * z, '#c04a38');
+        px(cx + 52 * z, y + 14 * z, 12 * z, 30 * z, '#b8341e');
+        px(cx + 52 * z, y + 10 * z, 6 * z, 5 * z, '#3a3a36');
+        px(cx + 54 * z, y + 20 * z, 8 * z, 8 * z, '#e8e2d0');
+      } else {
+        // a panel of breakers, half of them thrown
+        px(cx + 8 * z, y + 2 * z, 56 * z, 44 * z, '#4a565c');
+        px(cx + 8 * z, y + 2 * z, 56 * z, 2 * z, '#6b787e');
+        px(cx + 11 * z, y + 6 * z, 50 * z, 36 * z, '#2b353a');
+        for (let i = 0; i < 4; i++) for (let j2 = 0; j2 < 5; j2++) {
+          const on = ihash(k * 29 + i * 7 + j2, 95) > 0.35;
+          px(cx + (14 + j2 * 9) * z, y + (10 + i * 8) * z, 6 * z, 5 * z, on ? '#3e8a62' : '#8a4030');
+        }
+        px(cx + 60 * z, y + 8 * z, 3 * z, 8 * z, '#9aa4a8');
+      }
+    }
+  },
+
+  // --- THE SERVICE VOID -------------------------------------------------
+  // What is under the slab: the mains this building runs on. Drawn from
+  // drawBuiltGround inside the clip below the floor, so it is the thing the
+  // camera looks into for the whole lower third of the shot.
+  services(ctx, cam, pts, step) {
+    const z = cam.zoom, H = G.H, px = (x, y, w, h, c) => this.px(ctx, x, y, w, h, c);
+    const leftW = cam.toWorldX(-80), rightW = cam.toWorldX(G.W + 80);
+    const top = (i) => pts[i][1] + 38 * z;
+    // hangers: the threaded rod every run is slung from
+    for (let wx = Math.floor(leftW / 46) * 46; wx < rightW; wx += 46) {
+      const [hx] = cam.toScreen(wx, 0), hy = cam.toScreen(0, World.floorY(wx))[1] + 38 * z;
+      px(hx, hy, 1.6 * z, 108 * z, '#39434a');
+      px(hx - 5 * z, hy + 104 * z, 12 * z, 3 * z, '#4a555c');
+    }
+    // the runs themselves, biggest and dirtiest at the bottom
+    const runs = [
+      { d: 16, h: 11, col: '#4d585e', hi: '#6e7c83', lo: '#333c42', lag: 0 },
+      { d: 34, h: 8, col: '#3f5048', hi: '#5b7065', lo: '#28342f', lag: 0 },
+      { d: 54, h: 15, col: '#8d8a76', hi: '#b0ac94', lo: '#5d5a4c', lag: 1 },
+      { d: 78, h: 20, col: '#3a4348', hi: '#55616a', lo: '#232a2e', lag: 0 },
+    ];
+    for (const R of runs) {
+      for (let i = 0; i < pts.length; i++) {
+        const [sx] = pts[i], y = top(i) + R.d * z;
+        px(sx, y, step + 1, R.h * z, R.col);
+        px(sx, y, step + 1, 2 * z, R.hi);
+        px(sx, y + (R.h - 2) * z, step + 1, 2 * z, R.lo);
+      }
+      // flanges and valves at intervals, and the lagging bands on the hot run
+      for (let wx = Math.floor(leftW / 96) * 96; wx < rightW; wx += 96) {
+        const [fx] = cam.toScreen(wx, 0), fy = cam.toScreen(0, World.floorY(wx))[1] + (38 + R.d) * z;
+        px(fx - 3 * z, fy - 2 * z, 7 * z, (R.h + 4) * z, R.hi);
+        px(fx - 3 * z, fy - 2 * z, 7 * z, 1.6 * z, '#c2cbcf');
+        const k = Math.floor(wx / 96);
+        if (R.lag) { for (let i = 0; i < 3; i++) px(fx + (14 + i * 20) * z, fy, 4 * z, R.h * z, '#6d6a5a'); }
+        if (ihash(k, R.d + 3) > 0.62) {
+          // a valve, with a wheel on it and a tag hanging off the wheel
+          px(fx + 40 * z, fy - 4 * z, 12 * z, (R.h + 8) * z, R.col);
+          px(fx + 44 * z, fy - 18 * z, 3 * z, 14 * z, '#6a757b');
+          px(fx + 38 * z, fy - 22 * z, 16 * z, 4 * z, '#8a5a2a');
+          px(fx + 44 * z, fy - 21 * z, 3 * z, 2 * z, '#c08a4a');
+          px(fx + 52 * z, fy - 16 * z, 5 * z, 7 * z, '#d8d2be');
+        }
+      }
+    }
+    // a cable tray with the bundles lying in it
+    for (let i = 0; i < pts.length; i++) {
+      const [sx] = pts[i], y = top(i) + 96 * z;
+      px(sx, y, step + 1, 3 * z, '#4a545a');
+      px(sx, y - 7 * z, step + 1, 2 * z, '#3c2a1c');
+      px(sx, y - 5 * z, step + 1, 2 * z, '#2a3a4a');
+      px(sx, y - 3 * z, step + 1, 2 * z, '#3a3a24');
+    }
+    for (let wx = Math.floor(leftW / 30) * 30; wx < rightW; wx += 30) {
+      const [tx] = cam.toScreen(wx, 0), ty = cam.toScreen(0, World.floorY(wx))[1] + 96 * z;
+      px(tx, ty - 8 * z, 2 * z, 12 * z, '#5a656b');
+    }
+    // a sump every so often, with a pump sitting in it and the float switch up
+    for (let wx = Math.floor(leftW / 380) * 380; wx < rightW; wx += 380) {
+      const [mx] = cam.toScreen(wx, 0), my = cam.toScreen(0, World.floorY(wx))[1] + 124 * z;
+      if (my > H + 40) continue;
+      px(mx - 34 * z, my, 68 * z, 30 * z, '#161c1f');
+      px(mx - 34 * z, my, 68 * z, 2 * z, '#39444a');
+      const wl = my + 14 * z + Math.sin(World.t * 0.9 + wx) * 1.2 * z;
+      px(mx - 32 * z, wl, 64 * z, 16 * z, 'rgba(48,92,88,0.75)');
+      px(mx - 32 * z, wl, 64 * z, 1.6 * z, 'rgba(150,210,204,0.45)');
+      px(mx - 10 * z, my + 4 * z, 18 * z, 20 * z, '#39444a');
+      px(mx - 10 * z, my + 4 * z, 18 * z, 2 * z, '#5b686f');
+      px(mx - 2 * z, my - 14 * z, 3 * z, 18 * z, '#4c585e');
+      px(mx + 12 * z, my - 4 * z, 8 * z, 5 * z, '#c8a020');
+      if (chance(0.04)) G.fx.add({ type: 'drop', x: wx + rand(-20, 20), y: World.floorY(wx) + 100, vx: 0, vy: 70, s: 1, color: '#7f9a92', life: 1.4 });
     }
   },
 
@@ -239,6 +409,96 @@ const Facility = {
       px(sx + 12 * z, botY - 34 * z, pw - 6 * z, 2 * z, state === 'empty' ? '#3a372c' : '#2f7068');
       px(sx + 12 * z, botY - 9 * z, pw - 6 * z, 9 * z, '#4a4335');                       // the sand bank
       px(sx + 12 * z, botY - 9 * z, pw - 6 * z, 2 * z, '#5d5442');
+      // gravel over the bed, graded coarse at the back
+      for (let k = 0; k < 30; k++) {
+        const gx = sx + 14 * z + ihash(k + i * 31, 111) * (pw - 12 * z);
+        const gy = botY - (1 + ihash(k, 112) * 9) * z, gs = (1.4 + ihash(k, 113) * 3) * z;
+        px(gx, gy, gs, gs * 0.7, ihash(k, 114) > 0.55 ? '#6a6250' : '#3c372c');
+      }
+      // the haul-out: a poured ramp up out of the water at one end
+      const rampW = 44 * z, rx = i % 2 ? sx + 14 * z : sx + pw - rampW - 2 * z;
+      ctx.fillStyle = '#585244';
+      ctx.beginPath(); ctx.moveTo(rx, botY - 8 * z); ctx.lineTo(rx + rampW, botY - 8 * z);
+      ctx.lineTo(rx + (i % 2 ? rampW : 0), botY - 30 * z); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#6d6653';
+      ctx.beginPath(); ctx.moveTo(rx, botY - 8 * z); ctx.lineTo(rx + rampW, botY - 8 * z);
+      ctx.lineTo(rx + (i % 2 ? rampW : 0), botY - 30 * z); ctx.closePath();
+      ctx.save(); ctx.clip(); ctx.fillRect(Math.round(rx), Math.round(botY - 30 * z), Math.round(rampW), Math.round(2 * z)); ctx.restore();
+      // planting at the back, and an air line under it
+      for (let k = 0; k < 7; k++) {
+        const gx = sx + 18 * z + ihash(k + i * 5, 121) * (pw - 20 * z);
+        const gh = (10 + ihash(k, 122) * 22) * z;
+        for (let q = 0; q < 4; q++) {
+          const sway = Math.sin(World.t * 0.8 + k + q * 0.5) * 2 * z;
+          px(gx + sway * (q / 4), botY - 8 * z - gh * (q + 1) / 4, 1.6 * z, gh / 4 + z, q > 1 ? '#2f6a4a' : '#24523c');
+        }
+      }
+      if (state !== 'empty') {
+        px(sx + 14 * z, botY - 7 * z, pw - 10 * z, 1.4 * z, '#2a3a3e');                  // the air line
+        ctx.globalAlpha = 0.5;
+        for (let k = 0; k < 12; k++) {
+          const bx = sx + 18 * z + ((k * 37) % Math.max(1, Math.round(pw - 20))) * z;
+          const u = ((World.t * 0.5 + ihash(k + i, 131)) % 1);
+          px(bx, botY - 8 * z - u * (botY - inY - 12 * z), 1.6 * z, 1.6 * z, '#cfeae8');
+        }
+        ctx.globalAlpha = 1;
+      }
+      // --- the back of the pen: nobody built a glass box with nothing in it
+      {
+        const bw2 = pw - 6 * z, bx2 = sx + 12 * z, bh2 = botY - 34 * z - inY;
+        // painted blockwork up to a datum line, bare above it
+        const wall = Tex.get('fbpen', 32, (x, S) => {
+          x.fillStyle = '#1d3a36'; x.fillRect(0, 0, S, S);
+          x.fillStyle = '#193330';
+          for (let y = 0; y < S; y += 8) { x.fillRect(0, y, S, 1); const o = ((y / 8) | 0) % 2 ? 8 : 0; for (let xx = o; xx < S; xx += 16) x.fillRect(xx, y, 1, 8); }
+          x.fillStyle = 'rgba(255,255,255,0.035)'; for (let y = 1; y < S; y += 8) x.fillRect(0, y, S, 1);
+        });
+        ctx.save(); ctx.beginPath(); ctx.rect(bx2, inY, bw2, bh2); ctx.clip();
+        Tex.fill(ctx, wall, cam.x, cam.y, z, 1);
+        // the pen number, stencilled a foot high on the back wall
+        const num = ((Math.abs(i) % 9) + 1);
+        for (let d = 0; d < 2; d++) {
+          const dx = bx2 + bw2 * 0.5 - 16 * z + d * 18 * z, dy = inY + bh2 * 0.3;
+          const digit = d === 0 ? Math.floor((Math.abs(i) % 30) / 10) : num;
+          const segs = [[0, 0, 14, 3], [0, 0, 3, 20], [11, 0, 3, 20], [0, 18, 14, 3], [0, 9, 14, 3], [0, 9, 3, 12], [11, 9, 3, 12]];
+          const on = [[1, 1, 1, 1, 0, 1, 1], [0, 0, 1, 0, 0, 0, 1], [1, 0, 1, 1, 1, 1, 0], [1, 0, 1, 1, 1, 0, 1],
+            [0, 1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0, 1], [1, 1, 0, 1, 1, 1, 1], [1, 0, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1]][digit % 10];
+          for (let q = 0; q < 7; q++) if (on[q]) px(dx + segs[q][0] * z, dy + segs[q][1] * z, segs[q][2] * z, segs[q][3] * z, 'rgba(168,200,192,0.42)');
+        }
+        // a datum line and the stains that hang off everything above it
+        px(bx2, inY + bh2 * 0.52, bw2, 2 * z, 'rgba(120,160,152,0.22)');
+        for (let k = 0; k < 9; k++) {
+          const gx = bx2 + ihash(k + i * 13, 151) * bw2;
+          px(gx, inY + bh2 * 0.2, (2 + ihash(k, 152) * 4) * z, bh2 * (0.3 + ihash(k, 153) * 0.6), 'rgba(20,44,38,0.35)');
+        }
+        // the mist line across the top, with a nozzle every so often
+        px(bx2, inY + 10 * z, bw2, 2 * z, '#2e4a48');
+        for (let k = 0; k < 4; k++) {
+          const nx = bx2 + (0.16 + k * 0.24) * bw2;
+          px(nx, inY + 12 * z, 3 * z, 4 * z, '#3d5e5a');
+          if (state !== 'empty') { ctx.globalAlpha = 0.10 + 0.05 * Math.sin(World.t * 1.3 + k); px(nx - 8 * z, inY + 16 * z, 19 * z, bh2 * 0.5, '#cfeae8'); ctx.globalAlpha = 1; }
+        }
+        // a mesh screen panel and the hose bib beside it
+        const mx2 = bx2 + bw2 * (i % 2 ? 0.62 : 0.12), mw2 = bw2 * 0.26, mh2 = bh2 * 0.34, my2 = inY + bh2 * 0.34;
+        px(mx2, my2, mw2, mh2, '#17302d');
+        for (let q = 0; q * 5 * z < mw2; q++) px(mx2 + q * 5 * z, my2, 1.4 * z, mh2, 'rgba(126,158,152,0.28)');
+        for (let q = 0; q * 5 * z < mh2; q++) px(mx2, my2 + q * 5 * z, mw2, 1.4 * z, 'rgba(126,158,152,0.20)');
+        px(mx2 - 2 * z, my2 - 2 * z, mw2 + 4 * z, 2 * z, '#3e5e5a');
+        px(bx2 + bw2 * 0.86, inY + bh2 * 0.66, 4 * z, 14 * z, '#4a6460');
+        px(bx2 + bw2 * 0.84, inY + bh2 * 0.66, 8 * z, 3 * z, '#5e7a74');
+        // a branch leaning on the wall, which is the only thing in here that grew
+        ctx.strokeStyle = '#3a2f20'; ctx.lineWidth = Math.max(1, Math.round(2.4 * z));
+        ctx.beginPath(); ctx.moveTo(bx2 + bw2 * 0.2, botY - 34 * z);
+        ctx.lineTo(bx2 + bw2 * 0.34, inY + bh2 * 0.45); ctx.lineTo(bx2 + bw2 * 0.3, inY + bh2 * 0.22); ctx.stroke();
+        ctx.lineWidth = Math.max(1, Math.round(1.4 * z)); ctx.strokeStyle = '#4a3c28';
+        ctx.beginPath(); ctx.moveTo(bx2 + bw2 * 0.32, inY + bh2 * 0.36); ctx.lineTo(bx2 + bw2 * 0.44, inY + bh2 * 0.3); ctx.stroke();
+        // the dark the lamp does not reach
+        const gg = ctx.createLinearGradient(0, inY, 0, inY + bh2);
+        gg.addColorStop(0, 'rgba(4,12,14,0.55)'); gg.addColorStop(0.5, 'rgba(4,12,14,0.12)'); gg.addColorStop(1, 'rgba(4,12,14,0.30)');
+        ctx.fillStyle = gg; ctx.fillRect(bx2, inY, bw2, bh2);
+        ctx.restore();
+      }
       // heat lamp and its pool
       const lx = sx + w * 0.34, ly = top + 12 * z;
       px(lx - 7 * z, ly, 14 * z, 5 * z, '#2a2f31');
@@ -267,19 +527,66 @@ const Facility = {
         px(gx, botY - (4 + ihash(k, 92) * 16) * z, 2 * z, (4 + ihash(k, 92) * 16) * z, '#3f6a4a');
       }
       ctx.globalAlpha = 1;
+      // caustics: the lamp on the surface, printed on everything under it
+      if (state !== 'empty') {
+        ctx.globalAlpha = 0.10;
+        for (let k = 0; k < 6; k++) {
+          const u = ((World.t * 0.12 + k / 6) % 1);
+          px(sx + 12 * z + u * (pw - 20 * z), botY - 34 * z, (6 + ihash(k, 141) * 14) * z, 34 * z, '#bff0e6');
+        }
+        ctx.globalAlpha = 1;
+      }
       // the glass, its frame, and the muck on it
       ctx.fillStyle = C.glass; ctx.fillRect(Math.round(sx + 9 * z), Math.round(top), Math.round(pw), Math.round(botY - top));
       ctx.fillStyle = 'rgba(220,255,250,0.10)';
       ctx.fillRect(Math.round(sx + 9 * z), Math.round(top), Math.round(pw * 0.22), Math.round(botY - top));
       px(sx + 9 * z, top, pw, 2 * z, C.glassL);
       if (state === 'cracked') {
-        ctx.strokeStyle = 'rgba(230,255,250,0.75)'; ctx.lineWidth = Math.max(1, Math.round(z));
-        const cx = sx + w * 0.6, cy = top + (botY - top) * 0.45;
-        for (let k = 0; k < 7; k++) { const a = k * TAU / 7 + seed; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (10 + ihash(k, 9) * 26) * z, cy + Math.sin(a) * (10 + ihash(k, 8) * 26) * z); ctx.stroke(); }
+        // an impact and everything that ran out of it: radials first, then the
+        // rings between them, then the white bruise where it was hit
+        const cx = sx + w * 0.6, cy = top + (botY - top) * 0.45, R = 30 * z;
+        ctx.lineWidth = Math.max(1, Math.round(z));
+        const ends = [];
+        for (let k = 0; k < 9; k++) {
+          const a = k * TAU / 9 + seed * 6, len = (10 + ihash(k, 9) * 22) * z;
+          ends.push([a, len]);
+          ctx.strokeStyle = 'rgba(236,255,252,0.55)';
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len); ctx.stroke();
+          ctx.strokeStyle = 'rgba(20,40,44,0.35)';
+          ctx.beginPath(); ctx.moveTo(cx + z, cy + z); ctx.lineTo(cx + Math.cos(a) * len + z, cy + Math.sin(a) * len + z); ctx.stroke();
+        }
+        ctx.strokeStyle = 'rgba(220,250,246,0.4)';
+        for (const ring of [0.34, 0.62, 0.86]) {
+          ctx.beginPath();
+          for (let k = 0; k <= ends.length; k++) {
+            const [a, len] = ends[k % ends.length], rr = len * ring;
+            const qx = cx + Math.cos(a) * rr, qy = cy + Math.sin(a) * rr;
+            if (k === 0) ctx.moveTo(qx, qy); else ctx.lineTo(qx, qy);
+          }
+          ctx.stroke();
+        }
+        px(cx - 3 * z, cy - 3 * z, 6 * z, 6 * z, 'rgba(240,255,252,0.8)');
+        ctx.globalAlpha = 0.25; px(cx - R, cy - R, R * 2, R * 2, '#dff6f2'); ctx.globalAlpha = 1;
       }
+      // the paperwork: a record card in a holder and a temperature strip
+      px(sx + pw - 30 * z, top + 16 * z, 22 * z, 28 * z, '#e2ded0');
+      px(sx + pw - 30 * z, top + 16 * z, 22 * z, 3 * z, '#f2eee0');
+      for (let k = 0; k < 5; k++) px(sx + pw - 27 * z, top + (23 + k * 4) * z, (14 - k * 2) * z, 1.4 * z, '#6a665a');
+      px(sx + pw - 30 * z, top + 40 * z, 22 * z, 4 * z, '#b8341e');
+      px(sx + 16 * z, top + 18 * z, 5 * z, 34 * z, '#20282c');
+      for (let k = 0; k < 6; k++) px(sx + 16 * z, top + (20 + k * 5) * z, 5 * z, 2 * z, k > 3 ? '#d04a2a' : '#3e9a6a');
       // the plinth, the mullion, the number plate and the feed hatch
       px(sx + 9 * z, botY, pw, plinth, C.conc);
       px(sx + 9 * z, botY, pw, 3 * z, '#949a9e');
+      // the plinth is cast concrete with things let into it, not a grey block
+      px(sx + 9 * z, botY + 3 * z, pw, 2 * z, '#5f666a');
+      px(sx + 16 * z, botY + 9 * z, 30 * z, 16 * z, '#5e666b');           // inspection hatch
+      px(sx + 16 * z, botY + 9 * z, 30 * z, 2 * z, '#7f878c');
+      px(sx + 28 * z, botY + 15 * z, 6 * z, 4 * z, '#333a3e');
+      for (let k = 0; k < 5; k++) px(sx + pw - 46 * z + k * 8 * z, botY + 12 * z, 5 * z, 10 * z, '#3b4348');   // drainage slots
+      px(sx + pw - 52 * z, botY + 10 * z, 46 * z, 2 * z, '#7c848a');
+      px(sx + w * 0.5 - 12 * z, botY + 20 * z, 24 * z, 5 * z, C.warn);    // the bay stripe
+      for (let k = 0; k < 3; k++) px(sx + w * 0.5 - 9 * z + k * 8 * z, botY + 21 * z, 4 * z, 3 * z, '#1a1a1a');
       px(sx + 9 * z, floorS - 6 * z, pw, 6 * z, C.concD);
       px(sx, top - 8 * z, 9 * z, floorS - top + 8 * z, C.steel);
       px(sx + w - 9 * z, top - 8 * z, 9 * z, floorS - top + 8 * z, C.steel);
@@ -420,6 +727,263 @@ const Facility = {
     px(x0 + w * 0.45, floorS - 118 * z, 46 * z, 20 * z, C.warn);
     px(x0 + w * 0.45 + 3 * z, floorS - 115 * z, 40 * z, 14 * z, '#1a1a1a');
     for (let k = 0; k < 5; k++) px(x0 + w * 0.45 + 6 * z + k * 7 * z, floorS - 110 * z, 4 * z, 4 * z, C.warnL);
+    // --- everything a crew leaves standing round an open chamber ----------
+    const [mxS] = cam.toScreen(FACILITY.MANHOLE, 0);
+    // the tripod they winch a man out on, legs straddling the cover
+    const legH = 92 * z, spread = 40 * z;
+    ctx.strokeStyle = '#8a7f5e'; ctx.lineWidth = Math.max(1, Math.round(3 * z));
+    for (const dxn of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(mxS + dxn * spread, floorS); ctx.lineTo(mxS + dxn * 3 * z, floorS - legH); ctx.stroke();
+    }
+    ctx.strokeStyle = '#6f6650'; ctx.lineWidth = Math.max(1, Math.round(2 * z));
+    ctx.beginPath(); ctx.moveTo(mxS - spread * 0.6, floorS - legH * 0.45); ctx.lineTo(mxS + spread * 0.6, floorS - legH * 0.45); ctx.stroke();
+    px(mxS - 7 * z, floorS - legH - 5 * z, 15 * z, 6 * z, '#5c5544');
+    px(mxS - 2 * z, floorS - legH + 1 * z, 2 * z, 46 * z, '#3f4a4e');      // the wire, hanging
+    px(mxS - 5 * z, floorS - legH + 46 * z, 8 * z, 7 * z, '#8a6a2a');      // and the hook on the end of it
+    // the winch drum clamped to one leg
+    px(mxS - spread * 0.72, floorS - 44 * z, 14 * z, 13 * z, '#8a4030');
+    px(mxS - spread * 0.72, floorS - 44 * z, 14 * z, 2 * z, '#b85a44');
+    px(mxS - spread * 0.72 + 14 * z, floorS - 40 * z, 5 * z, 5 * z, '#cdd6d2');
+    // the confined-space board, a gas monitor hung off it, and the log sheet
+    px(mxS + 56 * z, floorS - 96 * z, 4 * z, 96 * z, '#59626a');
+    px(mxS + 40 * z, floorS - 132 * z, 38 * z, 36 * z, '#d8d4c2');
+    px(mxS + 40 * z, floorS - 132 * z, 38 * z, 4 * z, '#b8341e');
+    px(mxS + 45 * z, floorS - 124 * z, 12 * z, 12 * z, '#1f6ea8');
+    for (let k = 0; k < 4; k++) px(mxS + 60 * z, floorS - (122 - k * 5) * z, (14 - k * 3) * z, 1.6 * z, '#5a564a');
+    px(mxS + 46 * z, floorS - 90 * z, 10 * z, 14 * z, '#2c3438');
+    px(mxS + 47 * z, floorS - 88 * z, 8 * z, 5 * z, Math.sin(World.t * 3) > 0 ? '#6ee0a8' : '#2a6a4e');
+    // a coil of hose and a stack of spare covers against the wall
+    for (let k = 0; k < 3; k++) {
+      ctx.strokeStyle = k % 2 ? '#c8a020' : '#9a7a18'; ctx.lineWidth = Math.max(1, Math.round(2.4 * z));
+      ctx.beginPath(); ctx.arc(x0 + 70 * z, floorS - 12 * z, (6 + k * 4) * z, Math.PI, TAU); ctx.stroke();
+    }
+    for (let k = 0; k < 3; k++) { px(x0 + w - 90 * z + k * 2 * z, floorS - 6 * z - k * 5 * z, 34 * z, 5 * z, '#4a463d'); px(x0 + w - 90 * z + k * 2 * z, floorS - 6 * z - k * 5 * z, 34 * z, z, '#635e53'); }
+    // cones and the tape between them, which is the only thing keeping you out
+    for (const cxn of [mxS - 74 * z, mxS + 96 * z]) {
+      ctx.fillStyle = '#d8642a';
+      ctx.beginPath(); ctx.moveTo(cxn - 8 * z, floorS); ctx.lineTo(cxn, floorS - 22 * z); ctx.lineTo(cxn + 8 * z, floorS); ctx.closePath(); ctx.fill();
+      px(cxn - 5 * z, floorS - 12 * z, 10 * z, 3 * z, '#e8e2d0');
+      px(cxn - 10 * z, floorS - 2 * z, 20 * z, 3 * z, '#b04a18');
+    }
+    for (let k = 0; k * 12 * z < 170 * z; k++) px(mxS - 74 * z + k * 12 * z, floorS - 22 * z + Math.sin(k * 0.7) * 2 * z, 7 * z, 3 * z, k % 2 ? C.warn : '#1a1a1a');
+  },
+
+  // The headwall, seen from the river. A hundred and forty feet of concrete
+  // in the side of a gorge with one hole in it, and everything the building
+  // has ever flushed coming out of the hole. It is the first thing the animal
+  // sees of the outside and the last thing it will ever see of the inside.
+  drawHeadwall(ctx, cam) {
+    const z = cam.zoom, W = G.W, H = G.H;
+    const px = (x, y, w, h, c) => this.px(ctx, x, y, w, h, c);
+    const MX = -2996;
+    const [sxr] = cam.toScreen(MX, 0);
+    const sx = Math.min(sxr, W + 60);
+    if (sx <= -2) return;
+    const sy = (wy2) => cam.toScreen(0, wy2)[1];
+    const my = sy(-36);                                  // invert of the mouth
+    const wl = sy(World.surface(MX + 70));               // the pool surface
+    const cop = sy(-196);                                // top of the coping
+    const bed = sy(World.floorY(MX + 52));               // where the pool floor is
+
+    // ---- what stands above the coping: the end of the building ----------
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, sx + 1, Math.max(1, cop + 2)); ctx.clip();
+    // a stair tower and two plant boxes, stepping down toward the river
+    const blocks = [[-3300, 150, '#4d5450'], [-3180, 96, '#565d58'], [-3080, 62, '#4a514d']];
+    for (const [bx, bh, col] of blocks) {
+      const [bs] = cam.toScreen(bx, 0), [be] = cam.toScreen(bx + 110, 0);
+      px(bs, cop - bh * z, be - bs, bh * z + 4 * z, col);
+      px(bs, cop - bh * z, be - bs, 3 * z, shade(col, 1.25));
+      for (let i = 0; i < 4; i++) px(bs + (8 + i * 24) * z, cop - (bh - 14) * z, 14 * z, 20 * z, i % 2 ? '#2b3436' : '#39434a');
+      for (let i = 1; i < 5; i++) px(bs, cop - (bh - i * 26) * z, be - bs, 2 * z, shade(col, 0.82));
+    }
+    // two vent stacks and the floodlight mast that still burns at night
+    for (const [vx, vh] of [[-3268, 60], [-3222, 44]]) {
+      const [vs] = cam.toScreen(vx, 0);
+      px(vs, cop - (150 + vh) * z, 13 * z, vh * z, '#6a6f68');
+      px(vs - 3 * z, cop - (150 + vh) * z, 19 * z, 5 * z, '#82877e');
+      px(vs + 2 * z, cop - (150 + vh - 5) * z, 3 * z, (vh - 6) * z, '#50554f');
+    }
+    const [ms] = cam.toScreen(-3128, 0);
+    px(ms, cop - 150 * z, 3 * z, 88 * z, '#4a4f4a');
+    px(ms - 6 * z, cop - 150 * z, 15 * z, 6 * z, '#3a3f3a');
+    px(ms - 4 * z, cop - 145 * z, 11 * z, 4 * z, 'rgba(255,232,170,0.45)');
+    // the parapet with its coping cap
+    px(0, cop - 16 * z, sx, 16 * z, '#676d64');
+    px(0, cop - 16 * z, sx, 3 * z, '#8b9186');
+    for (let i = 0; i < 24; i++) { const [gx] = cam.toScreen(-3400 + i * 26, 0); if (gx > sx) break; px(gx, cop - 15 * z, 2 * z, 14 * z, 'rgba(40,46,44,0.35)'); }
+    ctx.restore();
+
+    // ---- the wall itself -------------------------------------------------
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, cop - 1, sx + 1, H - cop + 2); ctx.clip();
+    px(0, cop, sx, H - cop, '#70716a');
+    px(0, cop, sx, 5 * z, '#959688');                                     // the cap, catching the sky
+    px(0, cop + 5 * z, sx, 2 * z, '#565850');
+    // poured in lifts: each lift is its own pour and its own shade of grey
+    const lifts = [];
+    for (let ly = -196; ly < 520; ly += 26) lifts.push(ly);
+    for (let i = 0; i < lifts.length; i++) {
+      const y0 = sy(lifts[i]), y1 = sy(lifts[i] + 26);
+      if (y1 < cop || y0 > H) continue;
+      const v = ihash(i, 61);
+      px(0, y0, sx, y1 - y0, v < 0.34 ? '#75766e' : v < 0.68 ? '#6c6d66' : '#787970');
+      px(0, y0, sx, 1.6 * z, 'rgba(160,162,150,0.5)');
+      px(0, y0 + 1.6 * z, sx, 1.4 * z, 'rgba(48,52,48,0.45)');
+    }
+    // form panels: vertical seams and the tie holes that held the forms shut
+    for (let k = 0; k < 30; k++) {
+      const wx2 = MX - k * 27, [px2] = cam.toScreen(wx2, 0);
+      if (px2 < -8) break;
+      px(px2, cop, 1.4 * z, H - cop, 'rgba(52,56,52,0.30)');
+      for (let i = 0; i < lifts.length; i++) {
+        const y0 = sy(lifts[i] + 13);
+        if (y0 < cop || y0 > H) continue;
+        const h = ihash(k * 31 + i, 87);
+        px(px2 - 13 * z, y0, 2.4 * z, 2.4 * z, h < 0.4 ? '#4a4236' : '#3e423e');
+        if (h < 0.4) px(px2 - 13 * z, y0 + 2 * z, 2 * z, (5 + h * 34) * z, 'rgba(122,84,44,0.28)');   // rust out of the hole
+      }
+    }
+    // counterforts: the wall is not a slab, it is ribs with panels between them
+    for (let k = 0; k < 12; k++) {
+      const wx2 = MX - 58 - k * 168, [bx] = cam.toScreen(wx2, 0);
+      if (bx < -34) break;
+      const bw = 34 * z;
+      px(bx, cop + 4 * z, bw, H - cop, '#7b7c73');
+      px(bx, cop + 4 * z, 4 * z, H - cop, '#95968a');                     // lit edge
+      px(bx + bw - 4 * z, cop + 4 * z, 4 * z, H - cop, '#4f5049');        // shadowed edge
+      px(bx + bw, cop + 4 * z, 7 * z, H - cop, 'rgba(24,28,26,0.28)');    // the shadow it throws
+      px(bx, cop + 2 * z, bw, 4 * z, '#a3a498');                          // its own cap
+    }
+    // spalls where the frost has had the face off, and the aggregate under it
+    for (let k = 0; k < 34; k++) {
+      const wx2 = MX - 8 - ihash(k, 11) * 720, wy2 = -190 + ihash(k, 12) * 560;
+      const [ax] = cam.toScreen(wx2, 0), ay = sy(wy2);
+      if (ax < -20 || ax > sx || ay < cop || ay > H) continue;
+      const w2 = (5 + ihash(k, 13) * 16) * z, h2 = (4 + ihash(k, 14) * 12) * z;
+      px(ax, ay, w2, h2, '#5d5e57');
+      px(ax, ay, w2, 1.4 * z, '#4a4b45');
+      px(ax + 1 * z, ay + 1.4 * z, w2 - 2 * z, h2 - 2 * z, '#7d7b6d');
+      for (let i = 0; i < 5; i++) px(ax + ihash(k * 7 + i, 15) * w2, ay + 2 * z + ihash(k * 7 + i, 16) * (h2 - 3 * z), 1.4 * z, 1.4 * z, '#9a9684');
+    }
+    // long stains: everything this wall has ever had run down it
+    for (let k = 0; k < 16; k++) {
+      const wx2 = MX - 4 - ihash(k, 21) * 700, [ax] = cam.toScreen(wx2, 0);
+      if (ax < -16 || ax > sx) continue;
+      const h = ihash(k, 22), top = cop + 6 * z, len = (60 + h * 300) * z;
+      ctx.fillStyle = h > 0.62 ? 'rgba(52,68,52,0.26)' : h > 0.3 ? 'rgba(36,44,46,0.22)' : 'rgba(112,74,38,0.20)';
+      ctx.fillRect(Math.round(ax), Math.round(top), Math.max(1, Math.round((2 + h * 5) * z)), Math.round(Math.min(len, H - top)));
+    }
+    // weep holes, still weeping
+    for (let k = 0; k < 5; k++) {
+      const wx2 = MX - 70 - k * 150, wy2 = -120 + ihash(k, 31) * 90;
+      const [ax] = cam.toScreen(wx2, 0), ay = sy(wy2);
+      if (ax < -10 || ax > sx) continue;
+      px(ax - 4 * z, ay - 4 * z, 9 * z, 8 * z, '#3a3d38');
+      px(ax - 3 * z, ay - 3 * z, 7 * z, 6 * z, '#0d1112');
+      if (wl > ay) {
+        px(ax - 1 * z, ay + 2 * z, 2 * z, Math.min((wl - ay), 400), 'rgba(196,224,222,0.28)');
+        px(ax - 2 * z, ay + 2 * z, 5 * z, Math.min((wl - ay), 400), 'rgba(70,96,76,0.22)');
+        if (chance(0.25)) G.fx.add({ type: 'drop', x: wx2 + 4, y: wy2 + 6, vx: rand(-4, 8), vy: rand(20, 70), s: 1, color: '#cfe6e0', life: rand(0.4, 1.0) });
+      }
+    }
+    // the green belt: what grows where the spray reaches and the sun does not
+    const mossTop = wl - 46 * z;
+    ctx.globalAlpha = 0.5;
+    for (let k = 0; k < 140; k++) {
+      const ax = ihash(k, 41) * sx, u = ihash(k, 42);
+      px(ax, mossTop + u * u * 46 * z, (2 + ihash(k, 43) * 7) * z, (2 + ihash(k, 44) * 4) * z, u > 0.55 ? '#4a6b3c' : '#3d5a38');
+    }
+    ctx.globalAlpha = 1;
+    // under the water the wall goes black and grows fur
+    if (wl < H) {
+      const gd = ctx.createLinearGradient(0, wl, 0, Math.min(H, wl + 200 * z));
+      gd.addColorStop(0, 'rgba(20,52,54,0.45)'); gd.addColorStop(1, 'rgba(6,20,24,0.88)');
+      ctx.fillStyle = gd; ctx.fillRect(0, Math.round(wl), Math.round(sx), Math.round(H - wl));
+      ctx.globalAlpha = 0.4;
+      for (let k = 0; k < 90; k++) {
+        const ax = ihash(k, 51) * sx, ay = wl + ihash(k, 52) * Math.max(1, Math.min(H - wl, 150 * z));
+        px(ax, ay, (3 + ihash(k, 53) * 9) * z, (2 + ihash(k, 54) * 3) * z, '#2c4a3c');
+      }
+      ctx.globalAlpha = 1;
+    }
+    // the talus: what has come off the wall in fifty years, heaped at its foot
+    if (bed < H + 60) {
+      for (let k = 0; k < 26; k++) {
+        const wx2 = MX - 6 - ihash(k, 61) * 460, [ax] = cam.toScreen(wx2, 0);
+        if (ax < -30 || ax > sx + 20) continue;
+        const r = (7 + ihash(k, 62) * 20) * z, ay = bed - ihash(k, 63) * 70 * z;
+        if (ay < wl) continue;
+        Shape.oct(ctx, ax, ay, r, '#3c4038');
+        Shape.oct(ctx, ax, ay - r * 0.22, r * 0.72, '#4c5047');
+        px(ax - r * 0.5, ay - r * 0.7, r * 0.7, r * 0.24, '#5c6055');
+      }
+      px(0, bed, sx, Math.max(0, H - bed), '#2a2e2a');
+    }
+    ctx.restore();
+
+    // ---- the mouth -------------------------------------------------------
+    const mh = 58 * z, mw = 50 * z;
+    px(sx - mw - 7 * z, my - mh - 7 * z, mw + 11 * z, mh + 14 * z, '#585951');   // the surround
+    px(sx - mw - 7 * z, my - mh - 7 * z, mw + 11 * z, 3 * z, '#9d9e8f');
+    px(sx - mw - 7 * z, my - mh - 7 * z, 3 * z, mh + 14 * z, '#8a8b7d');
+    px(sx - mw, my - mh, mw + 4 * z, mh, '#080c0d');                             // the dark
+    // the pipe inside it: a ring of lining and a wet invert catching the light
+    px(sx - mw, my - mh, mw + 4 * z, 4 * z, '#31363a');
+    px(sx - mw, my - 5 * z, mw + 4 * z, 5 * z, '#243033');
+    px(sx - mw, my - 3 * z, mw + 4 * z, 2 * z, 'rgba(150,196,196,0.35)');
+    for (let i = 0; i < 3; i++) px(sx - mw + (10 + i * 14) * z, my - mh + 4 * z, 1.6 * z, mh - 8 * z, 'rgba(120,150,150,0.10)');
+    // the grille that used to be across it, hanging off one hinge
+    px(sx - mw + 2 * z, my - mh - 2 * z, 5 * z, 5 * z, '#8a7a58');            // the hinge it swung on
+    ctx.save(); ctx.translate(sx - mw + 4 * z, my - mh + 2 * z); ctx.rotate(0.62);
+    for (let i = 0; i < 5; i++) px(0, i * 9 * z, 34 * z, 2.2 * z, '#4a4436');
+    for (let i = 0; i < 4; i++) px(i * 10 * z, 0, 2.2 * z, 40 * z, '#585040');
+    for (let i = 0; i < 4; i++) px(i * 10 * z, 0, 1 * z, 40 * z, '#6d6450');
+    ctx.restore();
+    px(sx - mw - 13 * z, my, mw + 20 * z, 7 * z, '#7d7e72');                      // the apron
+    px(sx - mw - 13 * z, my, mw + 20 * z, 2 * z, '#9a9b8c');
+
+    // ---- the plume -------------------------------------------------------
+    if (wl > my) {
+      const fall = wl - my, spread = 18 * z;
+      const g = ctx.createLinearGradient(0, my, 0, wl);
+      g.addColorStop(0, 'rgba(150,196,196,0.50)');    // glassy where it leaves the lip
+      g.addColorStop(0.22, 'rgba(206,236,232,0.44)');
+      g.addColorStop(0.7, 'rgba(226,246,242,0.34)');  // broken white lower down
+      g.addColorStop(1, 'rgba(200,230,228,0.18)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(sx - mw + 3 * z, my - 4 * z); ctx.lineTo(sx + 3 * z, my - 4 * z);
+      ctx.lineTo(sx + 3 * z + spread, wl); ctx.lineTo(sx - mw + 3 * z - spread, wl);
+      ctx.closePath(); ctx.fill();
+      px(sx - mw + 3 * z, my - 5 * z, mw + 3 * z, 4 * z, 'rgba(240,252,250,0.6)');   // the crest
+      // strings of water in the sheet, falling
+      for (let i = 0; i < 10; i++) {
+        const u = ((World.t * 1.7 + i / 10) % 1), yy = my + u * fall;
+        const w2 = (mw - 10 * z) * 0.9, ox = ihash(i, 71) * w2;
+        px(sx - mw + 5 * z + ox - u * spread * 0.6, yy, (1.6 + ihash(i, 72) * 2.2) * z, (10 + u * 22) * z, 'rgba(255,255,255,0.34)');
+      }
+      // where it lands: a white boil and a ring of foam going out from it
+      ctx.globalAlpha = 0.62;
+      for (let i = 0; i < 30; i++) {
+        const ph = World.t * 1.1 + i * 1.7, d = (i % 10) * 7 - 34;
+        px(sx - mw * 0.5 + (d + Math.sin(ph) * 5) * z, wl - 3 * z + Math.sin(ph * 1.6) * 3 * z, (3 + ihash(i, 73) * 7) * z, 2.4 * z, i % 3 ? '#eaf7f3' : '#c9e2dd');
+      }
+      ctx.globalAlpha = 1;
+      if (chance(0.7)) G.fx.add({ type: 'drop', x: MX + rand(-46, 6), y: rand(-34, -2), vx: rand(-46, 30), vy: rand(-70, 60), s: 1, color: '#e4f6f1', life: rand(0.5, 1.4) });
+      if (chance(0.35)) G.fx.add({ type: 'bubble', x: MX + rand(-40, 20), y: World.surface(MX + 40) + rand(6, 40), vx: rand(-6, 6), vy: -16, s: 0.8, seed: rand(TAU), life: rand(0.6, 1.4) });
+    }
+
+    // ---- the ladder and the gauge board, both long out of use -------------
+    px(sx - 98 * z, my - 152 * z, 3 * z, 156 * z, '#5f5747');
+    px(sx - 80 * z, my - 152 * z, 3 * z, 156 * z, '#5f5747');
+    for (let i = 0; i < 12; i++) px(sx - 98 * z, my - 148 * z + i * 13 * z, 21 * z, 2.4 * z, '#6f6653');
+    px(sx - 100 * z, my - 156 * z, 24 * z, 5 * z, '#7a7160');
+    px(sx - 168 * z, my - 132 * z, 10 * z, 132 * z, '#ccc8b6');
+    px(sx - 168 * z, my - 132 * z, 10 * z, 3 * z, '#e6e2d0');
+    for (let i = 0; i < 13; i++) px(sx - 168 * z, my - 128 * z + i * 10 * z, (i % 2 ? 5 : 10) * z, 2 * z, '#24241f');
+    px(sx - 174 * z, my - 60 * z, 22 * z, 12 * z, '#b8341e');
+    px(sx - 171 * z, my - 57 * z, 16 * z, 6 * z, '#e8d8c0');
   },
 
   // --- LOADING DOCK: the other way out of this building ------------------

@@ -14,15 +14,15 @@
 // outflow opens, and the site's relic surfaces on the way to it.
 // ---------------------------------------------------------------------------
 const MECH_DEFS = {
-  valve: { name: 'THE CISTERN VALVE', line: 'TURN IT. ON THE BEAT.', game: 'timing', need: 4 },
-  levers: { name: 'THE OSSUARY LEVERS', line: 'THE LAMPS SHOW THE ORDER.', game: 'sequence', need: 4 },
+  valve: { name: 'THE SLUICE WHEEL', line: 'TURN IT. ON THE BEAT.', game: 'timing', need: 4 },
+  levers: { name: 'THE GATE LEVERS', line: 'THE LAMPS SHOW THE ORDER.', game: 'sequence', need: 4 },
   chain: { name: 'THE COUNTERWEIGHT', line: 'HOLD. LET GO IN THE BAND.', game: 'hold', need: 3 },
 };
 // where they stand in the first site, on the dry ledges, and the gate they open
 const CATACOMB_MECHS = [
-  { kind: 'valve', x: -2320 }, { kind: 'levers', x: -1820 }, { kind: 'chain', x: -840 },
+  { kind: 'valve', x: -2260 }, { kind: 'levers', x: -1240 }, { kind: 'chain', x: -230 },
 ];
-const CATACOMB_GATE = -230;
+const CATACOMB_GATE = 700;
 
 class Mechanism extends Entity {
   constructor(x, kind) {
@@ -89,7 +89,7 @@ const Puzzles = {
   reset() { this.mechs = []; this.gate = null; this.qte = null; this.solved = 0; this.exitOpen = false; this.stage = null; },
   begin(stage) {
     this.reset();
-    if (!stage || stage.id !== 'catacomb') return;
+    if (!stage || !stage.intro) return;
     this.stage = stage;
     for (const m of CATACOMB_MECHS) {
       // on the nearest dry stone to where it was drawn

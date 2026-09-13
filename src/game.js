@@ -106,14 +106,14 @@ const Input = {
 // world boss that only comes for a full-grown animal. Which one you meet is
 // decided by where you are standing, not by a global schedule.
 const ZONE_BOSSES = {
-  sewer:  { mini: ['broodmother', 'gnasher'], world: 'sludgeking' },
+  river:  { mini: ['broodmother', 'gnasher'], world: 'sludgeking' },
   glades: { mini: ['oldscar', 'warboat', 'python'], world: 'skunkape' },
   ocean:  { mini: ['anvil', 'greenwall'], world: 'lantern' },
 };
 // the fish-shaped bosses are all the same job with different numbers
 const FISH_BOSS = {
   gnasher:    { kind: 'mutantcat', name: 'THE GNASHER', size: 2.6, cls: 1.2, hp: 900, mass: 700, spd: 150, gibs: 6, depth: 70 },
-  sludgeking: { kind: 'sewereel', name: 'THE SLUDGE KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
+  sludgeking: { kind: 'sewereel', name: 'THE RIVER KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
   anvil:      { kind: 'hammer', name: 'THE ANVIL', size: 2.2, cls: 1.35, hp: 1600, mass: 1500, spd: 200, gibs: 6, depth: 220 },
   greenwall:  { kind: 'moray', name: 'THE GREEN WALL', size: 3.0, cls: 1.45, hp: 1400, mass: 1200, spd: 140, gibs: 6, depth: 300 },
   lantern:    { kind: 'anglerfish', name: 'THE LANTERN', size: 4.2, cls: 1.9, hp: 2600, mass: 2400, spd: 155, gibs: 8, depth: 760, glow: '#7affda' },
@@ -128,7 +128,7 @@ const BOSS_SPEC = {
   shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
   broodmother: { phases: 3, hp: 1.5, adds: ['rat', 'rat', 'bigrat'], cue: ['THE LITTER COMES WITH HER', 'SHE HAS NOWHERE TO RUN'] },
   gnasher:  { phases: 3, hp: 1.4, adds: ['piranha', 'piranha'], cue: ['THE SHOAL TURNS WITH IT', 'IT STOPS PRETENDING TO BE A FISH'] },
-  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE GALLERY', 'THE SYSTEM IS ITS BODY'] },
+  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE BEND', 'THE RIVER IS ITS BODY'] },
   anvil:    { phases: 3, hp: 1.5, adds: ['barracuda', 'barracuda'], cue: ['IT CIRCLES WIDER', 'IT HAS DECIDED'] },
   greenwall: { phases: 3, hp: 1.5, adds: ['moray'], cue: ['IT COMES OUT OF THE HOLE', 'ALL OF IT COMES OUT'] },
   lantern:  { phases: 4, hp: 1.7, adds: ['anglerfish', 'isopod'], cue: ['THE LIGHT GOES OUT', 'SOMETHING ELSE LIGHTS UP', 'IT WAS NEVER A FISH'] },
@@ -284,7 +284,7 @@ const G = {
     Labyrinth.begin(st);
     // Nobody flies a specimen out to a municipal trunk main. The sewer gets
     // tipped in through a hatch in the crown of the vault.
-    if (st && st.zone === 'sewer') Opening.hatch(st); else Drop.begin(st);
+    Drop.begin(st);
   },
   // ---- one big handmade thing per site --------------------------------
   // Every release site gets a landmark placed by hand rather than left to the
@@ -408,14 +408,16 @@ const G = {
     if (this.state === 'title' && Math.abs(ch.x0) > 700) return;
     const P = this.player, D = this.difficulty();
     // human activity: structures cluster where there is water access
-    if (rng() < 0.75) { for (let a = 0; a < 3; a++) { const sx = ch.x0 + rng() * World.CHUNK; if (Math.abs(sx - P.x) < 320) continue; if (trySpawnStructure(sx, rng, D)) break; } }
+    if (rng() < 0.75 && !Biome.at(ch.x0).remote) { for (let a = 0; a < 3; a++) { const sx = ch.x0 + rng() * World.CHUNK; if (Math.abs(sx - P.x) < 320) continue; if (trySpawnStructure(sx, rng, D)) break; } }
     // ---- work going on in the water -------------------------------------
     // Not props: people in the middle of doing something, who will notice you
     // doing something too. Only outdoors, and never right on top of you.
     {
       const B0 = Biome.at(ch.x0);
       const ax = ch.x0 + rng() * World.CHUNK;
-      if (!B0.indoor && Math.abs(ax - P.x) > 420 && this.state !== 'title') {
+      // A remote reach has nobody working it. That is the whole point of it:
+      // at 0.3 ft a surveyor with a net is not an encounter, it is the end.
+      if (!B0.indoor && !B0.remote && Math.abs(ax - P.x) > 420 && this.state !== 'title') {
         const busy = B0.town ? 0.5 : B0.id === 'bay' || B0.id === 'river' || B0.id === 'campground' ? 0.34 : 0.2;
         if (rng() < busy) {
           const pick = rng();
@@ -672,15 +674,17 @@ const G = {
     if (World.floorY(x) > -3) return;
     const B = Biome.at(x);
     const table = B.land.map(([k, w]) => { const sp = SPECIES[k]; const hard = sp ? sizeClassOf(sp.ft) : 1; return [k, hard > 3 && D < 1.6 ? w * 0.2 : w]; });
-    // the facility is staffed by the two you arrive with and nobody else, and
-    // the sewer only ever has the people who live down there
+    // the facility is staffed by the two you arrive with and nobody else
     if (B.lab || (typeof Opening !== 'undefined' && Opening.scripted && Opening.scripted())) return;
-    if (!B.indoor) {
+    if (!B.indoor && !B.remote) {
+      // Nobody fishes the foot of a hundred-and-forty-foot outfall, and the
+      // gorge has no way down into it. A reach marked remote has animals in
+      // it and nothing else, which is what makes it survivable at 0.3 ft.
       if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
       if (B.id === 'campground') table.push(['camper', 3]);
       if (D >= 1.6) table.push(['ranger', 1], ['poacher', D >= 2.4 ? 1.4 : 0]);
-      table.push(['heron', 1.2]);
     }
+    if (!B.indoor) table.push(['heron', 1.2]);
     const k = weightedPick(table);
     if (!k) return;
     if (k === 'heron') this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis']), 'wade'));

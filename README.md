@@ -1,9 +1,9 @@
 # CHOMPERS
 
 A 2D pixel-art, side-scrolling **eater roguelike**. You are Subject 7: a lab-made crocodile spliced
-with the genes of every animal alive. You break your tank, take the storm sewer out, and surface in the
-swamp with the whole genome to spend — then go back down into the city's drowned pipework, or east
-past the seawall and over the edge of the shelf.
+with the genes of every animal alive. You break your tank, go down the pipe the building flushes into,
+and come out of the headwall into open air and moving water — then follow the river down to the swamp
+with the whole genome to spend, or east past the seawall and over the edge of the shelf.
 
 Eat anything that fits in your jaws. Every meal pays **gene points**, and you spend them whenever you
 like on a hexagonal **gene tree** of six lineages. How you hunt builds affinity, so the lineage that
@@ -126,7 +126,7 @@ plate at the end of the card, and a tick replaces it once the step is funded.
 | **PIGMENTATION** | the nine hides, in four batches, from base dyes up to the lines that were never released |
 | **GENE THERAPY** | the four gene lineages a crocodile is not born with, then splice tolerance for hybrids and chimeras |
 | **BIOCHEMISTRY** | standing treatments stamped onto every animal after: clotting, filtration, chitin, myostatin block, barophilic marrow, adrenal, neural accelerant |
-| **FIELD SURVEY** | the sewer network, the open ocean, and a deep sounding that opens the sump and the trench |
+| **FIELD SURVEY** | the everglades, the open ocean, and a deep sounding that opens the oxbow and the trench |
 
 Until Gene Therapy has funded a line, its genes are sealed shut in the tree —
 crosshatched and stamped, not merely dim — and its prime is not on the loadout
@@ -152,22 +152,26 @@ its own animated glyph once you have carried it out, sealed and grey until then,
 with the site it comes from written under it and what it gives you along the
 foot. Eighteen slots, and the count in the corner is the game's long score.
 
-## The catacombs, and how you got there
+## The river, and how you got there
 
-The game starts under Rome. **THE CATACOMBS** is the first site and the only one
-open on a new save: a labyrinth authored as a string of vaults — the cistern
-you land in, the ossuary, the tomb hall, the drowned forum, the columbarium,
-the outflow — each shut off from the next by a squeeze only a small animal
-fits through. Tufa block and blind arches on the walls, niches with what they
-were cut for still in them, torch brackets in the piers, bone piles with a
-skull on top, sarcophagi with their lids on or off, amphorae, and a surface
-carrying two thousand years of what floats. A roof a hand above the water is
-still a roof, so the squeezes stay dark.
+The game starts in a building and ends up in a river. **THE RIVER** is the first
+zone and the only one open on a new save: eight and a half thousand units of
+authored map that begin as a laboratory floor, fall a hundred and forty feet down
+a pipe, and come out of a concrete headwall into the first open air the animal
+has ever been in. Four reaches follow it down — **the plunge pool** under the
+outfall, **the gorge**, **the rapids**, and **the oxbow** where it gives up
+hurrying — and the swamp is past that, once the lab has surveyed it.
 
 You got there by transfer, and the transfer is not a cutscene. It is the game.
 **FACILITY B** is a building, not a wall: six rooms in a line, a hundred and
-forty feet above the Roman level, dead level because they are floors, drawn by
-the same renderer as everything else.
+forty feet above the river, dead level because they are floors, drawn by the
+same renderer as everything else. Above the tiled dado the wall carries what a
+wall carries — trunking, conduit drops, a louvred supply grille, an observation
+window into a room you are not going into, a camera on a bracket, a hose reel, a
+board of breakers half of them thrown. Under the slab is the service void, and
+it is not a black gap: four mains slung on threaded rod with flanges, lagging
+and valve wheels, a cable tray with the bundles lying in it, and a sump every
+few hundred units with a pump in it and the float switch up.
 
 | Room | What is in it |
 | --- | --- |
@@ -205,28 +209,33 @@ spitting in as you pass, and three **manhole shafts** overhead — cast cover,
 rings, a ladder whose bottom rung stops well short of the crown, and a cone of
 daylight that lands on the invert in front of you. Where the floor falls away
 faster than you do you leave it and come down on the next bench. Hold right to
-go faster. A gauge on the edge of the screen counts the feet off. The pipe ends
-in a mouth in the wall of the cistern with a long drop under it, and the splash
-is your first location. Every other sewer site puts you in through a hatch in
-the crown of the vault instead.
+go faster. A gauge on the edge of the screen counts the feet off.
 
-The way out is a system. Three mechanisms, each in its own chamber, each a
-small game you start by biting it: **the cistern valve** turned on a beat, **the
-ossuary levers** thrown in the order the lamps showed you, **the counterweight**
-held and let go in the band. A miss costs a notch, not your life. Engage all
-three and the outflow gate opens, and the site's relic surfaces on the way to
-it. The everglades are past that, once the lab has surveyed them.
+The pipe ends in the sky. The mouth is a hole in a hundred-and-forty-foot
+**headwall** — poured in lifts, ribbed with counterforts, spalled, stained,
+weeping out of five weep holes, green where the spray reaches it and black under
+the water — with a ladder nobody has climbed since 1974 up one side and the
+building's stair tower and vent stacks standing over the coping. The grille that
+used to be across the mouth is hanging off one hinge. What comes out of the mouth
+is the plume, and what is under the plume is the plunge pool, and the splash is
+your first location and your first air.
 
-## Locked in
+The way out is the river itself. Three mechanisms hold the last gate, each in
+its own reach and each a small game you start by biting it: **the sluice wheel**
+turned on a beat, **the gate levers** thrown in the order the lamps showed you,
+**the counterweight** held and let go in the band. A miss costs a notch, not your
+life. Engage all three and the outflow opens, and the zone's relic surfaces on
+the way to it. The everglades are past that, once the lab has surveyed them.
 
-A sewer run is not a stretch of water you leave when you have had enough. The
-reach is barred east and west by **sluice gates**, and they are welded, not
-locked. There is no key. There is no relic that opens them, no hydraulics that
-will ever start, and no door at the other end of the chute you came down. What
-is in here is all there is, and the only way out of the system is a stomach — it
-does not have to be yours. A marker on the edge of the screen points at the
-nearest wall of the world and tells you how far, so the reach has a shape even
-when you cannot see either end of it.
+## Nobody works the top of the river
+
+The plunge pool and the gorge are marked **remote**, and remote means what it
+says: no fishermen, no rangers, no tourists, no survey crews, no traplines, no
+structures. Nobody climbs down a hundred and forty feet of headwall to stand in
+a gorge. A reach like that has animals in it and nothing else, which is the only
+reason a 0.3 ft hatchling survives the first five minutes of the game. People
+start at the rapids, where there is a bank to stand on, and there are plenty of
+them by the oxbow.
 
 ## What they poured down here
 
@@ -281,8 +290,8 @@ yours. Snacks keep you alive. They do not build an animal.
 
 Every release site has one big thing placed by hand rather than left to the
 chunk spawner, and a short list of authored props around it — a dock and two
-crab traps and a boat ramp at the fish camp, consoles and a grate and a sunken
-hull at Junction 9, channel markers out in the bay. Nothing is placed twice on
+crab traps and a boat ramp at the fish camp, the gauging station and its stilling
+well on the rapids, channel markers out in the bay. Nothing is placed twice on
 the same few feet of bank — something you can see coming, orient by, hide under and remember
 the place by afterwards. The biggest is **THE CAUSEWAY**: four lanes on concrete
 piers with its middle span in the water, lamp standards still on the parapet,
@@ -344,18 +353,30 @@ mouth), **pain** (squint, open mouth), **happy** (shut eyes, a grin) or
 doing. Hats, coats, hi-vis, aprons, badges, beards, a hood and a bottle finish
 each kind off.
 
-There are no boats in the sewer. Below the Roman level the people you meet are
-the ones who ended up there: **drifters** and **users** sitting slumped
-against the walls of the drier ledges, nodding, who only get up and run when
-something a good deal bigger than a hatchling comes at them, and **skeletons**
-who did the same thing a long time ago, still sitting where they sat. The
-capture crews that come when the alarm goes are on foot down here, armed.
+Indoors the ground is man-made from the floor up: poured concrete in hard steps
+with block coursing down the face of it, a lit lip along every surface, and
+blockwork wherever a ledge steps. The lab is tiled. No soil strata, no roots, no
+mountains behind the pipes — it is wall, arch and water until the pipe runs out.
 
-The sewer is man-made from the floor up. Indoors the ground is poured
-concrete in hard steps with brick or block coursing down the face of it, a lit
-lip along every surface, and blockwork wherever a ledge steps; the lab is
-tiled. No soil strata, no roots, no mountains behind the pipes — it is dark
-wall, vault and water all the way down.
+## The ground is cut, not rolled
+
+Outdoors the map used to be sine hills, and sine hills are the one shape no
+landscape has. The floor is authored as a profile of control points and
+interpolated with a **monotone cubic** — the tangents are clamped so the curve
+can never overshoot a point it was given, which is what stopped the hills from
+bulging between the two ends of a valley.
+
+Then the profile is **benched**. Every reach carries a cut spec — a step height,
+a riser fraction and a lip — and the elevation is quantised to it: flat terraces
+joined by short scarps, the way a hillside that has been cut by water or by a
+machine actually sits. The step height itself wanders along the map so the
+terraces never march. A lip of a foot or two catches the light at the top of
+each riser, fine grit roughens the flats and leaves the risers clean, and the
+whole thing crossfades away to nothing where the ground turns built, so a
+laboratory floor is dead level and a gorge is a staircase of ledges. Under it
+the strata are drawn as thirty closely spaced fills rather than three, with
+dithered seams between them, so the body of the ground reads as sediment and
+not as a painted stripe.
 
 ## Animal traits
 
@@ -408,48 +429,38 @@ equator. A site you have not earned is a sealed grey pin.
 
 A **RELEASE** button sends you. It used to be the word ENTER, which is not a key a tablet has.
 
-### Zone 1 — The Sewer Network
+### Zone 1 — The River
 
-The system is drawn as a bore, not as a room. A sewer is a section of masonry
-with a hole through it, and the hole goes somewhere.
+The pipe is drawn as a bore, not as a room: a section of masonry with a hole
+through it, and the hole goes somewhere. Precast concrete with a ring joint
+every segment, an arch you are actually inside — voussoirs round the crown, the
+invert lip, a rib every bay with a cable slung between the ribs and a caged
+bulkhead lamp under every other one — and behind it another wall half a parallax
+step back with arch ribs marching away at three depths into black. Underground
+the water body goes translucent, because there is a pipe behind it and hiding
+the pipe made the system read as a wall with a pond in front of it.
 
-The mass is brickwork, and every brick in it is its own value — a wall that
-repeats exactly is a grid, and a grid reads as wallpaper. Salts and damp bloom
-across it as scatters of single pixels rather than soft discs, because a soft
-disc at this zoom is a lens flare. Precast pipe gets concrete and a ring joint
-every segment instead: a pipe is not laid brick by brick.
+Then the pipe ends, and everything after it is outside. Four reaches, each with
+its own bed, its own palette and its own idea of how fast water should move:
 
-The cavity is cut out of that mass, and behind it is another wall half a
-parallax step back, with arch ribs marching away down it at three depths and
-the middle of the run going black. In front of it goes the arch you are
-actually inside: voussoirs round the crown, the invert lip, a rib every bay
-with a cable slung between the ribs, and a caged bulkhead lamp under every
-other one throwing the only light there is. Underground the water body goes
-translucent, because there is a pipe behind it and hiding the pipe is what made
-the system read as a wall with a pond in front of it. The dawn mist no longer
-gathers a hundred feet under a city. And the ground under the invert is the
-same masonry the bore is lined with, so the floor and the wall are one building
-instead of two textures meeting.
-
-West of the lab is a municipal system nobody has opened since 1974. Floor and ceiling are authored
-together, so headroom is the level design: long low runs where you have to surface between breaths,
-crawls that pinch down to a hand of air, vaulted chambers, dry maintenance ledges to haul out on, and
-one shaft that drops eight hundred feet under the city. None of it wobbles. Ground that was poured
-runs dead straight between its control points and carries none of the fine noise that gives mud its
-texture, so a floor reads as a floor and a hillside stays outside. The concrete is dressed with
-capping courses, expansion joints, slime at the standing waterline and pipe mouths punched through
-the back wall — some of them still running. Manhole shafts break the crown here and there, and the
-light down them is the only daylight in the zone. The water is toxic, and it builds a **FILTH** meter that eventually starts
-taking health. Lamplight, not sunlight, comes down through the scum.
-
-| Site | What it is |
+| Reach | What it is |
 | --- | --- |
+| **Facility B** | six rooms and two ways out of them. Only one of them is yours |
 | **The Relief Interceptor** | the lined pipe you came down. Six steps, five benches, three manholes, one way |
-| **The Undercroft** | brick vault under the city, lit by wall lamps, with people living in the pipes |
-| **The Drop Shaft** | the system falls away: a vertical chamber down to six hundred feet |
-| **Junction 9** | nine mains meet at a sealed vault. Something is in the vault |
-| **The Deep Gallery** | eleven miles of trunk main, ledges, side chambers, mutant catfish |
-| **The Outfall Sump** | the dead end. Everything the city ever flushed has settled here |
+| **The Plunge Pool** | three hundred and thirty feet of cold green water turning under the outfall, walled on one side by the headwall you came out of |
+| **The Gorge** | rock both sides and nothing growing on it. Deep, still, and the first place in the world that is bigger than you |
+| **The Rapids** | a boulder bed the river is in a hurry over. Shallow enough to stand in and fast enough to take you off your feet |
+| **The Oxbow** | the river gives up hurrying. Brown, slow, full of fallen timber and everything the rapids could not keep hold of |
+
+The gorge and the plunge pool are walled with **canyon layers** rather than a
+treeline: four parallax depths of square-shouldered buttress, each masked out of
+one silhouette so the bedding planes run straight across the whole layer instead
+of stopping at every block. Each buttress gets its own stone tint, its own joint
+crack with a shadow beside it and a lit arris on the far side, a talus of scree
+and loose block heaped against its foot, and the layer in front of it keeping
+the sun off that foot. Scrub only grows on the ledges of the two nearest layers.
+The canyon fades in and out across the biome crossfade, so the walls close in as
+you come down out of the pool and open out again as the rapids let go.
 
 ### Zone 2 — The Everglades
 
@@ -458,9 +469,6 @@ animals and human activity:
 
 | Biome | What it is |
 | --- | --- |
-| **Containment** | the lab you were made in: concrete, crates, a broken tank |
-| **Storm Sewer** | a flooded pipe run full of rats, roaches and trash |
-| **The Outfall** | a concrete canal under a city skyline, thick with tilapia and walking catfish |
 | **Mangrove Tangle** | shallow braided water, root islands, snapper and sheepshead |
 | **Gator Joe's Fish Camp** | a working town: bait shop, docks, stilt houses, moored jon boats |
 | **Cypress Swamp** | dark deep pockets, knees and moss, panthers and bears on the hummocks |
@@ -512,7 +520,11 @@ the vault on the globe screen and apply to every run afterwards.
 
 | Site | Order | Relic | What it does |
 | --- | --- | --- | --- |
-| The Outfall | reach open water | Subject Tag | start every run with 2 gene points |
+| Facility B | open the weir | Subject Tag | start every run with 2 gene points |
+| The Plunge Pool | kill 4 predators | The Surveyor's Lamp | you see in the dark |
+| The Gorge | dive to 260m | Rock Anchor Bolt | +15% armour |
+| The Rapids | kill a boss | The Gauging Station Wheel | filth builds half as fast |
+| The Oxbow | take 14 fish | A Length of Rebar | bites pierce armour |
 | Mangrove Tangle | take 14 fish | Drowned Man's Ring | +8% bite |
 | Gator Joe's Camp | wreck 3 builds | Gator Joe's Skull | +10% max health |
 | Cypress Swamp | kill 5 predators | Blackwater Knee | +2 strain tolerance |
@@ -521,11 +533,6 @@ the vault on the globe screen and apply to every run afterwards.
 | Paradise Campground | take 10 people | Camp Lantern | prey lured from further off |
 | Florida Bay | kill 4 sharks | Megalodon Tooth | +15% death roll damage |
 | The Seawall | wreck 8 boats or builds | Containment Core | +1 dash charge |
-| The Undercroft | take 6 people | The Drifter's Lamp | you see in the dark |
-| The Drop Shaft | dive to 600m | Shaft Anchor Bolt | +15% armour |
-| Junction 9 | kill a boss | Junction 9 Valve Wheel | filth builds half as fast |
-| The Deep Gallery | travel 3000m | A Length of Rebar | bites pierce armour |
-| The Outfall Sump | kill 6 predators | The Sludge Crown | toxic blood, immune to venom |
 | The Shelf | take 18 fish | A Torn Trawl Net | +25% latch damage |
 | The Reef | take 24 fish | Nautilus Shell | +12% max health |
 | The Wall | kill 4 sharks | Submersible Viewport | rated 60% deeper |
@@ -538,7 +545,7 @@ comes for a full-grown animal. Which one you meet is decided by where you are st
 
 | Zone | Mini-bosses | World boss |
 | --- | --- | --- |
-| The Sewer Network | The Broodmother, The Gnasher | The Sludge King |
+| The River | The Broodmother, The Gnasher | The River King |
 | The Everglades | Old Scar, the war boat, Mother Python | The Skunk Ape |
 | The Open Ocean | The Anvil, The Green Wall | The Lantern |
 

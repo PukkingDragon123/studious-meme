@@ -22,7 +22,10 @@ const Labyrinth = {
   // swamp and the ocean you can leave whenever you like.
   begin(stage) {
     this.reset();
-    if (!stage || stage.zone !== 'sewer' || stage.intro) return;   // the first room still has its grate
+    // A river is not a system and it has no gates in it. Nothing is locked
+    // in any more; what stops you going downstream is the weir, and the weir
+    // is a set of mechanisms, not a wall.
+    return;
     const span = 1500 + (stage.diff || 0) * 380;
     this.x0 = stage.x - span; this.x1 = stage.x + span;
     // put each gate on a stretch with a roof, so it reads as a door in a

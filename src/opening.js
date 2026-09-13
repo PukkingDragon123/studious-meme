@@ -12,7 +12,7 @@
 // tiled floor with a floor drain at the end of it and the cover off the drain,
 // and under the cover is the interceptor: a lined pipe that gives up its
 // hundred and forty feet in six steps and puts what it is given into the
-// cistern under Rome. The ride down takes about twenty seconds. It is drawn
+// river, through a headwall in the side of a gorge. The ride down takes about twenty seconds. It is drawn
 // with the same world, the same physics and the same camera as everything
 // else, because it is the same world.
 // ---------------------------------------------------------------------------
@@ -277,7 +277,7 @@ const Opening = {
     P.frozen = false; P.invuln = 4;
     P.vx = this.slideV * 1.15; P.vy = -30; this.fall = 0;
     G.slowmo(0.45, 0.7); G.shake(6);
-    G.banner = { text: 'OUT', sub: '', t: 1.2, max: 1.2, color: '#c8b070' };
+    G.banner = { text: 'OUT', sub: '', t: 1.2, max: 1.2, color: '#9fe0c8' };
     for (let i = 0; i < 30; i++) G.fx.add({ type: 'drop', x: P.x + rand(-10, 6), y: P.y + rand(-8, 6), vx: rand(40, 220), vy: rand(-90, 60), s: 1, color: choice(['#9ad8c0', '#cfe8dc']), life: rand(0.8, 1.8) });
   },
 
@@ -286,12 +286,12 @@ const Opening = {
     if (!this.splashed && P.inWater) {
       this.splashed = true; this.phase = 'done'; this.on = false;
       G.shake(10); G.fx.splash && G.fx.splash(P.x, 2.6, 0); Water.splash && Water.splash(P.x, 200, 50); SFX.splash && SFX.splash(2.5);
-      G.banner = { text: 'UNDER ROME', sub: 'THE MAPS STOP HERE. FIND THE WAY OUT.', t: 4.5, max: 4.5, color: '#c8b070' };
+      G.banner = { text: 'THE RIVER', sub: 'FIRST AIR. GET DOWNSTREAM.', t: 4.5, max: 4.5, color: '#9fe0c8' };
       P.invuln = 2;
     }
     // a bad bounce off the lip: if it has not found water in four seconds, it
     // is on the cistern floor somewhere, and the run starts anyway
-    if (this.t > 4 && !this.splashed) { this.splashed = true; this.phase = 'done'; this.on = false; G.banner = { text: 'UNDER ROME', sub: 'THE MAPS STOP HERE. FIND THE WAY OUT.', t: 4.5, max: 4.5, color: '#c8b070' }; }
+    if (this.t > 4 && !this.splashed) { this.splashed = true; this.phase = 'done'; this.on = false; G.banner = { text: 'THE RIVER', sub: 'FIRST AIR. GET DOWNSTREAM.', t: 4.5, max: 4.5, color: '#9fe0c8' }; }
   },
 
   breach() {

@@ -59,9 +59,9 @@ const RESEARCH = [
   {
     id: 'field', name: 'FIELD SURVEY', col: '#60a8ff', icon: 'globe', line: 'WHERE THEY WILL DROP YOU',
     nodes: [
-      { id: 'f.glades', name: 'OUTFALL SURVEY', cost: 4, line: 'OPENS THE EVERGLADES', grant: { zone: ['glades'] } },
+      { id: 'f.glades', name: 'DOWNRIVER SURVEY', cost: 4, line: 'OPENS THE EVERGLADES', grant: { zone: ['glades'] } },
       { id: 'f.ocean', name: 'OFFSHORE SURVEY', cost: 7, need: ['f.glades'], line: 'OPENS THE OPEN OCEAN', grant: { zone: ['ocean'] } },
-      { id: 'f.deep', name: 'DEEP SOUNDING', cost: 11, need: ['f.ocean'], line: 'OPENS THE SUMP AND THE TRENCH', grant: { site: ['sump', 'trench'] } },
+      { id: 'f.deep', name: 'DEEP SOUNDING', cost: 11, need: ['f.ocean'], line: 'OPENS THE OXBOW AND THE TRENCH', grant: { site: ['oxbow', 'trench'] } },
     ],
   },
 ];
@@ -97,7 +97,7 @@ const Research = {
   // Two gene lineages are native to the animal. The other four are surgery.
   lineageOpen(lin) { return lin === 'ripper' || lin === 'bulwark' || this.granted('lineage').has(lin); },
   hybridsOpen() { return this.has('g.hybrid'); },
-  zoneOpen(id) { return id === 'sewer' || this.granted('zone').has(id); },
+  zoneOpen(id) { return id === 'river' || this.granted('zone').has(id); },
   siteOpen(id) { return this.granted('site').has(id); },
   // the standing treatments, stamped onto every new animal
   applyTo(P) { for (const id of this.done()) { const n = RES_NODE[id]; if (n && n.perk) n.perk(P); } },

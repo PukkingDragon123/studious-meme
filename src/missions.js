@@ -7,7 +7,7 @@
 // to a site you have already cleared.
 // ---------------------------------------------------------------------------
 const ARTIFACTS = [
-  { id: 'tag', stage: 'catacomb', name: 'SUBJECT TAG', line: 'THE NUMBER THEY GAVE YOU. YOU KEPT IT.',
+  { id: 'tag', stage: 'facility', name: 'SUBJECT TAG', line: 'THE NUMBER THEY GAVE YOU. YOU KEPT IT.',
     boon: 'START EVERY RUN WITH 2 GENE POINTS', col: '#9ad8c0', glyph: 'tag', apply: P => { P.genePoints += 2; } },
   { id: 'oyster', stage: 'mangrove', name: "DROWNED MAN'S RING", line: 'PRISED OUT OF AN OYSTER BED WITH A FINGER STILL IN IT.',
     boon: '+8% BITE', col: '#d8c8a0', glyph: 'ring', apply: P => { P.st.bite *= 1.08; } },
@@ -25,17 +25,15 @@ const ARTIFACTS = [
     boon: '+15% DEATH ROLL DAMAGE', col: '#cfc0a8', glyph: 'tooth', apply: P => { P.st.rollDmg *= 1.15; } },
   { id: 'core', stage: 'seawall', name: 'CONTAINMENT CORE', line: 'THE THING THEY GREW YOU AROUND. IT STILL HUMS.',
     boon: '+50% STAMINA', col: '#40f0c8', glyph: 'core', apply: P => { P.st.dashCharges += 1; } },
-  // ---- ZONE 1: the sewer network ----
-  { id: 'lamp', stage: 'undercroft', name: "THE DRIFTER'S LAMP", line: 'HE CARRIED IT FOR NINE YEARS DOWN HERE. IT OUTLASTED HIM.',
+  // ---- ZONE 1: the river ----
+  { id: 'lamp', stage: 'plunge', name: "THE SURVEYOR'S LAMP", line: 'DROPPED OFF THE HEADWALL IN 1974 AND NEVER FISHED OUT.',
     boon: 'YOU SEE IN THE DARK', col: '#ffbe50', glyph: 'lamp2', apply: P => { P.st.nightEyes = true; } },
-  { id: 'bolt', stage: 'shaft', name: 'SHAFT ANCHOR BOLT', line: 'IT HELD A HUNDRED TONNES OF CITY UP. NOW IT HOLDS YOU TOGETHER.',
+  { id: 'bolt', stage: 'gorge', name: 'ROCK ANCHOR BOLT', line: 'IT HELD A HUNDRED TONNES OF GORGE UP. NOW IT HOLDS YOU TOGETHER.',
     boon: '+15% ARMOUR', col: '#9aa2a8', glyph: 'bolt', apply: P => { P.st.armor += 0.15; } },
-  { id: 'valve', stage: 'junction', name: 'JUNCTION 9 VALVE WHEEL', line: 'TURNED ONCE, IN 1974, AND NEVER AGAIN.',
+  { id: 'valve', stage: 'rapids', name: 'THE GAUGING STATION WHEEL', line: 'TURNED ONCE, IN 1974, AND NEVER AGAIN.',
     boon: 'FILTH BUILDS HALF AS FAST', col: '#b4c840', glyph: 'valve', apply: P => { P.st.toxRes *= 2; } },
-  { id: 'rebar', stage: 'gallery', name: 'A LENGTH OF REBAR', line: 'PULLED OUT OF THE CROWN OF THE TRUNK MAIN, STILL BENT WHERE IT TORE.',
+  { id: 'rebar', stage: 'oxbow', name: 'A LENGTH OF REBAR', line: 'WASHED OUT OF THE HEADWALL AND CARRIED SIX MILES, STILL BENT WHERE IT TORE.',
     boon: 'BITES PIERCE ARMOUR', col: '#a86a3a', glyph: 'rebar', apply: P => { P.st.pierce = true; } },
-  { id: 'crown', stage: 'sump', name: 'THE SLUDGE CROWN', line: 'A RING OF HARDENED FILTH, GROWN AROUND SOMETHING THAT WORE IT.',
-    boon: 'TOXIC BLOOD, IMMUNE TO VENOM', col: '#8ba82a', glyph: 'crown', apply: P => { P.st.toxicBlood = true; P.st.venomImmune = true; } },
   // ---- ZONE 3: the open ocean ----
   { id: 'net', stage: 'shelf', name: 'A TORN TRAWL NET', line: 'IT TOOK EVERYTHING ON THIS SHELF FOR THIRTY YEARS. YOU TOOK IT.',
     boon: '+25% LATCH DAMAGE', col: '#cfd4c0', glyph: 'net', apply: P => { P.st.latchMul *= 1.25; } },
@@ -51,7 +49,7 @@ for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
 
 // One standing order per site. `kind` decides which hook counts.
 const MISSIONS = {
-  catacomb:   { title: 'FIND THE WAY OUT', line: 'OPEN THE OUTFLOW', kind: 'puzzle', target: 3 },
+  facility:   { title: 'GET DOWNRIVER', line: 'OPEN THE WEIR', kind: 'puzzle', target: 3 },
   mangrove:   { title: 'THIN THE ROOTS', line: 'TAKE 14 FISH', kind: 'fish', target: 14 },
   camp:       { title: 'CLOSE THE CAMP', line: 'WRECK 3 BUILDS', kind: 'wreck', target: 3 },
   cypress:    { title: 'OWN THE DEEP', line: 'KILL 5 PREDATORS', kind: 'threat', target: 5 },
@@ -61,11 +59,10 @@ const MISSIONS = {
   bay:        { title: 'SALT AND TEETH', line: 'KILL 4 SHARKS', kind: 'shark', target: 4 },
   seawall:    { title: 'KAIJU PROTOCOL', line: 'WRECK 8 BOATS OR BUILDS', kind: 'wreck', target: 8 },
   // ---- ZONE 1 ----
-  undercroft: { title: 'CLEAR THE UNDERCROFT', line: 'TAKE 6 PEOPLE', kind: 'human', target: 6 },
-  shaft:      { title: 'GO DOWN THE SHAFT', line: 'DIVE TO', kind: 'depth', target: 600, unit: 'M' },
-  junction:   { title: 'OPEN JUNCTION 9', line: 'KILL A BOSS', kind: 'boss', target: 1 },
-  gallery:    { title: 'RUN THE TRUNK MAIN', line: 'TRAVEL', kind: 'travel', target: 3000, unit: 'M' },
-  sump:       { title: 'THE END OF THE LINE', line: 'KILL 6 PREDATORS', kind: 'threat', target: 6 },
+  plunge:     { title: 'HOLD THE POOL', line: 'KILL 4 PREDATORS', kind: 'threat', target: 4 },
+  gorge:      { title: 'WORK THE GORGE', line: 'DIVE TO', kind: 'depth', target: 260, unit: 'M' },
+  rapids:     { title: 'OWN THE RUN', line: 'KILL A BOSS', kind: 'boss', target: 1 },
+  oxbow:      { title: 'WORK THE OXBOW', line: 'TAKE 14 FISH', kind: 'fish', target: 14 },
   // ---- ZONE 3 ----
   shelf:      { title: 'GRAZE THE MEADOW', line: 'TAKE 18 FISH', kind: 'fish', target: 18 },
   reef:       { title: 'STRIP THE REEF', line: 'TAKE 24 FISH', kind: 'fish', target: 24 },
@@ -79,7 +76,8 @@ const MISSIONS = {
 // in your teeth. Nobody is talking to you. You are what they are talking about.
 // ---------------------------------------------------------------------------
 const STORY = {
-  catacomb: ['SUBJECT 11 WENT INTO THE OLD SYSTEM. THE MAPS STOP AT THE ROMAN LEVEL.', 'SOMETHING DOWN THERE IS TURNING THE OLD MECHANISMS.',
+  facility: ['SUBJECT 11 IS OUT OF THE TANK AND INSIDE THE BUILDING.', 'IT WENT DOWN THE INTERCEPTOR. THAT COMES OUT IN THE RIVER.',
+    'SOMETHING IS WORKING THE WEIR GATES FROM THE WATER SIDE.',
     'THE OUTFLOW GATE IS OPEN. IT HAS NOT BEEN OPEN SINCE THE EMPIRE.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
   mangrove: ['THE ROOT LINE IS SHALLOW. IT WILL HAVE TO SURFACE TO CROSS.', 'IT IS NOT CROSSING. IT IS FEEDING.',
     'SIXTY POUNDS OF SNOOK IN ELEVEN MINUTES.', 'THAT RING CAME OFF A DIVER WE NEVER FOUND.'],
@@ -98,16 +96,14 @@ const STORY = {
   seawall: ['IT IS AT THE HARBOUR WALL. THE CITY IS BEHIND THE HARBOUR WALL.', 'IT IS TAKING THE WALL APART.',
     'THE WALL IS GONE. GET EVERYBODY OUT.', 'THAT CORE IS WHAT WE BUILT IT AROUND. IT HAS COME BACK FOR IT.'],
   // ---- ZONE 1 ----
-  undercroft: ['IT WENT WEST. WEST IS THE OLD SYSTEM. THERE IS NOTHING WEST.', 'THERE ARE PEOPLE LIVING IN THE UNDERCROFT. THERE SHOULD NOT BE.',
-    'THE UNDERCROFT IS QUIET NOW.', 'NINE YEARS OF LAMP OIL. HE KNEW SOMETHING WAS DOWN THERE WITH HIM.'],
-  shaft: ['SHAFT 4 DROPS SIX HUNDRED FEET INTO THE OLD RELIEF SYSTEM.', 'IT IS GOING DOWN THE SHAFT. VOLUNTARILY.',
-    'BOTTOM OF THE SHAFT. NO TELEMETRY. NO LIGHT.', 'THAT BOLT HELD THE CITY UP. IT PULLED IT OUT LIKE A TOOTH.'],
-  junction: ['NINE MAINS MEET AT JUNCTION 9. THE VAULT WAS SEALED IN 1974.', 'THE SEAL ON THE VAULT IS NOT HOLDING.',
-    'WHATEVER WE SEALED IN THERE IS DEAD. SO IS THE SEAL.', 'THEY TURNED THAT WHEEL ONCE AND THEN WELDED THE DOOR.'],
-  gallery: ['THE TRUNK MAIN RUNS ELEVEN MILES UNDER THE CITY.', 'IT IS HALFWAY UP THE MAIN AND IT HAS NOT SURFACED.',
-    'IT RAN THE WHOLE MAIN. IT KNOWS THE SYSTEM BETTER THAN WE DO.', 'THE CROWN OF THE MAIN IS COMING DOWN. IT TOOK A PIECE AS A SOUVENIR.'],
-  sump: ['THE SUMP IS THE END OF THE SYSTEM. EVERYTHING SETTLES THERE.', 'THERE IS SOMETHING IN THE SUMP THAT WE DID NOT PUT THERE.',
-    'THE SUMP IS CLEAR. GOD HELP US, THE SUMP IS CLEAR.', 'IT WAS WEARING THAT. SOMETHING DOWN HERE WAS WEARING A CROWN.'],
+  plunge: ['IT CAME OUT OF THE HEADWALL. THE POOL UNDER IT IS FORTY FEET DEEP.', 'SOMETHING IS HOLDING THE PLUNGE POOL.',
+    'THE POOL IS ITS NOW.'],
+  gorge: ['THE GORGE IS A MILE OF ROCK WITH NOTHING GROWING ON IT.', 'IT IS WORKING THE DEEP WATER UNDER THE WALL.',
+    'WE HAVE LOST IT IN THE GORGE.'],
+  rapids: ['THE RAPIDS ARE TOO SHALLOW FOR A BOAT AND TOO FAST FOR A MAN.', 'IT IS HUNTING THE BOULDER BED.',
+    'THERE IS SOMETHING BIG IN THE RUN THAT IS NOT OURS.'],
+  oxbow: ['THE OXBOW IS SLOW AND BROWN AND FULL OF TIMBER.', 'EVERYTHING THE RIVER COULD NOT KEEP HOLD OF IS IN THE OXBOW.',
+    'IT HAS STOPPED MOVING DOWNSTREAM. IT IS FEEDING.'],
   // ---- ZONE 3 ----
   shelf: ['PAST THE WALL THE BOTTOM SHELVES OUT. TWENTY MILES OF SEAGRASS.', 'THE SHELF IS EMPTYING AHEAD OF IT.',
     'NOTHING LEFT ON THE SHELF BUT SAND.', 'THIRTY YEARS OF THAT NET DRAGGING THIS BOTTOM. IT LASTED ONE AFTERNOON.'],

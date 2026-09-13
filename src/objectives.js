@@ -41,7 +41,7 @@ const Objectives = {
       },
     ];
     // the system has a fourth thing to say, and it is not optional
-    if (stage && stage.zone === 'sewer' && !stage.intro) {
+    if (false) {
       this.list.push({
         id: 'out', label: 'OUT',
         text: () => 'THERE IS NO WAY OUT OF HERE',

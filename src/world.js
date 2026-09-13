@@ -228,11 +228,137 @@ const World = {
       }
     }
   },
+  // ---- CANYON WALLS ----------------------------------------------------
+  // A gorge is not a line of trees. It is rock in courses with a river at the
+  // bottom of it. Four buttressed layers, each nearer, darker and more broken
+  // than the one behind: silhouette first, then the strata run straight across
+  // the whole layer so the bedding reads as one formation and not as a row of
+  // separate lumps.
+  drawCliffs(ctx, cam, day, hy, sc, BP) {
+    const W = G.W, light = this.light(day), rock = BP.ground;
+    const layers = [
+      { f: 0.05, mix: 0.86, h: 52, seed: 3, cell: 34, tal: 5 },
+      { f: 0.11, mix: 0.62, h: 76, seed: 9, cell: 46, tal: 8 },
+      { f: 0.22, mix: 0.34, h: 104, seed: 17, cell: 60, tal: 12 },
+      { f: 0.40, mix: 0.04, h: 142, seed: 29, cell: 76, tal: 17 },
+    ];
+    for (const L of layers) {
+      const base = mixColor(mixColor(rock[1], '#8a8472', 0.34), sc.bot, L.mix);
+      const lit = mixColor(base, '#fff4dc', 0.30), dk = shade(base, 0.66), crack = shade(base, 0.42);
+      const ox = cam.x * L.f;
+      const c0 = Math.floor(ox / L.cell) - 1, c1 = Math.floor((ox + W) / L.cell) + 1;
+      // --- silhouette: square-shouldered buttresses with gullies cut between
+      const hOf = (k) => {
+        const r1 = ihash(k, L.seed), r2 = ihash(k, L.seed + 1);
+        let h = L.h * (0.46 + r1 * 0.72);
+        if (r2 < 0.14) h *= 0.34;                                   // a gully comes down here
+        else if (r2 > 0.9) h *= 1.26;                               // a pinnacle stands up
+        return h;
+      };
+      const tops = [];
+      for (let k = c0; k <= c1; k++) {
+        // buttresses are not all one cell wide: a run of cells often shares a
+        // height, which is what turns a row of teeth into a mass of rock
+        let h = hOf(k), j = k;
+        while (j > c0 - 6 && ihash(j, L.seed + 7) < 0.42) { j--; h = hOf(j); }
+        const tilt = (ihash(k, L.seed + 8) - 0.5) * L.cell * 0.34;
+        tops.push([k * L.cell - ox, hy - h, L.cell, tilt]);
+      }
+      ctx.beginPath(); ctx.moveTo(tops[0][0], hy + 4);
+      for (const [bx, by, bw, tilt] of tops) {
+        ctx.lineTo(bx, by); ctx.lineTo(bx + bw * 0.22, by - Math.abs(tilt) * 0.3);
+        ctx.lineTo(bx + bw, by + tilt);
+      }
+      ctx.lineTo(tops[tops.length - 1][0] + L.cell, hy + 4); ctx.closePath();
+      ctx.fillStyle = base; ctx.fill();
+      // --- everything inside the rock
+      ctx.save(); ctx.clip();
+      const hiTop = Math.min.apply(null, tops.map(t => t[1])) - 4;
+      // no two buttresses are the same stone: tint each mass before bedding it
+      for (const [bx, by, bw] of tops) {
+        const v = ihash(Math.round(bx + ox), L.seed + 13);
+        ctx.fillStyle = mixColor(base, v > 0.5 ? '#a08f6c' : '#3f4a4a', Math.abs(v - 0.5) * 0.62);
+        ctx.fillRect(Math.round(bx - 1), Math.round(by - 3), Math.round(bw + 2), Math.round(hy - by + 9));
+      }
+      // bedding planes, dipping very slightly, running the whole layer
+      const dip = 0.012 + (L.seed % 3) * 0.004;
+      let by2 = hy + 6;
+      for (let j = 0; by2 > hiTop - 10; j++) {
+        const th = 3 + ihash(j, L.seed + 5) * 7;
+        by2 -= th;
+        const v = ihash(j, L.seed + 4);
+        ctx.globalAlpha = 0.16 + v * 0.30;
+        ctx.fillStyle = v > 0.52 ? dk : lit;
+        ctx.beginPath(); ctx.moveTo(0, by2); ctx.lineTo(W, by2 - W * dip);
+        ctx.lineTo(W, by2 - W * dip + th); ctx.lineTo(0, by2 + th); ctx.closePath(); ctx.fill();
+        // the parting at the top of the bed, hard and thin
+        ctx.globalAlpha = 0.42; ctx.fillStyle = crack;
+        ctx.beginPath(); ctx.moveTo(0, by2); ctx.lineTo(W, by2 - W * dip);
+        ctx.lineTo(W, by2 - W * dip + 1); ctx.lineTo(0, by2 + 1); ctx.closePath(); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // the joints the buttresses were split along, and the shadow beside each
+      for (const [bx, by] of tops) {
+        ctx.fillStyle = crack; ctx.fillRect(Math.round(bx), Math.round(by), 1, Math.round(hy - by + 4));
+        ctx.globalAlpha = 0.30; ctx.fillStyle = dk;
+        ctx.fillRect(Math.round(bx + 1), Math.round(by), Math.round(L.cell * 0.2), Math.round(hy - by + 4));
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = lit; ctx.fillRect(Math.round(bx + L.cell * 0.74), Math.round(by), 1, Math.round(hy - by + 4));
+        ctx.globalAlpha = 1;
+      }
+      Tex.fill(ctx, Tex.dither(mixColor(base, '#ffffff', 0.3), 0.10), ox, cam.y * L.f, 1, 0.3);
+      // the layer in front of this one keeps the sun off its foot
+      const shg = ctx.createLinearGradient(0, hy - L.tal * 3, 0, hy + 4);
+      shg.addColorStop(0, 'rgba(0,0,0,0)'); shg.addColorStop(1, 'rgba(8,14,18,0.45)');
+      ctx.fillStyle = shg; ctx.fillRect(0, hy - L.tal * 3, W, L.tal * 3 + 4);
+      ctx.restore();
+      // --- lit rims along the top of each buttress
+      for (const [bx, by, bw] of tops) { ctx.fillStyle = lit; ctx.fillRect(Math.round(bx), Math.round(by), Math.round(bw), 1); }
+      // --- talus: what the wall has shed, heaped against its own foot
+      const tal = mixColor(shade(rock[2], 1.15), sc.bot, L.mix * 0.45), talD = shade(tal, 0.62);
+      ctx.fillStyle = tal;
+      ctx.beginPath(); ctx.moveTo(0, hy + 4);
+      for (let sx = 0; sx <= W; sx += 8) {
+        const wx = ox + sx, n = fbm(wx * 0.008, L.seed + 31);
+        ctx.lineTo(sx, hy - L.tal * (0.35 + n * 0.9));
+      }
+      ctx.lineTo(W, hy + 4); ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.clip();
+      Tex.fill(ctx, Tex.dither(talD, 0.26), ox, cam.y * L.f, 1, 0.7);
+      // loose blocks standing out of the scree
+      for (let k = c0 * 3; k <= c1 * 3 + 3; k++) {
+        const bx = k * (L.cell / 3) - ox, r = ihash(k, L.seed + 51);
+        if (r > 0.5) continue;
+        const bh = (2 + r * 7) * (0.5 + L.f);
+        ctx.fillStyle = r < 0.22 ? shade(tal, 0.7) : mixColor(tal, '#ffffff', 0.16);
+        ctx.fillRect(Math.round(bx), Math.round(hy - L.tal * 0.5 - bh), Math.round(bh * 1.4), Math.round(bh));
+      }
+      ctx.restore();
+      // --- the little that grows on a ledge: scrub, only on the near layers
+      if (L.f > 0.2) {
+        const scrub = mixColor(sc.bot, '#20361f', 0.7 + L.f * 0.2);
+        for (const [bx, by, bw] of tops) {
+          const k2 = Math.round(bx + ox);
+          if (ihash(k2, L.seed + 41) > 0.42) continue;
+          const gx = bx + bw * (0.2 + ihash(k2, L.seed + 42) * 0.6), gh = 5 + ihash(k2, L.seed + 43) * 9;
+          ctx.fillStyle = scrub;
+          ctx.fillRect(Math.round(gx), Math.round(by - gh), 1, Math.round(gh));
+          ctx.fillRect(Math.round(gx - 3), Math.round(by - gh - 3), 7, 4);
+          ctx.fillRect(Math.round(gx - 2), Math.round(by - gh - 5), 5, 2);
+        }
+      }
+    }
+    // haze pooling in the bottom of the canyon
+    const g = ctx.createLinearGradient(0, hy - 54, 0, hy + 4);
+    g.addColorStop(0, rgba(BP.fog, 0)); g.addColorStop(1, rgba(BP.fog, 0.34 * light));
+    ctx.fillStyle = g; ctx.fillRect(0, hy - 54, W, 58);
+  },
   drawParallax(ctx, cam, day) {
     const W = G.W, H = G.H, hy = cam.toScreen(0, 0)[1], sc = this.skyColors(day), light = this.light(day), night = 1 - light, t = this.t;
     if (hy < -50) return;
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
     if (BP.open) { this.drawOceanHorizon(ctx, cam, day); return; }
+    if ((BP.cliff || 0) > 0.985) { this.drawCliffs(ctx, cam, day, hy, sc, BP); return; }
     // furthest ridge: bare hills, no trees, barely separated from the sky
     {
       const col = mixColor(sc.bot, '#3c5a48', 0.26), ox = cam.x * 0.05;
@@ -325,6 +451,8 @@ const World = {
     const g = ctx.createLinearGradient(0, hy - 40, 0, hy);
     g.addColorStop(0, rgba(sc.bot, 0)); g.addColorStop(1, rgba(sc.bot, 0.45 * light));
     ctx.fillStyle = g; ctx.fillRect(0, hy - 40, W, 40);
+    // the canyon closing in, or opening out: fade the rock over the treeline
+    if ((BP.cliff || 0) > 0.01) { ctx.globalAlpha = BP.cliff; this.drawCliffs(ctx, cam, day, hy, sc, BP); ctx.globalAlpha = 1; }
   },
   // flat banded body: pixel-art depth steps instead of a smooth gradient
   waterBands(day) {
@@ -513,10 +641,8 @@ const World = {
         const m = ((wx % 90) + 90) % 90;
         if (m < 10) { ctx.fillStyle = '#2a3338'; ctx.fillRect(sx, Math.round(sy + 38 * z), step, Math.round(80 * z)); ctx.fillStyle = '#3b464c'; ctx.fillRect(sx, Math.round(sy + 38 * z), Math.max(1, Math.round(2 * z)), Math.round(80 * z)); }
       }
-      // two service runs below the slab, one of them dripping
-      for (const [d, col, hi] of [[22, '#454f54', '#616d73'], [40, '#3a4a44', '#54685f']]) {
-        for (let i = 0; i < pts.length; i += 1) { const [sx, sy] = pts[i]; ctx.fillStyle = col; ctx.fillRect(sx, Math.round(sy + (38 + d) * z), step, Math.round(9 * z)); ctx.fillStyle = hi; ctx.fillRect(sx, Math.round(sy + (38 + d) * z), step, Math.max(1, Math.round(2 * z))); }
-      }
+      // everything the building runs on, slung under the slab
+      Facility.services(ctx, cam, pts, step);
       ctx.restore();
       if (chance(0.05)) { const wx = cam.toWorldX(rand(0, W)); G.fx.add({ type: 'drop', x: wx, y: this.floorY(wx) + 48, vx: 0, vy: 60, s: 1, color: '#7f9a92', life: 2 }); }
       for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (Math.abs(wx % 60) < 34) { ctx.fillStyle = '#8a7a20'; ctx.fillRect(sx, Math.round(sy + 4 * z), step, Math.max(1, Math.round(1.6 * z))); } }
@@ -732,6 +858,9 @@ const World = {
         ctx.fillStyle = mixColor(g0, '#e8e0c4', 0.6); ctx.fillRect(Math.round(sx), Math.round(sy + z), Math.round(w - z * 0.5), Math.max(1, Math.round(z * 0.6)));
       }
     }
+    // The headwall, the one piece of the building the river can see. Drawn
+    // after the ground so it stands in front of the cut instead of under it.
+    if (cam.x < -2400 && typeof Facility !== 'undefined') Facility.drawHeadwall(ctx, cam);
   },
   // concrete shell of the lab and sewer: ceiling, back wall, ribs and lamps
   // The made ground a pipe is buried in. Above the crown and below the invert
