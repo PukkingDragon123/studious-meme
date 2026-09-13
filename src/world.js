@@ -388,8 +388,8 @@ const World = {
     // crown they are lamplight through the scum, not sun, so they go warm,
     // short and sparse; in the deep there is nothing left to make them at all.
     const roofed = this.isIndoor(cam.x);
-    const rays = roofed ? 3 : 6, rayCol = roofed ? [255, 226, 150] : [215, 255, 240];
-    const rayLen = roofed ? 0.55 : 1, rayA = roofed ? 0.7 : 1;
+    const rays = roofed ? 2 : 6, rayCol = roofed ? [255, 226, 150] : [215, 255, 240];
+    const rayLen = roofed ? 0.45 : 1, rayA = roofed ? 0.28 : 1;
     if (light > 0.3 || roofed) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
@@ -434,6 +434,19 @@ const World = {
     cap(0); ctx.fillStyle = B.lab ? '#2c3438' : mixColor(g1, '#000000', 0.1); ctx.fill();
     cap(28 * z); ctx.fillStyle = B.lab ? '#232a2e' : mixColor(g1, '#000000', 0.3); ctx.fill();
     cap(90 * z); ctx.fillStyle = B.lab ? '#1a2024' : mixColor(g2, '#000000', 0.12); ctx.fill();
+    // Under the invert is the same masonry the bore is lined with, so the
+    // ground and the wall are one building instead of two textures meeting.
+    if (!B.lab && typeof Sewer !== 'undefined' && Sewer.styleOf(B)) {
+      ctx.save(); cap(0); ctx.clip();
+      const SP2 = Sewer.pal(BP, Sewer.styleOf(B));
+      ctx.fillStyle = mixColor(SP2.face, SP2.void, 0.3); ctx.fillRect(0, 0, W, H);
+      Sewer.masonry(ctx, cam, SP2, Sewer.styleOf(B), 1, 0.85);
+      // and it goes dark with depth, because you are looking into the invert
+      const gg = ctx.createLinearGradient(0, 0, 0, H);
+      gg.addColorStop(0, 'rgba(0,0,0,0)'); gg.addColorStop(1, 'rgba(0,0,0,0.62)');
+      ctx.fillStyle = gg; ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
     // brick or block courses down the face of the ground, locked to the world
     ctx.save(); cap(2 * z); ctx.clip();
     const brick = B.roman ? Tex.get('brick|r|' + g2, 32, (x, S) => {
@@ -486,8 +499,26 @@ const World = {
       cap(12 * z); ctx.fillStyle = '#7d8388'; ctx.fill();
       cap(15 * z); ctx.fillStyle = '#5c6469'; ctx.fill();
       cap(34 * z); ctx.fillStyle = '#2b3236'; ctx.fill();
-      cap(38 * z); ctx.fillStyle = '#1b2124'; ctx.fill();
-      for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (((wx % 120) + 120) % 120 < 8) { ctx.fillStyle = '#242b2f'; ctx.fillRect(sx, Math.round(sy + 38 * z), step, Math.round(40 * z)); } }
+      cap(38 * z); ctx.fillStyle = '#12171a'; ctx.fill();
+      // Under the slab is not more slab: it is the void the building runs its
+      // services through, and you are about to drop through it.
+      ctx.save(); cap(38 * z); ctx.clip();
+      const void1 = Tex.get('fbvoid', 64, (x, S) => {
+        x.fillStyle = '#12171a'; x.fillRect(0, 0, S, S);
+        for (let i = 0; i < 60; i++) { const gx = ihash(i, 31) * S, gy = ihash(i, 32) * S; x.fillStyle = ihash(i, 33) > 0.5 ? 'rgba(90,104,108,0.28)' : 'rgba(20,26,28,0.6)'; x.fillRect(gx | 0, gy | 0, 2, 1); }
+      });
+      Tex.fill(ctx, void1, cam.x, cam.y, z, 1);
+      for (let i = 0; i < pts.length; i += 1) {
+        const [sx, sy, wx] = pts[i];
+        const m = ((wx % 90) + 90) % 90;
+        if (m < 10) { ctx.fillStyle = '#2a3338'; ctx.fillRect(sx, Math.round(sy + 38 * z), step, Math.round(80 * z)); ctx.fillStyle = '#3b464c'; ctx.fillRect(sx, Math.round(sy + 38 * z), Math.max(1, Math.round(2 * z)), Math.round(80 * z)); }
+      }
+      // two service runs below the slab, one of them dripping
+      for (const [d, col, hi] of [[22, '#454f54', '#616d73'], [40, '#3a4a44', '#54685f']]) {
+        for (let i = 0; i < pts.length; i += 1) { const [sx, sy] = pts[i]; ctx.fillStyle = col; ctx.fillRect(sx, Math.round(sy + (38 + d) * z), step, Math.round(9 * z)); ctx.fillStyle = hi; ctx.fillRect(sx, Math.round(sy + (38 + d) * z), step, Math.max(1, Math.round(2 * z))); }
+      }
+      ctx.restore();
+      if (chance(0.05)) { const wx = cam.toWorldX(rand(0, W)); G.fx.add({ type: 'drop', x: wx, y: this.floorY(wx) + 48, vx: 0, vy: 60, s: 1, color: '#7f9a92', life: 2 }); }
       for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (Math.abs(wx % 60) < 34) { ctx.fillStyle = '#8a7a20'; ctx.fillRect(sx, Math.round(sy + 4 * z), step, Math.max(1, Math.round(1.6 * z))); } }
     }
     if (B.lab || B.pipe) Facility.drawFloor(ctx, cam);

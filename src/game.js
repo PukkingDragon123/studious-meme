@@ -768,6 +768,7 @@ const G = {
     this.timeScale = lerp(this.timeScale, this.slowT > 0 ? this.slowScale : 1, 0.2);
     let dt = raw * this.timeScale;
     if (this.hitstopT > 0) { this.hitstopT -= raw; dt = 0; }
+    this.dt = dt;                 // the renderers that animate scenery read this
     this.watchFrameRate(raw);
     this.update(dt, raw);
     this.render();
@@ -1200,9 +1201,15 @@ const G = {
   },
   updateCamera(dt) {
     const P = this.player, c = this.cam;
-    const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
-    // the trolley ride is framed close, on the tank and the two pushing it
-    const tz2 = Opening.on && Opening.phase === 'carry' ? 1.75 : Opening.on && Opening.phase === 'slide' ? Math.min(tz, 1.1) : tz;
+    // A hatchling framed at the same zoom as a bull is a ten-pixel smudge in
+    // the middle of an empty room. The shot is framed on the animal, so the
+    // smaller it is the closer the camera comes: at 0.3 ft you are looking at
+    // a tunnel you could touch, and it opens out as you grow into it.
+    const tz = clamp(1.35 / Math.pow(P.vis, 0.95), 0.22, 2.9) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
+    // the trolley ride is framed on the tank and the two pushing it; the ride
+    // down the pipe wants a little more of the pipe than that
+    const tz2 = Opening.on && Opening.phase === 'carry' ? clamp(tz, 1.6, 2.2)
+      : Opening.on && (Opening.phase === 'slide' || Opening.phase === 'drop') ? clamp(tz * 0.62, 1.1, 1.7) : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole

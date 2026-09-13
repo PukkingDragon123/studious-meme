@@ -249,8 +249,24 @@ const Facility = {
         g.addColorStop(0, 'rgba(255,150,70,0.22)'); g.addColorStop(1, 'rgba(255,150,70,0)');
         ctx.fillStyle = g; ctx.fillRect(lx - 70 * z, ly, 140 * z, 140 * z); ctx.restore();
       }
+      // the back of the pen: a tiled board with a stencil on it, and the
+      // waterline the keepers hold it at
+      px(sx + 12 * z, inY, pw - 6 * z, 3 * z, '#0f2422');
+      for (let k = 0; k < 5; k++) px(sx + 16 * z + k * (pw - 14 * z) / 5, inY + 5 * z, 2 * z, (botY - inY) * 0.8, 'rgba(255,255,255,0.03)');
+      px(sx + 12 * z, botY - 36 * z, pw - 6 * z, 2 * z, state === 'empty' ? '#4a4436' : '#63b0a4');
+      // a haul-out rock and a drain in the corner
+      px(sx + 22 * z, botY - 18 * z, 22 * z, 9 * z, '#4e4a40');
+      px(sx + 22 * z, botY - 18 * z, 22 * z, 2 * z, '#66604f');
+      px(sx + pw - 16 * z, botY - 5 * z, 10 * z, 4 * z, '#22282a');
       // the animal
-      if (state !== 'empty') this.penCroc(ctx, sx + w * 0.5, botY - 10 * z, (PEN * 0.42) * z, seed, state);
+      if (state !== 'empty') this.penCroc(ctx, sx + w * 0.5, botY - 12 * z, (PEN * 0.46) * z, seed, state, i);
+      // algae creeping up the inside of the glass
+      ctx.globalAlpha = 0.35;
+      for (let k = 0; k < 14; k++) {
+        const gx = sx + 12 * z + ihash(k + i * 7, 91) * (pw - 10 * z);
+        px(gx, botY - (4 + ihash(k, 92) * 16) * z, 2 * z, (4 + ihash(k, 92) * 16) * z, '#3f6a4a');
+      }
+      ctx.globalAlpha = 1;
       // the glass, its frame, and the muck on it
       ctx.fillStyle = C.glass; ctx.fillRect(Math.round(sx + 9 * z), Math.round(top), Math.round(pw), Math.round(botY - top));
       ctx.fillStyle = 'rgba(220,255,250,0.10)';
@@ -283,6 +299,17 @@ const Facility = {
         px(sx + 20 * z, floorS - 10 * z, 22 * z, 3 * z, '#5a6166');
       }
     }
+    // a services bulkhead over the run: feed pipe, valves and a light every pen
+    const by2 = floorS - 196 * z;
+    px(0, by2, G.W, 7 * z, C.steelD);
+    px(0, by2, G.W, 2 * z, C.steel);
+    for (let wx = Math.floor(Math.max(leftW, r.x0) / PEN) * PEN; wx < Math.min(rightW, r.x1); wx += PEN) {
+      const [sx] = cam.toScreen(wx + PEN * 0.5, 0);
+      px(sx - 2 * z, by2 + 7 * z, 4 * z, 9 * z, '#48555c');
+      for (let a = 0; a < 5; a++) { const an = a * TAU / 5; px(sx + Math.cos(an) * 6 * z - z, by2 + 4 * z + Math.sin(an) * 6 * z - z, 3 * z, 3 * z, '#8c99a0'); }
+      px(sx + 30 * z, by2 + 7 * z, 14 * z, 4 * z, '#2a3236');
+      px(sx + 32 * z, by2 + 10 * z, 10 * z, 2 * z, '#e8f4ee');
+    }
     // the keeper's gantry along the top of the run, and a hose reel
     const gy = floorS - 176 * z;
     px(0, gy, G.W, 4 * z, C.steel);
@@ -294,35 +321,39 @@ const Facility = {
     }
   },
 
-  // A crocodile in a pen: not the player's rig, just a clean side-on animal
-  // that breathes, blinks and moves its tail. Small ones in most of the pens,
-  // one that is not small at all.
-  penCroc(ctx, cx, by, len, seed, state) {
-    const big = seed > 0.72, L = len * (big ? 1.4 : 0.95), h = L * 0.18;
-    const t = World.t + seed * 9;
-    const breathe = Math.sin(t * 0.8) * h * 0.12;
-    const sway = Math.sin(t * 0.55) * L * 0.06;
-    const skin = big ? '#5c6b44' : '#6b7b50', skinD = big ? '#3c4830' : '#47543a', skinL = big ? '#7d8c60' : '#8a9a6a';
-    const px = (x, y, w, hh, c) => this.px(ctx, x, y, w, hh, c);
-    const y0 = by - h - breathe;
-    // tail, body, head, all as tapering blocks
-    px(cx - L * 0.5 - sway, y0 + h * 0.25, L * 0.28, h * 0.5, skinD);
-    px(cx - L * 0.28, y0 + h * 0.1, L * 0.34, h * 0.85, skin);
-    px(cx - L * 0.28, y0 + h * 0.1, L * 0.34, h * 0.22, skinL);
-    px(cx + L * 0.06, y0 + h * 0.2, L * 0.2, h * 0.62, skin);
-    px(cx + L * 0.24, y0 + h * 0.3, L * 0.26, h * 0.42, skinD);   // the snout
-    px(cx + L * 0.24, y0 + h * 0.3, L * 0.26, h * 0.12, skinL);
-    // scutes along the back
-    for (let i = 0; i < 7; i++) px(cx - L * 0.3 + i * L * 0.075, y0 + h * 0.02, L * 0.04, h * 0.14, skinD);
-    // legs
-    px(cx - L * 0.16, by - h * 0.3, L * 0.05, h * 0.34, skinD);
-    px(cx + L * 0.06, by - h * 0.3, L * 0.05, h * 0.34, skinD);
-    // eye, and the blink
-    const blink = ((t * 0.4) % 6) < 0.16;
-    px(cx + L * 0.17, y0 + h * 0.12, L * 0.05, h * 0.2, blink ? skinD : '#e8d86a');
-    if (!blink) px(cx + L * 0.185, y0 + h * 0.16, L * 0.02, h * 0.12, '#1a1a12');
-    // the tag on the tail, because everything in here is numbered
-    px(cx - L * 0.42 - sway, y0 + h * 0.3, L * 0.05, h * 0.2, '#d8d0b0');
+  // A crocodile in a pen is a crocodile. Not a row of blocks standing in for
+  // one: the same chain, the same parts and the same renderer the player is
+  // drawn with, solved on a slow idle so the animals breathe, drift and open
+  // their mouths at nothing. One pen has something in it that is not a
+  // hatchling any more.
+  penCroc(ctx, cx, by, len, seed, state, i) {
+    if (typeof CrocView === 'undefined' || !G.player) return;
+    this._pen = this._pen || {};
+    let v = this._pen[i];
+    if (!v) {
+      v = this._pen[i] = CrocView.make();
+      v.t = seed * 11;
+      for (let k = 0; k < 30; k++) v.chain.solve(0, 0, 0, 1, 1 / 60, 0.15, false);
+    }
+    const dt = Math.min(0.05, G.dt || 1 / 60);
+    v.t += dt;
+    const big = seed > 0.72;
+    // an idle: a long slow drift, a tail that follows it, and a jaw that
+    // opens every so often for no reason anybody has written down
+    const drift = Math.sin(v.t * 0.42) * 5 + Math.sin(v.t * 0.17 + 2) * 3;
+    const gape = Math.max(0, Math.sin(v.t * 0.31 + seed * 5) - 0.86) * 6;
+    v.x = drift; v.y = Math.sin(v.t * 0.6 + seed) * 1.2;
+    v.a = Math.sin(v.t * 0.23 + seed * 3) * 0.07;
+    v.jaw = clamp(gape, 0, 0.55);
+    v.chain.solve(v.x, v.y, v.a, 1, dt, 0.2 + Math.abs(Math.sin(v.t * 0.42)) * 0.3, false);
+    v.legPhase += dt * 0.5;
+    const scale = (len / 64) * (big ? 1.5 : 1);
+    ctx.save();
+    ctx.globalAlpha = 0.96;
+    CrocView.draw(ctx, v, G.player.parts, cx, by - len * 0.03, scale);
+    ctx.restore();
+    // the numbered tag on its tail, because everything in here is numbered
+    this.px(ctx, cx - len * 0.46, by - len * 0.16, Math.max(1, len * 0.05), Math.max(1, len * 0.06), '#d8d0b0');
   },
 
   // --- PLANT ROOM: what keeps the pens alive ---------------------------

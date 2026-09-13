@@ -173,7 +173,7 @@ the same renderer as everything else.
 | --- | --- |
 | **West bulkhead** | a blast door with a wheel on it, and the stencil over it |
 | **Transfer corridor** | white tile to shoulder height under a capping rail and a painted stripe, doors with portholes and keypads, a hose reel, a distribution board, a spill kit |
-| **Habitat hall** | a run of glass-fronted pens with crocodiles in them: shallow water, a sand bank, a heat lamp over each, feed hatches, a keeper's gantry, numbered plates, one pane cracked from the inside and one pen standing open |
+| **Habitat hall** | a run of glass-fronted pens with crocodiles in them — the same chain, parts and renderer the player is drawn with, solved on a slow idle so they breathe, drift and gape at nothing. Shallow water to a marked line, a haul-out rock, a drain, a heat lamp over each, algae up the inside of the glass, feed hatches, a keeper's gantry, a services bulkhead with valve wheels, numbered plates, one pane cracked from the inside and one pen standing open |
 | **Plant room** | the filtration that keeps the pens alive — vessels, a manifold with valve wheels, a pump running, a puddle under the leak |
 | **Access chamber** | bare block, a sump pump and its rising main, a ladder somebody never finished, and a cast manhole set in the floor |
 | **Loading dock** | a shutter, a leveller, and the next truck backed up to it with its doors open and empty crates racked inside |
@@ -254,6 +254,15 @@ single biggest jump the alarm can make.
 
 There are also **survey crews** shooting levels across the channel from the bank,
 and **traplines** somebody is coming back for.
+
+## The shot is framed on the animal
+
+A hatchling framed at the same zoom as a bull is a ten-pixel smudge in the
+middle of an empty room, which is what a 0.3 ft crocodile used to be. The zoom
+is a function of how big you are: at hatchling it is close enough that the
+tunnel is something you could touch, and it opens out as you grow into it. The
+ride down the interceptor and the trolley ride in the corridor each pin it to
+their own range, so the pipe and the tank are framed for what they are.
 
 ## You start the length of a hand
 
@@ -402,18 +411,25 @@ A **RELEASE** button sends you. It used to be the word ENTER, which is not a key
 ### Zone 1 — The Sewer Network
 
 The system is drawn as a bore, not as a room. A sewer is a section of masonry
-with a hole through it, and the hole goes somewhere: the cavity between invert
-and crown is filled with nested copies of the same section scaled toward a
-vanishing point, so the ring joints, the tide line and the light from the shafts
-all run away down the tunnel together. Nothing in that backdrop is a separate
-painting that can drift out of register with the level — every ring is the
-level's own floor and roof profile, smaller. In front of it goes the near arch:
-radial voussoirs round the crown, courses down the haunch, a rib every bay with
-a cable run sagging between the ribs, and a bulkhead lamp under every other one
-throwing the only light there is. Underground the water body goes translucent,
-because there is a pipe behind it and hiding the pipe is what made the system
-read as a wall with a pond in front of it. And the dawn mist no longer gathers
-a hundred feet under a city.
+with a hole through it, and the hole goes somewhere.
+
+The mass is brickwork, and every brick in it is its own value — a wall that
+repeats exactly is a grid, and a grid reads as wallpaper. Salts and damp bloom
+across it as scatters of single pixels rather than soft discs, because a soft
+disc at this zoom is a lens flare. Precast pipe gets concrete and a ring joint
+every segment instead: a pipe is not laid brick by brick.
+
+The cavity is cut out of that mass, and behind it is another wall half a
+parallax step back, with arch ribs marching away down it at three depths and
+the middle of the run going black. In front of it goes the arch you are
+actually inside: voussoirs round the crown, the invert lip, a rib every bay
+with a cable slung between the ribs, and a caged bulkhead lamp under every
+other one throwing the only light there is. Underground the water body goes
+translucent, because there is a pipe behind it and hiding the pipe is what made
+the system read as a wall with a pond in front of it. The dawn mist no longer
+gathers a hundred feet under a city. And the ground under the invert is the
+same masonry the bore is lined with, so the floor and the wall are one building
+instead of two textures meeting.
 
 West of the lab is a municipal system nobody has opened since 1974. Floor and ceiling are authored
 together, so headroom is the level design: long low runs where you have to surface between breaths,

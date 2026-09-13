@@ -7,25 +7,15 @@
 // flat back wall between two lines gives you a corridor with a pond in it,
 // which is what this used to be.
 //
-// So the tunnel is drawn as a tunnel. The cavity between the invert and the
-// crown is filled with nested shells of the same section, each one narrower,
-// shorter and darker than the last, sampled a little further out in world x so
-// it recedes horizontally as well as vertically. Five of those and the eye
-// reads a bore running away from you, with the ring joints, the tide line and
-// the light from the shafts all receding along with it. Nothing here is a
-// separate backdrop that can drift out of register with the level: every shell
-// is the level's own floor and roof profile, scaled.
-//
-// On top of that goes the near ring — the masonry you are actually swimming
-// through. Radial voussoirs round the crown, courses down the haunch, a
-// benching fillet where the wall turns into the channel, and the grease line
-// the water left when it was higher than it is now.
+// So: the mass is masonry, brick by brick, every brick its own value. The
+// cavity is cut out of it and behind the cavity is another wall, half a
+// parallax step back, with arch ribs marching away down it at three depths and
+// the middle of the run going black. In front of that is the arch you are
+// actually inside — crown band, haunch, invert — with a rib every bay, a cable
+// slung between the ribs and a bulkhead lamp under every other one throwing
+// the only light there is.
 // ---------------------------------------------------------------------------
 const Sewer = {
-  SHELLS: 5,
-  // how far each shell recedes: wider world sample, shorter section, darker
-  SPREAD: 0.46, SQUASH: 0.40, FADE: 0.78,
-
   // Which works this stretch was built as. null means it is not the system at
   // all — open sky, or the laboratory, which draws itself.
   styleOf(B) {
@@ -33,13 +23,11 @@ const Sewer = {
     return B.pipe ? 'pipe' : B.roman ? 'stone' : 'brick';
   },
 
-  // the palette for one style, off the biome's own ground tones so a section
-  // still reads as its own place
   pal(B, style) {
     const g = B.ground;
     if (style === 'pipe') return {
-      face: '#4a5257', lit: '#79848a', mid: '#394045', dark: '#1e2427', void: '#070a0b',
-      joint: '#2a3135', slime: '#41533c', grease: '#22281f', wet: '#5d6a6c', course: 26, radial: false,
+      face: '#4a5257', lit: '#7a858b', mid: '#394045', dark: '#1e2427', void: '#070a0b',
+      joint: '#2a3135', slime: '#41533c', grease: '#22281f', wet: '#5d6a6c', course: 26, radial: false, smooth: true,
     };
     if (style === 'stone') return {
       face: shade(g[0], 1.02), lit: shade(g[0], 1.5), mid: shade(g[1], 0.92), dark: shade(g[2], 0.64), void: '#0a0806',
@@ -52,14 +40,9 @@ const Sewer = {
   },
 
   // ---- the section across the screen, sampled once a frame ----------------
-  // The near ring, in screen space. Everything behind it is this same outline
-  // scaled toward the vanishing point, which is how a tunnel actually recedes:
-  // the far rings are the near ring, smaller, not a different profile sampled
-  // somewhere else. Sampling somewhere else is what turned the old backdrop
-  // into a black hill sitting in the middle of the shot.
   section(cam, step) {
     const W = G.W, n = Math.ceil((W + step * 3) / step);
-    const out = { n, sx: new Float64Array(n), top: new Float64Array(n), bot: new Float64Array(n), ok: new Uint8Array(n), wx: new Float64Array(n) };
+    const out = { n, step, sx: new Float64Array(n), top: new Float64Array(n), bot: new Float64Array(n), ok: new Uint8Array(n), wx: new Float64Array(n) };
     for (let i = 0; i < n; i++) {
       const sx = -step + i * step, wx = cam.toWorldX(sx);
       const rf = World.roofY(wx), fl = World.floorY(wx);
@@ -72,94 +55,237 @@ const Sewer = {
     return out;
   },
 
-  // where the bore runs away to
+  // the cavity, as a closed path
+  path(ctx, S, inset) {
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < S.n; i++) { if (!S.ok[i]) continue; const py = S.top[i] + inset; if (!started) { ctx.moveTo(S.sx[i], py); started = true; } else ctx.lineTo(S.sx[i], py); }
+    if (!started) return false;
+    for (let i = S.n - 1; i >= 0; i--) { if (!S.ok[i]) continue; ctx.lineTo(S.sx[i], S.bot[i] - inset); }
+    ctx.closePath();
+    return true;
+  },
+
   vanish(cam) {
     const rf = World.roofY(cam.x), fl = World.floorY(cam.x);
     const mid = rf === null ? 0 : (rf + fl) * 0.5;
     return [G.W / 2, cam.toScreen(0, mid)[1]];
   },
 
-  // one ring as a closed path, scaled about the vanishing point
-  path(ctx, S, k, VP) {
-    const s = Math.pow(0.82, k);
-    const vx = VP[0], vy = VP[1];
-    const X = (x) => vx + (x - vx) * s, Y = (y) => vy + (y - vy) * s;
-    ctx.beginPath();
-    let started = false;
-    for (let i = 0; i < S.n; i++) { if (!S.ok[i]) continue; const px = X(S.sx[i]), py = Y(S.top[i]); if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py); }
-    if (!started) return false;
-    for (let i = S.n - 1; i >= 0; i--) { if (!S.ok[i]) continue; ctx.lineTo(X(S.sx[i]), Y(S.bot[i])); }
-    ctx.closePath();
-    return true;
-  },
-
   draw(ctx, cam, day) {
     const W = G.W, H = G.H, z = cam.zoom, step = Math.max(3, Math.round(3 * z));
-    const B = Biome.mixPal(cam.x), style = this.styleOf(Biome.at(cam.x));
+    const style = this.styleOf(Biome.at(cam.x));
     if (!style) return false;
+    const B = Biome.mixPal(cam.x);
     const P = this.pal(B, style);
-    const VP = this.vanish(cam);
 
-    // --- the solid: everything is masonry until the bore is cut out of it ---
+    // --- the mass: everything is masonry until the bore is cut out of it ---
     ctx.fillStyle = P.mid; ctx.fillRect(0, 0, W, H);
-    this.masonry(ctx, cam, P, style, 0);
+    this.masonry(ctx, cam, P, style, 1, 0.9);
 
-    // --- the bore, five rings deep, near ring first ------------------------
-    const near = this.section(cam, step);
-    for (let k = 0; k < this.SHELLS; k++) {
-      ctx.save();
-      if (!this.path(ctx, near, k, VP)) { ctx.restore(); continue; }
+    // --- inside the bore: a wall further back, ribbed, going dark ---------
+    const S = this.section(cam, step);
+    ctx.save();
+    if (this.path(ctx, S, 0)) {
       ctx.clip();
-      const u = k / (this.SHELLS - 1);
-      ctx.fillStyle = k === this.SHELLS - 1 ? P.void : mixColor(P.face, P.void, Math.pow(u, 0.75) * 0.95);
-      ctx.fillRect(0, 0, W, H);
-      if (k < 2) this.masonry(ctx, cam, P, style, k + 1);
-      this.tide(ctx, cam, near, P, k, VP);
-      ctx.restore();
-      // the lit lip on the mouth of each ring: five fills only read as five
-      // rings once each one has an edge catching the light
-      if (k > 0 && k < this.SHELLS - 1) {
-        ctx.save(); ctx.globalAlpha = 0.8 * (1 - u * 0.45);
-        ctx.strokeStyle = mixColor(P.lit, P.void, u * 0.62); ctx.lineWidth = Math.max(1, Math.round(2.4 * z));
-        this.path(ctx, near, k, VP); ctx.stroke(); ctx.restore();
-      }
+      ctx.fillStyle = mixColor(P.face, P.void, 0.55); ctx.fillRect(0, 0, W, H);
+      this.masonry(ctx, cam, P, style, 0.55, 0.5);
+      this.farRibs(ctx, cam, S, P, style);
+      this.depth(ctx, cam, S, P);
+      this.tide(ctx, cam, S, P);
+      this.streaks(ctx, cam, S, P);
     }
+    ctx.restore();
 
-    // --- the near ring: the arch you are actually inside -------------------
-    this.nearRing(ctx, cam, near, P, style, step);
-    this.fittings(ctx, cam, near, P, style);
-    this.crownDetail(ctx, cam, near, P, style, World.t);
+    // --- the arch you are actually inside ---------------------------------
+    this.nearRing(ctx, cam, S, P, style, step);
+    this.fittings(ctx, cam, S, P, style);
+    this.crownDetail(ctx, cam, S, P, style, World.t);
     return true;
   },
 
-  // What the engineers left in it: an arch rib every bay, a cable run slung
-  // between the ribs, and a bulkhead lamp under every other one. The lamps are
-  // the whole lighting model down here — a pool of light, then nothing, then
-  // another pool — and without them a bore is just a dark hole.
+  // Courses. Every brick its own value, because a wall that repeats exactly is
+  // a grid and reads as wallpaper. Precast pipe gets concrete and ring joints
+  // instead: a pipe is not laid brick by brick.
+  masonry(ctx, cam, P, style, par, alpha) {
+    const z = cam.zoom, c = P.course;
+    const tex = Tex.get('sw3|' + style + '|' + P.face + '|' + c, 96, (x, S) => {
+      x.fillStyle = P.face; x.fillRect(0, 0, S, S);
+      if (P.smooth) {
+        for (let i = 0; i < 240; i++) {
+          const gx = ihash(i, 41) * S, gy = ihash(i, 42) * S, v = ihash(i, 43);
+          x.fillStyle = v < 0.4 ? 'rgba(255,255,255,0.045)' : v < 0.8 ? 'rgba(0,0,0,0.07)' : 'rgba(120,140,132,0.07)';
+          x.fillRect(gx | 0, gy | 0, 1 + (v > 0.93 ? 2 : 0), 1);
+        }
+        for (let y = 0; y < S; y += c) {
+          x.fillStyle = P.joint; x.fillRect(0, y, S, 2);
+          x.fillStyle = shade(P.face, 1.18); x.fillRect(0, y + 2, S, 1);
+        }
+      } else {
+        const rows = Math.round(S / c);
+        for (let r = 0; r < rows; r++) {
+          const y = r * c, off = (r % 2) * c;
+          for (let bx = -c; bx < S; bx += c * 2) {
+            const hh = ihash(r * 37 + Math.floor((bx + off) / c), 5);
+            x.fillStyle = hh < 0.16 ? shade(P.face, 0.76) : hh < 0.34 ? shade(P.face, 0.89) : hh < 0.72 ? P.face : shade(P.face, 1.1);
+            x.fillRect(bx + off + 1, y + 1, c * 2 - 2, c - 2);
+            x.globalAlpha = 0.3; x.fillStyle = shade(P.face, 1.28);
+            x.fillRect(bx + off + 1, y + 1, c * 2 - 2, 1);
+            x.globalAlpha = 1;
+          }
+          x.fillStyle = P.joint; x.fillRect(0, y, S, 1);
+        }
+        x.fillStyle = P.joint;
+        for (let r = 0; r < rows; r++) { const y = r * c, off = (r % 2) * c; for (let bx = -c; bx < S; bx += c * 2) x.fillRect(bx + off, y, 1, c); }
+      }
+      // Salts and damp, as scatters of single pixels. A soft disc at this zoom
+      // is a lens flare, which is what the wall used to be covered in.
+      for (let i = 0; i < 26; i++) {
+        const cx2 = ihash(i, 21) * S, cy2 = ihash(i, 22) * S, r2 = 3 + ihash(i, 23) * 7;
+        const pale = ihash(i, 25) > 0.5;
+        x.globalAlpha = pale ? 0.09 : 0.11;
+        x.fillStyle = pale ? '#cfd6c8' : '#0a0e0c';
+        for (let k = 0; k < 26; k++) {
+          const a = ihash(i * 31 + k, 26) * TAU, d = Math.sqrt(ihash(i * 31 + k, 27)) * r2;
+          x.fillRect((cx2 + Math.cos(a) * d) | 0, (cy2 + Math.sin(a) * d) | 0, 1, 1);
+        }
+      }
+      x.globalAlpha = 1;
+    });
+    ctx.globalAlpha = alpha;
+    Tex.fill(ctx, tex, cam.x * par, cam.y * par, z, 1);
+    ctx.globalAlpha = 1;
+  },
+
+  // Arch ribs on the far wall, one a bay, each a band that follows the crown
+  // down both haunches. Three depths, smaller and darker going back, so the
+  // eye has somewhere to go.
+  farRibs(ctx, cam, S, P, style) {
+    const W = G.W, z = cam.zoom, BAY = 120;
+    const leftW = cam.toWorldX(-BAY), rightW = cam.toWorldX(W + BAY);
+    for (let d = 2; d >= 0; d--) {
+      const k = 0.16 + d * 0.17;
+      const col = mixColor(P.face, P.void, 0.5 + d * 0.16);
+      const lit = mixColor(P.lit, P.void, 0.55 + d * 0.15);
+      for (let wx = Math.floor(leftW / BAY) * BAY + d * 34; wx < rightW; wx += BAY) {
+        const rf = World.roofY(wx); if (rf === null) continue;
+        const fl = World.floorY(wx), h = fl - rf;
+        const [sx, sy] = cam.toScreen(wx, rf + h * k);
+        const [, by] = cam.toScreen(wx, fl - h * k * 0.5);
+        const w2 = Math.max(2, Math.round((13 - d * 3) * z));
+        ctx.fillStyle = col; ctx.fillRect(Math.round(sx - w2 / 2), Math.round(sy), w2, Math.round(by - sy));
+        ctx.fillStyle = lit; ctx.fillRect(Math.round(sx - w2 / 2), Math.round(sy), Math.max(1, Math.round(1.6 * z)), Math.round(by - sy));
+        ctx.fillStyle = col; ctx.fillRect(Math.round(sx - w2), Math.round(by), w2 * 2, Math.max(1, Math.round(3 * z)));
+      }
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = col;
+      for (let i = 0; i < S.n; i++) {
+        if (!S.ok[i]) continue;
+        const hh = S.bot[i] - S.top[i];
+        ctx.fillRect(S.sx[i], Math.round(S.top[i] + hh * k), S.step, Math.max(1, Math.round(3 * z)));
+      }
+      ctx.globalAlpha = 1;
+    }
+  },
+
+  // The dark down the middle of the run.
+  depth(ctx, cam, S, P) {
+    const W = G.W, H = G.H;
+    const vp = this.vanish(cam);
+    const g = ctx.createRadialGradient(vp[0], vp[1], 4, vp[0], vp[1], Math.max(W, H) * 0.42);
+    g.addColorStop(0, P.void);
+    g.addColorStop(0.45, mixColor(P.void, P.face, 0.18));
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  },
+
+  // The tide line the system left when it was running fuller than it is now.
+  tide(ctx, cam, S, P) {
+    const z = cam.zoom, W = G.W;
+    const [, wy] = cam.toScreen(0, World.surface(cam.x));
+    if (wy < -20 || wy > G.H + 20) return;
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = P.grease; ctx.fillRect(0, Math.round(wy - 7 * z), W, Math.ceil(7 * z));
+    ctx.fillStyle = P.slime; ctx.fillRect(0, Math.round(wy), W, Math.ceil(3 * z));
+    ctx.globalAlpha = 0.25;
+    for (let sx = 0; sx < W; sx += Math.max(3, Math.round(6 * z))) {
+      const h = ihash(Math.floor((cam.x + sx / cam.zoom) / 7), 71);
+      if (h > 0.5) continue;
+      ctx.fillStyle = P.slime;
+      ctx.fillRect(sx, Math.round(wy + 3 * z), Math.max(1, Math.round(2 * z)), Math.ceil((2 + h * 18) * z));
+    }
+    ctx.globalAlpha = 1;
+  },
+
+  // Water has run down this wall for a hundred years and left it in stripes.
+  streaks(ctx, cam, S, P) {
+    const W = G.W, z = cam.zoom;
+    const leftW = cam.toWorldX(-30), rightW = cam.toWorldX(W + 30);
+    for (let wx = Math.floor(leftW / 19) * 19; wx < rightW; wx += 19) {
+      const h = ihash(Math.floor(wx / 19), 811);
+      if (h > 0.5) continue;
+      const rf = World.roofY(wx); if (rf === null) continue;
+      const fl = World.floorY(wx);
+      const [sx, sy] = cam.toScreen(wx, rf);
+      const len = (fl - rf) * (0.2 + h * 0.9) * z;
+      ctx.globalAlpha = 0.10 + h * 0.18;
+      ctx.fillStyle = h < 0.2 ? mixColor(P.lit, '#ffffff', 0.4) : P.grease;
+      ctx.fillRect(Math.round(sx), Math.round(sy), Math.max(1, Math.round((1 + h * 3) * z)), Math.round(len));
+      ctx.globalAlpha = 1;
+    }
+  },
+
+  // The arch you are inside: voussoirs round the crown, the invert lip, and a
+  // deep shadow top and bottom so the bore has a roof and a floor rather than
+  // reading as a cut-out.
+  nearRing(ctx, cam, S, P, style, step) {
+    const W = G.W, H = G.H, z = cam.zoom, TH = 15;
+    for (let i = 0; i < S.n; i++) {
+      if (!S.ok[i]) continue;
+      const sx = S.sx[i], top = S.top[i], bot = S.bot[i], wx = S.wx[i], th = TH * z;
+      if (top > -th - 4 && top < H + 4) {
+        ctx.fillStyle = P.face; ctx.fillRect(sx, Math.round(top - th), Math.ceil(step), Math.ceil(th));
+        ctx.fillStyle = P.lit; ctx.fillRect(sx, Math.round(top - 3 * z), Math.ceil(step), Math.max(1, Math.round(3 * z)));
+        ctx.fillStyle = P.joint; ctx.fillRect(sx, Math.round(top), Math.ceil(step), Math.max(1, Math.round(2 * z)));
+        if (P.radial && ((wx % P.course) + P.course) % P.course < step / z) {
+          ctx.fillStyle = P.joint; ctx.fillRect(sx, Math.round(top - th), Math.max(1, Math.round(1.6 * z)), Math.ceil(th));
+        }
+      }
+      if (bot > -4 && bot < H + th + 4) {
+        ctx.fillStyle = P.wet; ctx.fillRect(sx, Math.round(bot - 2 * z), Math.ceil(step), Math.max(1, Math.round(2 * z)));
+        ctx.fillStyle = P.dark; ctx.fillRect(sx, Math.round(bot), Math.ceil(step), Math.ceil(6 * z));
+      }
+    }
+    const gTop = ctx.createLinearGradient(0, 0, 0, H);
+    gTop.addColorStop(0, 'rgba(0,0,0,0.55)'); gTop.addColorStop(0.34, 'rgba(0,0,0,0)');
+    gTop.addColorStop(0.72, 'rgba(0,0,0,0)'); gTop.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = gTop; ctx.fillRect(0, 0, W, H);
+  },
+
+  // What the engineers left in it: a rib every bay, a cable run slung between
+  // the ribs, and a bulkhead lamp under every other one.
   fittings(ctx, cam, S, P, style) {
-    const W = G.W, H = G.H, z = cam.zoom, BAY = 150;
+    const W = G.W, z = cam.zoom, BAY = 150;
     const leftW = cam.toWorldX(-BAY), rightW = cam.toWorldX(W + BAY);
     const rib = shade(P.face, 0.72), ribL = shade(P.face, 1.3);
-    // ribs and the conduit between them
     for (let wx = Math.floor(leftW / BAY) * BAY; wx < rightW; wx += BAY) {
       const rf = World.roofY(wx); if (rf === null) continue;
       const fl = World.floorY(wx);
       const [sx, sy] = cam.toScreen(wx, rf), fy = cam.toScreen(wx, fl)[1];
-      const drop = Math.min(fy - sy, (fl - rf) * 0.42 * z);
-      ctx.fillStyle = rib; ctx.fillRect(Math.round(sx - 5 * z), Math.round(sy), Math.round(10 * z), Math.round(drop));
-      ctx.fillStyle = ribL; ctx.fillRect(Math.round(sx - 5 * z), Math.round(sy), Math.max(1, Math.round(1.6 * z)), Math.round(drop));
-      ctx.fillStyle = shade(P.face, 0.5); ctx.fillRect(Math.round(sx + 3 * z), Math.round(sy), Math.max(1, Math.round(2 * z)), Math.round(drop));
-      // the cable run to the next rib, sagging
+      const drop = Math.min(fy - sy, (fl - rf) * 0.3 * z);
+      ctx.fillStyle = rib; ctx.fillRect(Math.round(sx - 6 * z), Math.round(sy), Math.round(12 * z), Math.round(drop));
+      ctx.fillStyle = ribL; ctx.fillRect(Math.round(sx - 6 * z), Math.round(sy), Math.max(1, Math.round(1.8 * z)), Math.round(drop));
+      ctx.fillStyle = shade(P.face, 0.46); ctx.fillRect(Math.round(sx + 4 * z), Math.round(sy), Math.max(1, Math.round(2 * z)), Math.round(drop));
+      ctx.fillStyle = rib; ctx.fillRect(Math.round(sx - 10 * z), Math.round(sy + drop), Math.round(20 * z), Math.max(1, Math.round(4 * z)));
       const nx = wx + BAY, nr = World.roofY(nx);
       if (nr !== null) {
         const [nsx, nsy] = cam.toScreen(nx, nr);
-        ctx.strokeStyle = shade(P.face, 0.42); ctx.lineWidth = Math.max(1, Math.round(1.8 * z));
-        ctx.beginPath(); ctx.moveTo(sx, sy + 6 * z); ctx.quadraticCurveTo((sx + nsx) / 2, (sy + nsy) / 2 + 13 * z, nsx, nsy + 6 * z); ctx.stroke();
+        ctx.strokeStyle = shade(P.face, 0.4); ctx.lineWidth = Math.max(1, Math.round(2 * z));
+        ctx.beginPath(); ctx.moveTo(sx, sy + 7 * z); ctx.quadraticCurveTo((sx + nsx) / 2, (sy + nsy) / 2 + 14 * z, nsx, nsy + 7 * z); ctx.stroke();
         ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = Math.max(1, Math.round(z));
-        ctx.beginPath(); ctx.moveTo(sx, sy + 5 * z); ctx.quadraticCurveTo((sx + nsx) / 2, (sy + nsy) / 2 + 12 * z, nsx, nsy + 5 * z); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sx, sy + 6 * z); ctx.quadraticCurveTo((sx + nsx) / 2, (sy + nsy) / 2 + 13 * z, nsx, nsy + 6 * z); ctx.stroke();
       }
     }
-    // the lamps, between the ribs
     for (let wx = Math.floor(leftW / BAY) * BAY + BAY / 2; wx < rightW; wx += BAY) {
       const rf = World.roofY(wx); if (rf === null) continue;
       const [lx, ly] = cam.toScreen(wx, rf);
@@ -167,112 +293,34 @@ const Sewer = {
       const dead = seed < 0.2;
       const flick = seed < 0.34 ? (Math.sin(World.t * 13 + wx) > -0.35 ? 1 : 0.25) : 1;
       const on = dead ? 0 : flick;
-      // the bracket and the fitting under it
-      ctx.fillStyle = shade(P.face, 0.45); ctx.fillRect(Math.round(lx - z), Math.round(ly), Math.max(1, Math.round(2 * z)), Math.round(6 * z));
-      ctx.fillStyle = '#2a2f30'; ctx.fillRect(Math.round(lx - 7 * z), Math.round(ly + 5 * z), Math.round(14 * z), Math.round(4 * z));
-      ctx.fillStyle = on ? mixColor('#ffe8a8', '#ffffff', 0.2 * on) : '#38383a';
-      ctx.fillRect(Math.round(lx - 6 * z), Math.round(ly + 8 * z), Math.round(12 * z), Math.round(3 * z));
+      ctx.fillStyle = shade(P.face, 0.45); ctx.fillRect(Math.round(lx - z), Math.round(ly), Math.max(1, Math.round(2 * z)), Math.round(7 * z));
+      ctx.fillStyle = '#23282a'; ctx.fillRect(Math.round(lx - 8 * z), Math.round(ly + 6 * z), Math.round(16 * z), Math.round(5 * z));
+      ctx.fillStyle = '#39403f'; ctx.fillRect(Math.round(lx - 8 * z), Math.round(ly + 6 * z), Math.round(16 * z), Math.max(1, Math.round(z)));
+      ctx.fillStyle = on ? mixColor('#ffe8a8', '#ffffff', 0.25 * on) : '#38383a';
+      ctx.fillRect(Math.round(lx - 6 * z), Math.round(ly + 10 * z), Math.round(12 * z), Math.round(3 * z));
+      ctx.fillStyle = '#1b1f20';
+      for (let k = 0; k < 4; k++) ctx.fillRect(Math.round(lx - 6 * z + k * 4 * z), Math.round(ly + 10 * z), Math.max(1, Math.round(z)), Math.round(3 * z));
       if (!on) continue;
-      // the pool: a cone down the bore and a disc on whatever is under it
       const su = World.surface(wx), fl = World.floorY(wx);
       const hit = Math.min(su > 0 ? su : fl, fl);
       const hy = cam.toScreen(wx, hit)[1];
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       const g = ctx.createLinearGradient(0, ly, 0, hy);
-      g.addColorStop(0, `rgba(255,226,150,${(0.3 * on).toFixed(3)})`);
+      g.addColorStop(0, `rgba(255,226,150,${(0.24 * on).toFixed(3)})`);
       g.addColorStop(1, 'rgba(255,214,130,0)');
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.moveTo(lx - 8 * z, ly + 8 * z); ctx.lineTo(lx + 8 * z, ly + 8 * z);
-      ctx.lineTo(lx + 44 * z, hy); ctx.lineTo(lx - 44 * z, hy); ctx.closePath(); ctx.fill();
-      const rg = ctx.createRadialGradient(lx, ly + 9 * z, 1, lx, ly + 9 * z, 52 * z);
-      rg.addColorStop(0, `rgba(255,230,164,${(0.34 * on).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,220,150,0)');
-      ctx.fillStyle = rg; ctx.fillRect(lx - 52 * z, ly - 30 * z, 104 * z, 104 * z);
+      ctx.beginPath(); ctx.moveTo(lx - 8 * z, ly + 10 * z); ctx.lineTo(lx + 8 * z, ly + 10 * z);
+      ctx.lineTo(lx + 30 * z, hy); ctx.lineTo(lx - 30 * z, hy); ctx.closePath(); ctx.fill();
+      const rg = ctx.createRadialGradient(lx, ly + 11 * z, 1, lx, ly + 11 * z, 40 * z);
+      rg.addColorStop(0, `rgba(255,230,164,${(0.30 * on).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,220,150,0)');
+      ctx.fillStyle = rg; ctx.fillRect(lx - 40 * z, ly - 24 * z, 80 * z, 80 * z);
       ctx.restore();
-      if (chance(0.02)) G.fx.add({ type: 'drop', x: wx + rand(-24, 24), y: rf + 10, vx: 0, vy: 26, s: 1, color: '#9ab0b8', life: 3 });
+      if (chance(0.02)) G.fx.add({ type: 'drop', x: wx + rand(-18, 18), y: rf + 12, vx: 0, vy: 26, s: 1, color: '#9ab0b8', life: 3 });
     }
   },
 
-  // Courses. On the sidewalls they run horizontal; round the arch they turn
-  // radial, which is the single thing that stops a tunnel reading as a wall.
-  masonry(ctx, cam, P, style, k) {
-    const W = G.W, H = G.H, z = cam.zoom;
-    const c = P.course;
-    const tex = Tex.get('sw|' + style + '|' + P.face + '|' + c, 64, (x, S) => {
-      x.fillStyle = P.face; x.fillRect(0, 0, S, S);
-      for (let y = 0; y < S; y += c) {
-        x.fillStyle = P.joint; x.fillRect(0, y, S, 1);
-        const off = ((y / c) | 0) % 2 ? c : 0;
-        for (let xx = off; xx < S; xx += c * 2) x.fillRect(xx, y, 1, c);
-        x.globalAlpha = 0.4; x.fillStyle = P.lit; x.fillRect(0, y + 1, S, 1); x.globalAlpha = 1;
-      }
-      // the odd blown brick, so the bond is not perfect
-      for (let i = 0; i < 26; i++) {
-        const bx = Math.floor(ihash(i, 3) * (S / c)) * c, by = Math.floor(ihash(i, 4) * (S / c)) * c;
-        x.fillStyle = ihash(i, 5) > 0.5 ? shade(P.face, 0.82) : shade(P.face, 1.12);
-        x.fillRect(bx, by + 1, c - 1, c - 1);
-      }
-    });
-    ctx.globalAlpha = k === 0 ? 0.85 : 0.4 / k;
-    Tex.fill(ctx, tex, cam.x * (1 + k * 0.3), cam.y, z, 1);
-    ctx.globalAlpha = 1;
-  },
-
-  // The tide line: the system ran full once and left a band of grease on the
-  // masonry, with slime hanging under it. It follows the shell, so it runs
-  // away down the tunnel with everything else.
-  tide(ctx, cam, S, P, k, VP) {
-    const z = cam.zoom, s = Math.pow(0.82, k);
-    const [, wy] = cam.toScreen(0, World.surface(cam.x));
-    const ty = VP[1] + (wy - VP[1]) * s;
-    ctx.globalAlpha = 0.55 - k * 0.09;
-    ctx.fillStyle = P.grease; ctx.fillRect(0, Math.round(ty - 6 * z * s), G.W, Math.ceil(6 * z * s));
-    ctx.fillStyle = P.slime; ctx.fillRect(0, Math.round(ty), G.W, Math.ceil(3 * z * s));
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = P.slime;
-    for (let sx = 0; sx < G.W; sx += Math.max(3, Math.round(7 * z * s))) {
-      const h = ihash(Math.floor((cam.x + sx / cam.zoom) / 7) + k * 31, 71);
-      if (h > 0.55) continue;
-      ctx.fillRect(sx, Math.round(ty + 3 * z * s), Math.max(1, Math.round(2 * z * s)), Math.ceil((2 + h * 16) * z * s));
-    }
-    ctx.globalAlpha = 1;
-  },
-
-  // The arch you are inside: voussoirs round the crown, a haunch course down
-  // each side, a benching fillet into the channel, and the wet shine on it.
-  nearRing(ctx, cam, S, P, style, step) {
-    const W = G.W, H = G.H, z = cam.zoom;
-    const TH = 15;                                   // the ring, in world units
-    for (let i = 0; i < S.n; i++) {
-      if (!S.ok[i]) continue;
-      const sx = S.sx[i], top = S.top[i], bot = S.bot[i];
-      const wx = S.wx[i];
-      const th = TH * z;
-      // the crown: a band of masonry with a lit soffit under it
-      if (top > -th - 4 && top < H + 4) {
-        ctx.fillStyle = P.face; ctx.fillRect(sx, Math.round(top - th), Math.ceil(step), Math.ceil(th));
-        ctx.fillStyle = P.lit; ctx.fillRect(sx, Math.round(top - 3 * z), Math.ceil(step), Math.max(1, Math.round(3 * z)));
-        ctx.fillStyle = P.joint; ctx.fillRect(sx, Math.round(top), Math.ceil(step), Math.max(1, Math.round(2 * z)));
-        // voussoirs: a radial joint every so often round the arch
-        if (P.radial && ((wx % P.course) + P.course) % P.course < step / z) {
-          ctx.fillStyle = P.joint; ctx.fillRect(sx, Math.round(top - th), Math.max(1, Math.round(1.6 * z)), Math.ceil(th));
-        }
-      }
-      // the invert lip and the benching fillet either side of the channel
-      if (bot > -4 && bot < H + th + 4) {
-        ctx.fillStyle = P.wet; ctx.fillRect(sx, Math.round(bot - 2 * z), Math.ceil(step), Math.max(1, Math.round(2 * z)));
-        ctx.fillStyle = P.dark; ctx.fillRect(sx, Math.round(bot), Math.ceil(step), Math.ceil(6 * z));
-      }
-    }
-    // a deep shadow under the springing on both sides of the shot, so the bore
-    // has a top and a bottom rather than reading as a flat cut-out
-    const gTop = ctx.createLinearGradient(0, 0, 0, H);
-    gTop.addColorStop(0, 'rgba(0,0,0,0.55)'); gTop.addColorStop(0.34, 'rgba(0,0,0,0)');
-    gTop.addColorStop(0.72, 'rgba(0,0,0,0)'); gTop.addColorStop(1, 'rgba(0,0,0,0.5)');
-    ctx.fillStyle = gTop; ctx.fillRect(0, 0, W, H);
-  },
-
-  // What hangs off the crown: efflorescence, a stalactite here and there, the
-  // drip off it, and roots that found a joint.
+  // What hangs off the crown: a lime stalactite, efflorescence bleeding out of
+  // a joint, and a root that got in and is doing the rest of the damage slowly.
   crownDetail(ctx, cam, S, P, style, t) {
     const W = G.W, H = G.H, z = cam.zoom;
     const leftW = cam.toWorldX(-40), rightW = cam.toWorldX(W + 40);
@@ -282,7 +330,6 @@ const Sewer = {
       const [sx, sy] = cam.toScreen(wx, rf);
       if (sy < -30 || sy > H + 10) continue;
       if (h < 0.22) {
-        // a lime stalactite, and the drip that made it
         const len = (4 + h * 26) * z;
         ctx.fillStyle = mixColor(P.lit, '#e8e4d0', 0.5);
         for (let d = 0; d < len; d += Math.max(1, Math.round(2 * z))) {
@@ -291,13 +338,11 @@ const Sewer = {
         }
         if (chance(0.006)) G.fx.add({ type: 'drop', x: wx, y: rf + len / z, vx: 0, vy: 40, s: 1, color: '#a8c0c0', life: 3 });
       } else if (h < 0.44) {
-        // efflorescence bleeding out of a joint
         ctx.globalAlpha = 0.35;
         ctx.fillStyle = mixColor(P.lit, '#ffffff', 0.55);
         ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy), Math.ceil(6 * z), Math.ceil((6 + h * 30) * z));
         ctx.globalAlpha = 1;
       } else if (h < 0.52 && style !== 'pipe') {
-        // a root that got in and is doing the rest of the damage slowly
         ctx.strokeStyle = mixColor('#6a5a38', P.dark, 0.35); ctx.lineWidth = Math.max(1, Math.round(1.4 * z));
         ctx.beginPath(); ctx.moveTo(sx, sy);
         ctx.bezierCurveTo(sx + 6 * z, sy + 14 * z, sx - 8 * z, sy + 22 * z, sx + 2 * z, sy + 38 * z);
