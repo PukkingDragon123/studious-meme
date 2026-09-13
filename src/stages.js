@@ -17,7 +17,7 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
   // ---- ZONE 1: THE SEWER NETWORK. Where you wake up and where it is learned.
-  { id: 'catacomb', zone: 'sewer', lat: 0.14, lon: 2.68, name: 'THE CATACOMBS', sub: 'A LABYRINTH UNDER ROME. FIND THE WAY OUT.', x: -2860, size: 0.22, diff: 0, intro: true },
+  { id: 'catacomb', zone: 'sewer', lat: 0.14, lon: 2.68, name: 'THE CATACOMBS', sub: 'A LABYRINTH UNDER ROME. FIND THE WAY OUT.', x: -3520, size: 0.22, diff: 0, intro: true },
   { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 0.4, diff: 0.8, need: { deep: 2200 } },
   { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 0.7, diff: 1.6, need: { deep: 4000 } },
   { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 1.2, diff: 2.4, need: { deep: 5400 } },

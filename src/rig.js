@@ -649,101 +649,121 @@ function humanVariant(sp, v) {
   return o;
 }
 function buildBiped(s) {
-  // Roughly four and a half heads tall. The old figure was under three, which is
-  // why everyone read as a bobblehead.
+  // The Melon Playground figure: a big round head on a plain block of a body,
+  // thin limbs in two segments with a visible joint at the elbow and the knee,
+  // block hands and feet, and a face that is two dots and a mouth — which is
+  // enough face to be terrified with. Everything is a part on a pivot, so it
+  // can be posed, swung, thrown and taken apart.
   const Hh = s.len;
-  const hr = Math.max(4, Math.round(Hh * 0.115)), tw = Math.max(5, Math.round(Hh * 0.24)),
-        th = Math.max(6, Math.round(Hh * 0.33)), legLen = Math.max(5, Math.round(Hh * 0.45)),
-        armLen = Math.max(5, Math.round(Hh * 0.4));
+  const hr = Math.max(5, Math.round(Hh * 0.155)), tw = Math.max(6, Math.round(Hh * 0.22)),
+        th = Math.max(7, Math.round(Hh * 0.30)), legLen = Math.max(6, Math.round(Hh * 0.40)),
+        armLen = Math.max(6, Math.round(Hh * 0.36));
+  const seg = Math.round(legLen * 0.5), aseg = Math.round(armLen * 0.5);
   const skin = s.skin || '#e0b090', hair = s.hair || '#3a2a1a', shirt = s.coat ? '#f4f4f0' : (s.shirt || '#d94a4a'), pants = s.pants || '#3050a0', OL = '#1c1410', parts = {};
-  const mkHead = scared => {
-    const o = R.mk(hr * 2 + 10, hr * 2 + 12), hx = 5 + hr, hy = 7 + hr;
-    R.blob(o, hx, hy, hr, hr * 1.05, skin, { hx: 0.15 });
+  // ---- faces ---------------------------------------------------------------
+  // one head per expression; the entity picks the one for how it feels
+  const mkHead = expr => {
+    const o = R.mk(hr * 2 + 12, hr * 2 + 14), hx = 6 + hr, hy = 8 + hr;
+    R.blob(o, hx, hy, hr, hr * 1.04, skin, { hx: 0.15 });
     // hair
     const hs = s.hairStyle || 'short';
-    if (hs !== 'bald') { R.blob(o, hx - 1, hy - hr * 0.55, hr * 0.95, hr * 0.55, hair, { hl: false }); if (hs === 'long') { R.px(o, hx - hr - 1, hy - hr * 0.5, hair, 2, hr * 1.4); R.px(o, hx - hr * 0.6, hy + hr * 0.3, hair, 1, hr * 0.7); } if (hs === 'bun') R.disc(o, hx - hr * 0.7, hy - hr * 0.9, Math.max(1.5, hr * 0.35), hair); if (hs === 'mohawk') R.px(o, hx - 1, hy - hr * 1.7, hair, 3, hr * 0.8); if (hs === 'curly') { R.disc(o, hx - hr * 0.8, hy - hr * 0.5, hr * 0.4, hair); R.disc(o, hx + hr * 0.6, hy - hr * 0.6, hr * 0.4, hair); } }
+    if (hs !== 'bald') { R.blob(o, hx - 1, hy - hr * 0.6, hr * 0.98, hr * 0.5, hair, { hl: false }); if (hs === 'long') { R.px(o, hx - hr - 1, hy - hr * 0.5, hair, 2, hr * 1.4); R.px(o, hx - hr * 0.6, hy + hr * 0.3, hair, 1, hr * 0.7); } if (hs === 'bun') R.disc(o, hx - hr * 0.7, hy - hr * 0.95, Math.max(1.5, hr * 0.35), hair); if (hs === 'mohawk') R.px(o, hx - 1, hy - hr * 1.75, hair, 3, hr * 0.85); if (hs === 'curly') { R.disc(o, hx - hr * 0.8, hy - hr * 0.5, hr * 0.4, hair); R.disc(o, hx + hr * 0.6, hy - hr * 0.6, hr * 0.4, hair); } }
     if (s.beard) R.blob(o, hx + hr * 0.15, hy + hr * 0.62, hr * 0.62, hr * 0.42, hair, { hl: false });
-    // eyes: big, wide apart; scared = wider with tiny pupils
-    const er = Math.max(1.1, hr * 0.15), ey = hy - hr * 0.06;
-    R.eye(o, hx + hr * 0.52, ey, er, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
-    R.eye(o, hx + hr * 0.04, ey, er * 0.92, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
-    // a brow over each, which is what a face reads as at this size
-    if (hr >= 4) {
-      R.px(o, hx - hr * 0.04, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
-      R.px(o, hx + hr * 0.46, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
+    // eyes: two dots, wide apart, and what they do is the whole expression
+    const ex1 = hx + hr * 0.5, ex2 = hx - hr * 0.05, ey = hy - hr * 0.1, dot = Math.max(1, Math.round(hr * 0.22));
+    const eye = (x, kind) => {
+      if (kind === 'x') { R.px(o, x - 1, ey - 1, OL); R.px(o, x + 1, ey - 1, OL); R.px(o, x, ey, OL); R.px(o, x - 1, ey + 1, OL); R.px(o, x + 1, ey + 1, OL); return; }
+      if (kind === 'wide') { R.disc(o, x, ey, dot + 1.2, '#f4f0e8'); R.px(o, x - 0.5, ey - 0.5, OL, Math.max(1, dot), Math.max(1, dot)); return; }
+      if (kind === 'shut') { R.px(o, x - dot, ey, OL, dot * 2 + 1, 1); return; }
+      if (kind === 'squint') { R.px(o, x - dot, ey, OL, dot * 2, Math.max(1, dot)); return; }
+      R.px(o, x - dot / 2, ey - dot / 2, OL, dot, dot); R.px(o, x - dot / 2, ey - dot / 2, '#f4f0e8', 1, 1);
+    };
+    const mouthY = hy + hr * 0.55;
+    if (expr === 'scared') {
+      eye(ex1, 'wide'); eye(ex2, 'wide');
+      R.px(o, ex2 - dot, ey - dot * 2.4, hair, dot * 2.2, 1); R.px(o, ex1 - dot, ey - dot * 2.4, hair, dot * 2.2, 1);   // brows up
+      R.blob(o, hx + hr * 0.25, mouthY, Math.max(2, hr * 0.3), Math.max(2, hr * 0.36), '#3a0a0a', { hl: false, shade: '#3a0a0a' });     // screaming
+      R.px(o, hx + hr * 0.1, mouthY + hr * 0.1, '#c04040', hr * 0.3, 1);                                                          // tongue
+    } else if (expr === 'alert') {
+      eye(ex1, 'dot'); eye(ex2, 'dot');
+      R.px(o, ex2 - dot, ey - dot * 1.9, hair, dot * 2, 1); R.px(o, ex1 - dot, ey - dot * 1.9, hair, dot * 2, 1);
+      R.px(o, hx + hr * 0.05, mouthY, R.lo2(skin), hr * 0.5, 1);
+    } else if (expr === 'pain') {
+      eye(ex1, 'squint'); eye(ex2, 'squint');
+      R.px(o, ex2 - dot, ey - dot * 1.6, hair, dot * 2, 1); R.px(o, ex1 - dot, ey - dot * 1.6, hair, dot * 2, 1);
+      R.blob(o, hx + hr * 0.25, mouthY, Math.max(2, hr * 0.28), Math.max(1.5, hr * 0.2), '#3a0a0a', { hl: false, shade: '#3a0a0a' });
+      for (let k = 0; k < 3; k++) R.px(o, hx + hr * 0.05 + k * hr * 0.2, mouthY - 1, '#f4f0e8');                                   // teeth
+    } else if (expr === 'dead') {
+      eye(ex1, 'x'); eye(ex2, 'x');
+      R.px(o, hx + hr * 0.1, mouthY, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.45, mouthY, '#c04040', 2, 3);                  // tongue out
+    } else if (expr === 'happy') {
+      eye(ex1, 'shut'); eye(ex2, 'shut');
+      R.px(o, hx + hr * 0.05, mouthY, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.0, mouthY - 1, R.lo2(skin), 1, 1); R.px(o, hx + hr * 0.55, mouthY - 1, R.lo2(skin), 1, 1);
+    } else {
+      eye(ex1, 'dot'); eye(ex2, 'dot');
+      R.px(o, hx + hr * 0.1, mouthY, R.lo2(skin), hr * 0.45, 1);
     }
-    if (s.glasses) { R.px(o, hx + hr * 0.04 - er - 1, ey - er, '#1c1410', hr * 0.48 + er * 2 + 2, 1); R.px(o, hx + hr * 0.52 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
-    // mouth
-    if (scared) R.blob(o, hx + hr * 0.3, hy + hr * 0.6, Math.max(1.5, hr * 0.28), Math.max(1.5, hr * 0.3), '#3a0a0a', { hl: false, shade: '#3a0a0a' });
-    else { R.px(o, hx + hr * 0.1, hy + hr * 0.55, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.6, hy + hr * 0.45, R.lo2(skin), 1, 1); }
-    // brows
-    if (scared) { R.px(o, hx + hr * 0.3, ey - er * 1.8, hair, hr * 0.45, 1); R.px(o, hx - hr * 0.5, ey - er * 1.8, hair, hr * 0.45, 1); }
+    if (s.glasses) { R.px(o, ex2 - dot - 1, ey - dot, '#1c1410', hr * 0.55 + dot * 2 + 2, 1); R.px(o, ex1 + dot, ey - dot + 1, '#1c1410', 1, dot * 2); }
     // hats
     const hc = s.hatCol || '#f0f0e0';
-    if (s.hat === 'cap') { R.blob(o, hx, hy - hr * 0.75, hr * 1.02, hr * 0.5, hc, { hl: false }); R.px(o, hx, hy - hr * 0.45, hc, hr * 1.4, 2); R.px(o, hx, hy - hr * 0.44, R.lo(hc), hr * 1.4, 1); }
-    else if (s.hat === 'bucket') { R.blob(o, hx, hy - hr * 0.7, hr * 0.95, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr * 1.3, hy - hr * 0.42, hc, hr * 2.6, 2); }
-    else if (s.hat === 'ranger') { R.blob(o, hx, hy - hr * 0.9, hr * 0.75, hr * 0.6, hc, { hl: false }); R.px(o, hx - hr * 1.5, hy - hr * 0.5, hc, hr * 3, 2); R.px(o, hx - hr * 0.6, hy - hr * 0.55, '#2a1a0a', hr * 1.2, 1); }
-    else if (s.hat === 'sun') { R.blob(o, hx, hy - hr * 0.7, hr * 0.9, hr * 0.5, hc, { hl: false }); R.px(o, hx - hr * 1.6, hy - hr * 0.42, hc, hr * 3.2, 2); R.px(o, hx - hr * 0.8, hy - hr * 0.55, '#e04080', hr * 1.6, 1); }
-    else if (s.hat === 'bandana') { R.blob(o, hx, hy - hr * 0.7, hr * 0.98, hr * 0.48, hc, { hl: false }); R.px(o, hx - hr - 2, hy - hr * 0.4, hc, 3, hr * 0.5); }
-    else if (s.hat === 'helmet') { R.blob(o, hx, hy - hr * 0.55, hr * 1.05, hr * 0.7, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.2, R.lo(hc), hr * 2, 1); }
-    else if (s.hat === 'beanie') { R.blob(o, hx, hy - hr * 0.7, hr * 1.0, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.3, R.lo(hc), hr * 2, 1); R.disc(o, hx, hy - hr * 1.25, 1.5, R.hi(hc)); }
+    if (s.hat === 'cap') { R.blob(o, hx, hy - hr * 0.78, hr * 1.02, hr * 0.5, hc, { hl: false }); R.px(o, hx, hy - hr * 0.48, hc, hr * 1.4, 2); R.px(o, hx, hy - hr * 0.47, R.lo(hc), hr * 1.4, 1); }
+    else if (s.hat === 'bucket') { R.blob(o, hx, hy - hr * 0.72, hr * 0.95, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr * 1.3, hy - hr * 0.44, hc, hr * 2.6, 2); }
+    else if (s.hat === 'ranger') { R.blob(o, hx, hy - hr * 0.92, hr * 0.75, hr * 0.6, hc, { hl: false }); R.px(o, hx - hr * 1.5, hy - hr * 0.52, hc, hr * 3, 2); R.px(o, hx - hr * 0.6, hy - hr * 0.57, '#2a1a0a', hr * 1.2, 1); }
+    else if (s.hat === 'sun') { R.blob(o, hx, hy - hr * 0.72, hr * 0.9, hr * 0.5, hc, { hl: false }); R.px(o, hx - hr * 1.6, hy - hr * 0.44, hc, hr * 3.2, 2); R.px(o, hx - hr * 0.8, hy - hr * 0.57, '#e04080', hr * 1.6, 1); }
+    else if (s.hat === 'bandana') { R.blob(o, hx, hy - hr * 0.72, hr * 0.98, hr * 0.48, hc, { hl: false }); R.px(o, hx - hr - 2, hy - hr * 0.4, hc, 3, hr * 0.5); }
+    else if (s.hat === 'helmet') { R.blob(o, hx, hy - hr * 0.58, hr * 1.06, hr * 0.72, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.2, R.lo(hc), hr * 2, 1); R.px(o, hx - hr * 1.1, hy - hr * 0.1, R.hi(hc), hr * 2.2, 1); }
+    else if (s.hat === 'beanie') { R.blob(o, hx, hy - hr * 0.72, hr * 1.0, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.3, R.lo(hc), hr * 2, 1); R.disc(o, hx, hy - hr * 1.28, 1.5, R.hi(hc)); }
+    else if (s.hat === 'hood') { R.blob(o, hx - 1, hy - hr * 0.3, hr * 1.15, hr * 1.2, hc, { hl: false }); R.blob(o, hx + hr * 0.2, hy + hr * 0.05, hr * 0.78, hr * 0.85, skin, { hl: false }); if (expr === 'dead') { eye(ex1, 'x'); eye(ex2, 'x'); } else { eye(ex1, 'squint'); eye(ex2, 'squint'); } }
     R.outline(o, OL);
-    return R.part(o, hx, hy + hr * 1.05);   // pivot: chin / top of the neck
+    return R.part(o, hx, hy + hr);                     // pivot at the neck
   };
-  parts.head = mkHead(false); parts.headScared = mkHead(true);
-  { // torso, pivot at the hips
-    const o = R.mk(tw + 6, th + 4), x0 = 3, y0 = 2;
-    R.rrect(o, x0, y0, tw, th, Math.max(1, Math.round(tw * 0.25)), shirt);
-    // round the torso off: a lit side, a shaded side and a dark turn at the far edge
+  parts.head = mkHead('calm'); parts.headScared = mkHead('scared'); parts.headAlert = mkHead('alert');
+  parts.headPain = mkHead('pain'); parts.headDead = mkHead('dead'); parts.headHappy = mkHead('happy');
+  // ---- torso: a plain block with a lit side ----------------------------------
+  { const o = R.mk(tw + 6, th + 4), x0 = 3, y0 = 2;
+    R.rrect(o, x0, y0, tw, th, Math.max(1, Math.round(tw * 0.18)), shirt);
     const sLit = R.hi(shirt), sDk = R.lo(shirt), sDk2 = R.lo2(shirt);
     for (let j = 0; j < th; j++) for (let i = 0; i < tw; i++) {
       if (!R.inside(o, x0 + i, y0 + j)) continue;
       const u = tw > 1 ? i / (tw - 1) : 0.5, bay = BAYER4[((y0 + j) & 3) * 4 + ((x0 + i) & 3)] * 0.0625 - 0.5;
-      if (u < 0.18 + bay * 0.16) R.px(o, x0 + i, y0 + j, sLit);
+      if (u < 0.2 + bay * 0.16) R.px(o, x0 + i, y0 + j, sLit);
       else if (u > 0.86 + bay * 0.1) R.px(o, x0 + i, y0 + j, sDk2);
-      else if (u > 0.66 + bay * 0.18) R.px(o, x0 + i, y0 + j, sDk);
+      else if (u > 0.68 + bay * 0.18) R.px(o, x0 + i, y0 + j, sDk);
     }
-    // collar, hem and a couple of cloth folds
     R.px(o, x0 + 1, y0, R.lo(shirt), tw - 2, 1);
     R.px(o, x0 + 1, y0 + th - 2, sDk, tw - 2, 1);
-    R.px(o, x0 + Math.round(tw * 0.45), y0 + Math.round(th * 0.45), sDk, 1, Math.max(1, Math.round(th * 0.3)));
-    R.px(o, x0 + Math.round(tw * 0.62), y0 + Math.round(th * 0.6), sDk, 1, Math.max(1, Math.round(th * 0.22)));
+    R.px(o, x0 + Math.round(tw * 0.5), y0 + Math.round(th * 0.4), sDk, 1, Math.max(1, Math.round(th * 0.35)));
     if (s.pattern === 'hawaii') for (let k = 0; k < 6; k++) R.disc(o, x0 + 1 + ihash(k, 41) * (tw - 2), y0 + 1 + ihash(k, 42) * (th - 2), 1, k % 2 ? '#f0e060' : '#f0f0f0');
     if (s.pattern === 'camo') for (let k = 0; k < 5; k++) R.px(o, x0 + 1 + ihash(k, 43) * (tw - 4), y0 + 1 + ihash(k, 44) * (th - 3), R.lo2(shirt), 2 + ihash(k, 45) * 2, 2);
     if (s.vest) { R.px(o, x0 + 1, y0, '#8a7a4a', 2, th * 0.7); R.px(o, x0 + tw - 3, y0, '#8a7a4a', 2, th * 0.7); }
     if (s.apron) { R.px(o, x0 + 1, y0 + 2, '#f0f0e0', tw - 2, th - 3); R.px(o, x0 + 2, y0 + 3, '#c04040', tw - 4, 1); }
-    if (s.coat) { R.px(o, x0 + tw / 2 - 1, y0, '#c8c8c0', 1, th); R.px(o, x0 + 2, y0 + 2, s.shirt || '#3a6ab0', tw / 2 - 3, 2); }
+    if (s.coat) { R.px(o, x0 + tw / 2 - 1, y0, '#c8c8c0', 1, th); R.px(o, x0 + 2, y0 + 2, s.shirt || '#3a6ab0', tw / 2 - 3, 2); R.px(o, x0 + tw - 4, y0 + 3, '#c04040', 2, 2); }
+    if (s.hivis) { R.px(o, x0, y0 + Math.round(th * 0.35), '#e8e8a0', tw, 2); R.px(o, x0, y0 + Math.round(th * 0.7), '#e8e8a0', tw, 2); }
     if (s.badge) R.px(o, x0 + 2, y0 + 2, '#e0c040', 2, 2);
-    if (s.shorts) { R.px(o, x0, y0 + th - 1, pants, tw, 1); }
+    if (s.stains) for (let k = 0; k < 4; k++) R.px(o, x0 + 1 + ihash(k, 51) * (tw - 3), y0 + 2 + ihash(k, 52) * (th - 4), '#4a3a2a', 2, 1);
     R.outline(o, OL);
     parts.torso = R.part(o, x0 + tw / 2, y0 + th);
   }
-  { const o = R.mk(7, armLen + 5), aw = Math.max(2, Math.round(Hh * 0.07));
-    const sl = s.coat ? '#f4f4f0' : shirt, cut = Math.round(armLen * 0.45);
-    for (let j = 0; j < armLen; j++) {
-      const c = j < cut ? sl : skin;
-      R.px(o, 3 - aw / 2, 1 + j, c, aw, 1);
-      R.px(o, 3 - aw / 2, 1 + j, R.hi(c), Math.max(1, aw * 0.34), 1);
-      R.px(o, 3 + aw / 2 - Math.max(1, aw * 0.28), 1 + j, R.lo(c), Math.max(1, aw * 0.28), 1);
+  // ---- limbs: two segments each, a joint you can see ---------------------
+  const limb = (len, w, col, tipCol, tipW, tipH) => {
+    const o = R.mk(w + 8, len + tipH + 4), cx = 4 + w / 2;
+    for (let j = 0; j < len; j++) {
+      R.px(o, cx - w / 2, 1 + j, col, w, 1);
+      R.px(o, cx - w / 2, 1 + j, R.hi(col), Math.max(1, w * 0.34), 1);
+      R.px(o, cx + w / 2 - Math.max(1, w * 0.3), 1 + j, R.lo(col), Math.max(1, w * 0.3), 1);
     }
-    R.px(o, 3 - aw / 2 - 1, cut, R.lo(sl), aw + 2, 1);                 // cuff
-    R.disc(o, 3, 1 + armLen, Math.max(1.2, aw * 0.75), skin);
-    R.px(o, 3 - aw * 0.5, 1 + armLen - aw * 0.4, R.hi(skin), Math.max(1, aw * 0.5), 1);
-    R.outline(o, OL); parts.arm = R.part(o, 3, 1); }
-  { const o = R.mk(9, legLen + 5), lw = Math.max(2, Math.round(Hh * 0.09));
-    const cut = s.shorts ? Math.round(legLen * 0.45) : legLen;
-    for (let j = 0; j < legLen; j++) {
-      const c = j < cut ? pants : skin;
-      R.px(o, 4 - lw / 2, 1 + j, c, lw, 1);
-      R.px(o, 4 - lw / 2, 1 + j, R.hi(c), Math.max(1, lw * 0.32), 1);
-      R.px(o, 4 + lw / 2 - Math.max(1, lw * 0.28), 1 + j, R.lo(c), Math.max(1, lw * 0.28), 1);
-    }
-    if (s.shorts) R.px(o, 4 - lw / 2 - 1, cut, R.lo(pants), lw + 2, 1);
-    const bc = s.boots || '#2a2018';
-    R.px(o, 4 - lw / 2 - 1, legLen - 1, bc, lw + 3, 3);
-    R.px(o, 4 - lw / 2 - 1, legLen - 1, R.hi(bc), lw + 2, 1);
-    R.px(o, 4 - lw / 2 - 1, legLen + 1, R.lo2(bc), lw + 3, 1);
-    R.outline(o, OL); parts.leg = R.part(o, 4, 1); }
+    if (tipCol) { R.px(o, cx - tipW / 2, len, tipCol, tipW, tipH); R.px(o, cx - tipW / 2, len, R.hi(tipCol), tipW, 1); }
+    R.disc(o, cx, 1, w * 0.6, col);                     // the joint, rounded
+    R.outline(o, OL);
+    return R.part(o, cx, 1);
+  };
+  const aw = Math.max(2, Math.round(Hh * 0.065)), lw = Math.max(3, Math.round(Hh * 0.085));
+  parts.uarm = limb(aseg, aw, s.coat ? '#f4f4f0' : shirt, null, 0, 0);
+  parts.farm = limb(aseg, aw, skin, skin, aw + 2, Math.max(2, aw));                     // hand as a block
+  parts.thigh = limb(seg, lw, pants, null, 0, 0);
+  parts.shin = limb(seg, Math.max(2, lw - 1), s.shorts ? skin : pants, s.boots || '#2a2018', lw + 3, 3);   // boot
+  parts.arm = parts.uarm; parts.leg = parts.thigh;      // gore and old callers ask for these
+  // ---- props ---------------------------------------------------------------
   const propLen = Math.round(Hh * 0.5);
   const mkProp = kind => {
     if (kind === 'rifle') { const o = R.mk(propLen + 2, 6); R.px(o, 1, 2, '#2a2a2a', propLen, 2); R.px(o, 1, 3, '#5a3a1a', propLen * 0.4, 2); R.px(o, propLen * 0.55, 1, '#3a3a3a', 3, 1); R.outline(o, OL); return R.part(o, propLen * 0.35, 3); }
@@ -752,6 +772,7 @@ function buildBiped(s) {
     if (kind === 'rod') { const o = R.mk(propLen * 1.4, 4); R.px(o, 1, 1, '#4a3a2a', propLen * 1.4 - 2, 1); R.px(o, 1, 2, '#2a2a2a', propLen * 0.2, 2); R.outline(o, OL); return R.part(o, 3, 2); }
     if (kind === 'camera') { const o = R.mk(8, 7); R.px(o, 1, 1, '#2a2a2a', 6, 5); R.px(o, 3, 2, '#60a0e0', 2, 2); R.px(o, 2, 0, '#4a4a4a', 3, 1); R.outline(o, OL); return R.part(o, 4, 4); }
     if (kind === 'can') { const o = R.mk(5, 7); R.px(o, 1, 1, '#c0c0c8', 3, 5); R.px(o, 1, 2, '#e04040', 3, 2); R.outline(o, OL); return R.part(o, 2, 3); }
+    if (kind === 'bottle') { const o = R.mk(5, 9); R.px(o, 1, 2, '#3a7a5a', 3, 6); R.px(o, 2, 0, '#2a5a44', 1, 3); R.px(o, 1, 2, '#8ad0a8', 1, 4); R.outline(o, OL); return R.part(o, 2, 4); }
     if (kind === 'clipboard') { const o = R.mk(7, 9); R.px(o, 1, 1, '#a08050', 5, 7); R.px(o, 2, 2, '#f4f4f0', 3, 5); R.px(o, 2, 3, '#8080a0', 3, 1); R.outline(o, OL); return R.part(o, 3, 5); }
     if (kind === 'syringe') { const o = R.mk(10, 5); R.px(o, 1, 2, '#e0e0f0', 6, 2); R.px(o, 2, 2, '#60e080', 4, 2); R.px(o, 7, 2, '#c0c0c0', 3, 1); R.outline(o, OL); return R.part(o, 4, 3); }
     if (kind === 'stick') { const o = R.mk(propLen * 0.8, 4); R.px(o, 1, 1, '#6a4a2a', propLen * 0.8 - 2, 2); R.px(o, propLen * 0.8 - 5, 0, '#f0e0b0', 4, 4); R.outline(o, OL); return R.part(o, 2, 2); }
@@ -759,25 +780,57 @@ function buildBiped(s) {
   };
   if (s.prop) parts.prop = mkProp(s.prop);
   const rig = { kind: 'biped', parts, len: Hh, height: Hh, foot: 0, head: -Hh * 0.95 };
-  // anim: {phase, speed, panic, aim, sit, swim, cast}
+  // A two-segment limb: the upper part swings from its socket, the lower one
+  // hangs off the end of it at its own angle. Returns both placements.
+  const limb2 = (up, low, x, y, a1, a2, len1, ids, alpha) => {
+    const jx = x + Math.sin(a1) * len1, jy = y + Math.cos(a1) * len1;
+    return [
+      { p: up, x, y, a: -a1, alpha, id: ids[0], kind: ids[2] },
+      { p: low, x: jx, y: jy, a: -(a1 + a2), alpha, id: ids[1], kind: ids[2] },
+    ];
+  };
+  // anim: {phase, speed, panic, aim, sit, swim, cast, push, expr, nod}
   rig.pose = anim => {
     const ph = anim.phase || 0, sp = clamp(anim.speed || 0, 0, 1.3), P = parts, out = [];
-    const panic = anim.panic ? 1 : 0, aim = anim.aim ? 1 : 0, sit = anim.sit ? 1 : 0;
-    const hipY = -legLen - 1 + sit * legLen * 0.75, bob = Math.abs(Math.sin(ph * 2)) * -1.2 * sp, swing = Math.sin(ph) * 0.65 * sp;
-    if (sit) { out.push({ p: P.leg, x: -1, y: hipY, a: -1.35, id: 'leg0', kind: 'leg' }); out.push({ p: P.leg, x: 2, y: hipY, a: -1.2, id: 'leg1', kind: 'leg' }); }
-    else if (anim.swim) { out.push({ p: P.leg, x: -1, y: hipY, a: -0.5 + Math.sin(ph * 2) * 0.5, id: 'leg0', kind: 'leg' }); out.push({ p: P.leg, x: 2, y: hipY, a: -0.5 - Math.sin(ph * 2) * 0.5, id: 'leg1', kind: 'leg' }); }
-    else { out.push({ p: P.leg, x: -1, y: hipY + bob, a: -swing, alpha: 0.85, id: 'leg0', kind: 'leg' }); out.push({ p: P.leg, x: 2, y: hipY + bob, a: swing, id: 'leg1', kind: 'leg' }); }
-    const ty = hipY + bob, sh = ty - th + 2;
-    // far arm
-    const armA = aim ? -Math.PI / 2 + 0.05 : panic ? -Math.PI + Math.sin(ph * 3) * 0.6 : anim.swim ? -Math.PI * 0.6 + Math.sin(ph * 2) * 0.8 : anim.cast ? -Math.PI * 0.6 : swing * 0.9 + 0.1;
-    out.push({ p: P.arm, x: -2, y: sh, a: panic ? -armA * 0.9 : -armA * 0.6, alpha: 0.85, id: 'arm1', kind: 'arm' });
-    out.push({ p: P.torso, x: 0, y: ty, a: anim.swim ? 0 : Math.sin(ph) * 0.03 * sp, id: 'torso', kind: 'body' });
-    const hy = sh - 1, headA = panic ? Math.sin(ph * 4) * 0.12 : Math.sin(ph * 0.5) * 0.03 + (anim.swim ? -0.4 : 0);
-    out.push({ p: panic ? P.headScared : P.head, x: 0, y: hy, a: headA, id: 'head', kind: 'head' });
-    out.push({ p: P.arm, x: 2, y: sh, a: armA, id: 'arm0', kind: 'arm' });
-    if (P.prop && !panic) {
-      const hx = 2 + Math.sin(armA) * armLen, hyy = sh + Math.cos(armA) * armLen;   // hand position
-      const pa = aim ? 0.05 : s.prop === 'rod' ? -0.55 : s.prop === 'camera' ? 0 : -0.2;
+    const panic = anim.panic ? 1 : 0, aim = anim.aim ? 1 : 0, sit = anim.sit ? 1 : 0, push = anim.push ? 1 : 0;
+    const run = panic ? 1 : clamp((sp - 0.7) / 0.5, 0, 1);
+    const hipY = -legLen - 1 + sit * legLen * 0.72;
+    const bob = Math.abs(Math.sin(ph * 2)) * -(1.2 + run * 1.4) * Math.min(1, sp * 1.5);
+    const stride = (0.55 + run * 0.6) * Math.min(1, sp * 1.4);
+    const swing = Math.sin(ph) * stride, swing2 = Math.sin(ph + Math.PI) * stride;
+    // legs: the shin trails the thigh and snaps forward at the top of the swing
+    const kneeA = a => Math.max(0, -Math.sin(a)) * (0.9 + run * 0.6) * Math.min(1, sp * 1.4);
+    let legs;
+    if (sit) legs = [...limb2(P.thigh, P.shin, -1, hipY, -1.4, 1.5, seg, ['leg0', 'shin0', 'leg'], 0.85), ...limb2(P.thigh, P.shin, 2, hipY, -1.2, 1.4, seg, ['leg1', 'shin1', 'leg'], 1)];
+    else if (anim.swim) legs = [...limb2(P.thigh, P.shin, -1, hipY, -0.5 + Math.sin(ph * 2) * 0.5, 0.6, seg, ['leg0', 'shin0', 'leg'], 0.85), ...limb2(P.thigh, P.shin, 2, hipY, -0.5 - Math.sin(ph * 2) * 0.5, 0.6, seg, ['leg1', 'shin1', 'leg'], 1)];
+    else legs = [...limb2(P.thigh, P.shin, -1, hipY + bob, swing2 + push * 0.35, kneeA(ph + Math.PI), seg, ['leg0', 'shin0', 'leg'], 0.85), ...limb2(P.thigh, P.shin, 2, hipY + bob, swing + push * 0.35, kneeA(ph), seg, ['leg1', 'shin1', 'leg'], 1)];
+    const ty = hipY + bob, lean = push ? 0.28 : run * 0.16 * (panic ? 1 : 1) + (aim ? 0.05 : 0);
+    const sh = ty - th + 2;
+    // arms: opposite the legs, elbows bending on the back swing; panic throws
+    // them up and flails; pushing locks both out in front; aiming levels one
+    let a1far, a2far, a1near, a2near;
+    if (aim) { a1far = 1.45; a2far = -0.2; a1near = 1.5; a2near = -0.1; }
+    else if (push) { a1far = 1.25 + Math.sin(ph) * 0.05; a2far = -0.25; a1near = 1.15 + Math.sin(ph + 1) * 0.05; a2near = -0.3; }
+    else if (panic) { a1far = 2.6 + Math.sin(ph * 3) * 0.5; a2far = -0.6 + Math.sin(ph * 3 + 1) * 0.5; a1near = 2.7 + Math.cos(ph * 3) * 0.5; a2near = -0.6 + Math.cos(ph * 3 + 1) * 0.5; }
+    else if (anim.swim) { a1far = 1.9 + Math.sin(ph * 2) * 0.8; a2far = -0.4; a1near = 1.9 - Math.sin(ph * 2) * 0.8; a2near = -0.4; }
+    else if (anim.cast) { a1far = 1.8; a2far = -0.5; a1near = 1.1; a2near = -0.4; }
+    else if (sit) { a1far = 0.9; a2far = -1.4; a1near = 0.6 + (anim.nod || 0) * 0.3; a2near = -1.6; }
+    else { a1far = swing * 0.85 + 0.12; a2far = -Math.max(0, swing) * 0.7 - 0.15; a1near = swing2 * 0.85 + 0.12; a2near = -Math.max(0, swing2) * 0.7 - 0.15; }
+    // far leg, far arm, torso, head, near leg, near arm, prop
+    out.push(legs[0], legs[1]);
+    out.push(...limb2(P.uarm, P.farm, -2, sh, a1far, a2far, aseg, ['arm1', 'farm1', 'arm'], 0.85));
+    out.push({ p: P.torso, x: 0, y: ty, a: -lean + (anim.swim ? 0 : Math.sin(ph) * 0.03 * sp), id: 'torso', kind: 'body' });
+    const expr = anim.expr || (panic ? 'scared' : 'calm');
+    const head = expr === 'scared' ? P.headScared : expr === 'alert' ? P.headAlert : expr === 'pain' ? P.headPain : expr === 'dead' ? P.headDead : expr === 'happy' ? P.headHappy : P.head;
+    const nod = (anim.nod || 0) * 0.5;
+    const headA = panic ? Math.sin(ph * 4) * 0.14 - 0.25 : anim.swim ? -0.4 : push ? 0.25 : nod + Math.sin(ph * 0.5) * 0.03 - lean * 0.5 + (expr === 'alert' ? -0.12 : 0);
+    out.push({ p: head, x: -Math.sin(lean) * th * 0.9, y: sh - 1 - Math.cos(lean) * 0 , a: headA, id: 'head', kind: 'head' });
+    out.push(legs[2], legs[3]);
+    out.push(...limb2(P.uarm, P.farm, 2, sh, a1near, a2near, aseg, ['arm0', 'farm0', 'arm'], 1));
+    if (P.prop && !panic && !push) {
+      const jx = 2 + Math.sin(a1near) * aseg, jy = sh + Math.cos(a1near) * aseg;
+      const hx = jx + Math.sin(a1near + a2near) * aseg, hyy = jy + Math.cos(a1near + a2near) * aseg;
+      const pa = aim ? 0.05 : s.prop === 'rod' ? -0.55 : s.prop === 'camera' ? 0 : s.prop === 'syringe' ? 0.6 : -0.2;
       out.push({ p: P.prop, x: hx, y: hyy, a: pa, id: 'prop', kind: 'prop' });
     }
     return out;

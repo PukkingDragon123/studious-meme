@@ -43,15 +43,21 @@ const SEWER_SECTION = [
   [-4920, -28, -150], [-4800, -44, -172], [-4680, -30, -150],    // the camp ledge
   [-4560, 50, -120], [-4420, 120, -96], [-4280, 170, -130], [-4140, 140, -150],
   [-4000, 80, -120], [-3860, 40, -100], [-3720, 90, -80], [-3580, 130, -70],
-  [-3440, 96, -90], [-3300, 40, -110], [-3220, -40, -130], [-3140, -58, -140],
+  [-3660, 96, -90], [-3620, 60, -120],
+  // ---- THE FACILITY: a corridor two floors up, over the top of the cistern.
+  // Dry, lit, tiled, and it ends at a floor drain with nothing under it. The
+  // transfer runs east along it; you go out through the glass and down the hole.
+  [-3600, -380, -650], [-3480, -382, -652], [-3360, -380, -648], [-3240, -382, -650], [-3120, -380, -648], [-3040, -384, -650], [-2980, -380, -648],
+  [-2962, -380, -648],
   // ---- THE CATACOMBS: a labyrinth under Rome. Not a pipe you swim along but
   // a string of vaults, each one shut off from the next by a gap only a small
   // animal fits through. You are tipped in at the cistern and the only way is
   // east, through the ossuary, the tomb hall, the drowned forum and the
   // columbarium, to a gate somebody bolted shut two thousand years after the
   // people who built this stopped caring.
-  // -- the cistern: where you land. deep, vaulted, and full of what floats
-  [-3060, 120, -150], [-2960, 170, -180], [-2860, 200, -176], [-2760, 160, -150],
+  // -- the cistern: where you land, from two floors up. deep, vaulted, and
+  //    full of what floats
+  [-2946, 150, -170], [-2880, 200, -178], [-2800, 190, -170], [-2740, 130, -140],
   [-2700, 60, -60],
   [-2660, 26, -8], [-2600, 24, -6], [-2560, 28, -10],                // the first squeeze
   // -- the ossuary: bone on the floor and bone in the walls
@@ -183,9 +189,9 @@ const BIOMES = [
     sky: ['#070d10', '#101a1e'], water: ['#41532c', '#25321a', '#0a0e07'], scum: '#7a8a2a', fog: '#101c1e',
     parallax: ['block', 'pipe', 'block'], ground: ['#2e3438', '#22282c', '#161a1e'], grass: '#3a4a34',
     indoor: true, roof: -200, dark: 0.72, toxic: 0.5, flora: '#6e7a2a', floraMix: 0.62,
-    plants: [['trash', 2.4], ['algae', 2.2], ['rubble', 1.8], ['pipe', 1.4], ['weed', 0.8]],
+    plants: [['skeleton', 0.9], ['trash', 2.4], ['algae', 2.2], ['rubble', 1.8], ['pipe', 1.4], ['weed', 0.8]],
     fish: [['cavefish', 3], ['sewereel', 2.2], ['sludgecarp', 2], ['piranha', 1.6], ['minnow', 1.4]],
-    land: [['bigrat', 3], ['rat', 4]],
+    land: [['bigrat', 3], ['rat', 4], ['junkie', 1.2], ['vagrant2', 0.8]],
     structures: [], music: 0.9,
   },
   {
@@ -193,9 +199,9 @@ const BIOMES = [
     sky: ['#08110f', '#131f1c'], water: ['#3f5a38', '#233420', '#0a110c'], scum: '#6a7a26', fog: '#121e1c',
     parallax: ['block', 'block', 'pipe'], ground: ['#343a3a', '#262c2c', '#181c1c'], grass: '#3f5a3a',
     indoor: true, roof: -180, dark: 0.66, toxic: 0.35, flora: '#6a7a2e', floraMix: 0.55,
-    plants: [['algae', 2.6], ['trash', 2], ['rubble', 2], ['pipe', 1.6], ['mushroom', 1.2], ['weed', 1]],
+    plants: [['skeleton', 0.9], ['algae', 2.6], ['trash', 2], ['rubble', 2], ['pipe', 1.6], ['mushroom', 1.2], ['weed', 1]],
     fish: [['piranha', 3], ['sludgecarp', 2.4], ['sewereel', 2], ['cavefish', 2], ['walkingcat', 2], ['snakehead', 1.4]],
-    land: [['bigrat', 4], ['rat', 4], ['opossum', 1.2]],
+    land: [['bigrat', 4], ['rat', 4], ['opossum', 1.2], ['vagrant2', 1.2], ['junkie', 0.8]],
     structures: [], music: 0.85,
   },
   {
@@ -203,9 +209,9 @@ const BIOMES = [
     sky: ['#0a1412', '#16241f'], water: ['#3d6048', '#21402e', '#091713'], scum: '#6a7a30', fog: '#14211d',
     parallax: ['pipe', 'block', 'pipe'], ground: ['#3a3f3c', '#2a2f2c', '#1b201e'], grass: '#4a6a3a',
     indoor: true, roof: -220, dark: 0.58, toxic: 0.25, flora: '#728030', floraMix: 0.46,
-    plants: [['pipe', 2.4], ['rubble', 2], ['trash', 1.8], ['algae', 1.8], ['crate', 1.2], ['mushroom', 1]],
+    plants: [['skeleton', 0.9], ['pipe', 2.4], ['rubble', 2], ['trash', 1.8], ['algae', 1.8], ['crate', 1.2], ['mushroom', 1]],
     fish: [['piranha', 2.6], ['walkingcat', 2.4], ['sludgecarp', 2], ['sewereel', 1.8], ['mutantcat', 0.9], ['tilapia', 1.4]],
-    land: [['bigrat', 3], ['rat', 3], ['vagrant', 1.6]],
+    land: [['bigrat', 3], ['rat', 3], ['vagrant', 1.2], ['junkie', 1.4], ['vagrant2', 1]],
     structures: [], music: 0.7,
   },
   {
@@ -213,29 +219,38 @@ const BIOMES = [
     sky: ['#0c1618', '#1a2a2c'], water: ['#2a5a5e', '#153a3e', '#04161a'], scum: '#4a6a4a', fog: '#16262a',
     parallax: ['block', 'pipe', 'block'], ground: ['#33383c', '#252a2e', '#171b1f'], grass: '#3a5a44',
     indoor: true, roof: -520, dark: 0.5, toxic: 0.15, flora: '#6a8a3e', floraMix: 0.36,
-    plants: [['algae', 2.2], ['pipe', 2], ['rubble', 1.8], ['moss', 1.6], ['vine', 1.4], ['mushroom', 1.2]],
+    plants: [['skeleton', 0.9], ['algae', 2.2], ['pipe', 2], ['rubble', 1.8], ['moss', 1.6], ['vine', 1.4], ['mushroom', 1.2]],
     fish: [['mutantcat', 1.4], ['piranha', 2.4], ['cavefish', 2.4], ['sewereel', 2], ['eel', 1.4], ['catfish', 1.6]],
-    land: [['bigrat', 2.4], ['vagrant', 1.2]],
+    land: [['bigrat', 2.4], ['vagrant', 0.8], ['junkie', 1], ['vagrant2', 1]],
     structures: [], music: 0.75,
   },
   {
-    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3200,
+    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3620,
     sky: ['#0d1a1c', '#1a2a2c'], water: ['#40705c', '#20463a', '#0a1a16'], scum: '#5a7a3a', fog: '#1c2c2e',
     parallax: ['block', 'pipe', 'block'], ground: ['#3d4342', '#2d3332', '#1e2322'], grass: '#456a44',
     indoor: true, roof: -150, dark: 0.42, toxic: 0.08, flora: '#6f8a44', floraMix: 0.3,
-    plants: [['crate', 2], ['trash', 2], ['rubble', 1.6], ['algae', 1.6], ['pipe', 1.4], ['mushroom', 1.4], ['moss', 1.2]],
+    plants: [['skeleton', 0.9], ['crate', 2], ['trash', 2], ['rubble', 1.6], ['algae', 1.6], ['pipe', 1.4], ['mushroom', 1.4], ['moss', 1.2]],
     fish: [['walkingcat', 2.6], ['sludgecarp', 2], ['piranha', 1.6], ['cavefish', 1.6], ['tilapia', 1.6], ['minnow', 2]],
-    land: [['vagrant', 2.4], ['bigrat', 2.6], ['rat', 3], ['opossum', 1.4]],
+    land: [['vagrant', 1.4], ['vagrant2', 1.6], ['junkie', 1.4], ['bigrat', 2.6], ['rat', 3], ['opossum', 1.4]],
     structures: [], music: 0.55,
   },
   {
-    id: 'cistern', name: 'THE CISTERN', x0: -3200, x1: -1700, roman: true,
+    id: 'facility', name: 'FACILITY B', x0: -3620, x1: -2955, lab: true,
+    sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
+    parallax: ['block', 'block', 'block'], ground: ['#4a5258', '#343a40', '#1e2428'], grass: '#4a5258',
+    indoor: true, roof: -650, dark: 0.1,
+    plants: [['labtank', 0.6], ['console', 0.4], ['crate', 0.2], ['cable', 0.45], ['biohaz', 0.15]],
+    fish: [], land: [], structures: [],
+    music: 0.9,
+  },
+  {
+    id: 'cistern', name: 'THE CISTERN', x0: -2955, x1: -1700, roman: true,
     sky: ['#0c1210', '#1a1e16'], water: ['#5a6a3a', '#33401f', '#12180a'], scum: '#8a8a3a', fog: '#1e2018',
     parallax: ['block', 'block', 'block'], ground: ['#5a5244', '#3e392e', '#26221b'], grass: '#4a5a34',
     indoor: true, roof: -150, dark: 0.55, toxic: 0.22, flora: '#7a8a3a', floraMix: 0.5,
-    plants: [['garbage', 3.4], ['bones', 0.7], ['algae', 1.6], ['rubble', 1.6], ['urn', 1.2], ['weed', 0.6]],
+    plants: [['garbage', 3.4], ['bones', 0.7], ['algae', 1.6], ['rubble', 1.6], ['urn', 1.2], ['weed', 0.6], ['skeleton', 0.8]],
     fish: [['minnow', 3], ['shiner', 2], ['walkingcat', 1.2], ['cavefish', 1.4]],
-    land: [['rat', 5], ['bigrat', 1.2]], structures: [],
+    land: [['rat', 5], ['bigrat', 1.2], ['junkie', 1.4], ['vagrant2', 1.2]], structures: [],
     music: 0.9,
   },
   {
@@ -243,9 +258,9 @@ const BIOMES = [
     sky: ['#0e1010', '#1c1a16'], water: ['#556236', '#2e381c', '#101408'], scum: '#8a8a3a', fog: '#1e1c18',
     parallax: ['block', 'block', 'block'], ground: ['#5e5446', '#403a2e', '#28231b'], grass: '#4a5a34',
     indoor: true, roof: -140, dark: 0.6, toxic: 0.14, flora: '#7a8a3a', floraMix: 0.5,
-    plants: [['bones', 1.8], ['tomb', 1.6], ['urn', 1.8], ['garbage', 1.8], ['algae', 1.4], ['rubble', 1.4]],
+    plants: [['bones', 1.8], ['tomb', 1.6], ['urn', 1.8], ['garbage', 1.8], ['algae', 1.4], ['rubble', 1.4], ['skeleton', 1.2]],
     fish: [['minnow', 2.4], ['cavefish', 2], ['sludgecarp', 1.2], ['walkingcat', 1.4]],
-    land: [['rat', 5], ['bigrat', 1.6], ['opossum', 0.6]], structures: [],
+    land: [['rat', 5], ['bigrat', 1.6], ['opossum', 0.6], ['vagrant2', 1.2], ['junkie', 1]], structures: [],
     music: 0.7,
   },
   {
@@ -439,6 +454,11 @@ const PLANT_RULES = {
   trash: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'trash', x, y, v: Math.floor(r() * 4), s: 0.9 + r() * 0.6 }) },
   // --- the catacombs: what two thousand years leave on the floor and the surface
   garbage: { land: false, minD: 14, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'garbage', x: x + k * 9 + r() * 6, y: 0, v: Math.floor(r() * 6), ph: r() * TAU, s: 0.9 + r() * 0.4 }); } },
+  labtank: { land: true, make: (o, x, y, r) => o.push({ type: 'labtank', x, y, v: Math.floor(r() * 4), ph: r() * TAU }) },
+  console: { land: true, make: (o, x, y, r) => o.push({ type: 'console', x, y, v: Math.floor(r() * 3), ph: r() * TAU }) },
+  cable: { land: true, make: (o, x, y, r) => o.push({ type: 'cable', x, y, n: 2 + Math.floor(r() * 3), ph: r() * TAU }) },
+  biohaz: { land: true, make: (o, x, y, r) => o.push({ type: 'biohaz', x, y }) },
+  skeleton: { land: true, make: (o, x, y, r) => o.push({ type: 'skeleton', x, y, v: Math.floor(r() * 2), flip: r() < 0.5 }) },
   bones: { make: (o, x, y, r) => o.push({ type: 'bones', x, y, n: 2 + Math.floor(r() * 3), v: Math.floor(r() * 3), s: 0.5 + r() * 0.4 }) },
   tomb: { land: true, make: (o, x, y, r) => o.push({ type: 'tomb', x, y, v: Math.floor(r() * 2), open: r() < 0.4 }) },
   urn: { land: true, make: (o, x, y, r) => o.push({ type: 'urn', x, y, n: 1 + Math.floor(r() * 3), s: 0.8 + r() * 0.5 }) },

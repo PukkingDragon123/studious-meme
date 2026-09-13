@@ -164,12 +164,21 @@ skull on top, sarcophagi with their lids on or off, amphorae, and a surface
 carrying two thousand years of what floats. A roof a hand above the water is
 still a roof, so the squeezes stay dark.
 
-You got there by transfer. The opening is a trolley, a tank a size too big,
-and two people in hard hats wheeling it to another building. **Mash bite** and
-the glass cracks, then goes; they run with their arms up; you cross the flooded
-floor to a drain, drop in, and ride twenty seconds of a chute so narrow that
-either wall is a scrape — lean to stay off them — and splash into the cistern.
-`ESC` skips it once you are in the tank.
+You got there by transfer, and the transfer is not a cutscene. It is the
+game: a corridor of **FACILITY B** two floors above the Roman level, drawn by
+the same renderer as everything else — white tile band and dark upper wall,
+strip lights with their cones, doors with portholes and keypads every few
+metres, containment columns with a specimen hanging in each, consoles, cable
+trays, biohazard drums, a painted line down the floor. The trolley is a
+structure on castors that turn. The tank on it is a real tank, blue water,
+straps, TRANSFER / SUBJECT 11 stencilled on the glass. The two people pushing
+it are people, leaning into the bar with their knees bent. The camera is the
+game camera. **Mash bite** and the glass cracks, then goes: the two of them
+run west with their arms up and are gone through a door, and you are on a
+tiled floor with a drain at the far end and nothing under the drain but the
+cistern, two floors down. There is no chute and no slide. You walk east and
+you **fall**, and the splash is your first location. Every other sewer site
+puts you in through a hatch in the crown of the vault instead.
 
 The way out is a system. Three mechanisms, each in its own chamber, each a
 small game you start by biting it: **the cistern valve** turned on a beat, **the
@@ -177,18 +186,6 @@ ossuary levers** thrown in the order the lamps showed you, **the counterweight**
 held and let go in the band. A miss costs a notch, not your life. Engage all
 three and the outflow gate opens, and the site's relic surfaces on the way to
 it. The everglades are past that, once the lab has surveyed them.
-
-## The delivery
-
-A sewer site does not get a helicopter, because a helicopter cannot fly into a
-sewer. It gets the lab. You come round strapped inside a transport tank on a
-trolley, bolted lid, LIVE SPECIMEN stencilled on the glass, two people in hard
-hats wheeling you down a corridor under strip lights. Mash anything you like —
-that is what the straps are for. The trolley stops at **DISPOSAL HATCH 4**, the
-leaf rolls up, the tank tips, and you go down a storm chute for fifteen seconds
-with exactly one control: **lean**. Grates, pipe stubs and valve bodies come out
-of the dark at you and every one you clip costs blood. Then the splash, and you
-are in the system.
 
 ## Locked in
 
@@ -283,6 +280,32 @@ pad at the bottom. A single straight taper is a stilt. Muzzles are longer, eyes
 are smaller and set high and forward on the skull, and a long tail hangs and
 tapers instead of sticking out like a broom handle. Birds got a smaller head on
 the same terms; fish got the bead.
+
+## People, and the ones who live down here
+
+Every human is built on one rig now: a round head, a block torso, and jointed
+stick limbs — an upper arm and a forearm with a hand on it, a thigh and a shin
+with a boot on it — the way a physics-sandbox ragdoll is put together. That
+gives them knees that bend, arms that lock forward on a trolley bar, a slump
+when they sit, a lean when they run, and a face that can change: dot eyes and
+a brow line that go **calm**, **alert**, **scared** (wide eyes, a screaming
+mouth), **pain** (squint, open mouth), **happy** (shut eyes, a grin) or
+**dead** (crossed eyes, tongue out), and the game sets it from what they are
+doing. Hats, coats, hi-vis, aprons, badges, beards, a hood and a bottle finish
+each kind off.
+
+There are no boats in the sewer. Below the Roman level the people you meet are
+the ones who ended up there: **drifters** and **users** sitting slumped
+against the walls of the drier ledges, nodding, who only get up and run when
+something a good deal bigger than a hatchling comes at them, and **skeletons**
+who did the same thing a long time ago, still sitting where they sat. The
+capture crews that come when the alarm goes are on foot down here, armed.
+
+The sewer is man-made from the floor up. Indoors the ground is poured
+concrete in hard steps with brick or block coursing down the face of it, a lit
+lip along every surface, and blockwork wherever a ledge steps; the lab is
+tiled. No soil strata, no roots, no mountains behind the pipes — it is dark
+wall, vault and water all the way down.
 
 ## Animal traits
 
@@ -488,7 +511,9 @@ and flattens the troughs, which is what stops them reading as stacked sine waves
 ## Gore
 
 Bites tear limbs off. A wounded animal keeps moving with one leg gone, trailing blood, until something
-finishes it. Death rolls cut prey clean in half. Bodies burst into their own rig parts plus hearts,
+finishes it. People come apart more readily than anything with a hide, and losing a limb is loud,
+wet and long: a scream, more of them comes out with it, the face goes to pain, a leg gone means a
+limp, and they bleed into the water for as long as they last. Death rolls cut prey clean in half. Bodies burst into their own rig parts plus hearts,
 guts, livers, eyes and bone, and the soft pieces float while the heavy ones sink. Blood spreads as
 slicks across the water surface and soaks into pools on the mud. All of it can be switched down in the
 pause menu.

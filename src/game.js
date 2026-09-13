@@ -226,7 +226,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -283,8 +283,8 @@ const G = {
     this.placeLandmark(st);
     Labyrinth.begin(st);
     // Nobody flies a specimen out to a municipal trunk main. The sewer gets
-    // wheeled down a corridor and tipped into a hatch.
-    if (st && st.zone === 'sewer') Delivery.begin(st); else Drop.begin(st);
+    // tipped in through a hatch in the crown of the vault.
+    if (st && st.zone === 'sewer') Opening.hatch(st); else Drop.begin(st);
   },
   // ---- one big handmade thing per site --------------------------------
   // Every release site gets a landmark placed by hand rather than left to the
@@ -375,8 +375,7 @@ const G = {
     for (let i = 0; i < 3; i++) { const rx = x + rand(-400, 400); if (World.floorY(rx) > 20) this.add(new Carrion(rx, World.floorY(rx) - 6, 'rat')); }
     this.state = 'play'; this.banner = null;
     Puzzles.begin(st);
-    Delivery.begin(st, true);
-    SFX.peep();
+    Opening.begin(st);
   },
   crackTank() {
     const e = this.intro; if (!e || e.phase !== 'tank') return;
@@ -666,17 +665,22 @@ const G = {
     else if (kind === 'vulture') this.add(new Vulture(x, -rand(120, 180), -side));
     else if (kind === 'heron') { const hx = World.findX(x, xx => { const f = World.floorY(xx); return f > 4 && f < 44; }, 500, 12); const wader = choice(['heron', 'egret', 'snowy', 'ibis', 'spoonbill', 'woodstork', 'littleblue', 'tricolor', 'limpkin', 'gallinule']); if (hx !== null) this.add(new Bird(hx, 0, wader, 'wade')); else Spawn.flock(x, -side, 'egret', 2); }
     else if (kind === 'kayak') this.add(new Kayak(x, -side));
-    else if (kind === 'pontoon') { const wx = World.findX(x, xx => World.floorY(xx) > 60, 500, 30); if (wx !== null) Spawn.boat(wx, chance(0.5) ? 'pontoon' : 'jon', -side); }
+    else if (kind === 'pontoon') { if (World.isIndoor(x)) return; const wx = World.findX(x, xx => World.floorY(xx) > 60, 500, 30); if (wx !== null) Spawn.boat(wx, chance(0.5) ? 'pontoon' : 'jon', -side); }
     else if (kind === 'moccasin') this.add(new Snake(x, 4, 'moccasin'));
   },
   spawnLand(x, D) {
     if (World.floorY(x) > -3) return;
     const B = Biome.at(x);
     const table = B.land.map(([k, w]) => { const sp = SPECIES[k]; const hard = sp ? sizeClassOf(sp.ft) : 1; return [k, hard > 3 && D < 1.6 ? w * 0.2 : w]; });
-    if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
-    if (B.id === 'campground') table.push(['camper', 3]);
-    if (D >= 1.6) table.push(['ranger', 1], ['poacher', D >= 2.4 ? 1.4 : 0]);
-    if (!B.indoor) table.push(['heron', 1.2]);
+    // the facility is staffed by the two you arrive with and nobody else, and
+    // the sewer only ever has the people who live down there
+    if (B.lab || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return;
+    if (!B.indoor) {
+      if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
+      if (B.id === 'campground') table.push(['camper', 3]);
+      if (D >= 1.6) table.push(['ranger', 1], ['poacher', D >= 2.4 ? 1.4 : 0]);
+      table.push(['heron', 1.2]);
+    }
     const k = weightedPick(table);
     if (!k) return;
     if (k === 'heron') this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis']), 'wade'));
@@ -705,7 +709,7 @@ const G = {
       case 'moccasin': if (fy > 20) this.add(new Snake(x, 4, 'moccasin')); break;
       case 'gator': if (fy > 40) { Spawn.gator(x, clamp(rand(20, 150), 10, fy - 20), clamp(P.size * rand(0.65, 1.35), 0.8, 30)); warn = 'SOMETHING IS HUNTING YOU'; } break;
       case 'python': { const bx = World.findX(x, xx => World.floorY(xx) < -3, 800, 30); this.add(new Snake(bx !== null ? bx : x, 4, 'python', clamp(0.8 + D * 0.12, 0.8, 2.2))); break; }
-      case 'poacher': case 'tourist': { const wx = World.findX(x, xx => World.floorY(xx) > 60, 600, 30); if (wx !== null) { Spawn.boat(wx, k, -side); if (k === 'poacher') warn = 'POACHERS NEARBY'; } break; }
+      case 'poacher': case 'tourist': { if (World.isIndoor(x)) break; const wx = World.findX(x, xx => World.floorY(xx) > 60, 600, 30); if (wx !== null) { Spawn.boat(wx, k, -side); if (k === 'poacher') warn = 'POACHERS NEARBY'; } break; }
       case 'shark': this.add(new Fish(x, clamp(rand(100, 400), 60, fy - 30), 'shark')); warn = 'SOMETHING IS HUNTING YOU'; break;
       case 'boar': case 'panther': case 'bear': { const bx = World.findX(x, xx => World.floorY(xx) < -5, 1200, 40); if (bx !== null) { this.add(new LandAnimal(bx, k)); if (k !== 'boar') warn = k === 'bear' ? 'A BEAR IS ON THE BANK' : 'SOMETHING STALKS THE BANK'; } break; }
       case 'sawfish': this.add(new Fish(x, clamp(rand(150, 400), 60, fy - 30), 'sawfish')); break;
@@ -1022,7 +1026,6 @@ const G = {
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
         break;
-      case 'delivery': Delivery.update(raw); break;
       case 'drop':
         this.updateWorld(dt, false);
         Drop.update(raw);
@@ -1183,7 +1186,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -1198,12 +1201,14 @@ const G = {
   updateCamera(dt) {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
+    // the trolley ride is framed close, on the tank and the two pushing it
+    const tz2 = Opening.on && Opening.phase === 'carry' ? 1.75 : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole
     // backdrop look like it is boiling. Track it smoothly, but snap what the
     // renderer actually uses to a fixed ladder so a still camera is still.
-    c.zoomRaw = lerp(c.zoomRaw === undefined ? c.zoom : c.zoomRaw, tz, 1 - Math.exp(-2.5 * dt));
+    c.zoomRaw = lerp(c.zoomRaw === undefined ? c.zoom : c.zoomRaw, tz2, 1 - Math.exp(-2.5 * dt));
     c.zoom = Math.round(c.zoomRaw * 32) / 32;
     let tx = P.x + P.vx * 0.22, ty = P.y + P.vy * 0.12;
     // an execution is framed on both of them, so the boss never leaves the shot
@@ -1214,7 +1219,10 @@ const G = {
     if (this.state === 'title') ty = Math.max(ty, 75);
     const k = 1 - Math.exp(-5 * dt);
     c.x = lerp(c.x, tx, k); c.y = lerp(c.y, ty, k);
-    c.y = Math.max(c.y, -(this.H / 2) / c.zoom + 30);
+    // outdoors the camera never climbs into empty sky. Indoors it is the roof
+    // that bounds it, so a corridor two floors up can be looked at
+    const roof = World.isIndoor(c.x) ? World.roofY(c.x) : null;
+    c.y = Math.max(c.y, roof === null ? -(this.H / 2) / c.zoom + 30 : roof + (this.H / 2) / c.zoom - 24);
     // and land the camera on a whole device pixel, so the ground, its grain and
     // everything standing on it share one grid instead of sliding against it
     const q = Math.max(0.001, c.zoom * (this.rs || 1));
@@ -1246,8 +1254,6 @@ const G = {
     if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); return; }
-    // the delivery is its own picture: the world is not in shot yet
-    if (this.state === 'delivery') { Delivery.draw(ctx); UI.drawWipe(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }

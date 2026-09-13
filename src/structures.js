@@ -35,6 +35,7 @@ class Structure extends Entity {
       }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
+      case 'transport': { this.name = 'TRANSPORT TANK'; this.hp = 9999; this.armor = 999; this.r = 30; this.cracks = 0; this.broken = false; this.roll = 0; this.layer = 0; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
       // The way out of the labyrinth. Steel, hydraulic, and it does not care
       // how hard you bite it. It opens for the key and for nothing else.
@@ -134,6 +135,54 @@ class Structure extends Entity {
     G.addScore(1200); Meta.event('structure');
     if (P) { G.stats.structures = (G.stats.structures || 0) + 1; Missions.onWreck(); }
   }
+  // The transfer trolley: a steel frame on four castors, a big glass tank on
+  // it with green water and a bolted lid, straps over the top, a stencil on
+  // the glass, cracks when you put them there and stumps when the glass goes.
+  drawTransport(ctx) {
+    const x = Math.round(this.x), y = Math.round(this.y), t = G.t;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + a, y + b, Math.max(1, w), Math.max(1, h)); };
+    // frame and castors
+    px(-32, -12, 64, 6, '#2a3338'); px(-32, -12, 64, 1, '#4a575e'); px(-30, -6, 5, 4, '#1a2226'); px(25, -6, 5, 4, '#1a2226');
+    for (const wx of [-24, 24]) { px(wx - 4, -3, 8, 4, '#11181c'); px(wx - 3, -2, 6, 2, '#39454a'); const a = (this.roll || 0) * 0.15; px(wx + Math.round(Math.cos(a) * 2) - 1, -1 + Math.round(Math.sin(a) * 1.5), 2, 1, '#6a7a80'); }
+    px(-34, -14, 68, 3, '#3a474e');                                     // the bar they push
+    px(-38, -30, 4, 18, '#3a474e'); px(-40, -32, 8, 3, '#4a575e');
+    // tank
+    const TW = 30, TH = 54, TT = -14 - TH;
+    px(-TW - 2, TT - 6, TW * 2 + 4, 7, '#2e3a42'); px(-TW - 2, TT - 6, TW * 2 + 4, 1, '#44525c');
+    for (let k = 0; k < 5; k++) px(-TW + 1 + k * 12, TT - 4, 3, 3, '#6a7a84');
+    if (!this.broken) {
+      px(-TW, TT, TW * 2, TH, '#0a1c2a');
+      px(-TW, TT + 5, TW * 2, TH - 5, '#1c6a86'); px(-TW, TT + 5, TW * 2, 2, '#3aa4c0');
+      ctx.globalAlpha = 0.18; px(-TW, TT + 5, TW * 2, Math.round((TH - 5) * 0.45), '#8fe0f0'); ctx.globalAlpha = 1;
+      // condensation and a rim light
+      ctx.globalAlpha = 0.28; px(-TW + 3, TT + 3, 3, TH - 6, '#cfeee6'); ctx.globalAlpha = 1;
+      for (let k = 0; k < 4; k++) { const bph = ((t * 0.5) + ihash(k, 9)) % 1; ctx.globalAlpha = 0.5; px(-TW + 6 + k * 11, Math.round(TT + TH - 4 - bph * (TH - 10)), 1, 1, '#cfeee6'); ctx.globalAlpha = 1; }
+      // cracks
+      if (this.cracks > 0) {
+        ctx.strokeStyle = 'rgba(240,255,250,0.9)'; ctx.lineWidth = 1;
+        const n = Math.round(this.cracks * 11);
+        for (let k = 0; k < n; k++) {
+          const a0 = ihash(k, 7) * TAU, len = 8 + ihash(k, 9) * 18 * this.cracks;
+          let x0 = x + Math.round(ihash(k, 11) * 30 - 15), y0 = y + Math.round(TT + TH * 0.5 + (ihash(k, 13) - 0.5) * 26);
+          ctx.beginPath(); ctx.moveTo(x0 + 0.5, y0 + 0.5);
+          for (let q = 0; q < 4; q++) { const a = a0 + (ihash(k * 5 + q, 17) - 0.5) * 1.2; x0 += Math.round(Math.cos(a) * len / 4); y0 += Math.round(Math.sin(a) * len / 4); ctx.lineTo(x0 + 0.5, y0 + 0.5); }
+          ctx.stroke();
+        }
+      }
+      ctx.strokeStyle = 'rgba(210,240,235,0.5)'; ctx.lineWidth = 1; ctx.strokeRect(x - TW - 0.5, y + TT - 0.5, TW * 2 + 1, TH + 1);
+    } else {
+      // the glass is gone: stumps in the frame and water still draining off the base
+      px(-TW, TT, TW * 2, 3, '#0d2420');
+      ctx.fillStyle = 'rgba(210,240,235,0.65)';
+      for (let k = 0; k < 8; k++) { const h2 = 3 + ihash(k, 21) * 10; ctx.fillRect(x - TW + k * 7, y + TT + 3, 2, h2); ctx.fillRect(x - TW + k * 7 + 1, y - 14 - 3 - ihash(k, 23) * 7, 2, 3 + ihash(k, 23) * 7); }
+      px(-TW - 6, -15, TW * 2 + 12, 2, '#1c6a86');
+      if (chance(0.3)) G.fx.add({ type: 'drop', x: this.x + rand(-TW, TW), y: this.y - 14, vx: 0, vy: 40, s: 1, color: '#8ce8a0', life: 0.5 });
+    }
+    // straps
+    px(-TW - 4, TT + 6, TW * 2 + 8, 4, '#3a2e1e'); px(-TW - 4, TT + TH * 0.6, TW * 2 + 8, 4, '#3a2e1e');
+    px(-6, TT + 4, 12, 8, '#8a7a4a'); px(-6, TT + TH * 0.6 - 2, 12, 8, '#8a7a4a');
+    if (!this.broken) { Font.draw(ctx, 'TRANSFER', x, y + TT + 12, { color: '#cfe0d8', align: 'center' }); Font.draw(ctx, 'SUBJECT 11', x, y + TT + 20, { color: '#6f8f88', align: 'center' }); }
+  }
   update(dt) {
     this.tick(dt);
     const P = G.player, night = 1 - World.light(G.day);
@@ -167,6 +216,7 @@ class Structure extends Entity {
     }
   }
   draw(ctx) {
+    if (this.kind === 'transport') return this.drawTransport(ctx);
     const f = this.kind === 'dock' || this.kind === 'boatramp' ? (this.dir || 1) : 1;
     const y = this.y, fy = World.floorY(this.x), sag = this.collapsed ? Math.min(1, this.collapseT * 0.9) : 0, ss = this.ss;
     ctx.save(); ctx.translate(this.x, y); ctx.scale(ss, ss);

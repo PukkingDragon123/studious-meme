@@ -116,6 +116,7 @@ const Alarm = {
     const P = G.player;
     if (this.flashT > 0) this.flashT -= dt;
     if (!P || P.dead) return;
+    if (typeof Opening !== 'undefined' && Opening.on) { this.level = 0; return; }
     this.quietT += dt;
     // it comes down, but only after they have stopped finding anything, and
     // the more times they have called it in the slower it forgets
@@ -142,6 +143,12 @@ const Alarm = {
     if (x === null) x = World.findX(P.x - side * 420, xx => World.floorY(xx) > 60, 900, 40);
     if (x === null) return;
     if (typeof CaptureBoat === 'undefined') return;
+    // under a roof nobody brings a boat: two people with rifles come along the ledge
+    if (World.isIndoor(x)) {
+      const lx = World.findX(x, xx => World.floorY(xx) < -6, 1200, 24);
+      if (lx !== null) { for (const off of [0, 28]) { const m = new LandAnimal(lx + off, 'poacher'); m.alertT = 2.4; m.armed = 'rifle'; m.shootCd = 1; G.add(m); } this.crew = null; }
+      return;
+    }
     this.crew = G.add(new CaptureBoat(x));
     G.banner = { text: 'CAPTURE CREW', sub: 'THEY WANT YOU ALIVE', t: 2.8, max: 2.8, color: '#ff4030' };
   },

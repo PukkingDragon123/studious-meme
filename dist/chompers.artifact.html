@@ -1633,101 +1633,121 @@ function humanVariant(sp, v) {
   return o;
 }
 function buildBiped(s) {
-  // Roughly four and a half heads tall. The old figure was under three, which is
-  // why everyone read as a bobblehead.
+  // The Melon Playground figure: a big round head on a plain block of a body,
+  // thin limbs in two segments with a visible joint at the elbow and the knee,
+  // block hands and feet, and a face that is two dots and a mouth — which is
+  // enough face to be terrified with. Everything is a part on a pivot, so it
+  // can be posed, swung, thrown and taken apart.
   const Hh = s.len;
-  const hr = Math.max(4, Math.round(Hh * 0.115)), tw = Math.max(5, Math.round(Hh * 0.24)),
-        th = Math.max(6, Math.round(Hh * 0.33)), legLen = Math.max(5, Math.round(Hh * 0.45)),
-        armLen = Math.max(5, Math.round(Hh * 0.4));
+  const hr = Math.max(5, Math.round(Hh * 0.155)), tw = Math.max(6, Math.round(Hh * 0.22)),
+        th = Math.max(7, Math.round(Hh * 0.30)), legLen = Math.max(6, Math.round(Hh * 0.40)),
+        armLen = Math.max(6, Math.round(Hh * 0.36));
+  const seg = Math.round(legLen * 0.5), aseg = Math.round(armLen * 0.5);
   const skin = s.skin || '#e0b090', hair = s.hair || '#3a2a1a', shirt = s.coat ? '#f4f4f0' : (s.shirt || '#d94a4a'), pants = s.pants || '#3050a0', OL = '#1c1410', parts = {};
-  const mkHead = scared => {
-    const o = R.mk(hr * 2 + 10, hr * 2 + 12), hx = 5 + hr, hy = 7 + hr;
-    R.blob(o, hx, hy, hr, hr * 1.05, skin, { hx: 0.15 });
+  // ---- faces ---------------------------------------------------------------
+  // one head per expression; the entity picks the one for how it feels
+  const mkHead = expr => {
+    const o = R.mk(hr * 2 + 12, hr * 2 + 14), hx = 6 + hr, hy = 8 + hr;
+    R.blob(o, hx, hy, hr, hr * 1.04, skin, { hx: 0.15 });
     // hair
     const hs = s.hairStyle || 'short';
-    if (hs !== 'bald') { R.blob(o, hx - 1, hy - hr * 0.55, hr * 0.95, hr * 0.55, hair, { hl: false }); if (hs === 'long') { R.px(o, hx - hr - 1, hy - hr * 0.5, hair, 2, hr * 1.4); R.px(o, hx - hr * 0.6, hy + hr * 0.3, hair, 1, hr * 0.7); } if (hs === 'bun') R.disc(o, hx - hr * 0.7, hy - hr * 0.9, Math.max(1.5, hr * 0.35), hair); if (hs === 'mohawk') R.px(o, hx - 1, hy - hr * 1.7, hair, 3, hr * 0.8); if (hs === 'curly') { R.disc(o, hx - hr * 0.8, hy - hr * 0.5, hr * 0.4, hair); R.disc(o, hx + hr * 0.6, hy - hr * 0.6, hr * 0.4, hair); } }
+    if (hs !== 'bald') { R.blob(o, hx - 1, hy - hr * 0.6, hr * 0.98, hr * 0.5, hair, { hl: false }); if (hs === 'long') { R.px(o, hx - hr - 1, hy - hr * 0.5, hair, 2, hr * 1.4); R.px(o, hx - hr * 0.6, hy + hr * 0.3, hair, 1, hr * 0.7); } if (hs === 'bun') R.disc(o, hx - hr * 0.7, hy - hr * 0.95, Math.max(1.5, hr * 0.35), hair); if (hs === 'mohawk') R.px(o, hx - 1, hy - hr * 1.75, hair, 3, hr * 0.85); if (hs === 'curly') { R.disc(o, hx - hr * 0.8, hy - hr * 0.5, hr * 0.4, hair); R.disc(o, hx + hr * 0.6, hy - hr * 0.6, hr * 0.4, hair); } }
     if (s.beard) R.blob(o, hx + hr * 0.15, hy + hr * 0.62, hr * 0.62, hr * 0.42, hair, { hl: false });
-    // eyes: big, wide apart; scared = wider with tiny pupils
-    const er = Math.max(1.1, hr * 0.15), ey = hy - hr * 0.06;
-    R.eye(o, hx + hr * 0.52, ey, er, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
-    R.eye(o, hx + hr * 0.04, ey, er * 0.92, { ring: OL, iris: s.eyeCol || '#4a3a24', scared });
-    // a brow over each, which is what a face reads as at this size
-    if (hr >= 4) {
-      R.px(o, hx - hr * 0.04, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
-      R.px(o, hx + hr * 0.46, ey - er - 2, R.lo(skin), Math.max(2, hr * 0.3), 1);
+    // eyes: two dots, wide apart, and what they do is the whole expression
+    const ex1 = hx + hr * 0.5, ex2 = hx - hr * 0.05, ey = hy - hr * 0.1, dot = Math.max(1, Math.round(hr * 0.22));
+    const eye = (x, kind) => {
+      if (kind === 'x') { R.px(o, x - 1, ey - 1, OL); R.px(o, x + 1, ey - 1, OL); R.px(o, x, ey, OL); R.px(o, x - 1, ey + 1, OL); R.px(o, x + 1, ey + 1, OL); return; }
+      if (kind === 'wide') { R.disc(o, x, ey, dot + 1.2, '#f4f0e8'); R.px(o, x - 0.5, ey - 0.5, OL, Math.max(1, dot), Math.max(1, dot)); return; }
+      if (kind === 'shut') { R.px(o, x - dot, ey, OL, dot * 2 + 1, 1); return; }
+      if (kind === 'squint') { R.px(o, x - dot, ey, OL, dot * 2, Math.max(1, dot)); return; }
+      R.px(o, x - dot / 2, ey - dot / 2, OL, dot, dot); R.px(o, x - dot / 2, ey - dot / 2, '#f4f0e8', 1, 1);
+    };
+    const mouthY = hy + hr * 0.55;
+    if (expr === 'scared') {
+      eye(ex1, 'wide'); eye(ex2, 'wide');
+      R.px(o, ex2 - dot, ey - dot * 2.4, hair, dot * 2.2, 1); R.px(o, ex1 - dot, ey - dot * 2.4, hair, dot * 2.2, 1);   // brows up
+      R.blob(o, hx + hr * 0.25, mouthY, Math.max(2, hr * 0.3), Math.max(2, hr * 0.36), '#3a0a0a', { hl: false, shade: '#3a0a0a' });     // screaming
+      R.px(o, hx + hr * 0.1, mouthY + hr * 0.1, '#c04040', hr * 0.3, 1);                                                          // tongue
+    } else if (expr === 'alert') {
+      eye(ex1, 'dot'); eye(ex2, 'dot');
+      R.px(o, ex2 - dot, ey - dot * 1.9, hair, dot * 2, 1); R.px(o, ex1 - dot, ey - dot * 1.9, hair, dot * 2, 1);
+      R.px(o, hx + hr * 0.05, mouthY, R.lo2(skin), hr * 0.5, 1);
+    } else if (expr === 'pain') {
+      eye(ex1, 'squint'); eye(ex2, 'squint');
+      R.px(o, ex2 - dot, ey - dot * 1.6, hair, dot * 2, 1); R.px(o, ex1 - dot, ey - dot * 1.6, hair, dot * 2, 1);
+      R.blob(o, hx + hr * 0.25, mouthY, Math.max(2, hr * 0.28), Math.max(1.5, hr * 0.2), '#3a0a0a', { hl: false, shade: '#3a0a0a' });
+      for (let k = 0; k < 3; k++) R.px(o, hx + hr * 0.05 + k * hr * 0.2, mouthY - 1, '#f4f0e8');                                   // teeth
+    } else if (expr === 'dead') {
+      eye(ex1, 'x'); eye(ex2, 'x');
+      R.px(o, hx + hr * 0.1, mouthY, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.45, mouthY, '#c04040', 2, 3);                  // tongue out
+    } else if (expr === 'happy') {
+      eye(ex1, 'shut'); eye(ex2, 'shut');
+      R.px(o, hx + hr * 0.05, mouthY, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.0, mouthY - 1, R.lo2(skin), 1, 1); R.px(o, hx + hr * 0.55, mouthY - 1, R.lo2(skin), 1, 1);
+    } else {
+      eye(ex1, 'dot'); eye(ex2, 'dot');
+      R.px(o, hx + hr * 0.1, mouthY, R.lo2(skin), hr * 0.45, 1);
     }
-    if (s.glasses) { R.px(o, hx + hr * 0.04 - er - 1, ey - er, '#1c1410', hr * 0.48 + er * 2 + 2, 1); R.px(o, hx + hr * 0.52 + er, ey - er + 1, '#1c1410', 1, er * 1.6); }
-    // mouth
-    if (scared) R.blob(o, hx + hr * 0.3, hy + hr * 0.6, Math.max(1.5, hr * 0.28), Math.max(1.5, hr * 0.3), '#3a0a0a', { hl: false, shade: '#3a0a0a' });
-    else { R.px(o, hx + hr * 0.1, hy + hr * 0.55, R.lo2(skin), hr * 0.5, 1); R.px(o, hx + hr * 0.6, hy + hr * 0.45, R.lo2(skin), 1, 1); }
-    // brows
-    if (scared) { R.px(o, hx + hr * 0.3, ey - er * 1.8, hair, hr * 0.45, 1); R.px(o, hx - hr * 0.5, ey - er * 1.8, hair, hr * 0.45, 1); }
+    if (s.glasses) { R.px(o, ex2 - dot - 1, ey - dot, '#1c1410', hr * 0.55 + dot * 2 + 2, 1); R.px(o, ex1 + dot, ey - dot + 1, '#1c1410', 1, dot * 2); }
     // hats
     const hc = s.hatCol || '#f0f0e0';
-    if (s.hat === 'cap') { R.blob(o, hx, hy - hr * 0.75, hr * 1.02, hr * 0.5, hc, { hl: false }); R.px(o, hx, hy - hr * 0.45, hc, hr * 1.4, 2); R.px(o, hx, hy - hr * 0.44, R.lo(hc), hr * 1.4, 1); }
-    else if (s.hat === 'bucket') { R.blob(o, hx, hy - hr * 0.7, hr * 0.95, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr * 1.3, hy - hr * 0.42, hc, hr * 2.6, 2); }
-    else if (s.hat === 'ranger') { R.blob(o, hx, hy - hr * 0.9, hr * 0.75, hr * 0.6, hc, { hl: false }); R.px(o, hx - hr * 1.5, hy - hr * 0.5, hc, hr * 3, 2); R.px(o, hx - hr * 0.6, hy - hr * 0.55, '#2a1a0a', hr * 1.2, 1); }
-    else if (s.hat === 'sun') { R.blob(o, hx, hy - hr * 0.7, hr * 0.9, hr * 0.5, hc, { hl: false }); R.px(o, hx - hr * 1.6, hy - hr * 0.42, hc, hr * 3.2, 2); R.px(o, hx - hr * 0.8, hy - hr * 0.55, '#e04080', hr * 1.6, 1); }
-    else if (s.hat === 'bandana') { R.blob(o, hx, hy - hr * 0.7, hr * 0.98, hr * 0.48, hc, { hl: false }); R.px(o, hx - hr - 2, hy - hr * 0.4, hc, 3, hr * 0.5); }
-    else if (s.hat === 'helmet') { R.blob(o, hx, hy - hr * 0.55, hr * 1.05, hr * 0.7, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.2, R.lo(hc), hr * 2, 1); }
-    else if (s.hat === 'beanie') { R.blob(o, hx, hy - hr * 0.7, hr * 1.0, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.3, R.lo(hc), hr * 2, 1); R.disc(o, hx, hy - hr * 1.25, 1.5, R.hi(hc)); }
+    if (s.hat === 'cap') { R.blob(o, hx, hy - hr * 0.78, hr * 1.02, hr * 0.5, hc, { hl: false }); R.px(o, hx, hy - hr * 0.48, hc, hr * 1.4, 2); R.px(o, hx, hy - hr * 0.47, R.lo(hc), hr * 1.4, 1); }
+    else if (s.hat === 'bucket') { R.blob(o, hx, hy - hr * 0.72, hr * 0.95, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr * 1.3, hy - hr * 0.44, hc, hr * 2.6, 2); }
+    else if (s.hat === 'ranger') { R.blob(o, hx, hy - hr * 0.92, hr * 0.75, hr * 0.6, hc, { hl: false }); R.px(o, hx - hr * 1.5, hy - hr * 0.52, hc, hr * 3, 2); R.px(o, hx - hr * 0.6, hy - hr * 0.57, '#2a1a0a', hr * 1.2, 1); }
+    else if (s.hat === 'sun') { R.blob(o, hx, hy - hr * 0.72, hr * 0.9, hr * 0.5, hc, { hl: false }); R.px(o, hx - hr * 1.6, hy - hr * 0.44, hc, hr * 3.2, 2); R.px(o, hx - hr * 0.8, hy - hr * 0.57, '#e04080', hr * 1.6, 1); }
+    else if (s.hat === 'bandana') { R.blob(o, hx, hy - hr * 0.72, hr * 0.98, hr * 0.48, hc, { hl: false }); R.px(o, hx - hr - 2, hy - hr * 0.4, hc, 3, hr * 0.5); }
+    else if (s.hat === 'helmet') { R.blob(o, hx, hy - hr * 0.58, hr * 1.06, hr * 0.72, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.2, R.lo(hc), hr * 2, 1); R.px(o, hx - hr * 1.1, hy - hr * 0.1, R.hi(hc), hr * 2.2, 1); }
+    else if (s.hat === 'beanie') { R.blob(o, hx, hy - hr * 0.72, hr * 1.0, hr * 0.55, hc, { hl: false }); R.px(o, hx - hr, hy - hr * 0.3, R.lo(hc), hr * 2, 1); R.disc(o, hx, hy - hr * 1.28, 1.5, R.hi(hc)); }
+    else if (s.hat === 'hood') { R.blob(o, hx - 1, hy - hr * 0.3, hr * 1.15, hr * 1.2, hc, { hl: false }); R.blob(o, hx + hr * 0.2, hy + hr * 0.05, hr * 0.78, hr * 0.85, skin, { hl: false }); if (expr === 'dead') { eye(ex1, 'x'); eye(ex2, 'x'); } else { eye(ex1, 'squint'); eye(ex2, 'squint'); } }
     R.outline(o, OL);
-    return R.part(o, hx, hy + hr * 1.05);   // pivot: chin / top of the neck
+    return R.part(o, hx, hy + hr);                     // pivot at the neck
   };
-  parts.head = mkHead(false); parts.headScared = mkHead(true);
-  { // torso, pivot at the hips
-    const o = R.mk(tw + 6, th + 4), x0 = 3, y0 = 2;
-    R.rrect(o, x0, y0, tw, th, Math.max(1, Math.round(tw * 0.25)), shirt);
-    // round the torso off: a lit side, a shaded side and a dark turn at the far edge
+  parts.head = mkHead('calm'); parts.headScared = mkHead('scared'); parts.headAlert = mkHead('alert');
+  parts.headPain = mkHead('pain'); parts.headDead = mkHead('dead'); parts.headHappy = mkHead('happy');
+  // ---- torso: a plain block with a lit side ----------------------------------
+  { const o = R.mk(tw + 6, th + 4), x0 = 3, y0 = 2;
+    R.rrect(o, x0, y0, tw, th, Math.max(1, Math.round(tw * 0.18)), shirt);
     const sLit = R.hi(shirt), sDk = R.lo(shirt), sDk2 = R.lo2(shirt);
     for (let j = 0; j < th; j++) for (let i = 0; i < tw; i++) {
       if (!R.inside(o, x0 + i, y0 + j)) continue;
       const u = tw > 1 ? i / (tw - 1) : 0.5, bay = BAYER4[((y0 + j) & 3) * 4 + ((x0 + i) & 3)] * 0.0625 - 0.5;
-      if (u < 0.18 + bay * 0.16) R.px(o, x0 + i, y0 + j, sLit);
+      if (u < 0.2 + bay * 0.16) R.px(o, x0 + i, y0 + j, sLit);
       else if (u > 0.86 + bay * 0.1) R.px(o, x0 + i, y0 + j, sDk2);
-      else if (u > 0.66 + bay * 0.18) R.px(o, x0 + i, y0 + j, sDk);
+      else if (u > 0.68 + bay * 0.18) R.px(o, x0 + i, y0 + j, sDk);
     }
-    // collar, hem and a couple of cloth folds
     R.px(o, x0 + 1, y0, R.lo(shirt), tw - 2, 1);
     R.px(o, x0 + 1, y0 + th - 2, sDk, tw - 2, 1);
-    R.px(o, x0 + Math.round(tw * 0.45), y0 + Math.round(th * 0.45), sDk, 1, Math.max(1, Math.round(th * 0.3)));
-    R.px(o, x0 + Math.round(tw * 0.62), y0 + Math.round(th * 0.6), sDk, 1, Math.max(1, Math.round(th * 0.22)));
+    R.px(o, x0 + Math.round(tw * 0.5), y0 + Math.round(th * 0.4), sDk, 1, Math.max(1, Math.round(th * 0.35)));
     if (s.pattern === 'hawaii') for (let k = 0; k < 6; k++) R.disc(o, x0 + 1 + ihash(k, 41) * (tw - 2), y0 + 1 + ihash(k, 42) * (th - 2), 1, k % 2 ? '#f0e060' : '#f0f0f0');
     if (s.pattern === 'camo') for (let k = 0; k < 5; k++) R.px(o, x0 + 1 + ihash(k, 43) * (tw - 4), y0 + 1 + ihash(k, 44) * (th - 3), R.lo2(shirt), 2 + ihash(k, 45) * 2, 2);
     if (s.vest) { R.px(o, x0 + 1, y0, '#8a7a4a', 2, th * 0.7); R.px(o, x0 + tw - 3, y0, '#8a7a4a', 2, th * 0.7); }
     if (s.apron) { R.px(o, x0 + 1, y0 + 2, '#f0f0e0', tw - 2, th - 3); R.px(o, x0 + 2, y0 + 3, '#c04040', tw - 4, 1); }
-    if (s.coat) { R.px(o, x0 + tw / 2 - 1, y0, '#c8c8c0', 1, th); R.px(o, x0 + 2, y0 + 2, s.shirt || '#3a6ab0', tw / 2 - 3, 2); }
+    if (s.coat) { R.px(o, x0 + tw / 2 - 1, y0, '#c8c8c0', 1, th); R.px(o, x0 + 2, y0 + 2, s.shirt || '#3a6ab0', tw / 2 - 3, 2); R.px(o, x0 + tw - 4, y0 + 3, '#c04040', 2, 2); }
+    if (s.hivis) { R.px(o, x0, y0 + Math.round(th * 0.35), '#e8e8a0', tw, 2); R.px(o, x0, y0 + Math.round(th * 0.7), '#e8e8a0', tw, 2); }
     if (s.badge) R.px(o, x0 + 2, y0 + 2, '#e0c040', 2, 2);
-    if (s.shorts) { R.px(o, x0, y0 + th - 1, pants, tw, 1); }
+    if (s.stains) for (let k = 0; k < 4; k++) R.px(o, x0 + 1 + ihash(k, 51) * (tw - 3), y0 + 2 + ihash(k, 52) * (th - 4), '#4a3a2a', 2, 1);
     R.outline(o, OL);
     parts.torso = R.part(o, x0 + tw / 2, y0 + th);
   }
-  { const o = R.mk(7, armLen + 5), aw = Math.max(2, Math.round(Hh * 0.07));
-    const sl = s.coat ? '#f4f4f0' : shirt, cut = Math.round(armLen * 0.45);
-    for (let j = 0; j < armLen; j++) {
-      const c = j < cut ? sl : skin;
-      R.px(o, 3 - aw / 2, 1 + j, c, aw, 1);
-      R.px(o, 3 - aw / 2, 1 + j, R.hi(c), Math.max(1, aw * 0.34), 1);
-      R.px(o, 3 + aw / 2 - Math.max(1, aw * 0.28), 1 + j, R.lo(c), Math.max(1, aw * 0.28), 1);
+  // ---- limbs: two segments each, a joint you can see ---------------------
+  const limb = (len, w, col, tipCol, tipW, tipH) => {
+    const o = R.mk(w + 8, len + tipH + 4), cx = 4 + w / 2;
+    for (let j = 0; j < len; j++) {
+      R.px(o, cx - w / 2, 1 + j, col, w, 1);
+      R.px(o, cx - w / 2, 1 + j, R.hi(col), Math.max(1, w * 0.34), 1);
+      R.px(o, cx + w / 2 - Math.max(1, w * 0.3), 1 + j, R.lo(col), Math.max(1, w * 0.3), 1);
     }
-    R.px(o, 3 - aw / 2 - 1, cut, R.lo(sl), aw + 2, 1);                 // cuff
-    R.disc(o, 3, 1 + armLen, Math.max(1.2, aw * 0.75), skin);
-    R.px(o, 3 - aw * 0.5, 1 + armLen - aw * 0.4, R.hi(skin), Math.max(1, aw * 0.5), 1);
-    R.outline(o, OL); parts.arm = R.part(o, 3, 1); }
-  { const o = R.mk(9, legLen + 5), lw = Math.max(2, Math.round(Hh * 0.09));
-    const cut = s.shorts ? Math.round(legLen * 0.45) : legLen;
-    for (let j = 0; j < legLen; j++) {
-      const c = j < cut ? pants : skin;
-      R.px(o, 4 - lw / 2, 1 + j, c, lw, 1);
-      R.px(o, 4 - lw / 2, 1 + j, R.hi(c), Math.max(1, lw * 0.32), 1);
-      R.px(o, 4 + lw / 2 - Math.max(1, lw * 0.28), 1 + j, R.lo(c), Math.max(1, lw * 0.28), 1);
-    }
-    if (s.shorts) R.px(o, 4 - lw / 2 - 1, cut, R.lo(pants), lw + 2, 1);
-    const bc = s.boots || '#2a2018';
-    R.px(o, 4 - lw / 2 - 1, legLen - 1, bc, lw + 3, 3);
-    R.px(o, 4 - lw / 2 - 1, legLen - 1, R.hi(bc), lw + 2, 1);
-    R.px(o, 4 - lw / 2 - 1, legLen + 1, R.lo2(bc), lw + 3, 1);
-    R.outline(o, OL); parts.leg = R.part(o, 4, 1); }
+    if (tipCol) { R.px(o, cx - tipW / 2, len, tipCol, tipW, tipH); R.px(o, cx - tipW / 2, len, R.hi(tipCol), tipW, 1); }
+    R.disc(o, cx, 1, w * 0.6, col);                     // the joint, rounded
+    R.outline(o, OL);
+    return R.part(o, cx, 1);
+  };
+  const aw = Math.max(2, Math.round(Hh * 0.065)), lw = Math.max(3, Math.round(Hh * 0.085));
+  parts.uarm = limb(aseg, aw, s.coat ? '#f4f4f0' : shirt, null, 0, 0);
+  parts.farm = limb(aseg, aw, skin, skin, aw + 2, Math.max(2, aw));                     // hand as a block
+  parts.thigh = limb(seg, lw, pants, null, 0, 0);
+  parts.shin = limb(seg, Math.max(2, lw - 1), s.shorts ? skin : pants, s.boots || '#2a2018', lw + 3, 3);   // boot
+  parts.arm = parts.uarm; parts.leg = parts.thigh;      // gore and old callers ask for these
+  // ---- props ---------------------------------------------------------------
   const propLen = Math.round(Hh * 0.5);
   const mkProp = kind => {
     if (kind === 'rifle') { const o = R.mk(propLen + 2, 6); R.px(o, 1, 2, '#2a2a2a', propLen, 2); R.px(o, 1, 3, '#5a3a1a', propLen * 0.4, 2); R.px(o, propLen * 0.55, 1, '#3a3a3a', 3, 1); R.outline(o, OL); return R.part(o, propLen * 0.35, 3); }
@@ -1736,6 +1756,7 @@ function buildBiped(s) {
     if (kind === 'rod') { const o = R.mk(propLen * 1.4, 4); R.px(o, 1, 1, '#4a3a2a', propLen * 1.4 - 2, 1); R.px(o, 1, 2, '#2a2a2a', propLen * 0.2, 2); R.outline(o, OL); return R.part(o, 3, 2); }
     if (kind === 'camera') { const o = R.mk(8, 7); R.px(o, 1, 1, '#2a2a2a', 6, 5); R.px(o, 3, 2, '#60a0e0', 2, 2); R.px(o, 2, 0, '#4a4a4a', 3, 1); R.outline(o, OL); return R.part(o, 4, 4); }
     if (kind === 'can') { const o = R.mk(5, 7); R.px(o, 1, 1, '#c0c0c8', 3, 5); R.px(o, 1, 2, '#e04040', 3, 2); R.outline(o, OL); return R.part(o, 2, 3); }
+    if (kind === 'bottle') { const o = R.mk(5, 9); R.px(o, 1, 2, '#3a7a5a', 3, 6); R.px(o, 2, 0, '#2a5a44', 1, 3); R.px(o, 1, 2, '#8ad0a8', 1, 4); R.outline(o, OL); return R.part(o, 2, 4); }
     if (kind === 'clipboard') { const o = R.mk(7, 9); R.px(o, 1, 1, '#a08050', 5, 7); R.px(o, 2, 2, '#f4f4f0', 3, 5); R.px(o, 2, 3, '#8080a0', 3, 1); R.outline(o, OL); return R.part(o, 3, 5); }
     if (kind === 'syringe') { const o = R.mk(10, 5); R.px(o, 1, 2, '#e0e0f0', 6, 2); R.px(o, 2, 2, '#60e080', 4, 2); R.px(o, 7, 2, '#c0c0c0', 3, 1); R.outline(o, OL); return R.part(o, 4, 3); }
     if (kind === 'stick') { const o = R.mk(propLen * 0.8, 4); R.px(o, 1, 1, '#6a4a2a', propLen * 0.8 - 2, 2); R.px(o, propLen * 0.8 - 5, 0, '#f0e0b0', 4, 4); R.outline(o, OL); return R.part(o, 2, 2); }
@@ -1743,25 +1764,57 @@ function buildBiped(s) {
   };
   if (s.prop) parts.prop = mkProp(s.prop);
   const rig = { kind: 'biped', parts, len: Hh, height: Hh, foot: 0, head: -Hh * 0.95 };
-  // anim: {phase, speed, panic, aim, sit, swim, cast}
+  // A two-segment limb: the upper part swings from its socket, the lower one
+  // hangs off the end of it at its own angle. Returns both placements.
+  const limb2 = (up, low, x, y, a1, a2, len1, ids, alpha) => {
+    const jx = x + Math.sin(a1) * len1, jy = y + Math.cos(a1) * len1;
+    return [
+      { p: up, x, y, a: -a1, alpha, id: ids[0], kind: ids[2] },
+      { p: low, x: jx, y: jy, a: -(a1 + a2), alpha, id: ids[1], kind: ids[2] },
+    ];
+  };
+  // anim: {phase, speed, panic, aim, sit, swim, cast, push, expr, nod}
   rig.pose = anim => {
     const ph = anim.phase || 0, sp = clamp(anim.speed || 0, 0, 1.3), P = parts, out = [];
-    const panic = anim.panic ? 1 : 0, aim = anim.aim ? 1 : 0, sit = anim.sit ? 1 : 0;
-    const hipY = -legLen - 1 + sit * legLen * 0.75, bob = Math.abs(Math.sin(ph * 2)) * -1.2 * sp, swing = Math.sin(ph) * 0.65 * sp;
-    if (sit) { out.push({ p: P.leg, x: -1, y: hipY, a: -1.35, id: 'leg0', kind: 'leg' }); out.push({ p: P.leg, x: 2, y: hipY, a: -1.2, id: 'leg1', kind: 'leg' }); }
-    else if (anim.swim) { out.push({ p: P.leg, x: -1, y: hipY, a: -0.5 + Math.sin(ph * 2) * 0.5, id: 'leg0', kind: 'leg' }); out.push({ p: P.leg, x: 2, y: hipY, a: -0.5 - Math.sin(ph * 2) * 0.5, id: 'leg1', kind: 'leg' }); }
-    else { out.push({ p: P.leg, x: -1, y: hipY + bob, a: -swing, alpha: 0.85, id: 'leg0', kind: 'leg' }); out.push({ p: P.leg, x: 2, y: hipY + bob, a: swing, id: 'leg1', kind: 'leg' }); }
-    const ty = hipY + bob, sh = ty - th + 2;
-    // far arm
-    const armA = aim ? -Math.PI / 2 + 0.05 : panic ? -Math.PI + Math.sin(ph * 3) * 0.6 : anim.swim ? -Math.PI * 0.6 + Math.sin(ph * 2) * 0.8 : anim.cast ? -Math.PI * 0.6 : swing * 0.9 + 0.1;
-    out.push({ p: P.arm, x: -2, y: sh, a: panic ? -armA * 0.9 : -armA * 0.6, alpha: 0.85, id: 'arm1', kind: 'arm' });
-    out.push({ p: P.torso, x: 0, y: ty, a: anim.swim ? 0 : Math.sin(ph) * 0.03 * sp, id: 'torso', kind: 'body' });
-    const hy = sh - 1, headA = panic ? Math.sin(ph * 4) * 0.12 : Math.sin(ph * 0.5) * 0.03 + (anim.swim ? -0.4 : 0);
-    out.push({ p: panic ? P.headScared : P.head, x: 0, y: hy, a: headA, id: 'head', kind: 'head' });
-    out.push({ p: P.arm, x: 2, y: sh, a: armA, id: 'arm0', kind: 'arm' });
-    if (P.prop && !panic) {
-      const hx = 2 + Math.sin(armA) * armLen, hyy = sh + Math.cos(armA) * armLen;   // hand position
-      const pa = aim ? 0.05 : s.prop === 'rod' ? -0.55 : s.prop === 'camera' ? 0 : -0.2;
+    const panic = anim.panic ? 1 : 0, aim = anim.aim ? 1 : 0, sit = anim.sit ? 1 : 0, push = anim.push ? 1 : 0;
+    const run = panic ? 1 : clamp((sp - 0.7) / 0.5, 0, 1);
+    const hipY = -legLen - 1 + sit * legLen * 0.72;
+    const bob = Math.abs(Math.sin(ph * 2)) * -(1.2 + run * 1.4) * Math.min(1, sp * 1.5);
+    const stride = (0.55 + run * 0.6) * Math.min(1, sp * 1.4);
+    const swing = Math.sin(ph) * stride, swing2 = Math.sin(ph + Math.PI) * stride;
+    // legs: the shin trails the thigh and snaps forward at the top of the swing
+    const kneeA = a => Math.max(0, -Math.sin(a)) * (0.9 + run * 0.6) * Math.min(1, sp * 1.4);
+    let legs;
+    if (sit) legs = [...limb2(P.thigh, P.shin, -1, hipY, -1.4, 1.5, seg, ['leg0', 'shin0', 'leg'], 0.85), ...limb2(P.thigh, P.shin, 2, hipY, -1.2, 1.4, seg, ['leg1', 'shin1', 'leg'], 1)];
+    else if (anim.swim) legs = [...limb2(P.thigh, P.shin, -1, hipY, -0.5 + Math.sin(ph * 2) * 0.5, 0.6, seg, ['leg0', 'shin0', 'leg'], 0.85), ...limb2(P.thigh, P.shin, 2, hipY, -0.5 - Math.sin(ph * 2) * 0.5, 0.6, seg, ['leg1', 'shin1', 'leg'], 1)];
+    else legs = [...limb2(P.thigh, P.shin, -1, hipY + bob, swing2 + push * 0.35, kneeA(ph + Math.PI), seg, ['leg0', 'shin0', 'leg'], 0.85), ...limb2(P.thigh, P.shin, 2, hipY + bob, swing + push * 0.35, kneeA(ph), seg, ['leg1', 'shin1', 'leg'], 1)];
+    const ty = hipY + bob, lean = push ? 0.28 : run * 0.16 * (panic ? 1 : 1) + (aim ? 0.05 : 0);
+    const sh = ty - th + 2;
+    // arms: opposite the legs, elbows bending on the back swing; panic throws
+    // them up and flails; pushing locks both out in front; aiming levels one
+    let a1far, a2far, a1near, a2near;
+    if (aim) { a1far = 1.45; a2far = -0.2; a1near = 1.5; a2near = -0.1; }
+    else if (push) { a1far = 1.25 + Math.sin(ph) * 0.05; a2far = -0.25; a1near = 1.15 + Math.sin(ph + 1) * 0.05; a2near = -0.3; }
+    else if (panic) { a1far = 2.6 + Math.sin(ph * 3) * 0.5; a2far = -0.6 + Math.sin(ph * 3 + 1) * 0.5; a1near = 2.7 + Math.cos(ph * 3) * 0.5; a2near = -0.6 + Math.cos(ph * 3 + 1) * 0.5; }
+    else if (anim.swim) { a1far = 1.9 + Math.sin(ph * 2) * 0.8; a2far = -0.4; a1near = 1.9 - Math.sin(ph * 2) * 0.8; a2near = -0.4; }
+    else if (anim.cast) { a1far = 1.8; a2far = -0.5; a1near = 1.1; a2near = -0.4; }
+    else if (sit) { a1far = 0.9; a2far = -1.4; a1near = 0.6 + (anim.nod || 0) * 0.3; a2near = -1.6; }
+    else { a1far = swing * 0.85 + 0.12; a2far = -Math.max(0, swing) * 0.7 - 0.15; a1near = swing2 * 0.85 + 0.12; a2near = -Math.max(0, swing2) * 0.7 - 0.15; }
+    // far leg, far arm, torso, head, near leg, near arm, prop
+    out.push(legs[0], legs[1]);
+    out.push(...limb2(P.uarm, P.farm, -2, sh, a1far, a2far, aseg, ['arm1', 'farm1', 'arm'], 0.85));
+    out.push({ p: P.torso, x: 0, y: ty, a: -lean + (anim.swim ? 0 : Math.sin(ph) * 0.03 * sp), id: 'torso', kind: 'body' });
+    const expr = anim.expr || (panic ? 'scared' : 'calm');
+    const head = expr === 'scared' ? P.headScared : expr === 'alert' ? P.headAlert : expr === 'pain' ? P.headPain : expr === 'dead' ? P.headDead : expr === 'happy' ? P.headHappy : P.head;
+    const nod = (anim.nod || 0) * 0.5;
+    const headA = panic ? Math.sin(ph * 4) * 0.14 - 0.25 : anim.swim ? -0.4 : push ? 0.25 : nod + Math.sin(ph * 0.5) * 0.03 - lean * 0.5 + (expr === 'alert' ? -0.12 : 0);
+    out.push({ p: head, x: -Math.sin(lean) * th * 0.9, y: sh - 1 - Math.cos(lean) * 0 , a: headA, id: 'head', kind: 'head' });
+    out.push(legs[2], legs[3]);
+    out.push(...limb2(P.uarm, P.farm, 2, sh, a1near, a2near, aseg, ['arm0', 'farm0', 'arm'], 1));
+    if (P.prop && !panic && !push) {
+      const jx = 2 + Math.sin(a1near) * aseg, jy = sh + Math.cos(a1near) * aseg;
+      const hx = jx + Math.sin(a1near + a2near) * aseg, hyy = jy + Math.cos(a1near + a2near) * aseg;
+      const pa = aim ? 0.05 : s.prop === 'rod' ? -0.55 : s.prop === 'camera' ? 0 : s.prop === 'syringe' ? 0.6 : -0.2;
       out.push({ p: P.prop, x: hx, y: hyy, a: pa, id: 'prop', kind: 'prop' });
     }
     return out;
@@ -2487,6 +2540,9 @@ P('kayaker', 'KAYAKER', 5.7, 165, { skin: '#e0b090', shirt: '#e0a020', pants: '#
 P('scientist', 'SCIENTIST', 5.8, 160, { skin: '#e0b090', shirt: '#3a6ab0', pants: '#3a3a4a', hair: '#3a2a1a' }, { speed: 120, flee: 160 });
 P('shopkeep', 'SHOPKEEPER', 5.8, 190, { skin: '#e0b090', shirt: '#f0f0e0', pants: '#3a3a4a', hair: '#5a3a1a' }, { speed: 110, flee: 120 });
 P('camper', 'CAMPER', 5.7, 165, { skin: '#e0b090', shirt: '#4a9a5a', pants: '#6a5a4a', hair: '#c08040' }, { speed: 140, flee: 170 });
+P('worker', 'TRANSFER TECH', 5.8, 175, { skin: '#e0b090', shirt: '#e8e4d0', pants: '#2c3a44', hair: '#3a2a1a', hat: 'helmet', hatCol: '#ffd23a', hivis: true }, { speed: 150, flee: 180 });
+P('junkie', 'USER', 5.6, 130, { skin: '#c8a888', shirt: '#4a4048', pants: '#2a2a30', hair: '#2a1a1a', hat: 'hood', hatCol: '#3a3a44', stains: true, prop: 'syringe' }, { speed: 100, flee: 60, sits: true });
+P('vagrant2', 'DRIFTER', 5.7, 150, { skin: '#d0a888', shirt: '#5a4a3a', pants: '#3a3028', hair: '#6a5a4a', hat: 'beanie', hatCol: '#5a3a2a', stains: true, prop: 'bottle', beard: true }, { speed: 110, flee: 90, sits: true });
 
 // ------------------------------------------------------------ snakes (chain bodies, see Snake)
 def('moccasin', { name: 'WATER MOCCASIN', ft: 3, lb: 2.5, rig: 'snake', cat: 'snake', base: '#3a2a1e', band: '#5a4a34', belly: '#8a7a60', dark: '#1a1008', eye: '#c0a030', pattern: 'bands', n: 12, hp: 12, speed: 75, venom: 3 });
@@ -2866,6 +2922,16 @@ const Gore = {
     G.fx.sparks && G.fx.flesh(pl.wx, pl.wy, 4, 70);
     SFX.gib(e.pan); G.hitstop(0.05); G.shake(4);
     e.dismembered = (e.dismembered || 0) + 1;
+    if (e.human) {
+      // a person losing a limb is loud, wet and long: more of them comes out,
+      // and they keep bleeding into the water for as long as they last
+      SFX.scream && SFX.scream(e.pan);
+      Gore.organ(pl.wx, pl.wy, choice(['gut', 'meat', 'rope', 'bone']), 0.9, e.bloodColors);
+      G.fx.blood(pl.wx, pl.wy, 18, dx, dy - 0.6, 170, e.bloodColors);
+      e.bleedT = Math.max(e.bleedT || 0, 12); e.bleedDmg = Math.max(e.bleedDmg || 0, e.maxHp * 0.03);
+      e.anim.expr = 'pain'; e.flash = Math.max(e.flash || 0, 0.12); e.panicked = true;
+      if (pl.kind === 'leg') { e.slow = 0.3; e.limp = true; }
+    }
     return true;
   },
   // which parts can come off, worst first
@@ -2879,7 +2945,8 @@ const Gore = {
     if (!G.settings.gore || !e.bleeds || e.dead) return false;
     const limbs = Gore.limbsOf(e).filter(l => !(e.missing && e.missing.has(l.id)));
     if (!limbs.length) return false;
-    const hurt = clamp(dmg / Math.max(6, e.maxHp * 0.5), 0, 1);
+    // people come apart more readily than anything with a hide
+    const hurt = clamp(dmg / Math.max(6, e.maxHp * 0.5) * (e.human ? 1.6 : 1), 0, 1);
     if (!chance(0.22 + hurt * 0.5)) return false;
     const soft = limbs.filter(l => l.kind !== 'head');
     const pick = (e.hp < e.maxHp * 0.34 && chance(0.4)) || !soft.length ? choice(limbs) : choice(soft);
@@ -2966,15 +3033,21 @@ const SEWER_SECTION = [
   [-4920, -28, -150], [-4800, -44, -172], [-4680, -30, -150],    // the camp ledge
   [-4560, 50, -120], [-4420, 120, -96], [-4280, 170, -130], [-4140, 140, -150],
   [-4000, 80, -120], [-3860, 40, -100], [-3720, 90, -80], [-3580, 130, -70],
-  [-3440, 96, -90], [-3300, 40, -110], [-3220, -40, -130], [-3140, -58, -140],
+  [-3660, 96, -90], [-3620, 60, -120],
+  // ---- THE FACILITY: a corridor two floors up, over the top of the cistern.
+  // Dry, lit, tiled, and it ends at a floor drain with nothing under it. The
+  // transfer runs east along it; you go out through the glass and down the hole.
+  [-3600, -380, -650], [-3480, -382, -652], [-3360, -380, -648], [-3240, -382, -650], [-3120, -380, -648], [-3040, -384, -650], [-2980, -380, -648],
+  [-2962, -380, -648],
   // ---- THE CATACOMBS: a labyrinth under Rome. Not a pipe you swim along but
   // a string of vaults, each one shut off from the next by a gap only a small
   // animal fits through. You are tipped in at the cistern and the only way is
   // east, through the ossuary, the tomb hall, the drowned forum and the
   // columbarium, to a gate somebody bolted shut two thousand years after the
   // people who built this stopped caring.
-  // -- the cistern: where you land. deep, vaulted, and full of what floats
-  [-3060, 120, -150], [-2960, 170, -180], [-2860, 200, -176], [-2760, 160, -150],
+  // -- the cistern: where you land, from two floors up. deep, vaulted, and
+  //    full of what floats
+  [-2946, 150, -170], [-2880, 200, -178], [-2800, 190, -170], [-2740, 130, -140],
   [-2700, 60, -60],
   [-2660, 26, -8], [-2600, 24, -6], [-2560, 28, -10],                // the first squeeze
   // -- the ossuary: bone on the floor and bone in the walls
@@ -3106,9 +3179,9 @@ const BIOMES = [
     sky: ['#070d10', '#101a1e'], water: ['#41532c', '#25321a', '#0a0e07'], scum: '#7a8a2a', fog: '#101c1e',
     parallax: ['block', 'pipe', 'block'], ground: ['#2e3438', '#22282c', '#161a1e'], grass: '#3a4a34',
     indoor: true, roof: -200, dark: 0.72, toxic: 0.5, flora: '#6e7a2a', floraMix: 0.62,
-    plants: [['trash', 2.4], ['algae', 2.2], ['rubble', 1.8], ['pipe', 1.4], ['weed', 0.8]],
+    plants: [['skeleton', 0.9], ['trash', 2.4], ['algae', 2.2], ['rubble', 1.8], ['pipe', 1.4], ['weed', 0.8]],
     fish: [['cavefish', 3], ['sewereel', 2.2], ['sludgecarp', 2], ['piranha', 1.6], ['minnow', 1.4]],
-    land: [['bigrat', 3], ['rat', 4]],
+    land: [['bigrat', 3], ['rat', 4], ['junkie', 1.2], ['vagrant2', 0.8]],
     structures: [], music: 0.9,
   },
   {
@@ -3116,9 +3189,9 @@ const BIOMES = [
     sky: ['#08110f', '#131f1c'], water: ['#3f5a38', '#233420', '#0a110c'], scum: '#6a7a26', fog: '#121e1c',
     parallax: ['block', 'block', 'pipe'], ground: ['#343a3a', '#262c2c', '#181c1c'], grass: '#3f5a3a',
     indoor: true, roof: -180, dark: 0.66, toxic: 0.35, flora: '#6a7a2e', floraMix: 0.55,
-    plants: [['algae', 2.6], ['trash', 2], ['rubble', 2], ['pipe', 1.6], ['mushroom', 1.2], ['weed', 1]],
+    plants: [['skeleton', 0.9], ['algae', 2.6], ['trash', 2], ['rubble', 2], ['pipe', 1.6], ['mushroom', 1.2], ['weed', 1]],
     fish: [['piranha', 3], ['sludgecarp', 2.4], ['sewereel', 2], ['cavefish', 2], ['walkingcat', 2], ['snakehead', 1.4]],
-    land: [['bigrat', 4], ['rat', 4], ['opossum', 1.2]],
+    land: [['bigrat', 4], ['rat', 4], ['opossum', 1.2], ['vagrant2', 1.2], ['junkie', 0.8]],
     structures: [], music: 0.85,
   },
   {
@@ -3126,9 +3199,9 @@ const BIOMES = [
     sky: ['#0a1412', '#16241f'], water: ['#3d6048', '#21402e', '#091713'], scum: '#6a7a30', fog: '#14211d',
     parallax: ['pipe', 'block', 'pipe'], ground: ['#3a3f3c', '#2a2f2c', '#1b201e'], grass: '#4a6a3a',
     indoor: true, roof: -220, dark: 0.58, toxic: 0.25, flora: '#728030', floraMix: 0.46,
-    plants: [['pipe', 2.4], ['rubble', 2], ['trash', 1.8], ['algae', 1.8], ['crate', 1.2], ['mushroom', 1]],
+    plants: [['skeleton', 0.9], ['pipe', 2.4], ['rubble', 2], ['trash', 1.8], ['algae', 1.8], ['crate', 1.2], ['mushroom', 1]],
     fish: [['piranha', 2.6], ['walkingcat', 2.4], ['sludgecarp', 2], ['sewereel', 1.8], ['mutantcat', 0.9], ['tilapia', 1.4]],
-    land: [['bigrat', 3], ['rat', 3], ['vagrant', 1.6]],
+    land: [['bigrat', 3], ['rat', 3], ['vagrant', 1.2], ['junkie', 1.4], ['vagrant2', 1]],
     structures: [], music: 0.7,
   },
   {
@@ -3136,29 +3209,38 @@ const BIOMES = [
     sky: ['#0c1618', '#1a2a2c'], water: ['#2a5a5e', '#153a3e', '#04161a'], scum: '#4a6a4a', fog: '#16262a',
     parallax: ['block', 'pipe', 'block'], ground: ['#33383c', '#252a2e', '#171b1f'], grass: '#3a5a44',
     indoor: true, roof: -520, dark: 0.5, toxic: 0.15, flora: '#6a8a3e', floraMix: 0.36,
-    plants: [['algae', 2.2], ['pipe', 2], ['rubble', 1.8], ['moss', 1.6], ['vine', 1.4], ['mushroom', 1.2]],
+    plants: [['skeleton', 0.9], ['algae', 2.2], ['pipe', 2], ['rubble', 1.8], ['moss', 1.6], ['vine', 1.4], ['mushroom', 1.2]],
     fish: [['mutantcat', 1.4], ['piranha', 2.4], ['cavefish', 2.4], ['sewereel', 2], ['eel', 1.4], ['catfish', 1.6]],
-    land: [['bigrat', 2.4], ['vagrant', 1.2]],
+    land: [['bigrat', 2.4], ['vagrant', 0.8], ['junkie', 1], ['vagrant2', 1]],
     structures: [], music: 0.75,
   },
   {
-    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3200,
+    id: 'undercroft', name: 'THE UNDERCROFT', x0: -5200, x1: -3620,
     sky: ['#0d1a1c', '#1a2a2c'], water: ['#40705c', '#20463a', '#0a1a16'], scum: '#5a7a3a', fog: '#1c2c2e',
     parallax: ['block', 'pipe', 'block'], ground: ['#3d4342', '#2d3332', '#1e2322'], grass: '#456a44',
     indoor: true, roof: -150, dark: 0.42, toxic: 0.08, flora: '#6f8a44', floraMix: 0.3,
-    plants: [['crate', 2], ['trash', 2], ['rubble', 1.6], ['algae', 1.6], ['pipe', 1.4], ['mushroom', 1.4], ['moss', 1.2]],
+    plants: [['skeleton', 0.9], ['crate', 2], ['trash', 2], ['rubble', 1.6], ['algae', 1.6], ['pipe', 1.4], ['mushroom', 1.4], ['moss', 1.2]],
     fish: [['walkingcat', 2.6], ['sludgecarp', 2], ['piranha', 1.6], ['cavefish', 1.6], ['tilapia', 1.6], ['minnow', 2]],
-    land: [['vagrant', 2.4], ['bigrat', 2.6], ['rat', 3], ['opossum', 1.4]],
+    land: [['vagrant', 1.4], ['vagrant2', 1.6], ['junkie', 1.4], ['bigrat', 2.6], ['rat', 3], ['opossum', 1.4]],
     structures: [], music: 0.55,
   },
   {
-    id: 'cistern', name: 'THE CISTERN', x0: -3200, x1: -1700, roman: true,
+    id: 'facility', name: 'FACILITY B', x0: -3620, x1: -2955, lab: true,
+    sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
+    parallax: ['block', 'block', 'block'], ground: ['#4a5258', '#343a40', '#1e2428'], grass: '#4a5258',
+    indoor: true, roof: -650, dark: 0.1,
+    plants: [['labtank', 0.6], ['console', 0.4], ['crate', 0.2], ['cable', 0.45], ['biohaz', 0.15]],
+    fish: [], land: [], structures: [],
+    music: 0.9,
+  },
+  {
+    id: 'cistern', name: 'THE CISTERN', x0: -2955, x1: -1700, roman: true,
     sky: ['#0c1210', '#1a1e16'], water: ['#5a6a3a', '#33401f', '#12180a'], scum: '#8a8a3a', fog: '#1e2018',
     parallax: ['block', 'block', 'block'], ground: ['#5a5244', '#3e392e', '#26221b'], grass: '#4a5a34',
     indoor: true, roof: -150, dark: 0.55, toxic: 0.22, flora: '#7a8a3a', floraMix: 0.5,
-    plants: [['garbage', 3.4], ['bones', 0.7], ['algae', 1.6], ['rubble', 1.6], ['urn', 1.2], ['weed', 0.6]],
+    plants: [['garbage', 3.4], ['bones', 0.7], ['algae', 1.6], ['rubble', 1.6], ['urn', 1.2], ['weed', 0.6], ['skeleton', 0.8]],
     fish: [['minnow', 3], ['shiner', 2], ['walkingcat', 1.2], ['cavefish', 1.4]],
-    land: [['rat', 5], ['bigrat', 1.2]], structures: [],
+    land: [['rat', 5], ['bigrat', 1.2], ['junkie', 1.4], ['vagrant2', 1.2]], structures: [],
     music: 0.9,
   },
   {
@@ -3166,9 +3248,9 @@ const BIOMES = [
     sky: ['#0e1010', '#1c1a16'], water: ['#556236', '#2e381c', '#101408'], scum: '#8a8a3a', fog: '#1e1c18',
     parallax: ['block', 'block', 'block'], ground: ['#5e5446', '#403a2e', '#28231b'], grass: '#4a5a34',
     indoor: true, roof: -140, dark: 0.6, toxic: 0.14, flora: '#7a8a3a', floraMix: 0.5,
-    plants: [['bones', 1.8], ['tomb', 1.6], ['urn', 1.8], ['garbage', 1.8], ['algae', 1.4], ['rubble', 1.4]],
+    plants: [['bones', 1.8], ['tomb', 1.6], ['urn', 1.8], ['garbage', 1.8], ['algae', 1.4], ['rubble', 1.4], ['skeleton', 1.2]],
     fish: [['minnow', 2.4], ['cavefish', 2], ['sludgecarp', 1.2], ['walkingcat', 1.4]],
-    land: [['rat', 5], ['bigrat', 1.6], ['opossum', 0.6]], structures: [],
+    land: [['rat', 5], ['bigrat', 1.6], ['opossum', 0.6], ['vagrant2', 1.2], ['junkie', 1]], structures: [],
     music: 0.7,
   },
   {
@@ -3362,6 +3444,11 @@ const PLANT_RULES = {
   trash: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'trash', x, y, v: Math.floor(r() * 4), s: 0.9 + r() * 0.6 }) },
   // --- the catacombs: what two thousand years leave on the floor and the surface
   garbage: { land: false, minD: 14, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'garbage', x: x + k * 9 + r() * 6, y: 0, v: Math.floor(r() * 6), ph: r() * TAU, s: 0.9 + r() * 0.4 }); } },
+  labtank: { land: true, make: (o, x, y, r) => o.push({ type: 'labtank', x, y, v: Math.floor(r() * 4), ph: r() * TAU }) },
+  console: { land: true, make: (o, x, y, r) => o.push({ type: 'console', x, y, v: Math.floor(r() * 3), ph: r() * TAU }) },
+  cable: { land: true, make: (o, x, y, r) => o.push({ type: 'cable', x, y, n: 2 + Math.floor(r() * 3), ph: r() * TAU }) },
+  biohaz: { land: true, make: (o, x, y, r) => o.push({ type: 'biohaz', x, y }) },
+  skeleton: { land: true, make: (o, x, y, r) => o.push({ type: 'skeleton', x, y, v: Math.floor(r() * 2), flip: r() < 0.5 }) },
   bones: { make: (o, x, y, r) => o.push({ type: 'bones', x, y, n: 2 + Math.floor(r() * 3), v: Math.floor(r() * 3), s: 0.5 + r() * 0.4 }) },
   tomb: { land: true, make: (o, x, y, r) => o.push({ type: 'tomb', x, y, v: Math.floor(r() * 2), open: r() < 0.4 }) },
   urn: { land: true, make: (o, x, y, r) => o.push({ type: 'urn', x, y, n: 1 + Math.floor(r() * 3), s: 0.8 + r() * 0.5 }) },
@@ -3988,7 +4075,56 @@ const World = {
     ctx.restore();
     ctx.restore();          // release the wave-surface clip
   },
+  // Under a roof the ground is not ground. It is poured concrete and laid
+  // brick: a flat invert, ledges with a formwork edge, courses of block down
+  // the face of every step, and nothing that looks like a hillside.
+  drawBuiltGround(ctx, cam) {
+    const W = G.W, H = G.H, z = cam.zoom, BP = Biome.mixPal(cam.x), B = Biome.at(cam.x), step = 3;
+    const pts = [];
+    for (let sx = -step; sx <= W + step; sx += step) { const wx = cam.toWorldX(sx); pts.push([sx, cam.toScreen(wx, this.floorY(wx))[1], wx]); }
+    const last = pts.length - 1;
+    const cap = (off) => { ctx.beginPath(); ctx.moveTo(pts[0][0], H + 30); for (const p of pts) ctx.lineTo(p[0], p[1] + off); ctx.lineTo(pts[last][0], H + 30); ctx.closePath(); };
+    const g0 = BP.ground[0], g1 = BP.ground[1], g2 = BP.ground[2];
+    // the mass: one flat concrete tone, darker with depth in two hard steps
+    cap(0); ctx.fillStyle = B.lab ? '#2c3438' : mixColor(g1, '#000000', 0.1); ctx.fill();
+    cap(28 * z); ctx.fillStyle = B.lab ? '#232a2e' : mixColor(g1, '#000000', 0.3); ctx.fill();
+    cap(90 * z); ctx.fillStyle = B.lab ? '#1a2024' : mixColor(g2, '#000000', 0.12); ctx.fill();
+    // brick or block courses down the face of the ground, locked to the world
+    ctx.save(); cap(2 * z); ctx.clip();
+    const brick = B.roman ? Tex.get('brick|r|' + g2, 32, (x, S) => {
+      x.fillStyle = shade(g2, 0.55); x.globalAlpha = 0.5;
+      for (let y = 0; y < S; y += 8) { x.fillRect(0, y, S, 1); const off = (y / 8) % 2 ? 8 : 0; for (let xx = off; xx < S; xx += 16) x.fillRect(xx, y, 1, 8); }
+      x.globalAlpha = 0.18; x.fillStyle = '#ffffff'; for (let y = 1; y < S; y += 8) x.fillRect(0, y, S, 1);
+      x.globalAlpha = 1;
+    }) : Tex.get('brick|c|' + g2 + (B.lab ? 'L' : ''), 48, (x, S) => {
+      x.fillStyle = shade(g2, 0.5); x.globalAlpha = 0.45;
+      for (let y = 0; y < S; y += 12) { x.fillRect(0, y, S, 1); const off = (y / 12) % 2 ? 12 : 0; for (let xx = off; xx < S; xx += 24) x.fillRect(xx, y, 1, 12); }
+      x.globalAlpha = 0.14; x.fillStyle = '#ffffff'; for (let y = 1; y < S; y += 12) x.fillRect(0, y, S, 1);
+      x.globalAlpha = 1;
+    });
+    Tex.fill(ctx, brick, cam.x, cam.y, z, 0.9);
+    ctx.restore();
+    // the lip: a lit edge along the top of every surface, dark below it, and
+    // a formwork line where a ledge steps
+    for (let i = 0; i < pts.length; i++) {
+      const [sx, sy] = pts[i];
+      if (sy < -20 || sy > H + 10) continue;
+      ctx.fillStyle = B.lab ? '#5a666c' : mixColor(g0, '#ffffff', 0.18); ctx.fillRect(sx, Math.round(sy), step, Math.max(1, Math.round(1.6 * z)));
+      ctx.fillStyle = B.lab ? '#3a4448' : shade(g0, 0.7); ctx.fillRect(sx, Math.round(sy + 1.6 * z), step, Math.max(1, Math.round(1.4 * z)));
+      // a vertical face where the floor jumps: draw the drop as blockwork with a coping
+      if (i > 0) { const dy = sy - pts[i - 1][1]; if (Math.abs(dy) > 6 * z) { const top = Math.min(sy, pts[i - 1][1]); ctx.fillStyle = shade(g1, 0.7); ctx.fillRect(sx - 1, Math.round(top), 2, Math.round(Math.abs(dy))); ctx.fillStyle = mixColor(g0, '#ffffff', 0.22); ctx.fillRect(sx - 1, Math.round(top), 2, Math.max(1, Math.round(2 * z))); } }
+    }
+    // in the lab the floor is tiled, with a painted line and a drain grate now and then
+    if (B.lab) {
+      ctx.save(); cap(0); ctx.clip();
+      const tile = Tex.get('labtile', 24, (x, S) => { x.fillStyle = '#39454a'; x.fillRect(0, 0, S, S); x.fillStyle = '#2a3438'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(12, 0, 1, S); x.fillRect(0, 12, S, 1); x.fillStyle = '#44525a'; x.fillRect(1, 1, 5, 1); });
+      ctx.globalAlpha = 1; Tex.fill(ctx, tile, cam.x, cam.y, z, 1);
+      ctx.restore();
+      for (let i = 0; i < pts.length; i += 1) { const [sx, sy, wx] = pts[i]; if (Math.abs(wx % 60) < 34) { ctx.fillStyle = '#8a7a20'; ctx.fillRect(sx, Math.round(sy + 4 * z), step, Math.max(1, Math.round(1.6 * z))); } }
+    }
+  },
   drawTerrain(ctx, cam) {
+    if (this.isIndoor(cam.x)) { this.drawBuiltGround(ctx, cam); return; }
     const W = G.W, H = G.H, z = cam.zoom, BP = Biome.mixPal(cam.x), step = 3;
     // contour of the ground across the screen, sampled once and reused
     const pts = [];
@@ -4223,7 +4359,63 @@ const World = {
     // thousand years ago, with blind arches every so often and, in the
     // necropolis, rows of niches with what the niches were cut for still in
     // them. Drawn behind everything, in the wall's own tones.
-    if (B.roman) {
+    if (B.lab) {
+      // FACILITY B. White tile to shoulder height with a dark band above it,
+      // strip lights, ducting and cable trays along the crown, containment
+      // tanks and consoles on the wall, doors with a window in them, a painted
+      // line, and signage nobody reads. Everything is on the world grid.
+      const roofS = cam.toScreen(0, this.roofY(cam.x) || -650)[1], floorS = cam.toScreen(0, this.floorY(cam.x))[1];
+      // upper wall: dark painted block
+      ctx.fillStyle = '#1e262b'; ctx.fillRect(0, 0, W, H);
+      // tile band: from a little above the floor to two metres up
+      const tileTop = floorS - 150 * z, tileBot = floorS + 6 * z;
+      const tile = Tex.get('labwall', 32, (x, S) => { x.fillStyle = '#c8d0cc'; x.fillRect(0, 0, S, S); x.fillStyle = '#9aa6a4'; x.fillRect(0, 0, S, 1); x.fillRect(0, 0, 1, S); x.fillRect(16, 0, 1, S); x.fillRect(0, 16, S, 1); x.fillStyle = '#dce4e0'; x.fillRect(2, 2, 8, 1); x.fillRect(18, 18, 8, 1); });
+      ctx.save(); ctx.beginPath(); ctx.rect(0, tileTop, W, tileBot - tileTop); ctx.clip();
+      Tex.fill(ctx, tile, cam.x, cam.y, z, 0.62); ctx.restore();
+      ctx.fillStyle = '#6a7a80'; ctx.fillRect(0, Math.round(tileTop), W, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#2a8a70'; ctx.fillRect(0, Math.round(tileTop + 6 * z), W, Math.max(1, Math.round(3 * z)));       // the coloured stripe every facility has
+      // grime where the floor meets the wall
+      ctx.fillStyle = 'rgba(30,26,20,0.35)'; ctx.fillRect(0, Math.round(floorS - 8 * z), W, Math.round(8 * z));
+      // ducting, cable tray and conduit along the crown
+      const duct = roofS + 26 * z;
+      ctx.fillStyle = '#3a4448'; ctx.fillRect(0, Math.round(duct), W, Math.round(14 * z));
+      ctx.fillStyle = '#4a565c'; ctx.fillRect(0, Math.round(duct), W, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#2a3236'; ctx.fillRect(0, Math.round(duct + 12 * z), W, Math.max(1, Math.round(2 * z)));
+      for (let wx = Math.floor(leftW / 40) * 40; wx < rightW; wx += 40) { const [sx] = cam.toScreen(wx, 0); ctx.fillStyle = '#2a3236'; ctx.fillRect(Math.round(sx), Math.round(duct), Math.max(1, Math.round(z)), Math.round(14 * z)); }
+      ctx.fillStyle = '#5a6670'; ctx.fillRect(0, Math.round(duct + 20 * z), W, Math.max(1, Math.round(2 * z)));
+      ctx.fillStyle = '#c0a040'; ctx.fillRect(0, Math.round(duct + 24 * z), W, Math.max(1, Math.round(z)));
+      // strip lights, and the cones they throw down the tile
+      for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
+        const [sx] = cam.toScreen(wx, 0), lw = 60 * z, ly = roofS + 8 * z;
+        ctx.fillStyle = '#2a3236'; ctx.fillRect(Math.round(sx - lw / 2), Math.round(ly), Math.round(lw), Math.round(5 * z));
+        const on = ihash(Math.floor(wx / 120), 3) > 0.12 || Math.sin(this.t * 17 + wx) > 0.2;
+        ctx.fillStyle = on ? '#e8f4ee' : '#4a5a58'; ctx.fillRect(Math.round(sx - lw / 2 + 2 * z), Math.round(ly + 4 * z), Math.round(lw - 4 * z), Math.max(1, Math.round(2 * z)));
+        if (on) { const g = ctx.createLinearGradient(0, ly, 0, floorS); g.addColorStop(0, 'rgba(210,240,230,0.16)'); g.addColorStop(1, 'rgba(210,240,230,0)'); ctx.fillStyle = g; ctx.fillRect(Math.round(sx - lw / 2 - 20 * z), Math.round(ly), Math.round(lw + 40 * z), Math.round(floorS - ly)); }
+      }
+      // doors, every 240, with a porthole and a keypad
+      for (let wx = Math.floor(leftW / 240) * 240 + 120; wx < rightW; wx += 240) {
+        const [sx] = cam.toScreen(wx, 0), dw = 44 * z, dh = 92 * z, dy = floorS - dh;
+        ctx.fillStyle = '#2f3a40'; ctx.fillRect(Math.round(sx - dw / 2 - 3 * z), Math.round(dy - 3 * z), Math.round(dw + 6 * z), Math.round(dh + 3 * z));
+        ctx.fillStyle = '#4a5860'; ctx.fillRect(Math.round(sx - dw / 2), Math.round(dy), Math.round(dw), Math.round(dh));
+        ctx.fillStyle = '#5a6a72'; ctx.fillRect(Math.round(sx - dw / 2), Math.round(dy), Math.max(1, Math.round(2 * z)), Math.round(dh));
+        ctx.fillStyle = '#0e1a1e'; ctx.fillRect(Math.round(sx - 9 * z), Math.round(dy + 14 * z), Math.round(18 * z), Math.round(20 * z));
+        ctx.fillStyle = 'rgba(120,200,180,0.25)'; ctx.fillRect(Math.round(sx - 7 * z), Math.round(dy + 16 * z), Math.round(6 * z), Math.round(6 * z));
+        ctx.fillStyle = '#c0c8c0'; ctx.fillRect(Math.round(sx + dw / 2 - 12 * z), Math.round(dy + 46 * z), Math.round(6 * z), Math.round(3 * z));   // handle
+        ctx.fillStyle = '#1a2a2e'; ctx.fillRect(Math.round(sx + dw / 2 + 6 * z), Math.round(dy + 40 * z), Math.round(6 * z), Math.round(9 * z));    // keypad
+        ctx.fillStyle = Math.sin(this.t * 3 + wx) > 0 ? '#40f070' : '#207038'; ctx.fillRect(Math.round(sx + dw / 2 + 8 * z), Math.round(dy + 42 * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z)));
+        // a stencil over the door
+        ctx.fillStyle = '#c8d0cc'; ctx.fillRect(Math.round(sx - 16 * z), Math.round(dy - 14 * z), Math.round(32 * z), Math.round(8 * z));
+        ctx.fillStyle = '#1e262b'; for (let k = 0; k < 5; k++) ctx.fillRect(Math.round(sx - 13 * z + k * 6 * z), Math.round(dy - 11 * z), Math.round(3 * z), Math.round(2 * z));
+      }
+      // hazard stripe along the base of the wall, and a warning placard now and then
+      for (let wx = Math.floor(leftW / 24) * 24; wx < rightW; wx += 24) { const [sx] = cam.toScreen(wx, 0); ctx.fillStyle = (Math.floor(wx / 24) & 1) ? '#c8a020' : '#1a1a1a'; ctx.fillRect(Math.round(sx), Math.round(floorS - 3 * z), Math.round(24 * z) + 1, Math.max(1, Math.round(3 * z))); }
+      for (let wx = Math.floor(leftW / 300) * 300 + 40; wx < rightW; wx += 300) {
+        const [sx] = cam.toScreen(wx, 0), py = tileTop - 30 * z;
+        ctx.fillStyle = '#e0c040'; ctx.fillRect(Math.round(sx - 10 * z), Math.round(py), Math.round(20 * z), Math.round(20 * z));
+        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(Math.round(sx - 6 * z), Math.round(py + 4 * z), Math.round(12 * z), Math.round(12 * z));
+        ctx.fillStyle = '#e0c040'; for (let k = 0; k < 3; k++) { const a = k * TAU / 3 - Math.PI / 2; ctx.fillRect(Math.round(sx + Math.cos(a) * 4 * z) - 1, Math.round(py + 10 * z + Math.sin(a) * 4 * z) - 1, Math.max(2, Math.round(3 * z)), Math.max(2, Math.round(3 * z))); }
+      }
+    } else if (B.roman) {
       const arch = shade(B.ground[2], 0.78), archL = shade(B.ground[2], 1.5), hole = shade(B.ground[2], 0.36);
       for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
         const [ax] = cam.toScreen(wx, 0), aw = Math.round(38 * z), ah = Math.round(70 * z);
@@ -4250,7 +4442,7 @@ const World = {
     }
     // pilasters: shallow piers standing off the wall every 150 units
     for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
-      if (B.roman) break;
+      if (B.roman || B.lab) break;
       const [sx] = cam.toScreen(wx, 0), pw = Math.max(2, Math.round(9 * z));
       ctx.globalAlpha = 0.4;
       ctx.fillStyle = wallD; ctx.fillRect(Math.round(sx - pw / 2), 0, pw, H);
@@ -4258,7 +4450,7 @@ const World = {
       ctx.globalAlpha = 1;
     }
     // damp streaks running down the brick
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = B.lab ? 0.08 : 0.3;
     for (let i = 0; i < 24; i++) {
       const wx = leftW + ihash(i + Math.floor(leftW / 900) * 31, 77) * (rightW - leftW);
       const [sx] = cam.toScreen(wx, 0);
@@ -4291,6 +4483,7 @@ const World = {
     // ribs, hanging lamps and dripping pipes
     for (let wx = Math.floor(leftW / 150) * 150; wx < rightW; wx += 150) {
       const r = this.roofY(wx); if (r === null) continue;
+      if (B.lab) continue;
       if (B.roman) {
         // a rib of the vault, and one guttering torch bracket per bay
         const [sx, sy] = cam.toScreen(wx, r), fy = cam.toScreen(wx, this.floorY(wx))[1];
@@ -4337,6 +4530,8 @@ const World = {
     const W = G.W, H = G.H, z = cam.zoom;
     const depth = cam.y;
     if (depth < 240) return;
+    // there is no far side of a canyon under a city: the deep sewer is a wall
+    if (this.isIndoor(cam.x)) return;
     const B = Biome.mixPal(cam.x);
     const k = clamp((depth - 240) / 700, 0, 1);
     // --- the far side of the canyon, two layers of flat strata ----------
@@ -5091,6 +5286,85 @@ const World = {
             ctx.fillStyle = stD; ctx.fillRect(x0 - Math.round(z), y0 - Math.round(z), Math.round(w2 + 2 * z), Math.max(1, Math.round(z)));
           }
           if (d.v) { ctx.fillStyle = '#6a7a4a'; for (let k = 0; k < 4; k++) ctx.fillRect(x0 + Math.round((3 + k * 7) * z), y0 + Math.round((9 + (k % 2) * 3) * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z))); } // moss
+          break; }
+        case 'labtank': if (layer !== 0) break; {
+          // a containment column on the wall: steel base and cap, green fluid,
+          // a specimen hanging in it, bubbles, a readout that blinks
+          const tw = 26 * z, th2 = 70 * z, x0 = Math.round(sx - tw / 2), y0 = Math.round(sy - th2 - 10 * z);
+          ctx.fillStyle = '#2a343a'; ctx.fillRect(x0 - Math.round(2 * z), Math.round(sy - 10 * z), Math.round(tw + 4 * z), Math.round(10 * z));
+          ctx.fillStyle = '#0d2a24'; ctx.fillRect(x0, y0, Math.round(tw), Math.round(th2));
+          ctx.fillStyle = '#165444'; ctx.fillRect(x0, y0 + Math.round(6 * z), Math.round(tw), Math.round(th2 - 6 * z));
+          ctx.fillStyle = '#227058'; ctx.fillRect(x0, y0 + Math.round(6 * z), Math.round(tw), Math.max(1, Math.round(2 * z)));
+          // the specimen: a dark shape, one of four, drifting
+          const dy = Math.sin(t * 0.8 + d.ph) * 2 * z, cx2 = sx, cy2 = y0 + th2 * 0.55 + dy;
+          ctx.fillStyle = '#11332a';
+          if (d.v === 0) { ctx.fillRect(Math.round(cx2 - 9 * z), Math.round(cy2 - 3 * z), Math.round(18 * z), Math.round(6 * z)); ctx.fillRect(Math.round(cx2 + 6 * z), Math.round(cy2 - 2 * z), Math.round(6 * z), Math.round(3 * z)); }   // a small croc
+          else if (d.v === 1) { for (let k = 0; k < 5; k++) ctx.fillRect(Math.round(cx2 - 6 * z + k * 3 * z), Math.round(cy2 - 12 * z + Math.sin(k * 1.4 + t) * 5 * z), Math.round(3 * z), Math.round(6 * z)); }     // a snake coil
+          else if (d.v === 2) { ctx.fillRect(Math.round(cx2 - 4 * z), Math.round(cy2 - 10 * z), Math.round(8 * z), Math.round(20 * z)); ctx.fillRect(Math.round(cx2 - 7 * z), Math.round(cy2 - 4 * z), Math.round(14 * z), Math.round(4 * z)); }  // something upright
+          else { ctx.fillRect(Math.round(cx2 - 5 * z), Math.round(cy2 - 5 * z), Math.round(10 * z), Math.round(10 * z)); ctx.fillStyle = '#e0e0d0'; ctx.fillRect(Math.round(cx2 - 2 * z), Math.round(cy2 - 2 * z), Math.round(2 * z), Math.round(2 * z)); }   // a skull
+          for (let k = 0; k < 4; k++) { const bph = ((t * 0.4) + ihash(k, Math.floor(d.x))) % 1; ctx.fillStyle = 'rgba(190,240,230,0.5)'; ctx.fillRect(Math.round(x0 + 4 * z + ihash(k, 7) * (tw - 8 * z)), Math.round(y0 + th2 - bph * (th2 - 8 * z)), Math.max(1, Math.round(z)), Math.max(1, Math.round(z))); }
+          ctx.fillStyle = 'rgba(210,240,235,0.35)'; ctx.fillRect(x0 + Math.round(2 * z), y0 + Math.round(8 * z), Math.max(1, Math.round(2 * z)), Math.round(th2 - 12 * z));
+          ctx.strokeStyle = 'rgba(200,230,225,0.5)'; ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, y0 + 0.5, Math.round(tw) - 1, Math.round(th2) - 1);
+          ctx.fillStyle = '#2a343a'; ctx.fillRect(x0 - Math.round(2 * z), y0 - Math.round(7 * z), Math.round(tw + 4 * z), Math.round(8 * z));
+          ctx.fillStyle = Math.floor(t * 2 + d.ph) % 2 ? '#40f070' : '#207038'; ctx.fillRect(x0 + Math.round(3 * z), y0 - Math.round(5 * z), Math.round(4 * z), Math.round(3 * z));
+          ctx.fillStyle = '#c0c8c4'; ctx.fillRect(x0 + Math.round(9 * z), y0 - Math.round(5 * z), Math.round(12 * z), Math.max(1, Math.round(z)));
+          break; }
+        case 'console': if (layer !== 0) break; {
+          // a desk with a monitor on it, a keyboard, a chair pushed back
+          const w2 = 30 * z, h2 = 14 * z, x0 = Math.round(sx - w2 / 2), y0 = Math.round(sy - h2);
+          ctx.fillStyle = '#4a5258'; ctx.fillRect(x0, y0, Math.round(w2), Math.round(h2));
+          ctx.fillStyle = '#5c666c'; ctx.fillRect(x0, y0, Math.round(w2), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = '#2a3236'; ctx.fillRect(x0 + Math.round(2 * z), y0 + Math.round(3 * z), Math.round(w2 - 4 * z), Math.max(1, Math.round(z)));
+          const mx = x0 + Math.round(6 * z), my = y0 - Math.round(16 * z);
+          ctx.fillStyle = '#1a2226'; ctx.fillRect(mx, my, Math.round(16 * z), Math.round(12 * z));
+          const on = d.v !== 2 || Math.sin(t * 5 + d.ph) > 0;
+          ctx.fillStyle = on ? (d.v === 1 ? '#3a8ad0' : '#2fd08a') : '#0a1412'; ctx.fillRect(mx + Math.round(z), my + Math.round(z), Math.round(14 * z), Math.round(9 * z));
+          if (on) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; for (let k = 0; k < 4; k++) ctx.fillRect(mx + Math.round(2 * z), my + Math.round((2 + k * 2) * z), Math.round((4 + ihash(k, Math.floor(d.x) + Math.floor(t)) * 8) * z), Math.max(1, Math.round(z))); }
+          ctx.fillStyle = '#3a4448'; ctx.fillRect(mx + Math.round(6 * z), my + Math.round(12 * z), Math.round(4 * z), Math.round(4 * z));
+          ctx.fillStyle = '#2a3236'; ctx.fillRect(x0 + Math.round(w2 - 10 * z), y0 - Math.round(3 * z), Math.round(8 * z), Math.round(3 * z));                // keyboard
+          // a chair
+          ctx.fillStyle = '#26303a'; ctx.fillRect(x0 - Math.round(12 * z), Math.round(sy - 12 * z), Math.round(8 * z), Math.round(3 * z)); ctx.fillRect(x0 - Math.round(12 * z), Math.round(sy - 26 * z), Math.round(2 * z), Math.round(14 * z)); ctx.fillRect(x0 - Math.round(9 * z), Math.round(sy - 9 * z), Math.round(2 * z), Math.round(9 * z));
+          break; }
+        case 'cable': if (layer !== 0) break; {
+          // loose cable off the tray, hanging in loops down the wall, plugged into a box
+          const top = cam.toScreen(d.x, this.roofY(d.x) === null ? d.y - 200 : this.roofY(d.x) + 50)[1];
+          for (let i = 0; i < d.n; i++) {
+            const ox = (i - (d.n - 1) / 2) * 6 * z, sag = (20 + ihash(i, Math.floor(d.x)) * 30) * z;
+            blade(sx + ox, top, sx + ox + 14 * z, sy - 30 * z - ihash(i, 3) * 20 * z, sx + ox + 4 * z, top + sag, 1.4 * z, '#1a1a1a', '#2c2c30', '#4a4a50', { strap: true });
+          }
+          ctx.fillStyle = '#3a4448'; ctx.fillRect(Math.round(sx + 8 * z), Math.round(sy - 40 * z), Math.round(12 * z), Math.round(10 * z));
+          ctx.fillStyle = Math.sin(t * 4 + d.ph) > 0 ? '#ff5030' : '#602018'; ctx.fillRect(Math.round(sx + 10 * z), Math.round(sy - 38 * z), Math.round(2 * z), Math.round(2 * z));
+          break; }
+        case 'biohaz': if (layer !== 0) break; {
+          // a yellow drum with the trefoil, and a puddle under it
+          const w2 = 14 * z, h2 = 20 * z, x0 = Math.round(sx - w2 / 2), y0 = Math.round(sy - h2);
+          ctx.fillStyle = '#c8a020'; ctx.fillRect(x0, y0, Math.round(w2), Math.round(h2));
+          ctx.fillStyle = '#e0c040'; ctx.fillRect(x0, y0, Math.round(3 * z), Math.round(h2));
+          ctx.fillStyle = '#8a6a10'; ctx.fillRect(x0, y0 + Math.round(4 * z), Math.round(w2), Math.max(1, Math.round(z))); ctx.fillRect(x0, y0 + Math.round(h2 - 5 * z), Math.round(w2), Math.max(1, Math.round(z)));
+          ctx.fillStyle = '#1a1a1a'; ctx.fillRect(Math.round(sx - 3 * z), Math.round(y0 + 8 * z), Math.round(6 * z), Math.round(6 * z));
+          ctx.fillStyle = '#e0c040'; ctx.fillRect(Math.round(sx - z), Math.round(y0 + 10 * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z)));
+          ctx.fillStyle = 'rgba(120,200,60,0.4)'; ctx.fillRect(Math.round(sx - 10 * z), Math.round(sy - z), Math.round(20 * z), Math.max(1, Math.round(2 * z)));
+          break; }
+        case 'skeleton': if (layer !== 0) break; {
+          // somebody who sat down against the wall and stayed: a slumped
+          // skeleton, skull dropped forward, one arm in the lap, legs out
+          const f = d.flip ? -1 : 1, s2 = z, bone = '#d8d0b8', boneD = '#a89e84';
+          const px2 = (a, b, w2, h2, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(sx + a * f * s2 - (f < 0 ? w2 * s2 : 0)), Math.round(sy + b * s2), Math.max(1, Math.round(w2 * s2)), Math.max(1, Math.round(h2 * s2))); };
+          // pelvis and spine, against the wall
+          px2(-4, -8, 8, 4, boneD); for (let k = 0; k < 6; k++) px2(-1, -12 - k * 3, 3, 2, k % 2 ? bone : boneD);
+          // ribs
+          for (let k = 0; k < 4; k++) { px2(-5 + k * 0.5, -24 + k * 3, 10 - k, 1, bone); }
+          // legs out along the floor, one bent
+          px2(2, -6, 14, 2, bone); px2(15, -6, 2, 5, boneD); px2(16, -2, 6, 2, bone);
+          px2(1, -8, 9, 2, boneD); px2(9, -8, 2, 6, bone);
+          // arm in the lap, arm hanging
+          px2(3, -24, 2, 12, bone); px2(3, -13, 8, 2, boneD); px2(-6, -26, 2, 14, boneD);
+          // skull, dropped forward onto the chest
+          px2(0, -34, 8, 8, bone); px2(0, -31, 8, 5, boneD); px2(2, -32, 2, 2, '#1a1410'); px2(5, -32, 2, 2, '#1a1410'); px2(2, -28, 4, 1, '#1a1410');
+          if (d.v) { // what they had with them: a bottle and a blanket
+            px2(-12, -6, 3, 6, '#3a7a5a'); px2(-12, -8, 1, 2, '#2a5a44');
+            ctx.globalAlpha = 0.6; px2(-8, -4, 22, 3, '#4a3a5a'); ctx.globalAlpha = 1;
+          }
           break; }
         case 'urn': if (layer !== 0) break; {
           // amphorae: a pale clay body, two handles, a dark mouth, some broken
@@ -6075,7 +6349,7 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
   // ---- ZONE 1: THE SEWER NETWORK. Where you wake up and where it is learned.
-  { id: 'catacomb', zone: 'sewer', lat: 0.14, lon: 2.68, name: 'THE CATACOMBS', sub: 'A LABYRINTH UNDER ROME. FIND THE WAY OUT.', x: -2860, size: 0.22, diff: 0, intro: true },
+  { id: 'catacomb', zone: 'sewer', lat: 0.14, lon: 2.68, name: 'THE CATACOMBS', sub: 'A LABYRINTH UNDER ROME. FIND THE WAY OUT.', x: -3520, size: 0.22, diff: 0, intro: true },
   { id: 'undercroft', zone: 'sewer', lat: 0.30, lon: 2.86, name: 'THE UNDERCROFT', sub: 'SOMEBODY STILL LIVES DOWN HERE', x: -4800, size: 0.4, diff: 0.8, need: { deep: 2200 } },
   { id: 'shaft', zone: 'sewer', lat: -0.02, lon: 3.06, name: 'THE DROP SHAFT', sub: 'THE SYSTEM FALLS AWAY UNDER THE CITY', x: -5700, size: 0.7, diff: 1.6, need: { deep: 4000 } },
   { id: 'junction', zone: 'sewer', lat: 0.42, lon: 3.30, name: 'JUNCTION 9', sub: 'NINE PIPES MEET. SOMETHING LIVES IN THE VAULT.', x: -9000, size: 1.2, diff: 2.4, need: { deep: 5400 } },
@@ -6290,7 +6564,7 @@ class Entity {
     this.hp -= dmg; this.flash = 0.1; this.lastHitT = G.t; this.aware = true; this.awareT = 3;
     this.squash = 1;
     if (this.bleeds) {
-      const gm = (src === G.player ? G.player.st.goreMul : 1) * (G.settings.gore ? 1.6 : 0.5);
+      const gm = (src === G.player ? G.player.st.goreMul : 1) * (G.settings.gore ? 1.6 : 0.5) * (this.human ? 1.5 : 1);
       G.fx.blood(this.x, this.y, clamp(dmg * 1.4, 6, 48) * gm, opts.dx || 0, opts.dy || 0, 80 + Math.min(dmg, 70), this.bloodColors);
       G.fx.cloud(this.x, this.y, (10 + Math.min(dmg, 40) * 0.5) * Math.sqrt(this.size), this.bloodColors[0]);
       Gore.slick(this.x, this.y, 5 + Math.min(14, dmg * 0.4));
@@ -6619,6 +6893,8 @@ class LandAnimal extends Entity {
     this.human = !!d.human; this.prey = null; this.huntCd = rand(2, 8);
     this.type = 'land'; this.facing = chance(0.5) ? 1 : -1; this.state = 'idle'; this.stateT = rand(1, 3); this.swimT = 0; this.layer = 1; this.rodT = 0; this.chargeCd = 0;
     this.y = World.floorY(x) - this.groundOff; this.grazeT = 0; this.grazeK = 0;
+    // the ones who live down here sit against the wall and nod, until you are close
+    if (d.sits) { this.sitting = true; this.state = 'idle'; this.stateT = 999; this.nodT = rand(TAU); }
   }
   landAt(x) { return World.floorY(x) < -2; }
   update(dt) {
@@ -6627,6 +6903,14 @@ class LandAnimal extends Entity {
     if (fy > 0 || this.y > World.surface(this.x) + 4) { this.updateSwim(dt, P, d); return; }
     this.y = fy - this.groundOff; this.vy = 0;
     if (this.watching) { this.vx = 0; this.anim.phase += dt * 0.8; this.facing = sign(P.x - this.x) || this.facing; return; }
+    // hands on the bar of the trolley: the opening moves them, nothing else does
+    if (this.pushing) return;
+    // seated: nodding off against the wall until something is right on top of them
+    if (this.sitting) {
+      this.nodT += dt; this.anim.sit = 1; this.anim.nod = Math.max(0, Math.sin(this.nodT * 0.9)) * 0.8; this.anim.expr = 'happy'; this.vx = 0;
+      if (!P.dead && this.distTo(P) < 56 && P.size > 0.5) { this.sitting = false; this.anim.sit = 0; this.anim.nod = 0; this.panicked = true; this.state = 'flee'; this.stateT = 6; SFX.scream && SFX.scream(this.pan); }
+      return;
+    }
     const sees = this.senses(d.flee), dP = this.distTo(P);
     if (d.human) this.look(dt, P, dP);
     // land predators hunt other land animals when the player is not a factor
@@ -6720,7 +7004,7 @@ class LandAnimal extends Entity {
       case 'walk': this.stateT -= dt; this.vx = approach(this.vx, this.facing * d.speed * 0.25, 300 * dt); if (!this.landAt(this.x + this.facing * 20)) this.facing *= -1; if (this.stateT <= 0) { this.state = 'idle'; this.stateT = rand(1, 4); } break;
       case 'stalk': this.state = 'idle'; this.stateT = 1; break;
       case 'flee': {
-        this.stateT -= dt; const dir = sign(this.x - P.x) || this.facing;
+        this.stateT -= dt; const dir = this.fleeDir || sign(this.x - P.x) || this.facing;
         if (this.kind === 'iguana' && chance(dt * 1.2)) { const wx = World.findX(this.x, x => World.floorY(x) > 40, 300, 12); if (wx !== null) { this.x = wx; this.y -= 4; this.vy = 60; this.vx = rand(-30, 30); G.fx.splash(this.x, 0.6, 0); this.state = 'swim'; this.swimT = 0; break; } }
         if (!this.landAt(this.x + dir * 24)) { // cornered at the water's edge
           if (chance(dt * 0.8)) { this.vx = dir * 120; this.vy = -80; this.y -= 2; this.state = 'swim'; G.fx.splash(this.x, 0.8, this.vx); break; }
@@ -6820,6 +7104,10 @@ class LandAnimal extends Entity {
     this.anim.panic = this.state === 'flee' || this.state === 'swim' ? 1 : 0;
     this.anim.aim = this.state === 'shoot' ? 1 : 0;
     this.anim.cast = this.kind === 'fisherman' && this.state === 'idle' ? 1 : 0;
+    // the face: hurt beats scared beats alert beats whatever it was doing
+    if (this.human && !this.pushing && !this.sitting) {
+      this.anim.expr = this.flash > 0 ? 'pain' : this.anim.panic ? 'scared' : (this.alertT || 0) > 0.6 || this.state === 'shoot' || this.state === 'grab' || this.state === 'punch' ? 'alert' : 'calm';
+    }
     const ang = this.state === 'swim' ? (this.human ? -Math.PI / 2 + 0.3 : 0.25) : 0;
     this.rig.draw(ctx, this.x, this.y, this.facing, ang, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
     // what this one has worked out, over its head: a question mark while it is
@@ -7844,6 +8132,7 @@ class Structure extends Entity {
       }
       case 'campfire': { this.name = 'CAMPFIRE'; this.hp = 20; this.r = 10 * this.ss; break; }
       case 'tank': { this.name = 'CONTAINMENT TANK'; this.hp = 999; this.r = 40; this.cracks = 0; this.broken = false; break; }
+      case 'transport': { this.name = 'TRANSPORT TANK'; this.hp = 9999; this.armor = 999; this.r = 30; this.cracks = 0; this.broken = false; this.roll = 0; this.layer = 0; break; }
       case 'grate': { this.name = 'OUTFALL GRATE'; this.hp = 46; this.armor = 0; this.r = 30; this.broken = false; break; }
       // The way out of the labyrinth. Steel, hydraulic, and it does not care
       // how hard you bite it. It opens for the key and for nothing else.
@@ -7943,6 +8232,54 @@ class Structure extends Entity {
     G.addScore(1200); Meta.event('structure');
     if (P) { G.stats.structures = (G.stats.structures || 0) + 1; Missions.onWreck(); }
   }
+  // The transfer trolley: a steel frame on four castors, a big glass tank on
+  // it with green water and a bolted lid, straps over the top, a stencil on
+  // the glass, cracks when you put them there and stumps when the glass goes.
+  drawTransport(ctx) {
+    const x = Math.round(this.x), y = Math.round(this.y), t = G.t;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + a, y + b, Math.max(1, w), Math.max(1, h)); };
+    // frame and castors
+    px(-32, -12, 64, 6, '#2a3338'); px(-32, -12, 64, 1, '#4a575e'); px(-30, -6, 5, 4, '#1a2226'); px(25, -6, 5, 4, '#1a2226');
+    for (const wx of [-24, 24]) { px(wx - 4, -3, 8, 4, '#11181c'); px(wx - 3, -2, 6, 2, '#39454a'); const a = (this.roll || 0) * 0.15; px(wx + Math.round(Math.cos(a) * 2) - 1, -1 + Math.round(Math.sin(a) * 1.5), 2, 1, '#6a7a80'); }
+    px(-34, -14, 68, 3, '#3a474e');                                     // the bar they push
+    px(-38, -30, 4, 18, '#3a474e'); px(-40, -32, 8, 3, '#4a575e');
+    // tank
+    const TW = 30, TH = 54, TT = -14 - TH;
+    px(-TW - 2, TT - 6, TW * 2 + 4, 7, '#2e3a42'); px(-TW - 2, TT - 6, TW * 2 + 4, 1, '#44525c');
+    for (let k = 0; k < 5; k++) px(-TW + 1 + k * 12, TT - 4, 3, 3, '#6a7a84');
+    if (!this.broken) {
+      px(-TW, TT, TW * 2, TH, '#0a1c2a');
+      px(-TW, TT + 5, TW * 2, TH - 5, '#1c6a86'); px(-TW, TT + 5, TW * 2, 2, '#3aa4c0');
+      ctx.globalAlpha = 0.18; px(-TW, TT + 5, TW * 2, Math.round((TH - 5) * 0.45), '#8fe0f0'); ctx.globalAlpha = 1;
+      // condensation and a rim light
+      ctx.globalAlpha = 0.28; px(-TW + 3, TT + 3, 3, TH - 6, '#cfeee6'); ctx.globalAlpha = 1;
+      for (let k = 0; k < 4; k++) { const bph = ((t * 0.5) + ihash(k, 9)) % 1; ctx.globalAlpha = 0.5; px(-TW + 6 + k * 11, Math.round(TT + TH - 4 - bph * (TH - 10)), 1, 1, '#cfeee6'); ctx.globalAlpha = 1; }
+      // cracks
+      if (this.cracks > 0) {
+        ctx.strokeStyle = 'rgba(240,255,250,0.9)'; ctx.lineWidth = 1;
+        const n = Math.round(this.cracks * 11);
+        for (let k = 0; k < n; k++) {
+          const a0 = ihash(k, 7) * TAU, len = 8 + ihash(k, 9) * 18 * this.cracks;
+          let x0 = x + Math.round(ihash(k, 11) * 30 - 15), y0 = y + Math.round(TT + TH * 0.5 + (ihash(k, 13) - 0.5) * 26);
+          ctx.beginPath(); ctx.moveTo(x0 + 0.5, y0 + 0.5);
+          for (let q = 0; q < 4; q++) { const a = a0 + (ihash(k * 5 + q, 17) - 0.5) * 1.2; x0 += Math.round(Math.cos(a) * len / 4); y0 += Math.round(Math.sin(a) * len / 4); ctx.lineTo(x0 + 0.5, y0 + 0.5); }
+          ctx.stroke();
+        }
+      }
+      ctx.strokeStyle = 'rgba(210,240,235,0.5)'; ctx.lineWidth = 1; ctx.strokeRect(x - TW - 0.5, y + TT - 0.5, TW * 2 + 1, TH + 1);
+    } else {
+      // the glass is gone: stumps in the frame and water still draining off the base
+      px(-TW, TT, TW * 2, 3, '#0d2420');
+      ctx.fillStyle = 'rgba(210,240,235,0.65)';
+      for (let k = 0; k < 8; k++) { const h2 = 3 + ihash(k, 21) * 10; ctx.fillRect(x - TW + k * 7, y + TT + 3, 2, h2); ctx.fillRect(x - TW + k * 7 + 1, y - 14 - 3 - ihash(k, 23) * 7, 2, 3 + ihash(k, 23) * 7); }
+      px(-TW - 6, -15, TW * 2 + 12, 2, '#1c6a86');
+      if (chance(0.3)) G.fx.add({ type: 'drop', x: this.x + rand(-TW, TW), y: this.y - 14, vx: 0, vy: 40, s: 1, color: '#8ce8a0', life: 0.5 });
+    }
+    // straps
+    px(-TW - 4, TT + 6, TW * 2 + 8, 4, '#3a2e1e'); px(-TW - 4, TT + TH * 0.6, TW * 2 + 8, 4, '#3a2e1e');
+    px(-6, TT + 4, 12, 8, '#8a7a4a'); px(-6, TT + TH * 0.6 - 2, 12, 8, '#8a7a4a');
+    if (!this.broken) { Font.draw(ctx, 'TRANSFER', x, y + TT + 12, { color: '#cfe0d8', align: 'center' }); Font.draw(ctx, 'SUBJECT 11', x, y + TT + 20, { color: '#6f8f88', align: 'center' }); }
+  }
   update(dt) {
     this.tick(dt);
     const P = G.player, night = 1 - World.light(G.day);
@@ -7976,6 +8313,7 @@ class Structure extends Entity {
     }
   }
   draw(ctx) {
+    if (this.kind === 'transport') return this.drawTransport(ctx);
     const f = this.kind === 'dock' || this.kind === 'boatramp' ? (this.dir || 1) : 1;
     const y = this.y, fy = World.floorY(this.x), sag = this.collapsed ? Math.min(1, this.collapseT * 0.9) : 0, ss = this.ss;
     ctx.save(); ctx.translate(this.x, y); ctx.scale(ss, ss);
@@ -8896,7 +9234,7 @@ const Finisher = {
 // reflex test you fail. Missing costs payout, never the grip.
 const QTE_AT = 0.72, QTE_PERFECT = 0.20, QTE_GOOD = 0.40;
 // how long one strike takes, coil to recovery
-const BITE_LEN = 0.44;
+const BITE_LEN = 0.62;
 class Player {
   constructor() { this.reset(); }
   reset() {
@@ -8904,7 +9242,7 @@ class Player {
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
-    this.mouth = null; this.vanishT = 0; this.pounceT = 0; this.pounceMul = 1;
+    this.mouth = null; this.vanishT = 0; this.pounceT = 0; this.pounceMul = 1; this.strike = null; this.strikePushed = false;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -9245,7 +9583,8 @@ class Player {
     // a lateral S that runs tail to head with the stride, so it reads as an
     // animal walking rather than a log being dragged.
     const stride = this.onLand ? clamp(Math.abs(this.vx) / (this.speedMax * 0.5), 0, 1) : 0;
-    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.12 + stride * 0.55 : swim, this.onLand);
+    const sk = this.strike, hx = this.x + (sk ? Math.cos(this.angle) * sk.x : 0), hy = this.y + (sk ? Math.sin(this.angle) * sk.x : 0);
+    this.chain.solve(hx, hy, this.angle + (sk ? sk.a : 0), this.vis, dt, sk && sk.x > 4 ? 1.3 : this.onLand ? 0.12 + stride * 0.55 : swim, this.onLand);
     if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
     else this.legPhase += dt * (2 + swim * 7);
     // shaking what you have just bitten, and the blood that stays on the teeth
@@ -9253,22 +9592,21 @@ class Player {
     if (this.pounceT > 0) this.pounceT -= dt;
     if (this.goreT > 0) this.goreT -= dt * 0.25;
     if (this.snapT > 0) this.snapT -= dt;
-    // jaws: the strike script, read off how much of the bite is left
+    // jaws: the strike is the hologram's strike, run off the same script. The
+    // script hands back where the head is relative to rest (x, in croc units),
+    // how it is pitched, and how open the jaw is; the head node is pushed to
+    // that spot and the spine solved behind it, so the whole animal coils and
+    // whips exactly as it does on the projector.
     if (this.biteT > 0) {
       this.biteT -= dt;
-      const u = 1 - this.biteT / BITE_LEN, fx = Math.cos(this.angle), fy = Math.sin(this.angle);
-      if (u < 0.34) {                                   // coil: back and open
-        const k = u / 0.34; this.jaw = 0.06 + 0.62 * k * k;
-        if (!this.onLand) { this.vx -= fx * 260 * dt; this.vy -= fy * 260 * dt; }
-      } else if (u < 0.62) {                            // lunge: everything forward
-        const k = (u - 0.34) / 0.28; this.jaw = 0.68 + 0.24 * (1 - Math.pow(1 - k, 3));
-        const push = (this.onLand ? 420 : 720) * this.vis;
-        this.vx += fx * push * dt; this.vy += fy * push * dt * (this.onLand ? 0 : 1);
-      } else if (u < 0.72) {                            // snap
-        const k = (u - 0.62) / 0.10; this.jaw = 0.92 * (1 - k * k);
-        if (!this.biteHit) { this.biteHit = true; this.doBiteHit(); }
-      } else this.jaw = lerp(this.jaw, 0.04, 0.3);      // recover
-      if (this.biteT <= 0) this.jaw = 0;
+      const u = clamp(1 - this.biteT / BITE_LEN, 0, 1);
+      const sc = CrocView.script({ hit: 0 }, u);
+      this.strike = { x: sc.x * this.vis * 0.9, a: sc.a * this.facing, jaw: sc.jaw };
+      this.jaw = sc.jaw;
+      // and the body itself gets the shove, so the lunge covers ground
+      if (u >= 0.46 && u < 0.58 && !this.strikePushed) { this.strikePushed = true; const push = (this.onLand ? 90 : 170) * Math.sqrt(this.vis); this.vx += Math.cos(this.angle) * push; if (!this.onLand) this.vy += Math.sin(this.angle) * push; }
+      if (u >= 0.58 && !this.biteHit) { this.biteHit = true; this.doBiteHit(); }
+      if (this.biteT <= 0) { this.jaw = 0; this.strike = null; this.strikePushed = false; }
     } else if (this.latched) this.jaw = 0.3;
     else if (this.grabbed) this.jaw = 0.6;
     else this.jaw = lerp(this.jaw, this.moving && sp > this.speedMax * 0.6 ? 0.12 : 0, 0.1);
@@ -9382,8 +9720,7 @@ class Player {
     // The same strike the hologram in the lab runs: the head draws back and the
     // jaw cracks open (coil), the whole animal whips forward (lunge), the jaws
     // close (snap), and it settles. Timed in seconds of biteT counting down.
-    this.biteT = BITE_LEN; this.biteHit = false; this.biteCd = 0.42 * this.st.biteRate;
-    this.coilV = 1;
+    this.biteT = BITE_LEN; this.biteHit = false; this.biteCd = 0.42 * this.st.biteRate; this.strikePushed = false;
   }
   doBiteHit() {
     const [sx, sy] = this.snout, R = this.biteRange, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
@@ -10919,6 +11256,7 @@ const Alarm = {
     const P = G.player;
     if (this.flashT > 0) this.flashT -= dt;
     if (!P || P.dead) return;
+    if (typeof Opening !== 'undefined' && Opening.on) { this.level = 0; return; }
     this.quietT += dt;
     // it comes down, but only after they have stopped finding anything, and
     // the more times they have called it in the slower it forgets
@@ -10945,6 +11283,12 @@ const Alarm = {
     if (x === null) x = World.findX(P.x - side * 420, xx => World.floorY(xx) > 60, 900, 40);
     if (x === null) return;
     if (typeof CaptureBoat === 'undefined') return;
+    // under a roof nobody brings a boat: two people with rifles come along the ledge
+    if (World.isIndoor(x)) {
+      const lx = World.findX(x, xx => World.floorY(xx) < -6, 1200, 24);
+      if (lx !== null) { for (const off of [0, 28]) { const m = new LandAnimal(lx + off, 'poacher'); m.alertT = 2.4; m.armed = 'rifle'; m.shootCd = 1; G.add(m); } this.crew = null; }
+      return;
+    }
     this.crew = G.add(new CaptureBoat(x));
     G.banner = { text: 'CAPTURE CREW', sub: 'THEY WANT YOU ALIVE', t: 2.8, max: 2.8, color: '#ff4030' };
   },
@@ -11092,6 +11436,8 @@ const Lairs = {
   update(dt) {
     const P = G.player;
     if (!P || P.dead || G.state !== 'play') return;
+    // nothing holds territory in the facility, and nothing is announced while you are still in the tank
+    if ((typeof Opening !== 'undefined' && Opening.on) || Biome.at(P.x).lab) return;
     if (this.armT > 0) { this.armT -= dt; return; }
     const L = this.near(P.x);
     if (!L || this.cleared[L.id]) return;
@@ -11197,11 +11543,11 @@ const Objectives = {
     }
   },
 
-  update(dt) { if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
+  update(dt) { if (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry') return; if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
 
   // ---- the card a run opens on ------------------------------------------
   drawCard(ctx) {
-    if (this.cardT <= 0 || !this.stage) return 0;
+    if (this.cardT <= 0 || !this.stage || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return 0;
     const W = G.W, H = G.H, st = this.stage;
     const k = clamp(Math.min(this.cardT * 1.6, (6.5 - this.cardT) * 2.6), 0, 1);
     const w = 236, h = 30 + this.list.length * 15;
@@ -11755,6 +12101,130 @@ const Abilities = {
   },
 };
 
+/* ===== src/opening.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// THE TRANSFER.
+//
+// No cutscene. The opening is the game: a corridor in Facility B two floors
+// above the Roman level, a transport tank on a trolley, two people pushing it
+// east toward another building, and you inside it. It is all real — the
+// corridor is map, the trolley is a structure, the people are people, and the
+// camera is the game's camera — which is why you can break it.
+//
+// Mash bite and the glass cracks, then goes. The two of them run. You are on a
+// tiled floor with a drain at the far end of it and nothing under the drain
+// but the cistern, two floors down. There is no second act to this: you walk
+// east and you fall.
+// ---------------------------------------------------------------------------
+const Opening = {
+  on: false, cart: null, crew: [], phase: null, t: 0, taps: 0, need: 7, prompt: 0, fell: false, splashed: false, stage: null,
+
+  reset() { this.on = false; this.cart = null; this.crew = []; this.phase = null; this.t = 0; this.taps = 0; this.prompt = 0; this.fell = false; this.splashed = false; this.stage = null; },
+
+  begin(stage) {
+    this.reset();
+    const P = G.player;
+    this.on = true; this.stage = stage; this.phase = 'carry';
+    const x0 = stage.x;
+    const fy = World.floorY(x0);
+    // the trolley and the tank on it
+    const cart = new Structure(x0, 'transport'); cart.y = fy; cart.vx = 0; G.add(cart); this.cart = cart;
+    // the two pushing it, behind it, hands on the bar
+    for (const [ox, kind] of [[-46, 'worker'], [-72, 'worker']]) {
+      const w = new LandAnimal(x0 + ox, kind); w.pushing = cart; w.pushOff = ox; w.facing = 1; w.state = 'idle'; w.stateT = 999; w.watching = false;
+      w.y = fy - w.groundOff; G.add(w); this.crew.push(w);
+    }
+    // you: frozen, in the water in the tank
+    P.frozen = true; P.hidden = false; P.inTank = cart; P.invuln = 60;
+    P.x = cart.x; P.y = fy - 40; P.angle = 0; P.facing = 1; P.chain.reset(P.x, P.y, 0);
+    G.cam.x = cart.x; G.cam.y = fy - 40; G.cam.zoomRaw = 2.2; G.cam.zoom = 2.2;
+    G.banner = { text: 'FACILITY B', sub: 'TRANSFER ORDER 11', t: 3.2, max: 3.2, color: '#7fd8c0' };
+    SFX.peep && SFX.peep();
+  },
+
+  // the disposal for every other sewer site: no corridor, no chute — a hatch in
+  // the crown of the vault opens over the water and you come out of it
+  hatch(stage) {
+    const P = G.player, x = stage.x;
+    const r = World.roofY(x);
+    P.y = (r === null ? -80 : r + 14 * P.vis); P.vy = 40; P.vx = 0; P.chain.reset(P.x, P.y, 0);
+    P.invuln = 2; G.cam.y = P.y + 40;
+    for (let i = 0; i < 24; i++) G.fx.add({ type: 'drop', x: x + rand(-16, 16), y: P.y, vx: rand(-40, 40), vy: rand(20, 120), s: 1, color: '#8ce8a0', life: 1.2 });
+    G.shake(6); SFX.clank && SFX.clank(0);
+    G.banner = { text: 'DISPOSAL HATCH', sub: 'IN THE SYSTEM. THERE IS NO DOOR ON THE OTHER END.', t: 4, max: 4, color: '#8ab820' };
+  },
+
+  update(dt) {
+    if (!this.on) return;
+    const P = G.player, c = this.cart;
+    this.t += dt;
+    if (this.phase === 'carry') {
+      // the trolley rolls east at a walking pace and stops short of the drain
+      const stopX = -3060;
+      c.vx = c.x < stopX ? approach(c.vx, 42, dt * 60) : approach(c.vx, 0, dt * 120);
+      c.x += c.vx * dt; c.y = World.floorY(c.x); c.roll = (c.roll || 0) + c.vx * dt;
+      // you ride in it, curled in the water, and the camera rides with you
+      P.frozen = true; P.x = c.x + Math.sin(this.t * 2.3) * 2; P.y = c.y - 42 + Math.cos(this.t * 1.7) * 1.5;
+      P.angle = Math.sin(this.t * 1.1) * 0.15 + (this.taps > 0 ? Math.sin(this.t * 14) * 0.08 * Math.min(1, this.taps / 3) : 0);
+      P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.4 + this.taps * 0.1, false);
+      P.jaw = 0.1 + Math.abs(Math.sin(this.t * 3)) * 0.2;
+      // the crew keep their hands on the bar
+      for (const w of this.crew) { w.x = c.x + w.pushOff; w.facing = 1; w.vx = c.vx; w.y = World.floorY(w.x) - w.groundOff; w.anim.push = 1; w.anim.speed = clamp(c.vx / 40, 0, 1); w.anim.phase += dt * (1 + c.vx * 0.12); w.anim.expr = this.taps >= 4 ? 'alert' : 'calm'; }
+      this.prompt += dt;
+      // the glass
+      const tapped = Input.bitePressed() || Input.mouse.clicked || (Input.touch && Input.touch.bite);
+      if (tapped && this.t > 1.0) {
+        this.taps++; c.cracks = this.taps / this.need;
+        G.shake(3 + this.taps * 1.4); G.hitstop(0.04); SFX.crack && SFX.crack(this.taps);
+        for (let i = 0; i < 4 + this.taps * 3; i++) G.fx.add({ type: 'splinter', x: c.x + rand(-14, 14), y: c.y - 44 + rand(-16, 16), vx: rand(-80, 80), vy: rand(-110, 20), s: 1, w: randi(1, 3), color: choice(['#cfeef4', '#9fc4cc', '#e8f4f8']), rot: rand(TAU), vr: rand(-8, 8), life: rand(0.8, 1.6) });
+        if (this.taps >= 3) for (const w of this.crew) { w.anim.expr = 'alert'; }
+        if (this.taps >= this.need) this.breach();
+      }
+      // given long enough, the pressure finishes what you started
+      if (this.t > 28 && this.taps < this.need) { this.taps = this.need; this.breach(); }
+    } else if (this.phase === 'loose') {
+      // the floor ends at the drain: past it there is nothing but air
+      // the two of them run for the west door and are gone through it
+      const doorX = this.stage.x - 50;
+      for (const w of this.crew) { if (w.remove) continue; w.state = 'flee'; w.stateT = 40; w.fleeDir = -1; w.panicked = true; w.anim.expr = 'scared'; if (w.x < doorX) { w.remove = true; SFX.clank && SFX.clank(-0.6); G.fx.smoke(w.x, w.y, 3, '#8a9aa0'); } }
+      if (!this.fell && P.x > -2962 && P.y > -340) {
+        this.fell = true; G.banner = { text: 'DOWN', sub: '', t: 1.4, max: 1.4, color: '#c8b070' };
+        SFX.breach && SFX.breach(); G.slowmo(0.5, 0.5);
+      }
+      if (this.fell && !this.splashed && P.inWater) {
+        this.splashed = true; this.phase = 'done'; this.on = false;
+        G.shake(10); G.fx.splash && G.fx.splash(P.x, 2.6, 0); Water.splash && Water.splash(P.x, 200, 50); SFX.splash && SFX.splash(2.5);
+        G.banner = { text: 'UNDER ROME', sub: 'THE MAPS STOP HERE. FIND THE WAY OUT.', t: 4.5, max: 4.5, color: '#c8b070' };
+        P.invuln = 2;
+      }
+    }
+  },
+  breach() {
+    const P = G.player, c = this.cart;
+    this.phase = 'loose'; this.t = 0;
+    c.broken = true; c.cracks = 1; P.inTank = null; P.frozen = false; P.invuln = 2.5;
+    P.y = c.y - 6 * P.vis; P.vx = 90; P.vy = -60;
+    G.whiteFlash(0.6); G.shake(16); G.slowmo(0.3, 0.9); SFX.hatch && SFX.hatch(); SFX.splinter && SFX.splinter(0);
+    for (let i = 0; i < 70; i++) { const a = rand(-Math.PI, 0.6), sp = rand(60, 280); G.fx.add({ type: 'splinter', x: c.x + rand(-24, 24), y: c.y - 44 + rand(-30, 20), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: 1, w: randi(2, 5), color: choice(['#cfeef4', '#9fc4cc', '#e8f4f8', '#7fa8b0']), rot: rand(TAU), vr: rand(-10, 10), life: rand(3, 6) }); }
+    for (let i = 0; i < 40; i++) G.fx.add({ type: 'drop', x: c.x + rand(-30, 30), y: c.y - 40 + rand(-20, 10), vx: rand(-180, 180), vy: rand(-40, 140), s: randi(1, 2), color: choice(['#8ce8a0', '#3f9a54', '#cfeef4']), life: 2.4 });
+    G.fx.cloud && G.fx.cloud(c.x, c.y - 30, 46, '#3f9a54', 3);
+    // the two of them let go and run west, arms up, and do not look back
+    for (const w of this.crew) { w.pushing = null; w.anim.push = 0; w.panicked = true; w.state = 'flee'; w.stateT = 40; w.fleeDir = -1; w.anim.expr = 'scared'; SFX.scream && SFX.scream(w.pan); }
+    G.banner = { text: 'BREACH', sub: 'THE DRAIN IS EAST', t: 3.4, max: 3.4, color: '#ff8c40' };
+  },
+
+  // the one prompt the opening has, and the state of the glass
+  draw(ctx) {
+    if (!this.on || this.phase !== 'carry' || this.t < 1.0) return;
+    const W = G.W, H = G.H, k = Math.floor(G.t * 3) % 2;
+    Font.draw(ctx, 'MASH BITE', W / 2, H - 58, { color: k ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#0a1a08' });
+    ctx.fillStyle = '#1a1210'; ctx.fillRect(W / 2 - 41, H - 42, 82, 6);
+    ctx.fillStyle = '#cfeef4'; ctx.fillRect(W / 2 - 40, H - 41, Math.round(80 * (1 - this.taps / this.need)), 4);
+    Font.draw(ctx, 'GLASS', W / 2, H - 33, { color: '#6f8f88', align: 'center' });
+  },
+};
+
 /* ===== src/waste.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
@@ -12175,526 +12645,6 @@ const Drop = {
       ctx.globalAlpha = 1;
     }
     if (u > 0.2 && u < 0.95) Font.draw(ctx, 'ESC: SKIP', W - 8, H - 10, { color: 'rgba(150,190,180,0.5)', align: 'right' });
-  },
-};
-
-/* ===== src/delivery.js ===== */
-'use strict';
-// ---------------------------------------------------------------------------
-// DISPOSAL.
-//
-// There is no helicopter for the sewer. Nobody flies a specimen out to a
-// municipal trunk main and lowers it gently into the water. What happens is
-// that two people in coveralls strap the transport tank to a trolley, wheel it
-// down a corridor with a painted line on the floor, stop at a hatch that says
-// what the hatch is for, and tip it.
-//
-// You do not get out of the tank. The glass is an inch thick and the lid is
-// bolted. Everything you do in here is thrashing, and thrashing is what they
-// expected, which is why there are straps.
-//
-// Then the chute. Fifteen seconds of wet concrete falling away under you at an
-// angle somebody calculated once in 1974, with grates and stub pipes and valve
-// bodies in it, and the only thing you control is which side of it you are on.
-// ---------------------------------------------------------------------------
-const DELIVERY_PHASES = [
-  { id: 'strap', len: 4.2, line: 'SUBJECT SECURED' },
-  { id: 'carry', len: 6.4, line: 'IN TRANSIT' },
-  { id: 'hatch', len: 3.6, line: 'DISPOSAL HATCH 4' },
-  { id: 'tip', len: 2.6, line: 'RELEASE' },
-  { id: 'slide', len: 15.0, line: 'STORMWAY 9' },
-  { id: 'splash', len: 1.6, line: '' },
-];
-// The opening is the same corridor with a different ending. They are not
-// throwing you away: they are moving you to another building, in a bigger
-// tank, and the tank is the mistake. You go through the glass, across the
-// floor, into a drain, and then down — twenty seconds of a chute nobody has
-// been down since it was cut, so narrow your flanks touch both walls — into
-// the Roman level, where the maps stop.
-const OPENING_PHASES = [
-  { id: 'strap', len: 2.8, line: 'TRANSFER ORDER 11' },
-  { id: 'carry', len: 5.2, line: 'FACILITY B  INBOUND' },
-  { id: 'break', len: 14, line: 'CONTAINMENT INTACT', hold: true },   // interactive: it ends when the glass does
-  { id: 'loose', len: 2.4, line: 'BREACH' },
-  { id: 'drain', len: 3.2, line: 'THE DRAIN' },
-  { id: 'slide', len: 20.0, line: 'THE OLD SYSTEM' },
-  { id: 'splash', len: 1.6, line: '' },
-];
-
-const Delivery = {
-  begin(stage, opening) {
-    const P = G.player;
-    G.deliv = {
-      t: 0, stage, phase: 'strap', opening: !!opening,
-      seq: opening ? OPENING_PHASES : DELIVERY_PHASES, pi: 0, pt: 0,
-      taps: 0, need: 7, crack: 0, shards: 0, flood: 0, crawl: 0,
-      bang: 0, thrash: 0, tilt: 0,
-      // the slide: you are a dot on a chute that scrolls under you
-      lane: 0, laneV: 0, spd: 0, dist: 0, hits: 0, sparks: 0,
-      obst: [], nextObst: 0, roll: 0, done: false,
-      name: (stage && stage.name) || 'THE SYSTEM', sub: (stage && stage.sub) || '',
-    };
-    G.state = 'delivery';
-    P.frozen = true; P.invuln = 60; P.hidden = true;
-    G.banner = null;
-    SFX.warning && SFX.warning();
-  },
-  // phases run in sequence; one of them (the glass) only ends when you end it
-  phaseAt(t) { const D = G.deliv; return D ? D.seq[D.pi] : DELIVERY_PHASES[0]; },
-  local(D) { const p = D.seq[D.pi]; return { p, u: clamp(D.pt / p.len, 0, 1) }; },
-  next(D) { if (D.pi < D.seq.length - 1) { D.pi++; D.pt = 0; } },
-
-  update(raw) {
-    const D = G.deliv, P = G.player; if (!D) return;
-    D.t += raw; D.pt += raw;
-    const { p, u } = this.local(D);
-    D.phase = p.id;
-    if (D.bang > 0) D.bang -= raw;
-    if (D.sparks > 0) D.sparks -= raw;
-    // a timed phase ends on its clock; the glass ends when you break it
-    if (!p.hold && D.pt >= p.len && p.id !== 'splash') { this.next(D); return; }
-
-    // you are in a box and you are furious about it. In the disposal run that
-    // changes nothing; in the transfer the tank is bigger, the glass is
-    // thinner, and every hit is a crack.
-    const mashing = Input.down('Space', 'KeyZ', 'KeyJ') || Input.mouse.down || (Input.touch && Input.touch.bite);
-    const tapped = Input.bitePressed() || Input.mouse.clicked;
-    if (p.id === 'strap' || p.id === 'carry' || p.id === 'hatch' || p.id === 'tip' || p.id === 'break') {
-      D.thrash = lerp(D.thrash, mashing ? 1 : 0.18 + Math.abs(Math.sin(D.t * 2.2)) * 0.2, 0.12);
-      if (mashing && chance(raw * 9)) { D.bang = 0.22; G.shake(2.2); SFX.thud && SFX.thud(0); }
-    }
-    if (p.id === 'break') {
-      if (tapped) {
-        D.taps++; D.crack = D.taps / D.need; D.bang = 0.3;
-        G.shake(4 + D.taps * 1.5); G.hitstop(0.04); SFX.crack && SFX.crack(D.taps);
-        for (let i = 0; i < 4 + D.taps * 3; i++) G.fx.add({ type: 'splinter', x: G.W * 0.5 + rand(-30, 30), y: G.H - 110 + rand(-24, 24), vx: rand(-90, 90), vy: rand(-120, 20), s: 1, w: randi(1, 3), color: choice(['#cfeef4', '#9fc4cc', '#e8f4f8']), rot: rand(TAU), vr: rand(-8, 8), life: rand(0.8, 1.6) });
-        if (D.taps >= D.need) {
-          this.next(D);
-          G.whiteFlash(0.7); G.shake(18); G.slowmo(0.3, 0.9); SFX.hatch && SFX.hatch(); SFX.splinter && SFX.splinter(0);
-          D.shards = 1;
-          for (const [px, f] of [[-96, -1], [-130, -1], [110, 1]]) D['flee' + f + px] = 0;
-        }
-      }
-      // give it long enough and the pressure finishes what you started
-      if (D.pt > p.len - 0.1 && D.taps < D.need) { D.taps = D.need; D.crack = 1; this.next(D); G.whiteFlash(0.5); G.shake(12); }
-    }
-    if (p.id === 'loose') { D.flood = Math.min(1, D.flood + raw * 0.9); D.shards = Math.max(0, D.shards - raw * 0.5); }
-    if (p.id === 'drain') { D.crawl = u; D.flood = Math.max(0.35, D.flood - raw * 0.2); if (u > 0.86 && !D.dropped) { D.dropped = true; SFX.splash && SFX.splash(0.6); G.shake(3); } }
-
-    if (p.id === 'carry') D.roll += raw * 210;
-    if (p.id === 'tip') D.tilt = lerp(D.tilt, u * 1.5, 0.12);
-
-    // ---- the chute ----------------------------------------------------
-    if (p.id === 'slide') {
-      D.spd = lerp(D.spd, 1, 0.02);
-      D.dist += raw * (260 + D.spd * 340);
-      // steering: lean, and the lean carries because it is wet concrete
-      const ix = (Input.down('ArrowLeft', 'KeyA') ? -1 : 0) + (Input.down('ArrowRight', 'KeyD') ? 1 : 0)
-        + (Input.joy ? Input.joy.x : 0) + (Input.mouse.down ? sign(Input.mouse.x - G.W / 2) * 0.9 : 0);
-      D.laneV = approach(D.laneV, clamp(ix, -1, 1) * 2.5, raw * 7);
-      D.lane = clamp(D.lane + D.laneV * raw, -1, 1);
-      if (Math.abs(D.lane) >= 0.995) D.laneV *= -0.25;
-      // the old chute is so narrow that either wall is a scrape
-      if (D.opening && Math.abs(D.lane) > 0.62) {
-        if (chance(raw * 14)) { D.sparks = Math.max(D.sparks, 0.12); G.shake(1.5); if (chance(0.3)) SFX.ricochet && SFX.ricochet(0); }
-        P.hp = Math.max(1, P.hp - P.maxHp * 0.012 * raw);
-      }
-      // things bolted into the chute, coming up at you
-      D.nextObst -= raw;
-      if (D.nextObst <= 0) {
-        D.nextObst = D.opening ? lerp(1.5, 0.9, u) : lerp(1.1, 0.55, u);
-        const kinds = ['grate', 'stub', 'valve'];
-        D.obst.push({ d: D.dist + 900, lane: rand(-0.85, 0.85), w: rand(0.34, 0.6), kind: choice(kinds), hit: false });
-      }
-      for (const o of D.obst) {
-        const rel = o.d - D.dist;
-        if (rel < 0) continue;
-        if (rel < 26 && !o.hit && Math.abs(D.lane - o.lane) < o.w) {
-          o.hit = true; D.hits++; D.sparks = 0.3; G.shake(7);
-          SFX.thud && SFX.thud(0); SFX.ricochet && SFX.ricochet(0);
-          P.hp = Math.max(1, P.hp - P.maxHp * 0.045);
-          D.spd *= 0.55; D.laneV = -sign(D.lane - o.lane) * 1.6;
-        }
-      }
-      D.obst = D.obst.filter(o => o.d - D.dist > -120);
-      if (chance(raw * 30)) G.fx.add({ type: 'drop', x: rand(0, G.W), y: rand(0, G.H), vx: 0, vy: 400, s: 1, color: '#9fc0b8', life: 0.4 });
-    }
-
-    if (p.id === 'splash' && !D.done && u > 0.45) { D.done = true; this.finish(); return; }
-    // skippable, but not before they have actually thrown you in
-    if (Input.hit('Escape') && D.t > 1) this.finish();
-  },
-
-  // ---------------------------------------------------------------------
-  draw(ctx) {
-    const D = G.deliv; if (!D) return;
-    const W = G.W, H = G.H;
-    const { p, u } = this.local(D);
-    if (p.id === 'slide') return this.drawSlide(ctx, D, u);
-    if (p.id === 'splash') return this.drawSplash(ctx, D, u);
-    this.drawLab(ctx, D, p, u);
-  },
-
-  // the corridor, the trolley, the tank and the two people pushing it
-  drawLab(ctx, D, p, u) {
-    const W = G.W, H = G.H, t = D.t;
-    // corridor: block wall, a painted line, strip lights going by
-    ctx.fillStyle = '#0b1418'; ctx.fillRect(0, 0, W, H);
-    const scroll = p.id === 'carry' ? D.roll : p.id === 'hatch' ? D.roll + u * 40 : (p.id === 'break' || p.id === 'loose' || p.id === 'drain') ? D.roll : 0;
-    for (let y = 0, r = 0; y < H; y += 26, r++) {
-      ctx.fillStyle = r % 2 ? '#101e22' : '#0e1a1e'; ctx.fillRect(0, y, W, 25);
-      ctx.fillStyle = '#081215'; ctx.fillRect(0, y + 25, W, 1);
-      for (let x = -((scroll * 0.6) % 52) + (r % 2 ? 0 : 26); x < W; x += 52) ctx.fillRect(x, y, 1, 25);
-    }
-    // strip lights overhead, sliding past
-    for (let x = -((scroll * 1.4) % 190); x < W + 190; x += 190) {
-      ctx.fillStyle = '#1a2226'; ctx.fillRect(Math.round(x), 0, 104, 8);
-      ctx.fillStyle = '#cfeee2'; ctx.fillRect(Math.round(x) + 5, 7, 94, 2);
-      const g = ctx.createLinearGradient(0, 9, 0, 120);
-      g.addColorStop(0, 'rgba(190,230,220,0.13)'); g.addColorStop(1, 'rgba(190,230,220,0)');
-      ctx.fillStyle = g; ctx.fillRect(Math.round(x) - 14, 9, 132, 111);
-    }
-    // the painted line on the floor, and the floor
-    const FY = H - 64;
-    ctx.fillStyle = '#121c20'; ctx.fillRect(0, FY, W, H - FY);
-    ctx.fillStyle = '#1b262a'; ctx.fillRect(0, FY, W, 2);
-    ctx.fillStyle = '#7a6a20';
-    for (let x = -((scroll * 1.9) % 60); x < W; x += 60) ctx.fillRect(Math.round(x), FY + 26, 34, 3);
-    // the transfer corridor has a floor drain in it, which is the whole plot
-    const DX = W * 0.80;
-    if (D.opening && (p.id === 'break' || p.id === 'loose' || p.id === 'drain')) {
-      ctx.fillStyle = '#0a1012'; ctx.fillRect(DX - 22, FY + 6, 44, 14);
-      ctx.fillStyle = '#3a4448'; ctx.fillRect(DX - 24, FY + 4, 48, 3);
-      for (let k = 0; k < 6; k++) { ctx.fillStyle = '#2a3236'; ctx.fillRect(DX - 20 + k * 7, FY + 8, 3, 10); }
-      ctx.fillStyle = '#4a5458'; ctx.fillRect(DX - 24, FY + 4, 48, 1);
-      Font.draw(ctx, 'DRAIN', DX, FY + 24, { color: '#5f6f68', align: 'center' });
-      // water off the floor running into it
-      if (D.flood > 0) { ctx.globalAlpha = 0.5 * D.flood; ctx.fillStyle = '#2a6a58'; ctx.fillRect(0, FY + 2, W, 5); ctx.globalAlpha = 1; }
-    }
-
-    // the hatch at the end of the corridor
-    if (p.id === 'hatch' || p.id === 'tip') {
-      const hx = W * 0.74, open = p.id === 'tip' ? 1 : u;
-      ctx.fillStyle = '#0a1013'; ctx.fillRect(hx - 44, FY - 92, 88, 92);
-      ctx.fillStyle = '#26343a'; ctx.fillRect(hx - 48, FY - 96, 96, 6);
-      ctx.fillStyle = '#3a4a52'; ctx.fillRect(hx - 48, FY - 96, 96, 2);
-      // the leaf, rolling up
-      const lh = Math.round(86 * (1 - open));
-      if (lh > 2) {
-        ctx.fillStyle = '#4e5a60'; ctx.fillRect(hx - 42, FY - 90, 84, lh);
-        for (let j = 0; j * 12 < lh; j++) { ctx.fillStyle = '#3c4850'; ctx.fillRect(hx - 42, FY - 90 + j * 12, 84, 2); }
-        ctx.fillStyle = '#e0c040'; ctx.fillRect(hx - 42, FY - 90 + lh - 4, 84, 3);
-        for (let k = 0; k < 7; k++) { ctx.fillStyle = k % 2 ? '#1a1a1a' : '#e0c040'; ctx.fillRect(hx - 40 + k * 12, FY - 90 + lh - 10, 10, 5); }
-      }
-      // what is behind it: nothing, going down
-      if (open > 0.05) {
-        ctx.fillStyle = '#04080a'; ctx.fillRect(hx - 42, FY - 90 + lh, 84, 90 - lh);
-        ctx.fillStyle = 'rgba(120,200,180,0.10)';
-        for (let k = 0; k < 5; k++) ctx.fillRect(hx - 40 + k * 18, FY - 86 + lh, 2, 86 - lh);
-      }
-      // the warning lamp over it
-      const lit = Math.floor(t * 5) % 2;
-      ctx.fillStyle = lit ? '#ff5030' : '#40181a'; ctx.fillRect(hx - 6, FY - 106, 12, 8);
-      if (lit) G.fx.glow && G.fx.glow(0, 0, 0, '#ff5030', 0);
-      Font.draw(ctx, 'DISPOSAL', hx, FY - 118, { color: '#8a9a94', align: 'center' });
-    }
-
-    // ---- the trolley and the tank ---------------------------------------
-    const stopped = p.id === 'break' || p.id === 'loose' || p.id === 'drain';
-    const tx = p.id === 'strap' || p.id === 'carry' ? W * 0.36 : stopped ? W * 0.44 : W * 0.5 + u * (p.id === 'tip' ? 40 : 0);
-    const ty = FY - 8, tilt = p.id === 'tip' ? D.tilt : Math.sin(t * 3.1) * 0.012 * D.thrash * (D.opening ? 2.4 : 1);
-    const broken = p.id === 'loose' || p.id === 'drain';
-    ctx.save();
-    ctx.translate(Math.round(tx), Math.round(ty));
-    ctx.rotate(tilt);
-    // trolley frame
-    ctx.fillStyle = '#2a3338'; ctx.fillRect(-46, -10, 92, 8);
-    ctx.fillStyle = '#3c474e'; ctx.fillRect(-46, -10, 92, 2);
-    ctx.fillStyle = '#1a2226'; ctx.fillRect(-40, -2, 7, 9); ctx.fillRect(33, -2, 7, 9);
-    // wheels, turning
-    for (const wx of [-36, 36]) {
-      ctx.fillStyle = '#11181c'; ctx.fillRect(wx - 6, 6, 12, 12);
-      ctx.fillStyle = '#39454a';
-      const a = D.roll * 0.06 + (wx > 0 ? 1 : 0);
-      for (let k = 0; k < 4; k++) { const q = a + k * Math.PI / 4; ctx.fillRect(Math.round(wx + Math.cos(q) * 4) - 1, Math.round(12 + Math.sin(q) * 4) - 1, 2, 2); }
-    }
-    // the tank: steel base, thick glass, bolted lid, green water. The
-    // transfer tank is a size up, because the transfer tank is a mistake.
-    const TW = D.opening ? 52 : 36, TH = D.opening ? 74 : 56, TT = -18 - TH;
-    ctx.fillStyle = '#25313a'; ctx.fillRect(-TW - 4, -20, TW * 2 + 8, 12);
-    if (!broken) {
-      ctx.fillStyle = '#0d2420'; ctx.fillRect(-TW, TT, TW * 2, TH);
-      const wl = TT + 8;
-      ctx.fillStyle = '#1d5a4a'; ctx.fillRect(-TW, wl, TW * 2, TH - 6);
-      ctx.fillStyle = '#2a7a62'; ctx.fillRect(-TW, wl, TW * 2, 3);
-      // the animal, thrashing. Its own chain is out in the world somewhere, so
-      // this uses the preview rig, which is solved in local space.
-      {
-        const sw = Math.sin(t * (7 + D.thrash * 9)) * (3 + D.thrash * 7);
-        ctx.save();
-        ctx.beginPath(); ctx.rect(-TW, TT, TW * 2, TH); ctx.clip();
-        ctx.translate(sw * 0.35, TT + TH * 0.62 + Math.cos(t * 5) * 2);
-        ctx.rotate(sw * 0.05);
-        this.croc(ctx, D.opening ? 0.9 : 0.62, 5 + D.thrash * 7);
-        ctx.restore();
-      }
-      // glass: rim light, condensation, and in the transfer tank the cracks
-      // you are putting in it
-      ctx.globalAlpha = 0.26; ctx.fillStyle = '#cfeee6'; ctx.fillRect(-TW + 4, TT + 4, 4, TH - 8); ctx.globalAlpha = 1;
-      if (D.bang > 0) { ctx.globalAlpha = Math.min(1, D.bang * 3); ctx.fillStyle = '#dffdf4'; ctx.fillRect(-TW, TT, TW * 2, TH); ctx.globalAlpha = 1; }
-      if (D.crack > 0) {
-        ctx.strokeStyle = 'rgba(240,255,250,0.9)'; ctx.lineWidth = 1;
-        const n = Math.round(D.crack * 12);
-        for (let k = 0; k < n; k++) {
-          const a0 = ihash(k, 7) * TAU, len = 10 + ihash(k, 9) * 26 * D.crack;
-          let x0 = Math.round(ihash(k, 11) * 30 - 15), y0 = Math.round(TT + TH * 0.5 + (ihash(k, 13) - 0.5) * 30);
-          ctx.beginPath(); ctx.moveTo(x0 + 0.5, y0 + 0.5);
-          for (let q = 0; q < 4; q++) { const a = a0 + (ihash(k * 5 + q, 17) - 0.5) * 1.2; x0 += Math.round(Math.cos(a) * len / 4); y0 += Math.round(Math.sin(a) * len / 4); ctx.lineTo(x0 + 0.5, y0 + 0.5); }
-          ctx.stroke();
-        }
-      }
-      ctx.strokeStyle = 'rgba(210,240,235,0.5)'; ctx.lineWidth = 1; ctx.strokeRect(-TW - 0.5, TT - 0.5, TW * 2 + 1, TH + 1);
-    } else {
-      // the frame with the glass gone out of it: jagged stumps, dripping
-      ctx.fillStyle = '#0d2420'; ctx.fillRect(-TW, TT, TW * 2, 6);
-      ctx.fillStyle = 'rgba(210,240,235,0.6)';
-      for (let k = 0; k < 9; k++) { const h2 = 4 + ihash(k, 21) * 16; ctx.fillRect(-TW + k * (TW * 2 / 9), TT + 6, 3, h2); ctx.fillRect(-TW + k * (TW * 2 / 9) + 1, -18 - 4 - ihash(k, 23) * 10, 2, 4 + ihash(k, 23) * 10); }
-      ctx.fillStyle = '#1d5a4a'; ctx.fillRect(-TW, -24, TW * 2, 6);
-    }
-    // lid, bolted
-    ctx.fillStyle = '#2e3a42'; ctx.fillRect(-TW - 4, TT - 8, TW * 2 + 8, 9);
-    ctx.fillStyle = '#44525c'; ctx.fillRect(-TW - 4, TT - 8, TW * 2 + 8, 2);
-    for (let k = 0; k < 6; k++) { ctx.fillStyle = '#6a7a84'; ctx.fillRect(-TW + 1 + k * (TW * 2 - 6) / 5, TT - 6, 4, 4); }
-    // straps over the lid
-    ctx.fillStyle = '#3a2e1e'; ctx.fillRect(-TW - 6, TT + 8, TW * 2 + 12, 5); ctx.fillRect(-TW - 6, TT + TH * 0.55, TW * 2 + 12, 5);
-    ctx.fillStyle = '#8a7a4a'; ctx.fillRect(-8, TT + 6, 16, 9); ctx.fillRect(-8, TT + TH * 0.55 - 2, 16, 9);
-    // stencil, on the glass, so gone with it
-    if (!broken) {
-      Font.draw(ctx, D.opening ? 'TRANSFER' : 'LIVE', 0, TT + 16, { color: '#cfe0d8', align: 'center' });
-      Font.draw(ctx, D.opening ? 'SUBJECT 11' : 'SPECIMEN', 0, TT + 24, { color: '#6f8f88', align: 'center' });
-    }
-    ctx.restore();
-
-    // ---- out of the tank --------------------------------------------------
-    if (broken) {
-      // glass all over the floor, water spreading from the trolley
-      ctx.globalAlpha = 0.6 * D.flood; ctx.fillStyle = '#1d5a4a';
-      ctx.fillRect(Math.round(tx - 60 - D.flood * 90), FY, Math.round(120 + D.flood * 180), 3);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#cfeef4';
-      for (let k = 0; k < 26; k++) ctx.fillRect(Math.round(tx - 60 + ihash(k, 31) * 150), FY - 1 - Math.round(ihash(k, 37) * 2), 1 + Math.round(ihash(k, 41) * 2), 1);
-      // the animal, on the floor, then going for the drain
-      const cx0 = tx + 8, cx1 = DX - 2;
-      const k = p.id === 'loose' ? Math.min(1, u * 1.6) : 1;
-      const cx2 = p.id === 'drain' ? lerp(cx0, cx1, D.crawl) : cx0;
-      const sink = p.id === 'drain' && D.crawl > 0.86 ? (D.crawl - 0.86) / 0.14 : 0;
-      ctx.save();
-      ctx.translate(Math.round(cx2), Math.round(FY - 4 + sink * 22));
-      ctx.rotate(p.id === 'loose' ? (1 - k) * 0.6 + Math.sin(t * 9) * 0.05 * (1 - k) : Math.sin(t * 8) * 0.03 + sink * 0.9);
-      if (sink < 1) this.croc(ctx, 0.9, p.id === 'drain' ? 6 : 8);
-      ctx.restore();
-      if (p.id === 'drain' && D.crawl > 0.2 && D.crawl < 0.86 && chance(0.4)) G.fx.add({ type: 'drop', x: cx2 - 10, y: FY - 2, vx: rand(-30, 30), vy: -rand(10, 40), s: 1, color: '#8ce8a0', life: 0.5 });
-    }
-
-    // ---- the two who are pushing it -------------------------------------
-    if (broken) {
-      // gone, or going: they run left, arms up, and do not look back
-      const run = p.id === 'loose' ? u : 1 + u;
-      for (const [ox, f] of [[-72, -1], [-104, -1]]) {
-        const px2 = tx + ox - run * 260;
-        if (px2 > -30) this.worker(ctx, px2, FY - 2, f, Math.sin(t * 16 + ox), t, true);
-      }
-    } else if (p.id !== 'tip' || u < 0.5) {
-      for (const [ox, f] of [[-72, 1], [-104, 1]]) {
-        const px2 = tx + ox, step = p.id === 'carry' ? Math.sin(D.roll * 0.08 + (ox < -80 ? 1.4 : 0)) : p.id === 'break' ? Math.sin(t * 3) * 0.3 : 0;
-        this.worker(ctx, px2, FY - 2, f, step, t);
-      }
-    }
-    if (p.id === 'hatch' || p.id === 'tip') this.worker(ctx, W * 0.74 + 56, FY - 2, -1, 0, t);
-
-    this.chrome(ctx, D, p);
-  },
-  // the specimen itself, at whatever scale the shot wants
-  croc(ctx, scale, agitation) {
-    if (!this._v) { this._v = CrocView.make(); this._v.t = 1.1; }
-    const v = this._v;
-    CrocView.update(v, 1 / 60, Math.max(1.2, 7 - agitation * 0.5));
-    const P = G.player;
-    const parts = (P && P.parts && P.parts.head) ? P.parts : null;
-    if (!parts) { ctx.fillStyle = '#5f7048'; ctx.fillRect(-22 * scale, -4 * scale, 44 * scale, 8 * scale); return; }
-    CrocView.draw(ctx, v, parts, 0, 0, scale);
-  },
-  // a person in coveralls, seen from the side, walking
-  worker(ctx, x, y, f, step, t, panic) {
-    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x + (f > 0 ? a : -a - w)), Math.round(y + b), Math.max(1, w), Math.max(1, h)); };
-    const sw = Math.sin(step * 1) * (panic ? 7 : 4);
-    if (panic) { px(6, -58, 4, 18, '#e8e4d0'); px(-8, -56, 4, 16, '#e8e4d0'); }   // arms in the air
-    px(-4 + sw * 0.4, -18, 5, 18, '#2c3a44');           // legs
-    px(0 - sw * 0.4, -18, 5, 18, '#26333c');
-    px(-6 + sw * 0.4, -2, 8, 3, '#14181c');
-    px(-1 - sw * 0.4, -2, 8, 3, '#14181c');
-    px(-7, -42, 15, 25, '#e8e4d0');                      // coverall
-    px(-7, -42, 4, 25, '#c8c4b0');
-    px(-7, -30, 15, 2, '#b0ac98');
-    px(6, -40, 4, 16, '#e8e4d0');                        // arm out to the handle
-    px(9, -26, 4, 3, '#d0a884');
-    px(-4, -52, 10, 11, '#d0a884');                      // head
-    px(-4, -52, 10, 3, '#3a2a18');
-    px(2, -47, 2, 2, '#141414');
-    px(-6, -55, 14, 4, '#ffd23a');                       // hard hat
-  },
-  // the chute: fifteen seconds of wet concrete
-  drawSlide(ctx, D, u) {
-    const W = G.W, H = G.H;
-    // a bore falling away from the camera: one vanishing point, rings of
-    // brickwork drawn far-to-near so the near ones frame the far ones.
-    const cx = W / 2, vy = Math.round(H * 0.46);
-    const wallAt = k => lerp(16, D.opening ? 215 : 330, k * k);          // k: 0 far, 1 near
-    const yAt = () => vy;                              // one vanishing point, dead ahead
-    ctx.fillStyle = '#05090b'; ctx.fillRect(0, 0, W, H);
-
-    const RINGS = 22, SP = 1 / RINGS;
-    const scroll = ((D.dist * 0.0018) % SP);
-    const kAt = i => 1 - (i * SP + scroll);
-    const ringRect = k => {
-      const hw = wallAt(k), hh = hw * 0.62;
-      return [cx - hw, vy - hh, hw * 2, hh * 2];
-    };
-    // the dark at the end of it
-    {
-      const [x, y, w2, h2] = ringRect(kAt(RINGS - 1));
-      ctx.fillStyle = '#020405'; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w2), Math.round(h2));
-    }
-    for (let i = RINGS - 2; i >= 0; i--) {
-      const k = kAt(i), kf = kAt(i + 1);
-      if (k <= 0 || k > 1.06) continue;
-      const [ox, oy, ow, oh] = ringRect(k), [ix, iy, iw, ih] = ringRect(kf);
-      const lit = 0.82 - k * 0.56;                      // the bore falls away into light
-      ctx.beginPath();
-      ctx.rect(Math.round(ox), Math.round(oy), Math.round(ow), Math.round(oh));
-      ctx.rect(Math.round(ix), Math.round(iy), Math.round(iw), Math.round(ih));
-      const band = i % 2 ? 1.0 : 0.82;
-      ctx.fillStyle = 'rgb(' + Math.round(12 + band * lit * 26) + ',' + Math.round(20 + band * lit * 48) + ',' + Math.round(23 + band * lit * 52) + ')';
-      ctx.fill('evenodd');
-      // standing water in the bottom of each ring of the bore
-      const fy = Math.round(oy + oh), fyi = Math.round(iy + ih);
-      ctx.fillStyle = 'rgba(90,190,170,' + (0.05 + k * 0.10).toFixed(3) + ')';
-      ctx.fillRect(Math.round(ox), fyi, Math.round(ow), Math.max(1, fy - fyi));
-      // the mortar seam at the mouth of each ring
-      ctx.strokeStyle = 'rgba(150,215,200,' + (0.05 + k * 0.16).toFixed(3) + ')';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(Math.round(ox) + 0.5, Math.round(oy) + 0.5, Math.round(ow) - 1, Math.round(oh) - 1);
-      // a service lamp every few rings, on alternating sides
-      if (i % 4 === 1 && k > 0.16 && k < 0.95) {
-        const side = (i % 8 === 1) ? -1 : 1;
-        const lx = cx + side * (wallAt(k) * 0.88), ly = vy - wallAt(k) * 0.40;
-        const s2 = Math.max(1, Math.round(k * 5));
-        const gl = ctx.createRadialGradient(lx, ly, 0, lx, ly, 30 + k * 90);
-        gl.addColorStop(0, 'rgba(190,230,150,' + (0.20 * k).toFixed(3) + ')');
-        gl.addColorStop(1, 'rgba(190,230,150,0)');
-        ctx.fillStyle = gl; ctx.fillRect(lx - 120, ly - 120, 240, 240);
-        ctx.fillStyle = '#cfe8a0'; ctx.fillRect(Math.round(lx - s2 / 2), Math.round(ly - s2 / 2), s2, s2);
-      }
-    }
-    // the water sheeting down the floor of it
-    for (let i = 0; i < 34; i++) {
-      const k = 1 - (((i * 29 + D.dist * 0.9) % 620) / 620);
-      if (k <= 0.02) continue;
-      const hw = wallAt(k);
-      ctx.fillStyle = 'rgba(150,220,200,' + (0.05 + k * 0.15).toFixed(3) + ')';
-      ctx.fillRect(Math.round(cx + rand(-hw * 0.82, hw * 0.82)), Math.round(vy + hw * 0.30), Math.max(1, Math.round(k * 3)), Math.round(4 + k * 26));
-    }
-
-    // what is bolted into it
-    for (const o of D.obst) {
-      const rel = o.d - D.dist;
-      if (rel < -40 || rel > 700) continue;
-      const k = clamp(1 - rel / 700, 0, 1);
-      const hw = wallAt(k), yy = vy + hw * 0.62;
-      const ox = cx + o.lane * hw * 0.72, ow = Math.round(o.w * hw * 0.9), oh = Math.round(6 + k * 52);
-      if (o.kind === 'grate') {
-        ctx.fillStyle = o.hit ? '#6a4a3a' : '#43505a'; ctx.fillRect(Math.round(ox - ow / 2), Math.round(yy - oh), ow, oh);
-        ctx.fillStyle = '#222c33';
-        for (let b = 0; b < 5; b++) ctx.fillRect(Math.round(ox - ow / 2 + b * ow / 5), Math.round(yy - oh), 2, oh);
-      } else if (o.kind === 'stub') {
-        ctx.fillStyle = o.hit ? '#6a4a3a' : '#4e453a'; ctx.fillRect(Math.round(ox - ow / 2), Math.round(yy - oh), ow, oh);
-        ctx.fillStyle = '#2a251e'; ctx.fillRect(Math.round(ox - ow / 2 + 2), Math.round(yy - oh + 2), Math.max(1, ow - 4), Math.max(1, oh - 4));
-      } else {
-        ctx.fillStyle = o.hit ? '#6a4a3a' : '#5a4a52'; ctx.fillRect(Math.round(ox - ow / 2), Math.round(yy - oh), ow, oh);
-        ctx.fillStyle = '#8a3a30'; ctx.fillRect(Math.round(ox - ow / 4), Math.round(yy - oh * 0.7), Math.round(ow / 2), 4);
-      }
-    }
-
-    // you, on your back, going down it, close to the camera
-    {
-      const pk = 0.62, hw = wallAt(pk), floorY = vy + hw * 0.62;
-      const px2 = cx + D.lane * hw * 0.70, py = floorY - 14;
-      // the sheet of water you are riding
-      ctx.fillStyle = 'rgba(150,225,205,0.16)';
-      ctx.fillRect(Math.round(px2 - 54), Math.round(floorY - 3), 108, 6);
-      ctx.save();
-      ctx.translate(Math.round(px2), Math.round(py));
-      ctx.rotate(D.lane * 0.35 + Math.sin(D.t * 12) * 0.05);
-      this.croc(ctx, 1.5, 9);
-      ctx.restore();
-      // spray off you
-      if (chance(0.6)) G.fx.add({ type: 'drop', x: px2 + rand(-16, 16), y: py + 8, vx: rand(-60, 60), vy: rand(-30, 60), s: 1, color: '#bfe0d8', life: 0.5 });
-    }
-    if (D.sparks > 0) {
-      ctx.globalAlpha = D.sparks * 3; ctx.fillStyle = '#ffd06a';
-      for (let k = 0; k < 12; k++) ctx.fillRect(Math.round(cx + rand(-120, 120)), Math.round(H * 0.55 + rand(-30, 30)), 2, 2);
-      ctx.globalAlpha = 1;
-    }
-    // speed streaks at the edge
-    ctx.fillStyle = 'rgba(200,240,230,0.12)';
-    for (let k = 0; k < 14; k++) { const yy = (k * 53 + D.dist * 2.4) % H; ctx.fillRect(6, Math.round(yy), 3, 30); ctx.fillRect(W - 9, Math.round((yy + 120) % H), 3, 30); }
-    this.chrome(ctx, D, this.phaseAt(D.t));
-    // and the one control it has
-    Font.draw(ctx, 'LEAN', 12, H - 30, { color: '#6f8f88' });
-    const secs = Math.max(0, Math.ceil(D.seq[D.pi].len - D.pt));
-    Font.draw(ctx, String(secs), G.W - 12, 30, { color: '#cfe8e0', align: 'right', scale: 2 });
-    if (D.hits) Font.draw(ctx, 'HIT ' + D.hits, G.W - 12, 48, { color: '#ff8060', align: 'right' });
-  },
-  drawSplash(ctx, D, u) {
-    const W = G.W, H = G.H;
-    ctx.fillStyle = '#04090b'; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = clamp(1 - u * 1.4, 0, 1);
-    ctx.fillStyle = '#bfe0d8';
-    for (let k = 0; k < 60; k++) { const a = ihash(k, 3) * TAU, r = (0.2 + ihash(k, 9)) * u * 420; ctx.fillRect(Math.round(W / 2 + Math.cos(a) * r), Math.round(H / 2 + Math.sin(a) * r * 0.6), 3, 3); }
-    ctx.globalAlpha = 1;
-  },
-  // the caption card, shared by every phase
-  chrome(ctx, D, p) {
-    const W = G.W, H = G.H;
-    ctx.fillStyle = 'rgba(4,10,12,0.72)'; ctx.fillRect(0, 0, W, 22);
-    ctx.fillStyle = 'rgba(4,10,12,0.72)'; ctx.fillRect(0, H - 22, W, 22);
-    Font.draw(ctx, D.name, 12, 8, { color: '#cfe8e0' });
-    Font.draw(ctx, p.line, W - 12, 8, { color: '#6f8f88', align: 'right' });
-    Font.draw(ctx, 'ESC  SKIP', W - 12, H - 14, { color: '#3f6f66', align: 'right' });
-    if (p.id === 'break') {
-      const k = Math.floor(D.t * 3) % 2;
-      Font.draw(ctx, 'MASH BITE', W / 2, H - 44, { color: k ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#0a1a08' });
-      // the glass, as a meter
-      ctx.fillStyle = '#1a1210'; ctx.fillRect(W / 2 - 41, H - 30, 82, 6);
-      ctx.fillStyle = '#cfeef4'; ctx.fillRect(W / 2 - 40, H - 29, Math.round(80 * (1 - D.crack)), 4);
-    }
-  },
-
-  finish() {
-    const D = G.deliv, P = G.player; if (!D) return;
-    P.frozen = false; P.hidden = false; P.invuln = 2.5;
-    // you come in at the surface, moving, facing into the system
-    const surf = World.surface(P.x);
-    P.y = surf + 8; P.vy = 220; P.vx = 120;
-    P.chain.reset(P.x, P.y, 0.5);
-    G.deliv = null; G.state = 'play';
-    G.cam.zoom = 1.6;
-    G.fx.splash && G.fx.splash(P.x, 2.2, 0);
-    Water.splash && Water.splash(P.x, 160, 40);
-    SFX.splash && SFX.splash(2);
-    G.shake(8);
-    if (D.opening) G.banner = { text: 'UNDER ROME', sub: 'THE MAPS STOP HERE. FIND THE WAY OUT.', t: 4.5, max: 4.5, color: '#c8b070' };
-    else G.banner = { text: 'IN THE SYSTEM', sub: 'THERE IS NO DOOR ON THE OTHER END', t: 4, max: 4, color: '#8ab820' };
   },
 };
 
@@ -13431,6 +13381,7 @@ const UI = {
     Objectives.drawCard(ctx);
     Puzzles.draw(ctx);
     Abilities.draw(ctx);
+    Opening.draw(ctx);
     // dispatch: the lab talking about you on an open channel, typed in
     const dp = G.dispatch;
     if (dp) {
@@ -15714,7 +15665,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -15771,8 +15722,8 @@ const G = {
     this.placeLandmark(st);
     Labyrinth.begin(st);
     // Nobody flies a specimen out to a municipal trunk main. The sewer gets
-    // wheeled down a corridor and tipped into a hatch.
-    if (st && st.zone === 'sewer') Delivery.begin(st); else Drop.begin(st);
+    // tipped in through a hatch in the crown of the vault.
+    if (st && st.zone === 'sewer') Opening.hatch(st); else Drop.begin(st);
   },
   // ---- one big handmade thing per site --------------------------------
   // Every release site gets a landmark placed by hand rather than left to the
@@ -15863,8 +15814,7 @@ const G = {
     for (let i = 0; i < 3; i++) { const rx = x + rand(-400, 400); if (World.floorY(rx) > 20) this.add(new Carrion(rx, World.floorY(rx) - 6, 'rat')); }
     this.state = 'play'; this.banner = null;
     Puzzles.begin(st);
-    Delivery.begin(st, true);
-    SFX.peep();
+    Opening.begin(st);
   },
   crackTank() {
     const e = this.intro; if (!e || e.phase !== 'tank') return;
@@ -16154,17 +16104,22 @@ const G = {
     else if (kind === 'vulture') this.add(new Vulture(x, -rand(120, 180), -side));
     else if (kind === 'heron') { const hx = World.findX(x, xx => { const f = World.floorY(xx); return f > 4 && f < 44; }, 500, 12); const wader = choice(['heron', 'egret', 'snowy', 'ibis', 'spoonbill', 'woodstork', 'littleblue', 'tricolor', 'limpkin', 'gallinule']); if (hx !== null) this.add(new Bird(hx, 0, wader, 'wade')); else Spawn.flock(x, -side, 'egret', 2); }
     else if (kind === 'kayak') this.add(new Kayak(x, -side));
-    else if (kind === 'pontoon') { const wx = World.findX(x, xx => World.floorY(xx) > 60, 500, 30); if (wx !== null) Spawn.boat(wx, chance(0.5) ? 'pontoon' : 'jon', -side); }
+    else if (kind === 'pontoon') { if (World.isIndoor(x)) return; const wx = World.findX(x, xx => World.floorY(xx) > 60, 500, 30); if (wx !== null) Spawn.boat(wx, chance(0.5) ? 'pontoon' : 'jon', -side); }
     else if (kind === 'moccasin') this.add(new Snake(x, 4, 'moccasin'));
   },
   spawnLand(x, D) {
     if (World.floorY(x) > -3) return;
     const B = Biome.at(x);
     const table = B.land.map(([k, w]) => { const sp = SPECIES[k]; const hard = sp ? sizeClassOf(sp.ft) : 1; return [k, hard > 3 && D < 1.6 ? w * 0.2 : w]; });
-    if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
-    if (B.id === 'campground') table.push(['camper', 3]);
-    if (D >= 1.6) table.push(['ranger', 1], ['poacher', D >= 2.4 ? 1.4 : 0]);
-    if (!B.indoor) table.push(['heron', 1.2]);
+    // the facility is staffed by the two you arrive with and nobody else, and
+    // the sewer only ever has the people who live down there
+    if (B.lab || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return;
+    if (!B.indoor) {
+      if (B.town || D >= 1) table.push(['fisherman', B.town ? 2 : 1], ['tourist', B.town ? 2.4 : 0.8]);
+      if (B.id === 'campground') table.push(['camper', 3]);
+      if (D >= 1.6) table.push(['ranger', 1], ['poacher', D >= 2.4 ? 1.4 : 0]);
+      table.push(['heron', 1.2]);
+    }
     const k = weightedPick(table);
     if (!k) return;
     if (k === 'heron') this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis']), 'wade'));
@@ -16193,7 +16148,7 @@ const G = {
       case 'moccasin': if (fy > 20) this.add(new Snake(x, 4, 'moccasin')); break;
       case 'gator': if (fy > 40) { Spawn.gator(x, clamp(rand(20, 150), 10, fy - 20), clamp(P.size * rand(0.65, 1.35), 0.8, 30)); warn = 'SOMETHING IS HUNTING YOU'; } break;
       case 'python': { const bx = World.findX(x, xx => World.floorY(xx) < -3, 800, 30); this.add(new Snake(bx !== null ? bx : x, 4, 'python', clamp(0.8 + D * 0.12, 0.8, 2.2))); break; }
-      case 'poacher': case 'tourist': { const wx = World.findX(x, xx => World.floorY(xx) > 60, 600, 30); if (wx !== null) { Spawn.boat(wx, k, -side); if (k === 'poacher') warn = 'POACHERS NEARBY'; } break; }
+      case 'poacher': case 'tourist': { if (World.isIndoor(x)) break; const wx = World.findX(x, xx => World.floorY(xx) > 60, 600, 30); if (wx !== null) { Spawn.boat(wx, k, -side); if (k === 'poacher') warn = 'POACHERS NEARBY'; } break; }
       case 'shark': this.add(new Fish(x, clamp(rand(100, 400), 60, fy - 30), 'shark')); warn = 'SOMETHING IS HUNTING YOU'; break;
       case 'boar': case 'panther': case 'bear': { const bx = World.findX(x, xx => World.floorY(xx) < -5, 1200, 40); if (bx !== null) { this.add(new LandAnimal(bx, k)); if (k !== 'boar') warn = k === 'bear' ? 'A BEAR IS ON THE BANK' : 'SOMETHING STALKS THE BANK'; } break; }
       case 'sawfish': this.add(new Fish(x, clamp(rand(150, 400), 60, fy - 30), 'sawfish')); break;
@@ -16510,7 +16465,6 @@ const G = {
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
         break;
-      case 'delivery': Delivery.update(raw); break;
       case 'drop':
         this.updateWorld(dt, false);
         Drop.update(raw);
@@ -16671,7 +16625,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -16686,12 +16640,14 @@ const G = {
   updateCamera(dt) {
     const P = this.player, c = this.cam;
     const tz = clamp(1.2 / Math.pow(P.vis, 0.92), 0.22, 1.35) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
+    // the trolley ride is framed close, on the tank and the two pushing it
+    const tz2 = Opening.on && Opening.phase === 'carry' ? 1.75 : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole
     // backdrop look like it is boiling. Track it smoothly, but snap what the
     // renderer actually uses to a fixed ladder so a still camera is still.
-    c.zoomRaw = lerp(c.zoomRaw === undefined ? c.zoom : c.zoomRaw, tz, 1 - Math.exp(-2.5 * dt));
+    c.zoomRaw = lerp(c.zoomRaw === undefined ? c.zoom : c.zoomRaw, tz2, 1 - Math.exp(-2.5 * dt));
     c.zoom = Math.round(c.zoomRaw * 32) / 32;
     let tx = P.x + P.vx * 0.22, ty = P.y + P.vy * 0.12;
     // an execution is framed on both of them, so the boss never leaves the shot
@@ -16702,7 +16658,10 @@ const G = {
     if (this.state === 'title') ty = Math.max(ty, 75);
     const k = 1 - Math.exp(-5 * dt);
     c.x = lerp(c.x, tx, k); c.y = lerp(c.y, ty, k);
-    c.y = Math.max(c.y, -(this.H / 2) / c.zoom + 30);
+    // outdoors the camera never climbs into empty sky. Indoors it is the roof
+    // that bounds it, so a corridor two floors up can be looked at
+    const roof = World.isIndoor(c.x) ? World.roofY(c.x) : null;
+    c.y = Math.max(c.y, roof === null ? -(this.H / 2) / c.zoom + 30 : roof + (this.H / 2) / c.zoom - 24);
     // and land the camera on a whole device pixel, so the ground, its grain and
     // everything standing on it share one grid instead of sliding against it
     const q = Math.max(0.001, c.zoom * (this.rs || 1));
@@ -16734,8 +16693,6 @@ const G = {
     if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); return; }
-    // the delivery is its own picture: the world is not in shot yet
-    if (this.state === 'delivery') { Delivery.draw(ctx); UI.drawWipe(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
     else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }

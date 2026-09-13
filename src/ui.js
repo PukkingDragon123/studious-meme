@@ -158,6 +158,7 @@ const UI = {
     Objectives.drawCard(ctx);
     Puzzles.draw(ctx);
     Abilities.draw(ctx);
+    Opening.draw(ctx);
     // dispatch: the lab talking about you on an open channel, typed in
     const dp = G.dispatch;
     if (dp) {

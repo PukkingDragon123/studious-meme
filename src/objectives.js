@@ -51,11 +51,11 @@ const Objectives = {
     }
   },
 
-  update(dt) { if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
+  update(dt) { if (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry') return; if (this.cardT > 0) this.cardT -= dt; this.tickT += dt; },
 
   // ---- the card a run opens on ------------------------------------------
   drawCard(ctx) {
-    if (this.cardT <= 0 || !this.stage) return 0;
+    if (this.cardT <= 0 || !this.stage || (typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'carry')) return 0;
     const W = G.W, H = G.H, st = this.stage;
     const k = clamp(Math.min(this.cardT * 1.6, (6.5 - this.cardT) * 2.6), 0, 1);
     const w = 236, h = 30 + this.list.length * 15;

@@ -94,6 +94,9 @@ P('kayaker', 'KAYAKER', 5.7, 165, { skin: '#e0b090', shirt: '#e0a020', pants: '#
 P('scientist', 'SCIENTIST', 5.8, 160, { skin: '#e0b090', shirt: '#3a6ab0', pants: '#3a3a4a', hair: '#3a2a1a' }, { speed: 120, flee: 160 });
 P('shopkeep', 'SHOPKEEPER', 5.8, 190, { skin: '#e0b090', shirt: '#f0f0e0', pants: '#3a3a4a', hair: '#5a3a1a' }, { speed: 110, flee: 120 });
 P('camper', 'CAMPER', 5.7, 165, { skin: '#e0b090', shirt: '#4a9a5a', pants: '#6a5a4a', hair: '#c08040' }, { speed: 140, flee: 170 });
+P('worker', 'TRANSFER TECH', 5.8, 175, { skin: '#e0b090', shirt: '#e8e4d0', pants: '#2c3a44', hair: '#3a2a1a', hat: 'helmet', hatCol: '#ffd23a', hivis: true }, { speed: 150, flee: 180 });
+P('junkie', 'USER', 5.6, 130, { skin: '#c8a888', shirt: '#4a4048', pants: '#2a2a30', hair: '#2a1a1a', hat: 'hood', hatCol: '#3a3a44', stains: true, prop: 'syringe' }, { speed: 100, flee: 60, sits: true });
+P('vagrant2', 'DRIFTER', 5.7, 150, { skin: '#d0a888', shirt: '#5a4a3a', pants: '#3a3028', hair: '#6a5a4a', hat: 'beanie', hatCol: '#5a3a2a', stains: true, prop: 'bottle', beard: true }, { speed: 110, flee: 90, sits: true });
 
 // ------------------------------------------------------------ snakes (chain bodies, see Snake)
 def('moccasin', { name: 'WATER MOCCASIN', ft: 3, lb: 2.5, rig: 'snake', cat: 'snake', base: '#3a2a1e', band: '#5a4a34', belly: '#8a7a60', dark: '#1a1008', eye: '#c0a030', pattern: 'bands', n: 12, hp: 12, speed: 75, venom: 3 });

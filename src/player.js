@@ -5,7 +5,7 @@
 // reflex test you fail. Missing costs payout, never the grip.
 const QTE_AT = 0.72, QTE_PERFECT = 0.20, QTE_GOOD = 0.40;
 // how long one strike takes, coil to recovery
-const BITE_LEN = 0.44;
+const BITE_LEN = 0.62;
 class Player {
   constructor() { this.reset(); }
   reset() {
@@ -13,7 +13,7 @@ class Player {
     this.mass = 0; this.size = 1; this.sizeTarget = 1; this.tier = 0; this.sheds = 0;
     this.netT = 0; this.netHp = 0; this.netBy = null; this.netHeld = false;
     this.haulT = 0; this.haulHp = 0; this.haulBy = null; this.haulHeld = false;
-    this.mouth = null; this.vanishT = 0; this.pounceT = 0; this.pounceMul = 1;
+    this.mouth = null; this.vanishT = 0; this.pounceT = 0; this.pounceMul = 1; this.strike = null; this.strikePushed = false;
     this.skills = { ripper: 0, behemoth: 0, phantom: 0, abyssal: 0 }; this.evo = {}; this.picked = [];
     this.hide = 'wild'; this.primeGene = null; this.strain = 0;
     this.genes = ['core']; this.genePoints = 0; this.geneSpent = 0; this.affinity = {}; this.apex = null; this.newPoints = 0;
@@ -354,7 +354,8 @@ class Player {
     // a lateral S that runs tail to head with the stride, so it reads as an
     // animal walking rather than a log being dragged.
     const stride = this.onLand ? clamp(Math.abs(this.vx) / (this.speedMax * 0.5), 0, 1) : 0;
-    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.12 + stride * 0.55 : swim, this.onLand);
+    const sk = this.strike, hx = this.x + (sk ? Math.cos(this.angle) * sk.x : 0), hy = this.y + (sk ? Math.sin(this.angle) * sk.x : 0);
+    this.chain.solve(hx, hy, this.angle + (sk ? sk.a : 0), this.vis, dt, sk && sk.x > 4 ? 1.3 : this.onLand ? 0.12 + stride * 0.55 : swim, this.onLand);
     if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
     else this.legPhase += dt * (2 + swim * 7);
     // shaking what you have just bitten, and the blood that stays on the teeth
@@ -362,22 +363,21 @@ class Player {
     if (this.pounceT > 0) this.pounceT -= dt;
     if (this.goreT > 0) this.goreT -= dt * 0.25;
     if (this.snapT > 0) this.snapT -= dt;
-    // jaws: the strike script, read off how much of the bite is left
+    // jaws: the strike is the hologram's strike, run off the same script. The
+    // script hands back where the head is relative to rest (x, in croc units),
+    // how it is pitched, and how open the jaw is; the head node is pushed to
+    // that spot and the spine solved behind it, so the whole animal coils and
+    // whips exactly as it does on the projector.
     if (this.biteT > 0) {
       this.biteT -= dt;
-      const u = 1 - this.biteT / BITE_LEN, fx = Math.cos(this.angle), fy = Math.sin(this.angle);
-      if (u < 0.34) {                                   // coil: back and open
-        const k = u / 0.34; this.jaw = 0.06 + 0.62 * k * k;
-        if (!this.onLand) { this.vx -= fx * 260 * dt; this.vy -= fy * 260 * dt; }
-      } else if (u < 0.62) {                            // lunge: everything forward
-        const k = (u - 0.34) / 0.28; this.jaw = 0.68 + 0.24 * (1 - Math.pow(1 - k, 3));
-        const push = (this.onLand ? 420 : 720) * this.vis;
-        this.vx += fx * push * dt; this.vy += fy * push * dt * (this.onLand ? 0 : 1);
-      } else if (u < 0.72) {                            // snap
-        const k = (u - 0.62) / 0.10; this.jaw = 0.92 * (1 - k * k);
-        if (!this.biteHit) { this.biteHit = true; this.doBiteHit(); }
-      } else this.jaw = lerp(this.jaw, 0.04, 0.3);      // recover
-      if (this.biteT <= 0) this.jaw = 0;
+      const u = clamp(1 - this.biteT / BITE_LEN, 0, 1);
+      const sc = CrocView.script({ hit: 0 }, u);
+      this.strike = { x: sc.x * this.vis * 0.9, a: sc.a * this.facing, jaw: sc.jaw };
+      this.jaw = sc.jaw;
+      // and the body itself gets the shove, so the lunge covers ground
+      if (u >= 0.46 && u < 0.58 && !this.strikePushed) { this.strikePushed = true; const push = (this.onLand ? 90 : 170) * Math.sqrt(this.vis); this.vx += Math.cos(this.angle) * push; if (!this.onLand) this.vy += Math.sin(this.angle) * push; }
+      if (u >= 0.58 && !this.biteHit) { this.biteHit = true; this.doBiteHit(); }
+      if (this.biteT <= 0) { this.jaw = 0; this.strike = null; this.strikePushed = false; }
     } else if (this.latched) this.jaw = 0.3;
     else if (this.grabbed) this.jaw = 0.6;
     else this.jaw = lerp(this.jaw, this.moving && sp > this.speedMax * 0.6 ? 0.12 : 0, 0.1);
@@ -491,8 +491,7 @@ class Player {
     // The same strike the hologram in the lab runs: the head draws back and the
     // jaw cracks open (coil), the whole animal whips forward (lunge), the jaws
     // close (snap), and it settles. Timed in seconds of biteT counting down.
-    this.biteT = BITE_LEN; this.biteHit = false; this.biteCd = 0.42 * this.st.biteRate;
-    this.coilV = 1;
+    this.biteT = BITE_LEN; this.biteHit = false; this.biteCd = 0.42 * this.st.biteRate; this.strikePushed = false;
   }
   doBiteHit() {
     const [sx, sy] = this.snout, R = this.biteRange, dx = Math.cos(this.angle), dy = Math.sin(this.angle);

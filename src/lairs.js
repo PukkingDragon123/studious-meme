@@ -53,6 +53,8 @@ const Lairs = {
   update(dt) {
     const P = G.player;
     if (!P || P.dead || G.state !== 'play') return;
+    // nothing holds territory in the facility, and nothing is announced while you are still in the tank
+    if ((typeof Opening !== 'undefined' && Opening.on) || Biome.at(P.x).lab) return;
     if (this.armT > 0) { this.armT -= dt; return; }
     const L = this.near(P.x);
     if (!L || this.cleared[L.id]) return;

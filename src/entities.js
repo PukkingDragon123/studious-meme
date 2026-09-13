@@ -99,7 +99,7 @@ class Entity {
     this.hp -= dmg; this.flash = 0.1; this.lastHitT = G.t; this.aware = true; this.awareT = 3;
     this.squash = 1;
     if (this.bleeds) {
-      const gm = (src === G.player ? G.player.st.goreMul : 1) * (G.settings.gore ? 1.6 : 0.5);
+      const gm = (src === G.player ? G.player.st.goreMul : 1) * (G.settings.gore ? 1.6 : 0.5) * (this.human ? 1.5 : 1);
       G.fx.blood(this.x, this.y, clamp(dmg * 1.4, 6, 48) * gm, opts.dx || 0, opts.dy || 0, 80 + Math.min(dmg, 70), this.bloodColors);
       G.fx.cloud(this.x, this.y, (10 + Math.min(dmg, 40) * 0.5) * Math.sqrt(this.size), this.bloodColors[0]);
       Gore.slick(this.x, this.y, 5 + Math.min(14, dmg * 0.4));
@@ -428,6 +428,8 @@ class LandAnimal extends Entity {
     this.human = !!d.human; this.prey = null; this.huntCd = rand(2, 8);
     this.type = 'land'; this.facing = chance(0.5) ? 1 : -1; this.state = 'idle'; this.stateT = rand(1, 3); this.swimT = 0; this.layer = 1; this.rodT = 0; this.chargeCd = 0;
     this.y = World.floorY(x) - this.groundOff; this.grazeT = 0; this.grazeK = 0;
+    // the ones who live down here sit against the wall and nod, until you are close
+    if (d.sits) { this.sitting = true; this.state = 'idle'; this.stateT = 999; this.nodT = rand(TAU); }
   }
   landAt(x) { return World.floorY(x) < -2; }
   update(dt) {
@@ -436,6 +438,14 @@ class LandAnimal extends Entity {
     if (fy > 0 || this.y > World.surface(this.x) + 4) { this.updateSwim(dt, P, d); return; }
     this.y = fy - this.groundOff; this.vy = 0;
     if (this.watching) { this.vx = 0; this.anim.phase += dt * 0.8; this.facing = sign(P.x - this.x) || this.facing; return; }
+    // hands on the bar of the trolley: the opening moves them, nothing else does
+    if (this.pushing) return;
+    // seated: nodding off against the wall until something is right on top of them
+    if (this.sitting) {
+      this.nodT += dt; this.anim.sit = 1; this.anim.nod = Math.max(0, Math.sin(this.nodT * 0.9)) * 0.8; this.anim.expr = 'happy'; this.vx = 0;
+      if (!P.dead && this.distTo(P) < 56 && P.size > 0.5) { this.sitting = false; this.anim.sit = 0; this.anim.nod = 0; this.panicked = true; this.state = 'flee'; this.stateT = 6; SFX.scream && SFX.scream(this.pan); }
+      return;
+    }
     const sees = this.senses(d.flee), dP = this.distTo(P);
     if (d.human) this.look(dt, P, dP);
     // land predators hunt other land animals when the player is not a factor
@@ -529,7 +539,7 @@ class LandAnimal extends Entity {
       case 'walk': this.stateT -= dt; this.vx = approach(this.vx, this.facing * d.speed * 0.25, 300 * dt); if (!this.landAt(this.x + this.facing * 20)) this.facing *= -1; if (this.stateT <= 0) { this.state = 'idle'; this.stateT = rand(1, 4); } break;
       case 'stalk': this.state = 'idle'; this.stateT = 1; break;
       case 'flee': {
-        this.stateT -= dt; const dir = sign(this.x - P.x) || this.facing;
+        this.stateT -= dt; const dir = this.fleeDir || sign(this.x - P.x) || this.facing;
         if (this.kind === 'iguana' && chance(dt * 1.2)) { const wx = World.findX(this.x, x => World.floorY(x) > 40, 300, 12); if (wx !== null) { this.x = wx; this.y -= 4; this.vy = 60; this.vx = rand(-30, 30); G.fx.splash(this.x, 0.6, 0); this.state = 'swim'; this.swimT = 0; break; } }
         if (!this.landAt(this.x + dir * 24)) { // cornered at the water's edge
           if (chance(dt * 0.8)) { this.vx = dir * 120; this.vy = -80; this.y -= 2; this.state = 'swim'; G.fx.splash(this.x, 0.8, this.vx); break; }
@@ -629,6 +639,10 @@ class LandAnimal extends Entity {
     this.anim.panic = this.state === 'flee' || this.state === 'swim' ? 1 : 0;
     this.anim.aim = this.state === 'shoot' ? 1 : 0;
     this.anim.cast = this.kind === 'fisherman' && this.state === 'idle' ? 1 : 0;
+    // the face: hurt beats scared beats alert beats whatever it was doing
+    if (this.human && !this.pushing && !this.sitting) {
+      this.anim.expr = this.flash > 0 ? 'pain' : this.anim.panic ? 'scared' : (this.alertT || 0) > 0.6 || this.state === 'shoot' || this.state === 'grab' || this.state === 'punch' ? 'alert' : 'calm';
+    }
     const ang = this.state === 'swim' ? (this.human ? -Math.PI / 2 + 0.3 : 0.25) : 0;
     this.rig.draw(ctx, this.x, this.y, this.facing, ang, this.anim, { scale: this.size * this.rig.scale, white: this.flash > 0 });
     // what this one has worked out, over its head: a question mark while it is

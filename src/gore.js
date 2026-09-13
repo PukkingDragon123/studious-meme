@@ -65,6 +65,16 @@ const Gore = {
     G.fx.sparks && G.fx.flesh(pl.wx, pl.wy, 4, 70);
     SFX.gib(e.pan); G.hitstop(0.05); G.shake(4);
     e.dismembered = (e.dismembered || 0) + 1;
+    if (e.human) {
+      // a person losing a limb is loud, wet and long: more of them comes out,
+      // and they keep bleeding into the water for as long as they last
+      SFX.scream && SFX.scream(e.pan);
+      Gore.organ(pl.wx, pl.wy, choice(['gut', 'meat', 'rope', 'bone']), 0.9, e.bloodColors);
+      G.fx.blood(pl.wx, pl.wy, 18, dx, dy - 0.6, 170, e.bloodColors);
+      e.bleedT = Math.max(e.bleedT || 0, 12); e.bleedDmg = Math.max(e.bleedDmg || 0, e.maxHp * 0.03);
+      e.anim.expr = 'pain'; e.flash = Math.max(e.flash || 0, 0.12); e.panicked = true;
+      if (pl.kind === 'leg') { e.slow = 0.3; e.limp = true; }
+    }
     return true;
   },
   // which parts can come off, worst first
@@ -78,7 +88,8 @@ const Gore = {
     if (!G.settings.gore || !e.bleeds || e.dead) return false;
     const limbs = Gore.limbsOf(e).filter(l => !(e.missing && e.missing.has(l.id)));
     if (!limbs.length) return false;
-    const hurt = clamp(dmg / Math.max(6, e.maxHp * 0.5), 0, 1);
+    // people come apart more readily than anything with a hide
+    const hurt = clamp(dmg / Math.max(6, e.maxHp * 0.5) * (e.human ? 1.6 : 1), 0, 1);
     if (!chance(0.22 + hurt * 0.5)) return false;
     const soft = limbs.filter(l => l.kind !== 'head');
     const pick = (e.hp < e.maxHp * 0.34 && chance(0.4)) || !soft.length ? choice(limbs) : choice(soft);
