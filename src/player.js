@@ -4,6 +4,8 @@
 // the beat is slow, so the roll is a rhythm you play along to rather than a
 // reflex test you fail. Missing costs payout, never the grip.
 const QTE_AT = 0.72, QTE_PERFECT = 0.20, QTE_GOOD = 0.40;
+// how long one strike takes, coil to recovery
+const BITE_LEN = 0.44;
 class Player {
   constructor() { this.reset(); }
   reset() {
@@ -62,7 +64,9 @@ class Player {
   get strainMul() { return 1 / (1 + (this.strain || 0) * 0.6); }
   get maxStam() { return 1 + 0.5 * Math.max(0, this.st.dashCharges - 1); }
   get boostMul() { return this.boosting ? 1.75 : 1; }
-  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1); }
+  // Slower than it was. A crocodile is not a fish; it cruises, it does not
+  // sprint, and the burst it does have is on the speed button.
+  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1); }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -250,14 +254,14 @@ class Player {
       if (landHere && this.y >= fy - 5 * this.vis - 1) {
         this.onLand = true; this.y = fy - 5 * this.vis; if (this.vy > 0) this.vy = 0;
         // a crocodile on land is slower than in the water, but it is not helpless
-        const landSpeed = this.speedMax * 0.62 * this.st.landSpeed;
+        const landSpeed = this.speedMax * 0.5 * this.st.landSpeed;
         const grip = ix !== 0 ? 7 : 9;   // pushes off quickly, stops quickly
         this.vx += (ix * landSpeed - this.vx) * Math.min(1, grip * dt);
         // walk up a slope instead of grinding to a halt against it
         const ahead = World.floorY(this.x + 8 * this.vis * sign(this.vx || ix || 1));
         const rise = fy - ahead;
         if (rise > 1 && Math.abs(this.vx) > 6) this.vx *= 1 - Math.min(0.45, rise / (26 * this.vis));
-        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; Trials.bump(this, 'jumps'); G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); SFX.thud && SFX.thud(); }
+        // no leap yet: an animal this size gets up a bank by walking up it
         // one puff of grit per footfall rather than a random dribble
         if (Math.abs(this.vx) > 14) {
           this.stepT = (this.stepT || 0) + Math.abs(this.vx) * dt;
@@ -346,18 +350,32 @@ class Player {
     if (!this.onLand) this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
     // body
     const swim = clamp(sp / this.speedMax, 0, 1.3);
-    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim, this.onLand);
+    // On land the spine works with the legs: a high walk throws the body into
+    // a lateral S that runs tail to head with the stride, so it reads as an
+    // animal walking rather than a log being dragged.
+    const stride = this.onLand ? clamp(Math.abs(this.vx) / (this.speedMax * 0.5), 0, 1) : 0;
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.12 + stride * 0.55 : swim, this.onLand);
     if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
     else this.legPhase += dt * (2 + swim * 7);
     // shaking what you have just bitten, and the blood that stays on the teeth
     if (this.headShakeT > 0) this.headShakeT -= dt;
     if (this.goreT > 0) this.goreT -= dt * 0.25;
     if (this.snapT > 0) this.snapT -= dt;
-    // jaws
+    // jaws: the strike script, read off how much of the bite is left
     if (this.biteT > 0) {
       this.biteT -= dt;
-      if (this.biteT > 0.1) this.jaw = (0.18 - this.biteT) / 0.08;
-      else { this.jaw = this.biteT / 0.1; if (!this.biteHit) { this.biteHit = true; this.doBiteHit(); } }
+      const u = 1 - this.biteT / BITE_LEN, fx = Math.cos(this.angle), fy = Math.sin(this.angle);
+      if (u < 0.34) {                                   // coil: back and open
+        const k = u / 0.34; this.jaw = 0.06 + 0.62 * k * k;
+        if (!this.onLand) { this.vx -= fx * 260 * dt; this.vy -= fy * 260 * dt; }
+      } else if (u < 0.62) {                            // lunge: everything forward
+        const k = (u - 0.34) / 0.28; this.jaw = 0.68 + 0.24 * (1 - Math.pow(1 - k, 3));
+        const push = (this.onLand ? 420 : 720) * this.vis;
+        this.vx += fx * push * dt; this.vy += fy * push * dt * (this.onLand ? 0 : 1);
+      } else if (u < 0.72) {                            // snap
+        const k = (u - 0.62) / 0.10; this.jaw = 0.92 * (1 - k * k);
+        if (!this.biteHit) { this.biteHit = true; this.doBiteHit(); }
+      } else this.jaw = lerp(this.jaw, 0.04, 0.3);      // recover
       if (this.biteT <= 0) this.jaw = 0;
     } else if (this.latched) this.jaw = 0.3;
     else if (this.grabbed) this.jaw = 0.6;
@@ -469,8 +487,11 @@ class Player {
       this.qteT = 0; this.qteHits = 0; this.qteBeats = 0; this.qteMissed = false;
       G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return;
     }
-    this.biteT = 0.18; this.biteHit = false; this.biteCd = 0.3 * this.st.biteRate;
-    if (this.st.lunge) { this.vx += Math.cos(this.angle) * this.st.lunge; this.vy += Math.sin(this.angle) * this.st.lunge; }
+    // The same strike the hologram in the lab runs: the head draws back and the
+    // jaw cracks open (coil), the whole animal whips forward (lunge), the jaws
+    // close (snap), and it settles. Timed in seconds of biteT counting down.
+    this.biteT = BITE_LEN; this.biteHit = false; this.biteCd = 0.42 * this.st.biteRate;
+    this.coilV = 1;
   }
   doBiteHit() {
     const [sx, sy] = this.snout, R = this.biteRange, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
@@ -683,6 +704,9 @@ class Player {
   // stamina the run drinks from.
   dash(ix, iy) {
     if (this.grabbed) return;
+    // The leap is off the table for now. The throttle is a throttle, and an
+    // upward flick is a flick.
+    return;
     const up = iy < -0.4;
     if (!up || this.stam < 0.3 || this.noStamT > 0) return;
     this.stam -= 0.3;

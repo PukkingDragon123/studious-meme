@@ -4490,15 +4490,38 @@ const World = {
     const left = cam.toWorldX(-80), right = cam.toWorldX(W + 80);
     // A blade is three tapering strokes: shadow, body, lit edge. One flat stroke
     // per blade is what made the weed beds look like scribbled wire.
-    const blade = (bx, by, tx, ty, mx, my, w, cDark, cMid, cLit) => {
-      ctx.lineCap = 'round';
-      ctx.lineWidth = Math.max(1, w); ctx.strokeStyle = cDark;
-      ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(mx, my, tx, ty); ctx.stroke();
-      ctx.lineWidth = Math.max(1, w * 0.6); ctx.strokeStyle = cMid;
-      ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(mx, my, tx, ty); ctx.stroke();
-      ctx.lineWidth = Math.max(1, w * 0.26); ctx.strokeStyle = cLit;
-      ctx.beginPath(); ctx.moveTo(bx - w * 0.22, by); ctx.quadraticCurveTo(mx - w * 0.22, my, tx - w * 0.1, ty); ctx.stroke();
-      ctx.lineCap = 'butt';
+    // A blade is walked along its curve in whole pixels and laid down as
+    // stacked squares: a dark spine, a mid body that tapers to the tip, and a
+    // lit edge one pixel wide on the side facing the light. Nothing here is a
+    // stroked path — an anti-aliased curve through a pixel scene is exactly
+    // what made the weed beds read as wire.
+    const blade = (bx, by, tx, ty, mx, my, w, cDark, cMid, cLit, opts) => {
+      const n = Math.max(3, Math.round(Math.hypot(tx - bx, ty - by) / Math.max(1.5, z)));
+      const wid = Math.max(1, w);
+      let px0 = null, py0 = null;
+      for (let i = 0; i <= n; i++) {
+        const u = i / n, q = 1 - u;
+        const x = q * q * bx + 2 * q * u * mx + u * u * tx, y = q * q * by + 2 * q * u * my + u * u * ty;
+        const X = Math.round(x), Y = Math.round(y);
+        if (X === px0 && Y === py0) continue; px0 = X; py0 = Y;
+        // the blade thins toward the tip; the last few pixels are a point
+        const ww = Math.max(1, Math.round(wid * (opts && opts.strap ? (u < 0.85 ? 1 : (1 - u) / 0.15) : (1 - u * 0.75))));
+        ctx.fillStyle = cDark; ctx.fillRect(X - Math.floor(ww / 2), Y, ww, 1);
+        if (ww > 1) { ctx.fillStyle = cMid; ctx.fillRect(X - Math.floor(ww / 2) + 1, Y, Math.max(1, ww - 1), 1); }
+        if (ww > 2 || (ww > 1 && (i & 1))) { ctx.fillStyle = cLit; ctx.fillRect(X - Math.floor(ww / 2), Y, 1, 1); }
+        // a midrib down a broad strap
+        if (opts && opts.rib && ww > 3) { ctx.fillStyle = cDark; ctx.fillRect(X, Y, 1, 1); }
+      }
+    };
+    // a leaflet off a stalk: a small pointed lobe of pixels, lit on top
+    const leaflet = (x, y, dir, len, cMid, cLit, cDark) => {
+      const L2 = Math.max(2, Math.round(len));
+      for (let i = 0; i < L2; i++) {
+        const hh = Math.max(1, Math.round((1 - i / L2) * Math.min(3, L2 * 0.45)));
+        ctx.fillStyle = cMid; ctx.fillRect(Math.round(x + dir * i), Math.round(y - hh + 1 - i * 0.3), 1, hh);
+        if (hh > 1) { ctx.fillStyle = cLit; ctx.fillRect(Math.round(x + dir * i), Math.round(y - hh + 1 - i * 0.3), 1, 1); }
+      }
+      ctx.fillStyle = cDark; ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
     };
     // ambient current: everything under water leans the same way and breathes
     const flowAt = (wx) => Math.sin(t * 0.55 + wx * 0.008) * 3.4 + Water.velocity(wx) * 0.035 + Water.wind * 4;
@@ -4523,13 +4546,17 @@ const World = {
       }
       switch (d.type) {
         case 'seagrass': if (layer !== 0) break; {
+          // a tuft of broad straps out of one crown, each with a midrib, the
+          // longest in the middle; the tips curl over in the current
           const fw = flowAt(d.x), dk = fl(d.v ? '#1f4a38' : '#26543f'), md = fl(d.v ? '#3f8a6a' : '#4f9a72'), lt = fl(d.v ? '#6fc79a' : '#7fd6a6');
           for (let b = -3; b <= 3; b++) {
-            const bl = d.h * (0.66 + ihash(Math.floor(d.x) * 7 + b, 71) * 0.42);
+            const bl = d.h * (0.55 + (1 - Math.abs(b) / 4) * 0.5) * (0.85 + ihash(Math.floor(d.x) * 7 + b, 71) * 0.3);
             const sway = (Math.sin(t * 1.1 + d.ph + b * 0.5) * 4 + fw + (d.bend || 0) * 5) * z;
-            const bx = sx + b * 2.1 * z, ty = sy - bl * z;
-            blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.55, 1.7 * z, dk, md, lt);
+            const bx = sx + b * 1.6 * z, ty = sy - bl * z;
+            blade(bx, sy, bx + sway * 1.3 + b * 2 * z, ty, bx + sway * 0.3, sy - bl * z * 0.6, 2.6 * z, dk, md, lt, { strap: true, rib: true });
           }
+          // the crown it grows from
+          ctx.fillStyle = dk; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy - z), Math.round(8 * z), Math.max(1, Math.round(2 * z)));
           break; }
         case 'oyster': if (layer !== 0) break; {
           for (let i = 0; i < d.n; i++) { const ox = (ihash(i, Math.floor(d.x)) - 0.5) * 22 * z, oy = ihash(i, 61) * 4 * z;
@@ -4713,14 +4740,22 @@ const World = {
           break; }
 
         case 'weed': if (layer !== 0) break; {
+          // pondweed: three stalks, each carrying pairs of leaflets up its
+          // length and a whorl at the tip, so it reads as a plant with leaves
           const fw = flowAt(d.x), dk = fl(d.v ? '#1b3f24' : '#25492a'), md = fl(d.v ? '#2f6a3a' : '#3f7a44'), lt = fl(d.v ? '#5f9c58' : '#6fae62');
-          for (let b = -2; b <= 2; b++) {
+          for (let b = -1; b <= 1; b++) {
             const bl = d.h * (0.6 + ihash(Math.floor(d.x) * 5 + b, 73) * 0.5);
             const sway = (Math.sin(t * 1.3 + d.ph + b) * 3.4 + fw * 0.8 + (d.bend || 0) * 5) * z;
-            const bx = sx + b * 2 * z, ty = sy - bl * z;
-            blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.6, 1.4 * z, dk, md, lt);
-            // a few leaflets so it is not a bare stalk
-            if (b % 2 === 0) for (let q = 1; q <= 2; q++) { const u = q / 3, lx = bx + sway * u * u, ly = sy - bl * z * u; ctx.fillStyle = md; ctx.fillRect(Math.round(lx + (q % 2 ? 1 : -3) * z), Math.round(ly), Math.max(1, Math.round(2.4 * z)), Math.max(1, Math.round(z))); }
+            const bx = sx + b * 3 * z, ty = sy - bl * z;
+            blade(bx, sy, bx + sway, ty, bx + sway * 0.4, sy - bl * z * 0.6, 1.2 * z, dk, md, lt);
+            const pairs = Math.max(2, Math.round(bl / 9));
+            for (let q = 1; q <= pairs; q++) {
+              const u = q / (pairs + 1), lx = bx + sway * u * u, ly = sy - bl * z * u;
+              const len = (3 + (1 - u) * 3) * z;
+              leaflet(lx, ly, 1, len, md, lt, dk); leaflet(lx, ly, -1, len * 0.9, md, lt, dk);
+            }
+            // the whorl at the top
+            for (const dir of [-1, 1]) leaflet(bx + sway, ty, dir, 2.5 * z, lt, lt, md);
           }
           break; }
         case 'rock': if (layer !== 0) break; { const s = SPR.rock[d.v]; drawSpr(ctx, s, sx, sy - s.h * d.s * z * 0.5 + 1, 0, d.s * z, d.s * z); break; }
@@ -4729,13 +4764,24 @@ const World = {
         case 'lily': if (layer !== 1) break; { const s = SPR.lily[d.v]; const wy = cam.toScreen(d.x, this.surface(d.x))[1]; drawSpr(ctx, s, sx, wy - 1 * z, 0, z, z, s.w / 2, s.h - 1); break; }
         case 'reed': if (layer !== 0) break; {
           const top = cam.toScreen(d.x, d.top)[1]; const sway = (Math.sin(t * 1.1 + d.ph) * 3 + (d.bend || 0) * 4) * z;
-          blade(sx, sy, sx + sway, top, sx + sway * 0.3, (sy + top) / 2, 1.8 * z, fl('#2a4a20'), fl('#4f7a3a'), fl('#7aa85a'));
-          if (d.v) { ctx.fillStyle = '#6b4a2e'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 8 * z), Math.max(1, Math.round(2 * z)), Math.max(2, Math.round(7 * z))); }
-          else { ctx.strokeStyle = '#7fae5f'; ctx.beginPath(); ctx.moveTo(sx + sway, top); ctx.lineTo(sx + sway + 4 * z, top - 6 * z); ctx.stroke(); }
+          const dk = fl('#2a4a20'), md = fl('#4f7a3a'), lt = fl('#7aa85a');
+          blade(sx, sy, sx + sway, top, sx + sway * 0.3, (sy + top) / 2, 1.8 * z, dk, md, lt, { strap: true });
+          // nodes up the stem, and one leaf off it
+          for (let k = 1; k <= 3; k++) { const u = k / 4, nx = sx + sway * u * u, ny = sy + (top - sy) * u; ctx.fillStyle = dk; ctx.fillRect(Math.round(nx - z), Math.round(ny), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(z))); }
+          { const u = 0.55, lx = sx + sway * u * u, ly = sy + (top - sy) * u; blade(lx, ly, lx + 9 * z + sway * 0.5, ly - 10 * z, lx + 6 * z, ly - 3 * z, 1.4 * z, dk, md, lt); }
+          if (d.v) {
+            // the brown seed head, a fuzzy spike of pixels
+            ctx.fillStyle = '#6b4a2e'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 9 * z), Math.max(1, Math.round(2.4 * z)), Math.max(2, Math.round(8 * z)));
+            ctx.fillStyle = '#8a6a44'; for (let k = 0; k < 5; k++) ctx.fillRect(Math.round(sx + sway - z + (k % 2) * 1.6 * z), Math.round(top - 8 * z + k * 1.5 * z), 1, 1);
+            ctx.fillStyle = '#c8b070'; ctx.fillRect(Math.round(sx + sway), Math.round(top - 11 * z), 1, Math.max(1, Math.round(2 * z)));
+          } else blade(sx + sway, top, sx + sway + 6 * z, top - 7 * z, sx + sway + 4 * z, top - 2 * z, 1.4 * z, dk, md, lt);
           break; }
         case 'sawgrass': if (layer !== 1) break; {
-          ctx.strokeStyle = '#7a9a3a'; ctx.lineWidth = Math.max(1, z);
-          for (let b = -2; b <= 2; b++) { const sway = (Math.sin(t * 1.6 + d.ph + b * 0.4) * 2 + (d.bend || 0) * 2.5) * z; ctx.beginPath(); ctx.moveTo(sx, sy + 1); ctx.lineTo(sx + b * 3 * z * d.s + sway, sy - (9 + Math.abs(b) * -1.5) * d.s * z); ctx.stroke(); }
+          for (let b = -3; b <= 3; b++) {
+            const sway = (Math.sin(t * 1.6 + d.ph + b * 0.4) * 2 + (d.bend || 0) * 2.5) * z;
+            const hgt = (11 - Math.abs(b) * 1.8) * d.s * z, tx = sx + b * 3.2 * z * d.s + sway;
+            blade(sx, sy + 1, tx, sy - hgt, sx + b * 1.4 * z * d.s + sway * 0.3, sy - hgt * 0.6, 1.3 * z, '#4a6a22', '#7a9a3a', '#a8c060');
+          }
           if (d.fly && night > 0.3) { // firefly
             const fx = sx + Math.sin(t * 0.9 + d.ph) * 14 * z, fy = sy - (14 + Math.sin(t * 1.7 + d.ph * 2) * 8) * z;
             const pulse = 0.5 + 0.5 * Math.sin(t * 3 + d.ph * 5);
@@ -4743,8 +4789,15 @@ const World = {
           }
           break; }
         case 'palmetto': if (layer !== 1) break; {
-          ctx.strokeStyle = '#3f7a3a'; ctx.lineWidth = Math.max(1, 1.5 * z);
-          for (let b = -3; b <= 3; b++) { const sway = (Math.sin(t * 1.2 + d.ph) * 1.5 + (d.bend || 0) * 3) * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + b * 4 * z * d.s + sway, sy - (16 - Math.abs(b) * 2.5) * d.s * z); ctx.stroke(); }
+          // a fan of stiff fronds off one stem, each frond a ribbed strap with
+          // a split tip
+          const sway = (Math.sin(t * 1.2 + d.ph) * 1.5 + (d.bend || 0) * 3) * z;
+          ctx.fillStyle = '#4a3a22'; ctx.fillRect(Math.round(sx - z), Math.round(sy - 5 * z * d.s), Math.max(1, Math.round(2 * z)), Math.round(5 * z * d.s));
+          for (let b = -3; b <= 3; b++) {
+            const hgt = (17 - Math.abs(b) * 2.6) * d.s * z, tx = sx + b * 4.2 * z * d.s + sway;
+            blade(sx, sy - 5 * z * d.s, tx, sy - 5 * z * d.s - hgt, sx + b * 2 * z * d.s + sway * 0.4, sy - 5 * z * d.s - hgt * 0.55, 2.2 * z, '#274a24', '#3f7a3a', '#6aa858', { strap: true, rib: true });
+            leaflet(tx, sy - 5 * z * d.s - hgt, b < 0 ? -1 : 1, 2.5 * z, '#6aa858', '#8ac870', '#274a24');
+          }
           break; }
         case 'duckweed': if (layer !== 1) break; {
           const wy = cam.toScreen(d.x, this.surface(d.x))[1], ww = d.w * z;
@@ -4767,12 +4820,14 @@ const World = {
           if (d.bloom) { ctx.fillStyle = '#b28ae0'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(3 * z))); ctx.fillStyle = '#e0d060'; ctx.fillRect(Math.round(sx + sw - z), Math.round(wy - 13 * d.s * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(z))); }
           break; }
         case 'algae': if (layer !== 0) break; {
-          ctx.strokeStyle = rgba(fl(d.v ? '#5a965a' : '#78aa6e'), d.v ? 0.5 : 0.42); ctx.lineWidth = Math.max(1, 2 * z);
-          for (let b = -1; b <= 1; b++) {
-            ctx.beginPath(); ctx.moveTo(sx + b * 3 * z, sy);
-            for (let k = 1; k <= 4; k++) { const kk = k / 4, yy = sy - d.h * z * kk, xx = sx + b * 3 * z + Math.sin(t * 0.8 + d.ph + kk * 3) * 7 * z * kk; ctx.lineTo(xx, yy); }
-            ctx.stroke();
+          // filamentous algae: thin translucent ribbons that wave as a sheet
+          const ac = fl(d.v ? '#5a965a' : '#78aa6e');
+          ctx.globalAlpha = d.v ? 0.55 : 0.45;
+          for (let b = -2; b <= 2; b++) {
+            const sw2 = Math.sin(t * 0.8 + d.ph + b * 0.6) * 7 * z, bl = d.h * (0.7 + ihash(Math.floor(d.x) + b, 83) * 0.5);
+            blade(sx + b * 2.2 * z, sy, sx + b * 2.2 * z + sw2, sy - bl * z, sx + b * 2.2 * z + sw2 * 0.3, sy - bl * z * 0.5, 1.6 * z, shade(ac, 0.7), ac, mixColor(ac, '#ffffff', 0.3), { strap: true });
           }
+          ctx.globalAlpha = 1;
           break; }
         case 'sunkbranch': if (layer !== 0) break; {
           ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = Math.max(1, 3 * d.s * z);
@@ -4794,28 +4849,39 @@ const World = {
           ctx.strokeStyle = '#4a3524'; ctx.lineWidth = Math.max(1, 1.6 * z);
           for (let i = 0; i < d.n; i++) {
             const ox = (ihash(i, Math.floor(d.x) + 3) - 0.5) * 26 * z, len = d.len * (0.6 + ihash(i, 7) * 0.6) * z;
-            ctx.beginPath(); ctx.moveTo(sx + ox, sy);
-            ctx.quadraticCurveTo(sx + ox + Math.sin(t * 0.5 + i) * 4 * z, sy + len * 0.6, sx + ox + (ihash(i, 9) - 0.5) * 14 * z, sy + len);
-            ctx.stroke();
+            blade(sx + ox, sy, sx + ox + (ihash(i, 9) - 0.5) * 14 * z, sy + len, sx + ox + Math.sin(t * 0.5 + i) * 4 * z, sy + len * 0.6, 2 * z, '#2e2014', '#4a3524', '#6a5034');
+            // root hairs off the main tendril
+            for (let k = 1; k <= 2; k++) { const u = k / 3; leaflet(sx + ox + (ihash(i, 9) - 0.5) * 14 * z * u, sy + len * u, k % 2 ? 1 : -1, 3 * z, '#4a3524', '#6a5034', '#2e2014'); }
           }
           break; }
         case 'vine': if (layer !== 0) break; {
           const top = cam.toScreen(d.x, d.y - d.h)[1];
-          ctx.strokeStyle = '#4a6a34'; ctx.lineWidth = Math.max(1, z);
-          ctx.beginPath(); ctx.moveTo(sx, top);
-          for (let k = 1; k <= 5; k++) { const kk = k / 5; ctx.lineTo(sx + Math.sin(t * 0.6 + d.ph + kk * 4) * 5 * z * kk, lerp(top, sy, kk)); }
-          ctx.stroke();
-          ctx.fillStyle = '#5f8a3a';
-          for (let k = 1; k <= 4; k++) { const kk = k / 5, vy = lerp(top, sy, kk), vx = sx + Math.sin(t * 0.6 + d.ph + kk * 4) * 5 * z * kk; ctx.fillRect(Math.round(vx + 2 * z), Math.round(vy), Math.max(1, Math.round(3 * z)), Math.max(1, Math.round(2 * z))); }
+          let vx0 = sx, vy0 = top;
+          for (let k = 1; k <= 6; k++) {
+            const kk = k / 6, vx1 = sx + Math.sin(t * 0.6 + d.ph + kk * 4) * 5 * z * kk, vy1 = lerp(top, sy, kk);
+            blade(vx0, vy0, vx1, vy1, (vx0 + vx1) / 2, (vy0 + vy1) / 2, 1.4 * z, '#2e4a22', '#4a6a34', '#6a8a48', { strap: true });
+            // a heart-shaped leaf at each node, alternating sides
+            leaflet(vx1, vy1, k % 2 ? 1 : -1, 4 * z, '#5f8a3a', '#8ab858', '#2e4a22');
+            vx0 = vx1; vy0 = vy1;
+          }
           break; }
         case 'cattail': if (layer !== 1) break; {
           const top = cam.toScreen(d.x, d.top)[1], sway = (Math.sin(t * 1.3 + d.ph) * 3 + (d.bend || 0) * 4) * z;
-          ctx.strokeStyle = '#5a7a3a'; ctx.lineWidth = Math.max(1, z); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + sway * 0.4, (sy + top) / 2, sx + sway, top); ctx.stroke();
-          ctx.fillStyle = '#5a3a20'; ctx.fillRect(Math.round(sx + sway - z * 0.5), Math.round(top - 1), Math.max(1, Math.round(1.6 * z)), Math.max(2, Math.round(8 * z)));
+          blade(sx, sy, sx + sway, top, sx + sway * 0.4, (sy + top) / 2, 1.4 * z, '#3a5a24', '#5a7a3a', '#8aa858', { strap: true });
+          blade(sx, sy, sx + sway * 0.8 + 7 * z, top + 14 * z, sx + sway * 0.3 + 3 * z, (sy + top) / 2 + 6 * z, 1.4 * z, '#3a5a24', '#5a7a3a', '#8aa858');
+          // the velvet head, with its spike
+          ctx.fillStyle = '#5a3a20'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 1), Math.max(2, Math.round(2.4 * z)), Math.max(2, Math.round(9 * z)));
+          ctx.fillStyle = '#7a5030'; ctx.fillRect(Math.round(sx + sway - z), Math.round(top - 1), Math.max(1, Math.round(z)), Math.max(2, Math.round(9 * z)));
+          ctx.fillStyle = '#8aa858'; ctx.fillRect(Math.round(sx + sway), Math.round(top - 4 * z), 1, Math.max(1, Math.round(3 * z)));
           break; }
         case 'fern': if (layer !== 1) break; {
-          ctx.strokeStyle = '#3f6a2a'; ctx.lineWidth = Math.max(1, z);
-          for (let b = -2; b <= 2; b++) { const sway = (Math.sin(t * 1.4 + d.ph + b) * 1.5 + (d.bend || 0) * 3) * z, len = (13 - Math.abs(b) * 2) * d.s * z; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + b * 4 * z + sway, sy - len * 0.7, sx + b * 7 * z + sway, sy - len); ctx.stroke(); }
+          for (let b = -2; b <= 2; b++) {
+            const sway = (Math.sin(t * 1.4 + d.ph + b) * 1.5 + (d.bend || 0) * 3) * z, len = (13 - Math.abs(b) * 2) * d.s * z;
+            const tx = sx + b * 7 * z + sway, ty = sy - len, mx = sx + b * 4 * z + sway, my = sy - len * 0.7;
+            blade(sx, sy, tx, ty, mx, my, 1.2 * z, '#2a4a1c', '#3f6a2a', '#6a9a48');
+            // pinnae: leaflets paired down each frond, shortening to the tip
+            for (let k = 1; k <= 4; k++) { const u = k / 5, q = 1 - u, px2 = q * q * sx + 2 * q * u * mx + u * u * tx, py2 = q * q * sy + 2 * q * u * my + u * u * ty; const ll = (4 - k * 0.6) * d.s * z; leaflet(px2, py2, 1, ll, '#3f6a2a', '#6a9a48', '#2a4a1c'); leaflet(px2, py2, -1, ll, '#3f6a2a', '#6a9a48', '#2a4a1c'); }
+          }
           break; }
         case 'bush': if (layer !== 1) break; {
           const bw = Math.round(17 * d.s), bh = Math.round(13 * d.s);
@@ -4828,8 +4894,13 @@ const World = {
           break; }
         case 'flower': if (layer !== 1) break; {
           const cols = ['#e8d84a', '#e87ab0', '#f0f0e0', '#c880e8'];
-          ctx.strokeStyle = '#4a7a3a'; ctx.lineWidth = Math.max(1, z); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.sin(t + d.c) * z, sy - 8 * z); ctx.stroke();
-          ctx.fillStyle = cols[d.c]; ctx.fillRect(Math.round(sx - z), Math.round(sy - 10 * z), Math.max(1, Math.round(2 * z)), Math.max(1, Math.round(2 * z)));
+          const fsw = Math.sin(t + d.c) * z;
+          blade(sx, sy, sx + fsw, sy - 8 * z, sx + fsw * 0.5, sy - 4 * z, 1 * z, '#2e5a24', '#4a7a3a', '#6a9a50');
+          leaflet(sx + fsw * 0.4, sy - 4 * z, 1, 3 * z, '#4a7a3a', '#6a9a50', '#2e5a24');
+          // petals around a centre
+          ctx.fillStyle = cols[d.c];
+          for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.fillRect(Math.round(sx + fsw + ox * 1.6 * z - z * 0.5), Math.round(sy - 10 * z + oy * 1.6 * z), Math.max(1, Math.round(z)), Math.max(1, Math.round(z)));
+          ctx.fillStyle = '#ffe080'; ctx.fillRect(Math.round(sx + fsw - z * 0.5), Math.round(sy - 10 * z), Math.max(1, Math.round(z)), Math.max(1, Math.round(z)));
           break; }
         case 'fallen': if (layer !== 0) break; {
           const w = 34 * d.s * z, h = 7 * d.s * z;
@@ -4882,9 +4953,11 @@ const World = {
           break; }
         case 'stump': if (layer !== 0) break; ctx.fillStyle = '#4a3524'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy - 8 * z), Math.round(8 * z), Math.round(9 * z)); ctx.fillStyle = '#6b5a3a'; ctx.fillRect(Math.round(sx - 3 * z), Math.round(sy - 8 * z), Math.round(6 * z), Math.max(1, Math.round(z))); break;
         case 'mangrove': if (layer !== 0) break; {
-          ctx.strokeStyle = '#4a3a24'; ctx.lineWidth = Math.max(1, 2 * z);
           const top = sy - 30 * d.s * z;
-          for (let j = -2; j <= 2; j++) { ctx.beginPath(); ctx.moveTo(sx + j * 2 * z, top); ctx.quadraticCurveTo(sx + j * 12 * d.s * z, top + 14 * z, sx + j * 16 * d.s * z + d.dir * 6 * z, sy + 12 * z); ctx.stroke(); }
+          // prop roots: arched, stepped, lit along one side, each one a
+          // separate limb rather than a wire
+          for (let j = -2; j <= 2; j++) blade(sx + j * 2 * z, top, sx + j * 16 * d.s * z + d.dir * 6 * z, sy + 12 * z, sx + j * 12 * d.s * z, top + 14 * z, 2.4 * z, '#2e2214', '#4a3a24', '#6e5a38', { strap: true });
+          ctx.fillStyle = '#4a3a24'; ctx.fillRect(Math.round(sx - 3 * z), Math.round(top - 2 * z), Math.round(6 * z), Math.round(6 * z));
           const mw2 = Math.round(38 * d.s);
           Leaf.draw(ctx, Leaf.mass(mw2, Math.round(mw2 * 0.55), '#1b3d22', '#2f6a34', '#55a04a', d.v * 17 + 5), sx, top - 10 * z, z);
           break; }
@@ -8764,6 +8837,8 @@ const Finisher = {
 // the beat is slow, so the roll is a rhythm you play along to rather than a
 // reflex test you fail. Missing costs payout, never the grip.
 const QTE_AT = 0.72, QTE_PERFECT = 0.20, QTE_GOOD = 0.40;
+// how long one strike takes, coil to recovery
+const BITE_LEN = 0.44;
 class Player {
   constructor() { this.reset(); }
   reset() {
@@ -8822,7 +8897,9 @@ class Player {
   get strainMul() { return 1 / (1 + (this.strain || 0) * 0.6); }
   get maxStam() { return 1 + 0.5 * Math.max(0, this.st.dashCharges - 1); }
   get boostMul() { return this.boosting ? 1.75 : 1; }
-  get speedMax() { return (150 + 30 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1); }
+  // Slower than it was. A crocodile is not a fish; it cruises, it does not
+  // sprint, and the burst it does have is on the speed button.
+  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1); }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -9010,14 +9087,14 @@ class Player {
       if (landHere && this.y >= fy - 5 * this.vis - 1) {
         this.onLand = true; this.y = fy - 5 * this.vis; if (this.vy > 0) this.vy = 0;
         // a crocodile on land is slower than in the water, but it is not helpless
-        const landSpeed = this.speedMax * 0.62 * this.st.landSpeed;
+        const landSpeed = this.speedMax * 0.5 * this.st.landSpeed;
         const grip = ix !== 0 ? 7 : 9;   // pushes off quickly, stops quickly
         this.vx += (ix * landSpeed - this.vx) * Math.min(1, grip * dt);
         // walk up a slope instead of grinding to a halt against it
         const ahead = World.floorY(this.x + 8 * this.vis * sign(this.vx || ix || 1));
         const rise = fy - ahead;
         if (rise > 1 && Math.abs(this.vx) > 6) this.vx *= 1 - Math.min(0.45, rise / (26 * this.vis));
-        if (iy < -0.5 && this.jumpCd <= 0) { this.vy = -230 * this.st.hop; this.jumpCd = 0.6; Trials.bump(this, 'jumps'); G.fx.smoke(this.x, this.y + 4 * this.vis, 3, '#6b5a3a'); SFX.thud && SFX.thud(); }
+        // no leap yet: an animal this size gets up a bank by walking up it
         // one puff of grit per footfall rather than a random dribble
         if (Math.abs(this.vx) > 14) {
           this.stepT = (this.stepT || 0) + Math.abs(this.vx) * dt;
@@ -9106,18 +9183,32 @@ class Player {
     if (!this.onLand) this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
     // body
     const swim = clamp(sp / this.speedMax, 0, 1.3);
-    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.15 : swim, this.onLand);
+    // On land the spine works with the legs: a high walk throws the body into
+    // a lateral S that runs tail to head with the stride, so it reads as an
+    // animal walking rather than a log being dragged.
+    const stride = this.onLand ? clamp(Math.abs(this.vx) / (this.speedMax * 0.5), 0, 1) : 0;
+    this.chain.solve(this.x, this.y, this.angle, this.vis, dt, this.onLand ? 0.12 + stride * 0.55 : swim, this.onLand);
     if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
     else this.legPhase += dt * (2 + swim * 7);
     // shaking what you have just bitten, and the blood that stays on the teeth
     if (this.headShakeT > 0) this.headShakeT -= dt;
     if (this.goreT > 0) this.goreT -= dt * 0.25;
     if (this.snapT > 0) this.snapT -= dt;
-    // jaws
+    // jaws: the strike script, read off how much of the bite is left
     if (this.biteT > 0) {
       this.biteT -= dt;
-      if (this.biteT > 0.1) this.jaw = (0.18 - this.biteT) / 0.08;
-      else { this.jaw = this.biteT / 0.1; if (!this.biteHit) { this.biteHit = true; this.doBiteHit(); } }
+      const u = 1 - this.biteT / BITE_LEN, fx = Math.cos(this.angle), fy = Math.sin(this.angle);
+      if (u < 0.34) {                                   // coil: back and open
+        const k = u / 0.34; this.jaw = 0.06 + 0.62 * k * k;
+        if (!this.onLand) { this.vx -= fx * 260 * dt; this.vy -= fy * 260 * dt; }
+      } else if (u < 0.62) {                            // lunge: everything forward
+        const k = (u - 0.34) / 0.28; this.jaw = 0.68 + 0.24 * (1 - Math.pow(1 - k, 3));
+        const push = (this.onLand ? 420 : 720) * this.vis;
+        this.vx += fx * push * dt; this.vy += fy * push * dt * (this.onLand ? 0 : 1);
+      } else if (u < 0.72) {                            // snap
+        const k = (u - 0.62) / 0.10; this.jaw = 0.92 * (1 - k * k);
+        if (!this.biteHit) { this.biteHit = true; this.doBiteHit(); }
+      } else this.jaw = lerp(this.jaw, 0.04, 0.3);      // recover
       if (this.biteT <= 0) this.jaw = 0;
     } else if (this.latched) this.jaw = 0.3;
     else if (this.grabbed) this.jaw = 0.6;
@@ -9229,8 +9320,11 @@ class Player {
       this.qteT = 0; this.qteHits = 0; this.qteBeats = 0; this.qteMissed = false;
       G.fx.text(this.x, this.y - 18 * this.size, 'DEATH ROLL!', { color: '#ff5040', scale: 2 }); SFX.roar(this.size); return;
     }
-    this.biteT = 0.18; this.biteHit = false; this.biteCd = 0.3 * this.st.biteRate;
-    if (this.st.lunge) { this.vx += Math.cos(this.angle) * this.st.lunge; this.vy += Math.sin(this.angle) * this.st.lunge; }
+    // The same strike the hologram in the lab runs: the head draws back and the
+    // jaw cracks open (coil), the whole animal whips forward (lunge), the jaws
+    // close (snap), and it settles. Timed in seconds of biteT counting down.
+    this.biteT = BITE_LEN; this.biteHit = false; this.biteCd = 0.42 * this.st.biteRate;
+    this.coilV = 1;
   }
   doBiteHit() {
     const [sx, sy] = this.snout, R = this.biteRange, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
@@ -9443,6 +9537,9 @@ class Player {
   // stamina the run drinks from.
   dash(ix, iy) {
     if (this.grabbed) return;
+    // The leap is off the table for now. The throttle is a throttle, and an
+    // upward flick is a flick.
+    return;
     const up = iy < -0.4;
     if (!up || this.stam < 0.3 || this.noStamT > 0) return;
     this.stam -= 0.3;
