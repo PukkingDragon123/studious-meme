@@ -32,52 +32,40 @@ const WORKS_SECTION = [
 // [x, floorY, roofY].
 // ---------------------------------------------------------------------------
 const SEWER_SECTION = [
-  // ---- LEVEL 1 — THE WAKE ----------------------------------------------
-  // Where the game picks you up. Wide, dry-ish, lit down three manhole shafts,
-  // a hand of water over a brick invert and a bench at either end to haul out
-  // on. Nothing in here is bigger than a rat, and that is on purpose.
-  [-5880, -58, -336], [-5800, -58, -336], [-5700, -52, -338],
-  [-5640, 20, -334], [-5540, 56, -330], [-5420, 62, -328], [-5300, 52, -330],
-  [-5200, 10, -334], [-5130, -44, -338], [-5040, -46, -338], [-4990, -38, -334],
-  // ---- STAIR A: eleven cast steps with a handrail bolted down one side ----
-  [-4950, -18, -320], [-4890, 48, -262], [-4830, 106, -206], [-4770, 162, -152], [-4720, 206, -110],
-  // ---- LEVEL 2 — THE MAIN INTERCEPTOR ------------------------------------
-  // A flooded barrel with a hand of air at the crown, and two brick piers
-  // standing out of it that you can climb onto and breathe on.
-  [-4660, 224, -102], [-4580, 248, -94], [-4500, 236, -98],
-  [-4440, 140, -110], [-4400, -34, -124], [-4350, -36, -124], [-4310, 120, -112],
-  [-4240, 250, -96], [-4140, 286, -88], [-4040, 262, -92], [-3950, 240, -98],
-  [-3900, 120, -112], [-3860, -32, -126], [-3810, -34, -126], [-3770, 130, -110],
-  [-3700, 262, -94], [-3620, 290, -86], [-3560, 296, -82],
-  // ---- STAIR B -----------------------------------------------------------
-  [-3520, 320, -60], [-3460, 378, 0], [-3400, 440, 70], [-3360, 500, 140], [-3320, 552, 212],
-  // ---- LEVEL 3 — THE FLOODED GALLERY -------------------------------------
-  // The crown is two hundred feet under the waterline. There is no air in here
-  // except two bells where a shaft comes down, and you have to know where they
-  // are before you go in.
-  [-3240, 580, 250], [-3120, 610, 282], [-3000, 596, 268],
-  [-2900, 604, 60], [-2860, 600, -38], [-2820, 598, 58],
-  [-2720, 622, 296], [-2600, 648, 322], [-2480, 630, 306],
-  [-2360, 640, 60], [-2320, 636, -34], [-2280, 638, 62],
-  [-2180, 652, 326], [-2100, 660, 334],
-  // ---- STAIR C -----------------------------------------------------------
-  [-2060, 690, 368], [-2000, 760, 440], [-1940, 838, 518], [-1900, 900, 580], [-1860, 938, 620],
-  // ---- LEVEL 4 — THE ACID SUMP -------------------------------------------
-  // The bottom of the system. Everything the plating line ever poured away is
-  // still down here and it is still working.
-  [-1760, 962, 646], [-1620, 990, 674], [-1480, 1006, 690], [-1340, 986, 670],
-  [-1200, 1010, 694], [-1060, 1032, 716], [-920, 1006, 690], [-820, 984, 668],
-  // ---- STAIR D: the way up starts ----------------------------------------
-  [-760, 940, 624], [-700, 880, 566], [-640, 812, 498], [-560, 748, 434], [-480, 700, 386],
-  // ---- LEVEL 5 — THE OUTFALL ---------------------------------------------
-  // A flight of weirs climbing back to the light, one step at a time, with the
-  // whole system running down it the other way.
-  [-400, 664, 350], [-320, 600, 288], [-240, 540, 226],
-  [-160, 482, 168], [-80, 420, 106], [0, 360, 46],
-  [80, 300, -14], [170, 244, -70], [260, 190, -124],
-  [350, 140, -172], [440, 92, -216], [530, 48, -254],
-  [620, 10, -282], [700, -16, -296], [790, -34, -304],
-  [880, -40, -308], [960, -38, -310], [1000, -36, -312],
+  // ---- THE INTAKE ------------------------------------------------------
+  // Where the game picks you up. Three hundred feet of water under you, three
+  // hundred of air over it, and a brick staging in the middle you can climb
+  // out onto. Open in every direction, which is the whole point.
+  [-5880, 300, -300], [-5760, 330, -308], [-5620, 316, -300],
+  [-5480, 352, -316], [-5320, 330, -306], [-5180, 300, -300],
+  [-5120, 150, -294], [-5060, -34, -288], [-4990, -36, -288], [-4930, 150, -294],
+  [-4860, 320, -304], [-4700, 348, -312], [-4560, 326, -304], [-4440, 300, -296],
+  // ---- THE GRIT CHANNEL ------------------------------------------------
+  // A neck. The walls come in and the crown comes down, and you go through it
+  // fast because there is nothing in here worth stopping for.
+  [-4360, 210, -206], [-4280, 172, -176], [-4200, 180, -180], [-4120, 240, -226],
+  // ---- THE GREAT VAULT -------------------------------------------------
+  // The biggest room anybody ever built and then forgot about. Seven hundred
+  // feet of water and four hundred of air, with a pier standing up out of the
+  // middle of it.
+  [-4000, 420, -320], [-3820, 560, -392], [-3620, 660, -420], [-3400, 700, -424],
+  [-3180, 672, -418], [-2960, 700, -424], [-2740, 640, -408],
+  [-2640, 330, -402], [-2580, -34, -398], [-2500, -36, -398], [-2440, 330, -402],
+  [-2360, 560, -404],
+  // ---- THE SCREENS -----------------------------------------------------
+  [-2260, 340, -232], [-2180, 300, -206], [-2100, 316, -212],
+  // ---- THE SUMP --------------------------------------------------------
+  // The deepest water in the game so far, and the last of the plating line
+  // lying on the bottom of it.
+  [-2000, 520, -250], [-1840, 760, -262], [-1680, 900, -270], [-1500, 960, -274],
+  [-1320, 930, -270], [-1140, 980, -276], [-960, 910, -268], [-820, 820, -262],
+  // ---- THE OUTFALL -----------------------------------------------------
+  // The floor climbs a flight of weirs, the crown holds, and at the top of it
+  // there is a hole with a sky behind it.
+  [-680, 700, -272], [-520, 600, -280], [-360, 500, -288], [-200, 410, -294],
+  [-40, 330, -300], [120, 260, -304], [280, 196, -308],
+  [440, 140, -312], [600, 88, -316], [740, 40, -318],
+  [860, -16, -320], [940, -34, -322], [1000, -36, -324],
 ];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
@@ -144,19 +132,18 @@ const OCEAN_CAVES = [
 // rings under it. The ladder in a shaft stops eight feet above the crown,
 // which is exactly why it is no use to anything that cannot reach it.
 const MANHOLES = [
-  [-5700, 0.95], [-5300, 0.72], [-5020, 0.5],                       // over the wake
-  [-4400, 0.4], [-3810, 0.3],                                       // over the two piers
-  [-2860, 0.16], [-2320, 0.12],                                     // the two air bells, far down
+  [-5400, 0.95], [-4900, 0.75], [-4600, 0.5],                       // over the intake
+  [-3600, 0.5], [-2960, 0.4], [-2560, 0.55],                        // over the vault
+  [-1400, 0.18], [-1000, 0.14],                                     // over the sump
+  [-200, 0.4], [420, 0.55], [820, 0.8],                             // up the outfall
 ];
 // Flights of steps. Concrete is not cut by weather, it is cast in lifts, so a
 // stair in this world is a real stair: a flat tread and a hard riser, every
 // one the same as the last. [x0, x1, rise].
 const STAIRS = [
-  [-4950, -4720, 23],                    // A: the wake down to the interceptor
-  [-3520, -3320, 26],                    // B: down to the gallery
-  [-2060, -1860, 25],                    // C: down to the sump
-  [-760, -480, 24],                      // D: the way up begins
-  [-400, 960, 32],                       // the weirs in the outfall
+  [-5140, -4910, 26],                    // up onto the intake staging
+  [-2660, -2400, 26],                    // up onto the pier in the vault
+  [-680, 1000, 40],                      // the weirs, all the way to the light
 ];
 function stairAt(x) { for (const [a, b, r] of STAIRS) if (x >= a && x <= b) return r; return 0; }
 // ---------------------------------------------------------------------------
@@ -339,46 +326,46 @@ const BIOMES = [
     // manhole shafts throwing daylight down it, a hand of water over the
     // invert and a dry bench at either end. Deliberately gentle: it is the
     // first minute of the game and you are the length of a hand.
-    id: 'wake', name: 'THE WAKE', x0: -5900, x1: -4950, indoor: true,
+    id: 'wake', name: 'THE INTAKE', x0: -5900, x1: -4400, indoor: true,
     sky: ['#0d1518', '#1b262a'], water: ['#4c7d72', '#2a5048', '#10241f'], scum: '#6a8a4a', fog: '#162228',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a5d4e', '#4d4338', '#2f2922'], grass: '#4a5448',
-    roof: -336, dark: 0.28, toxic: 0,
-    plants: [['grit', 2], ['rubble', 1.4], ['algae', 1.2], ['moss', 1], ['pipe', 0.8], ['trash', 0.8]],
-    fish: [['minnow', 4], ['shiner', 2.4]],
+    roof: -300, dark: 0.22, toxic: 0,
+    plants: [['algae', 2.6], ['weed', 2.2], ['trash', 1.4], ['rock', 1.6], ['sunkbranch', 1], ['shellbed', 0.8]],
+    fish: [['minnow', 5], ['shiner', 4], ['bluegill', 2.4], ['roach', 2.4], ['tilapia', 1.6]],
     land: [['rat', 2.2]], structures: [], music: 0.5,
   },
   {
     // The main barrel. Flooded, with a hand of air at the crown and two brick
     // piers standing out of it — the only two places on this level you can
     // put your head in air without surfacing.
-    id: 'interceptor', name: 'THE MAIN INTERCEPTOR', x0: -4950, x1: -3320, indoor: true,
+    id: 'interceptor', name: 'THE GRIT CHANNEL', x0: -4400, x1: -4000, indoor: true,
     sky: ['#090f12', '#141d22'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5d5347', '#443c33', '#29241e'], grass: '#4a5458',
-    roof: -100, dark: 0.5, toxic: 0.05,
-    plants: [['grit', 2.2], ['trash', 1.4], ['rubble', 1.2], ['pipe', 1], ['algae', 1], ['moss', 0.8]],
-    fish: [['minnow', 3], ['shiner', 2.6], ['roach', 2], ['bluegill', 1.4]],
+    roof: -190, dark: 0.4, toxic: 0.05,
+    plants: [['algae', 2.2], ['weed', 1.8], ['trash', 1.6], ['rock', 2], ['shellbed', 0.8]],
+    fish: [['minnow', 4], ['shiner', 3.4], ['roach', 3], ['bluegill', 2.6], ['tilapia', 2], ['catfish', 1.2]],
     land: [['rat', 2]], structures: [], music: 0.7,
   },
   {
     // Two hundred feet of water over the crown and no air in it except where a
     // shaft comes down. You have to know where the bells are before you go in.
-    id: 'gallery', name: 'THE FLOODED GALLERY', x0: -3320, x1: -1860, indoor: true, roman: true,
+    id: 'gallery', name: 'THE GREAT VAULT', x0: -4000, x1: -2100, indoor: true, roman: true,
     sky: ['#060a0c', '#0e1519'], water: ['#2d5a58', '#173634', '#050f10'], scum: '#4a6a3c', fog: '#0a1214',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5a52', '#403f39', '#262622'], grass: '#3f4a42',
-    roof: 300, dark: 0.76, toxic: 0.14, pressure: 0.3,
-    plants: [['rubble', 2], ['grit', 1.6], ['algae', 1.6], ['moss', 1.4], ['bones', 1], ['pipe', 0.8]],
-    fish: [['catfish', 2.2], ['eel', 2], ['bluegill', 1.6], ['roach', 2]],
+    roof: -420, dark: 0.3, toxic: 0.08, pressure: 0.25,
+    plants: [['algae', 2.4], ['weed', 1.6], ['rock', 2.2], ['bones', 1.2], ['trash', 1.2], ['sunkbranch', 1.2], ['kelp', 1.4]],
+    fish: [['shiner', 3.4], ['roach', 3], ['bluegill', 3], ['tilapia', 2.4], ['catfish', 2.2], ['eel', 1.6], ['bass', 1.4]],
     land: [], structures: [], music: 0.85,
   },
   {
     // The bottom of the system, and the end of the plating line. Everything
     // anybody ever poured away is still down here and it is still working.
-    id: 'sump', name: 'THE ACID SUMP', x0: -1860, x1: -760, indoor: true,
+    id: 'sump', name: 'THE SUMP', x0: -2100, x1: -760, indoor: true,
     sky: ['#060c08', '#101a12'], water: ['#4f7a2e', '#2e4a1c', '#12200c'], scum: '#a8d020', fog: '#101c10',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5638', '#403d28', '#27251a'], grass: '#6a7a2a',
-    roof: 690, dark: 0.82, toxic: 0.85, pressure: 0.55,
-    plants: [['garbage', 1.6], ['rubble', 1.8], ['bones', 1.4], ['algae', 1.2], ['grit', 1.2], ['pipe', 1], ['skeleton', 0.6]],
-    fish: [['mutantcat', 1.6], ['eel', 1.8], ['catfish', 1.4]],
+    roof: -266, dark: 0.42, toxic: 0.55, pressure: 0.45,
+    plants: [['bones', 2], ['rock', 2], ['algae', 1.6], ['trash', 1.6], ['kelp', 1.4], ['sunkbranch', 1]],
+    fish: [['roach', 3], ['catfish', 2.4], ['eel', 2.2], ['bluegill', 2], ['mutantcat', 1.4], ['flgar', 1.2]],
     land: [], structures: [], music: 1,
   },
   {
@@ -387,9 +374,9 @@ const BIOMES = [
     id: 'outfall', name: 'THE OUTFALL', x0: -760, x1: 1100, indoor: true,
     sky: ['#12202a', '#2e4450'], water: ['#3e7a70', '#20493f', '#0b1d1a'], scum: '#6a8a4a', fog: '#1c2e34',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a6254', '#4c463b', '#2e2a23'], grass: '#5a6a42',
-    roof: -100, dark: 0.34, toxic: 0.2,
-    plants: [['grit', 1.8], ['algae', 1.8], ['moss', 1.6], ['rubble', 1.4], ['weed', 1.2], ['pipe', 0.8], ['trash', 1]],
-    fish: [['tilapia', 2.6], ['walkingcat', 2], ['bluegill', 2], ['catfish', 1.8], ['shiner', 2]],
+    roof: -300, dark: 0.3, toxic: 0.1,
+    plants: [['algae', 2.2], ['weed', 2.4], ['rock', 1.8], ['trash', 1.2], ['shellbed', 1], ['sunkbranch', 0.8]],
+    fish: [['tilapia', 3.4], ['walkingcat', 2.4], ['bluegill', 3], ['catfish', 2.2], ['shiner', 3.4], ['minnow', 3], ['bass', 1.6]],
     land: [['rat', 1.6]], structures: [], music: 0.6,
   },
   {
@@ -545,6 +532,10 @@ const Biome = {
     if (B.lab) return;        // the lab is laid out, not scattered: see authored()
     const table = B.plants.filter(([k]) => {
       const w = PLANT_RULES[k]; if (!w) return false;
+      // Nothing floats on a sewer, and nothing grows on brick you cannot see.
+      // A weed bed drawn at y=0 over a floor that is above the waterline is the
+      // single thing that made this map look like it was full of litter.
+      if (B.indoor && w.float) return false;
       return w.land === undefined || w.land === land ? (w.minD === undefined || depth >= w.minD) && (w.maxD === undefined || depth <= w.maxD) : false;
     });
     if (!table.length) return;
@@ -584,9 +575,9 @@ const PLANT_RULES = {
   seagrass: { land: false, minD: 120, make: (o, x, y, r) => o.push({ type: 'seagrass', x, y, h: 18 + r() * 40, ph: r() * TAU }) },
   reed: { land: false, minD: 4, maxD: 110, make: (o, x, y, r) => o.push({ type: 'reed', x, y, top: y - 34 - r() * 40, ph: r() * TAU, v: r() < 0.5 ? 0 : 1 }) },
   cattail: { land: false, minD: 4, maxD: 90, make: (o, x, y, r) => o.push({ type: 'cattail', x, y, top: y - 40 - r() * 44, ph: r() * TAU }) },
-  lily: { land: false, minD: 20, maxD: 300, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'lily', x: x + k * 12, y: 0, v: r() < 0.3 ? 1 : 0, ph: r() * TAU }); } },
-  duckweed: { land: false, minD: 12, make: (o, x, y, r) => o.push({ type: 'duckweed', x, y: 0, w: 12 + r() * 30, v: Math.floor(r() * 3), ph: r() * TAU }) },
-  hyacinth: { land: false, minD: 24, maxD: 260, make: (o, x, y, r) => o.push({ type: 'hyacinth', x, y: 0, s: 0.9 + r() * 0.8, bloom: r() < 0.5, ph: r() * TAU }) },
+  lily: { float: true, land: false, minD: 20, maxD: 300, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'lily', x: x + k * 12, y: 0, v: r() < 0.3 ? 1 : 0, ph: r() * TAU }); } },
+  duckweed: { float: true, land: false, minD: 12, make: (o, x, y, r) => o.push({ type: 'duckweed', x, y: 0, w: 12 + r() * 30, v: Math.floor(r() * 3), ph: r() * TAU }) },
+  hyacinth: { float: true, land: false, minD: 24, maxD: 260, make: (o, x, y, r) => o.push({ type: 'hyacinth', x, y: 0, s: 0.9 + r() * 0.8, bloom: r() < 0.5, ph: r() * TAU }) },
   sunkbranch: { land: false, minD: 60, make: (o, x, y, r) => o.push({ type: 'sunkbranch', x, y, s: 0.9 + r() * 0.9, flip: r() < 0.5 }) },
   shellbed: { land: false, minD: 80, make: (o, x, y, r) => o.push({ type: 'shellbed', x, y, n: 3 + Math.floor(r() * 6) }) },
   oyster: { land: false, minD: 10, maxD: 120, make: (o, x, y, r) => o.push({ type: 'oyster', x, y, n: 3 + Math.floor(r() * 5) }) },
@@ -600,7 +591,7 @@ const PLANT_RULES = {
   log: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'log', x, y, s: 1 + r() * 1.2 }) },
   trash: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'trash', x, y, v: Math.floor(r() * 4), s: 0.9 + r() * 0.6 }) },
   // --- the catacombs: what two thousand years leave on the floor and the surface
-  garbage: { land: false, minD: 14, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'garbage', x: x + k * 9 + r() * 6, y: 0, v: Math.floor(r() * 6), ph: r() * TAU, s: 0.9 + r() * 0.4 }); } },
+  garbage: { float: true, land: false, minD: 14, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'garbage', x: x + k * 9 + r() * 6, y: 0, v: Math.floor(r() * 6), ph: r() * TAU, s: 0.9 + r() * 0.4 }); } },
   labtank: { land: true, make: (o, x, y, r) => o.push({ type: 'labtank', x, y, v: Math.floor(r() * 4), ph: r() * TAU }) },
   console: { land: true, make: (o, x, y, r) => o.push({ type: 'console', x, y, v: Math.floor(r() * 3), ph: r() * TAU }) },
   cable: { land: true, make: (o, x, y, r) => o.push({ type: 'cable', x, y, n: 2 + Math.floor(r() * 3), ph: r() * TAU }) },

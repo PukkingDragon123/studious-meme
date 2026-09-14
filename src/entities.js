@@ -1295,7 +1295,14 @@ class SkunkApe extends Entity {
 }
 // ---------- spawn helpers ----------
 const Spawn = {
-  school(x, y, kind) { if (kind === 'babygator') { const n = randi(2, 5); for (let i = 0; i < n; i++) { const g = new Gator(x + rand(-30, 30), y + rand(-10, 10), rand(0.35, 0.5)); g.name = 'GATOR HATCHLING'; g.threat = 0; G.add(g); } return null; } const d = FISH[kind] || SPECIES[kind]; const n = randi(d.school ? d.school[0] : 1, d.school ? d.school[1] : 2); const leader = new Fish(x, y, kind); G.add(leader); for (let i = 1; i < n; i++) G.add(new Fish(x + rand(-30, 30), y + rand(-20, 20), kind, leader)); return leader; },
+  school(x, y, kind) { if (kind === 'babygator') { const n = randi(2, 5); for (let i = 0; i < n; i++) { const g = new Gator(x + rand(-30, 30), y + rand(-10, 10), rand(0.35, 0.5)); g.name = 'GATOR HATCHLING'; g.threat = 0; G.add(g); } return null; } const d = FISH[kind] || SPECIES[kind]; const sc = d.school ? d.school : [1, 2];
+    // A shoal is a shoal. Two fish is a pair, and a pair is not a shoal — indoors
+    // the whole game is the water being full, so the school sizes go up.
+    const big = World.isIndoor(x) ? 2 : 1;
+    const n = randi(sc[0] * big, Math.max(sc[0] * big + 1, sc[1] * big));
+    const leader = new Fish(x, y, kind); G.add(leader);
+    for (let i = 1; i < n; i++) G.add(new Fish(x + rand(-44, 44), y + rand(-26, 26), kind, leader));
+    return leader; },
   flock(x, dir, kind, n) { for (let i = 0; i < n; i++) { const b = new Bird(x - dir * i * 26 + rand(-8, 8), -rand(80, 170) + i * 4, kind, 'fly', dir); b.vx = dir * BIRDS[kind].speed; G.add(b); } },
   heron(x) { const b = new Bird(x, 0, 'heron', 'wade'); G.add(b); return b; },
   duck(x) { const b = new Bird(x, 0, 'duck', 'float'); G.add(b); return b; },

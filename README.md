@@ -1,10 +1,15 @@
 # CHOMPERS
 
 A 2D pixel-art, side-scrolling **eater roguelike**. You are Subject 7: a lab-made crocodile spliced
-with the genes of every animal alive. You break your tank, go down the pipe the building flushes into,
-black out on the way down, and come round on a brick bench five levels under a city — then eat your way
-down the system and up the outfall into the swamp with the whole genome to spend, or east past the
+with the genes of every animal alive. You break your tank, go down the shaft the building flushes into,
+black out on the way, and come round on a brick staging in a drowned works under a city — then eat your
+way through it and up the outfall into the swamp with the whole genome to spend, or east past the
 seawall and over the edge of the shelf.
+
+Everything in the water is food or is going to eat you, and which one it is depends on how big you have
+got. Hunger drains the whole time you are not eating. Chain mouthfuls for a multiplier, fill the **gold
+rush** meter and cash it out for ten seconds where nothing can hurt you and nothing is too big to
+swallow.
 
 Eat anything that fits in your jaws. Every meal pays **gene points**, and you spend them whenever you
 like on a hexagonal **gene tree** of six lineages. How you hunt builds affinity, so the lineage that
@@ -156,26 +161,32 @@ foot. Eighteen slots, and the count in the corner is the game's long score.
 ## The system, and how you got there
 
 The game starts in a building and ends up under a city. **THE SYSTEM** is the
-first zone and the only one open on a new save: eight and a half thousand units
-of authored map that begin as a laboratory floor, drop a hundred and forty feet
-down a brick shaft, and lay out five levels of somebody else's drains below it.
-You go down through them and you come up the far end.
+first zone and the only one open on a new save. It is not a pipe. It is a
+drowned works: one continuous body of water eight and a half thousand units
+long, three hundred to a thousand feet deep, with a vault over it and three
+hundred feet of air between the vault and the waterline. You can dive to the
+bottom of it, you can breach out of the top of it, and there is something to
+eat everywhere in between.
 
-| Level | What it is |
+| Chamber | What it is |
 | --- | --- |
-| **1 — The Wake** | where the game picks you up. A brick barrel wide enough to stand up in, three manhole shafts throwing daylight down it, a hand of water over the invert and a dry bench at either end |
-| **2 — The Main Interceptor** | a flooded barrel with a hand of air at the crown and two brick piers standing out of it, which are the only two places on the level you can breathe without surfacing |
-| **3 — The Flooded Gallery** | the crown is two hundred feet under the waterline. There is no air in here except two bells where a shaft comes down, and you have to know where they are before you go in |
-| **4 — The Acid Sump** | the bottom. The plating line drained into it for thirty years and it is still working |
-| **5 — The Outfall** | a flight of weirs climbing back to the light, with the whole system running down them the other way |
+| **The Intake** | where the game picks you up. Three hundred feet of water under you, three hundred of air over it, and a brick staging in the middle you can climb out onto |
+| **The Grit Channel** | a neck. The walls come in and the crown comes down, and you go through it fast because there is nothing in here worth stopping for |
+| **The Great Vault** | the biggest room anybody ever built and then forgot about: seven hundred feet of water, four hundred of air, and a pier standing up out of the middle of it |
+| **The Screens** | a second neck, with the bar screens across it |
+| **The Sump** | the deepest water in the world so far, and the last of the plating line lying on the bottom of it |
+| **The Outfall** | the floor climbs a flight of weirs, the crown holds, and at the top of it there is a hole with a sky behind it |
 
-Each level is flat, because a gallery floor is flat, and they are joined by
-**flights of cast steps** — a real stair, with a flat tread, a hard riser, a
-nosing that catches the light and a handrail bolted down one side. Press **M**
-anywhere in the system to open the **blueprint**: a drawing-office long section
-of the whole works at 1:500, white line on ferro-prussiate blue, with the five
-levels lettered, every flight shown, the manhole shafts drawn up to the street,
-a title block nobody has filled in since 1974, and a ring round where you are.
+The two piers are the only dry ground in seven thousand units, and each one has
+a **flight of cast steps** up out of the water onto it — a real stair, flat
+tread, hard riser, a lit nosing and a handrail down one side, cut by the same
+`bench` function that cuts a hillside. The third flight is the weirs in the
+outfall, and it runs the whole way to daylight.
+
+Press **M** anywhere in the system for the **blueprint**: a drawing-office long
+section at 1:500, white line on ferro-prussiate blue, the chambers lettered,
+every flight shown, the manhole shafts drawn up to the street, a title block
+nobody has filled in since 1974, and a ring round where you are.
 
 You got there by transfer, and the transfer is not a cutscene. It is the game.
 **FACILITY B** is a building, not a wall: six rooms in a line, a hundred and
@@ -231,7 +242,7 @@ moves you a hundred and forty feet down and three quarters of a mile east,
 because the animal did not see that either. Then the eye opens — twice, badly,
 the lids coming in from the top and the bottom of the frame before they stay
 open — and the first thing in it is a shaft of daylight a hundred and forty feet
-up, landing on a brick bench with you on it.
+up, landing on the brick staging in the middle of the intake with you on it.
 
 The way out is the far end. Three mechanisms hold the outfall gate, one to each
 lift of the weirs, each a small game you start by biting it: **the sluice
@@ -241,16 +252,43 @@ notch, not your life. Engage all three and the gate opens, and the zone's relic
 surfaces on the way to it. The everglades are past that, once the lab has
 surveyed them.
 
+## Keep eating
+
+The loop is the loop a hungry shark has. Hunger drains the whole time you are
+not eating and starvation takes health off you when it hits zero. Everything in
+the water is food or is going to eat you, and which one it is depends on how big
+you have got.
+
+**The combo.** Every mouthful inside three and a bit seconds of the last one
+winds a multiplier on. The number sits over the score with a bar under it
+counting down, so you can see exactly how long you have to find the next thing.
+
+**The gold rush.** This is the reason to keep eating when you are already full.
+Every meal winds a gold meter across the bottom of the screen — a big meal winds
+it a long way — and it leaks back down if you stop. Fill it and it cashes out
+all at once: **ten seconds where nothing can hurt you, nothing is too big to
+swallow, you move half again as fast, you bite for more than twice as much and
+the whole room is worth triple.** The screen goes gold at the edges, the animal
+throws sparks, and the meter runs back down as a timer. It is the only mechanic
+in the game that rewards greed, and it is the one the zone is built around.
+
+**Density.** A pond with sixteen fish in it is not this game. The director
+stocks to thirty-plus visible prey and counts only what is actually in front of
+you, shoals go in at roughly the depth you are swimming at rather than being
+spread over ten screens of a seven-hundred-foot room, they go in just past the
+edge of the shot so they cross it instead of wandering off, and indoors a shoal
+is twice the size it is outdoors.
+
 ## Level one is a tutorial with a roof on it
 
 The first zone used to net a 0.3 ft hatchling inside a minute. It is held down
-hard now, and level one is held down harder: **nothing with teeth spawns there
+hard now, and the intake is held down harder: **nothing with teeth spawns there
 at all** — the predator director returns before it picks — the difficulty curve
-is clamped to a fifth of its value for the whole level and to two thirds for the
-rest of the zone, and the chunk stocker makes nine passes instead of five, so
-there is something to eat within a body length of wherever you come round. The
-standing orders start at five fish. The acid is only in the sump, which is level
-four, which is a long way down from where you start.
+is clamped to a fifth of its value for the whole chamber and to two thirds for
+the rest of the zone, and the chunk stocker makes nine passes instead of five,
+so there is something to eat within a body length of wherever you come round.
+The standing orders start at five fish. The acid is only in the sump, which is
+a long way down from where you start.
 
 ## What they poured down here
 
@@ -460,11 +498,9 @@ A **RELEASE** button sends you. It used to be the word ENTER, which is not a key
 
 ### Zone 1 — The System
 
-The bore is drawn as a bore, not as a room: a section of masonry with a hole
-through it, and the hole goes somewhere. But a bore on its own is a corridor,
-so it is drawn in three depths now.
+Drawn in three depths, because a bore on its own is a corridor.
 
-**Background.** A second run of the system behind this one, at 0.42 parallax:
+**Background.** A second run of the works behind this one, at 0.42 parallax:
 piers with arch heads springing off them, a black gallery between the piers,
 every fourth bay a doorway with the dead light of another level in it and a
 flight of steps going up out of it, and a side pipe discharging into it every
@@ -473,19 +509,18 @@ seventh, because something always is.
 **Midground.** The arch you are actually inside — voussoirs round the crown, the
 invert lip, a rib every bay with a cable slung between the ribs and a caged
 bulkhead lamp under every other one — plus the stair treads and nosings, and the
-**handrail** that gets bolted to every stretch of dry brick in the place.
+handrail on every stretch of dry brick in the place.
 
 **Foreground.** At 1.34 parallax, in near-silhouette, between the camera and the
-animal: a main crossing the bore on brackets with a bolted joint in it, a chain
-off a lifting eye swinging a little, a cable bundle sagging across with a tag on
-it, and a length of handrail anchored to the bottom of the frame. A rail across
-the middle of the shot is not a foreground, it is a fence between you and the
-game, so it is pinned low.
+animal: a main crossing on brackets with a bolted joint in it, a chain off a
+lifting eye swinging a little, a cable bundle sagging across with a tag on it,
+and a length of handrail pinned to the bottom of the frame. A rail across the
+middle of the shot is not a foreground, it is a fence between you and the game.
 
-**The acid.** Below a certain level the water is bright, green, and working: a
-glow coming up out of it, a scum line breathing against the brick, fume coming
-off the surface and the odd drip going in. It fills a **FILTH** meter that
-eventually starts taking health.
+**Nothing floats.** Every plant rule that places at the waterline — lily,
+duckweed, hyacinth, floating rubbish — is flagged and skipped indoors. A weed
+bed drawn at y=0 over a floor that is above the waterline is the single thing
+that used to make this map look like it was full of litter.
 
 ### Zone 2 — The Everglades
 

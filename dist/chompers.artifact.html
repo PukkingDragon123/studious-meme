@@ -3022,52 +3022,40 @@ const WORKS_SECTION = [
 // [x, floorY, roofY].
 // ---------------------------------------------------------------------------
 const SEWER_SECTION = [
-  // ---- LEVEL 1 — THE WAKE ----------------------------------------------
-  // Where the game picks you up. Wide, dry-ish, lit down three manhole shafts,
-  // a hand of water over a brick invert and a bench at either end to haul out
-  // on. Nothing in here is bigger than a rat, and that is on purpose.
-  [-5880, -58, -336], [-5800, -58, -336], [-5700, -52, -338],
-  [-5640, 20, -334], [-5540, 56, -330], [-5420, 62, -328], [-5300, 52, -330],
-  [-5200, 10, -334], [-5130, -44, -338], [-5040, -46, -338], [-4990, -38, -334],
-  // ---- STAIR A: eleven cast steps with a handrail bolted down one side ----
-  [-4950, -18, -320], [-4890, 48, -262], [-4830, 106, -206], [-4770, 162, -152], [-4720, 206, -110],
-  // ---- LEVEL 2 — THE MAIN INTERCEPTOR ------------------------------------
-  // A flooded barrel with a hand of air at the crown, and two brick piers
-  // standing out of it that you can climb onto and breathe on.
-  [-4660, 224, -102], [-4580, 248, -94], [-4500, 236, -98],
-  [-4440, 140, -110], [-4400, -34, -124], [-4350, -36, -124], [-4310, 120, -112],
-  [-4240, 250, -96], [-4140, 286, -88], [-4040, 262, -92], [-3950, 240, -98],
-  [-3900, 120, -112], [-3860, -32, -126], [-3810, -34, -126], [-3770, 130, -110],
-  [-3700, 262, -94], [-3620, 290, -86], [-3560, 296, -82],
-  // ---- STAIR B -----------------------------------------------------------
-  [-3520, 320, -60], [-3460, 378, 0], [-3400, 440, 70], [-3360, 500, 140], [-3320, 552, 212],
-  // ---- LEVEL 3 — THE FLOODED GALLERY -------------------------------------
-  // The crown is two hundred feet under the waterline. There is no air in here
-  // except two bells where a shaft comes down, and you have to know where they
-  // are before you go in.
-  [-3240, 580, 250], [-3120, 610, 282], [-3000, 596, 268],
-  [-2900, 604, 60], [-2860, 600, -38], [-2820, 598, 58],
-  [-2720, 622, 296], [-2600, 648, 322], [-2480, 630, 306],
-  [-2360, 640, 60], [-2320, 636, -34], [-2280, 638, 62],
-  [-2180, 652, 326], [-2100, 660, 334],
-  // ---- STAIR C -----------------------------------------------------------
-  [-2060, 690, 368], [-2000, 760, 440], [-1940, 838, 518], [-1900, 900, 580], [-1860, 938, 620],
-  // ---- LEVEL 4 — THE ACID SUMP -------------------------------------------
-  // The bottom of the system. Everything the plating line ever poured away is
-  // still down here and it is still working.
-  [-1760, 962, 646], [-1620, 990, 674], [-1480, 1006, 690], [-1340, 986, 670],
-  [-1200, 1010, 694], [-1060, 1032, 716], [-920, 1006, 690], [-820, 984, 668],
-  // ---- STAIR D: the way up starts ----------------------------------------
-  [-760, 940, 624], [-700, 880, 566], [-640, 812, 498], [-560, 748, 434], [-480, 700, 386],
-  // ---- LEVEL 5 — THE OUTFALL ---------------------------------------------
-  // A flight of weirs climbing back to the light, one step at a time, with the
-  // whole system running down it the other way.
-  [-400, 664, 350], [-320, 600, 288], [-240, 540, 226],
-  [-160, 482, 168], [-80, 420, 106], [0, 360, 46],
-  [80, 300, -14], [170, 244, -70], [260, 190, -124],
-  [350, 140, -172], [440, 92, -216], [530, 48, -254],
-  [620, 10, -282], [700, -16, -296], [790, -34, -304],
-  [880, -40, -308], [960, -38, -310], [1000, -36, -312],
+  // ---- THE INTAKE ------------------------------------------------------
+  // Where the game picks you up. Three hundred feet of water under you, three
+  // hundred of air over it, and a brick staging in the middle you can climb
+  // out onto. Open in every direction, which is the whole point.
+  [-5880, 300, -300], [-5760, 330, -308], [-5620, 316, -300],
+  [-5480, 352, -316], [-5320, 330, -306], [-5180, 300, -300],
+  [-5120, 150, -294], [-5060, -34, -288], [-4990, -36, -288], [-4930, 150, -294],
+  [-4860, 320, -304], [-4700, 348, -312], [-4560, 326, -304], [-4440, 300, -296],
+  // ---- THE GRIT CHANNEL ------------------------------------------------
+  // A neck. The walls come in and the crown comes down, and you go through it
+  // fast because there is nothing in here worth stopping for.
+  [-4360, 210, -206], [-4280, 172, -176], [-4200, 180, -180], [-4120, 240, -226],
+  // ---- THE GREAT VAULT -------------------------------------------------
+  // The biggest room anybody ever built and then forgot about. Seven hundred
+  // feet of water and four hundred of air, with a pier standing up out of the
+  // middle of it.
+  [-4000, 420, -320], [-3820, 560, -392], [-3620, 660, -420], [-3400, 700, -424],
+  [-3180, 672, -418], [-2960, 700, -424], [-2740, 640, -408],
+  [-2640, 330, -402], [-2580, -34, -398], [-2500, -36, -398], [-2440, 330, -402],
+  [-2360, 560, -404],
+  // ---- THE SCREENS -----------------------------------------------------
+  [-2260, 340, -232], [-2180, 300, -206], [-2100, 316, -212],
+  // ---- THE SUMP --------------------------------------------------------
+  // The deepest water in the game so far, and the last of the plating line
+  // lying on the bottom of it.
+  [-2000, 520, -250], [-1840, 760, -262], [-1680, 900, -270], [-1500, 960, -274],
+  [-1320, 930, -270], [-1140, 980, -276], [-960, 910, -268], [-820, 820, -262],
+  // ---- THE OUTFALL -----------------------------------------------------
+  // The floor climbs a flight of weirs, the crown holds, and at the top of it
+  // there is a hole with a sky behind it.
+  [-680, 700, -272], [-520, 600, -280], [-360, 500, -288], [-200, 410, -294],
+  [-40, 330, -300], [120, 260, -304], [280, 196, -308],
+  [440, 140, -312], [600, 88, -316], [740, 40, -318],
+  [860, -16, -320], [940, -34, -322], [1000, -36, -324],
 ];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
@@ -3134,19 +3122,18 @@ const OCEAN_CAVES = [
 // rings under it. The ladder in a shaft stops eight feet above the crown,
 // which is exactly why it is no use to anything that cannot reach it.
 const MANHOLES = [
-  [-5700, 0.95], [-5300, 0.72], [-5020, 0.5],                       // over the wake
-  [-4400, 0.4], [-3810, 0.3],                                       // over the two piers
-  [-2860, 0.16], [-2320, 0.12],                                     // the two air bells, far down
+  [-5400, 0.95], [-4900, 0.75], [-4600, 0.5],                       // over the intake
+  [-3600, 0.5], [-2960, 0.4], [-2560, 0.55],                        // over the vault
+  [-1400, 0.18], [-1000, 0.14],                                     // over the sump
+  [-200, 0.4], [420, 0.55], [820, 0.8],                             // up the outfall
 ];
 // Flights of steps. Concrete is not cut by weather, it is cast in lifts, so a
 // stair in this world is a real stair: a flat tread and a hard riser, every
 // one the same as the last. [x0, x1, rise].
 const STAIRS = [
-  [-4950, -4720, 23],                    // A: the wake down to the interceptor
-  [-3520, -3320, 26],                    // B: down to the gallery
-  [-2060, -1860, 25],                    // C: down to the sump
-  [-760, -480, 24],                      // D: the way up begins
-  [-400, 960, 32],                       // the weirs in the outfall
+  [-5140, -4910, 26],                    // up onto the intake staging
+  [-2660, -2400, 26],                    // up onto the pier in the vault
+  [-680, 1000, 40],                      // the weirs, all the way to the light
 ];
 function stairAt(x) { for (const [a, b, r] of STAIRS) if (x >= a && x <= b) return r; return 0; }
 // ---------------------------------------------------------------------------
@@ -3329,46 +3316,46 @@ const BIOMES = [
     // manhole shafts throwing daylight down it, a hand of water over the
     // invert and a dry bench at either end. Deliberately gentle: it is the
     // first minute of the game and you are the length of a hand.
-    id: 'wake', name: 'THE WAKE', x0: -5900, x1: -4950, indoor: true,
+    id: 'wake', name: 'THE INTAKE', x0: -5900, x1: -4400, indoor: true,
     sky: ['#0d1518', '#1b262a'], water: ['#4c7d72', '#2a5048', '#10241f'], scum: '#6a8a4a', fog: '#162228',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a5d4e', '#4d4338', '#2f2922'], grass: '#4a5448',
-    roof: -336, dark: 0.28, toxic: 0,
-    plants: [['grit', 2], ['rubble', 1.4], ['algae', 1.2], ['moss', 1], ['pipe', 0.8], ['trash', 0.8]],
-    fish: [['minnow', 4], ['shiner', 2.4]],
+    roof: -300, dark: 0.22, toxic: 0,
+    plants: [['algae', 2.6], ['weed', 2.2], ['trash', 1.4], ['rock', 1.6], ['sunkbranch', 1], ['shellbed', 0.8]],
+    fish: [['minnow', 5], ['shiner', 4], ['bluegill', 2.4], ['roach', 2.4], ['tilapia', 1.6]],
     land: [['rat', 2.2]], structures: [], music: 0.5,
   },
   {
     // The main barrel. Flooded, with a hand of air at the crown and two brick
     // piers standing out of it — the only two places on this level you can
     // put your head in air without surfacing.
-    id: 'interceptor', name: 'THE MAIN INTERCEPTOR', x0: -4950, x1: -3320, indoor: true,
+    id: 'interceptor', name: 'THE GRIT CHANNEL', x0: -4400, x1: -4000, indoor: true,
     sky: ['#090f12', '#141d22'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5d5347', '#443c33', '#29241e'], grass: '#4a5458',
-    roof: -100, dark: 0.5, toxic: 0.05,
-    plants: [['grit', 2.2], ['trash', 1.4], ['rubble', 1.2], ['pipe', 1], ['algae', 1], ['moss', 0.8]],
-    fish: [['minnow', 3], ['shiner', 2.6], ['roach', 2], ['bluegill', 1.4]],
+    roof: -190, dark: 0.4, toxic: 0.05,
+    plants: [['algae', 2.2], ['weed', 1.8], ['trash', 1.6], ['rock', 2], ['shellbed', 0.8]],
+    fish: [['minnow', 4], ['shiner', 3.4], ['roach', 3], ['bluegill', 2.6], ['tilapia', 2], ['catfish', 1.2]],
     land: [['rat', 2]], structures: [], music: 0.7,
   },
   {
     // Two hundred feet of water over the crown and no air in it except where a
     // shaft comes down. You have to know where the bells are before you go in.
-    id: 'gallery', name: 'THE FLOODED GALLERY', x0: -3320, x1: -1860, indoor: true, roman: true,
+    id: 'gallery', name: 'THE GREAT VAULT', x0: -4000, x1: -2100, indoor: true, roman: true,
     sky: ['#060a0c', '#0e1519'], water: ['#2d5a58', '#173634', '#050f10'], scum: '#4a6a3c', fog: '#0a1214',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5a52', '#403f39', '#262622'], grass: '#3f4a42',
-    roof: 300, dark: 0.76, toxic: 0.14, pressure: 0.3,
-    plants: [['rubble', 2], ['grit', 1.6], ['algae', 1.6], ['moss', 1.4], ['bones', 1], ['pipe', 0.8]],
-    fish: [['catfish', 2.2], ['eel', 2], ['bluegill', 1.6], ['roach', 2]],
+    roof: -420, dark: 0.3, toxic: 0.08, pressure: 0.25,
+    plants: [['algae', 2.4], ['weed', 1.6], ['rock', 2.2], ['bones', 1.2], ['trash', 1.2], ['sunkbranch', 1.2], ['kelp', 1.4]],
+    fish: [['shiner', 3.4], ['roach', 3], ['bluegill', 3], ['tilapia', 2.4], ['catfish', 2.2], ['eel', 1.6], ['bass', 1.4]],
     land: [], structures: [], music: 0.85,
   },
   {
     // The bottom of the system, and the end of the plating line. Everything
     // anybody ever poured away is still down here and it is still working.
-    id: 'sump', name: 'THE ACID SUMP', x0: -1860, x1: -760, indoor: true,
+    id: 'sump', name: 'THE SUMP', x0: -2100, x1: -760, indoor: true,
     sky: ['#060c08', '#101a12'], water: ['#4f7a2e', '#2e4a1c', '#12200c'], scum: '#a8d020', fog: '#101c10',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5638', '#403d28', '#27251a'], grass: '#6a7a2a',
-    roof: 690, dark: 0.82, toxic: 0.85, pressure: 0.55,
-    plants: [['garbage', 1.6], ['rubble', 1.8], ['bones', 1.4], ['algae', 1.2], ['grit', 1.2], ['pipe', 1], ['skeleton', 0.6]],
-    fish: [['mutantcat', 1.6], ['eel', 1.8], ['catfish', 1.4]],
+    roof: -266, dark: 0.42, toxic: 0.55, pressure: 0.45,
+    plants: [['bones', 2], ['rock', 2], ['algae', 1.6], ['trash', 1.6], ['kelp', 1.4], ['sunkbranch', 1]],
+    fish: [['roach', 3], ['catfish', 2.4], ['eel', 2.2], ['bluegill', 2], ['mutantcat', 1.4], ['flgar', 1.2]],
     land: [], structures: [], music: 1,
   },
   {
@@ -3377,9 +3364,9 @@ const BIOMES = [
     id: 'outfall', name: 'THE OUTFALL', x0: -760, x1: 1100, indoor: true,
     sky: ['#12202a', '#2e4450'], water: ['#3e7a70', '#20493f', '#0b1d1a'], scum: '#6a8a4a', fog: '#1c2e34',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a6254', '#4c463b', '#2e2a23'], grass: '#5a6a42',
-    roof: -100, dark: 0.34, toxic: 0.2,
-    plants: [['grit', 1.8], ['algae', 1.8], ['moss', 1.6], ['rubble', 1.4], ['weed', 1.2], ['pipe', 0.8], ['trash', 1]],
-    fish: [['tilapia', 2.6], ['walkingcat', 2], ['bluegill', 2], ['catfish', 1.8], ['shiner', 2]],
+    roof: -300, dark: 0.3, toxic: 0.1,
+    plants: [['algae', 2.2], ['weed', 2.4], ['rock', 1.8], ['trash', 1.2], ['shellbed', 1], ['sunkbranch', 0.8]],
+    fish: [['tilapia', 3.4], ['walkingcat', 2.4], ['bluegill', 3], ['catfish', 2.2], ['shiner', 3.4], ['minnow', 3], ['bass', 1.6]],
     land: [['rat', 1.6]], structures: [], music: 0.6,
   },
   {
@@ -3535,6 +3522,10 @@ const Biome = {
     if (B.lab) return;        // the lab is laid out, not scattered: see authored()
     const table = B.plants.filter(([k]) => {
       const w = PLANT_RULES[k]; if (!w) return false;
+      // Nothing floats on a sewer, and nothing grows on brick you cannot see.
+      // A weed bed drawn at y=0 over a floor that is above the waterline is the
+      // single thing that made this map look like it was full of litter.
+      if (B.indoor && w.float) return false;
       return w.land === undefined || w.land === land ? (w.minD === undefined || depth >= w.minD) && (w.maxD === undefined || depth <= w.maxD) : false;
     });
     if (!table.length) return;
@@ -3574,9 +3565,9 @@ const PLANT_RULES = {
   seagrass: { land: false, minD: 120, make: (o, x, y, r) => o.push({ type: 'seagrass', x, y, h: 18 + r() * 40, ph: r() * TAU }) },
   reed: { land: false, minD: 4, maxD: 110, make: (o, x, y, r) => o.push({ type: 'reed', x, y, top: y - 34 - r() * 40, ph: r() * TAU, v: r() < 0.5 ? 0 : 1 }) },
   cattail: { land: false, minD: 4, maxD: 90, make: (o, x, y, r) => o.push({ type: 'cattail', x, y, top: y - 40 - r() * 44, ph: r() * TAU }) },
-  lily: { land: false, minD: 20, maxD: 300, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'lily', x: x + k * 12, y: 0, v: r() < 0.3 ? 1 : 0, ph: r() * TAU }); } },
-  duckweed: { land: false, minD: 12, make: (o, x, y, r) => o.push({ type: 'duckweed', x, y: 0, w: 12 + r() * 30, v: Math.floor(r() * 3), ph: r() * TAU }) },
-  hyacinth: { land: false, minD: 24, maxD: 260, make: (o, x, y, r) => o.push({ type: 'hyacinth', x, y: 0, s: 0.9 + r() * 0.8, bloom: r() < 0.5, ph: r() * TAU }) },
+  lily: { float: true, land: false, minD: 20, maxD: 300, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'lily', x: x + k * 12, y: 0, v: r() < 0.3 ? 1 : 0, ph: r() * TAU }); } },
+  duckweed: { float: true, land: false, minD: 12, make: (o, x, y, r) => o.push({ type: 'duckweed', x, y: 0, w: 12 + r() * 30, v: Math.floor(r() * 3), ph: r() * TAU }) },
+  hyacinth: { float: true, land: false, minD: 24, maxD: 260, make: (o, x, y, r) => o.push({ type: 'hyacinth', x, y: 0, s: 0.9 + r() * 0.8, bloom: r() < 0.5, ph: r() * TAU }) },
   sunkbranch: { land: false, minD: 60, make: (o, x, y, r) => o.push({ type: 'sunkbranch', x, y, s: 0.9 + r() * 0.9, flip: r() < 0.5 }) },
   shellbed: { land: false, minD: 80, make: (o, x, y, r) => o.push({ type: 'shellbed', x, y, n: 3 + Math.floor(r() * 6) }) },
   oyster: { land: false, minD: 10, maxD: 120, make: (o, x, y, r) => o.push({ type: 'oyster', x, y, n: 3 + Math.floor(r() * 5) }) },
@@ -3590,7 +3581,7 @@ const PLANT_RULES = {
   log: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'log', x, y, s: 1 + r() * 1.2 }) },
   trash: { land: false, minD: 20, make: (o, x, y, r) => o.push({ type: 'trash', x, y, v: Math.floor(r() * 4), s: 0.9 + r() * 0.6 }) },
   // --- the catacombs: what two thousand years leave on the floor and the surface
-  garbage: { land: false, minD: 14, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'garbage', x: x + k * 9 + r() * 6, y: 0, v: Math.floor(r() * 6), ph: r() * TAU, s: 0.9 + r() * 0.4 }); } },
+  garbage: { float: true, land: false, minD: 14, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'garbage', x: x + k * 9 + r() * 6, y: 0, v: Math.floor(r() * 6), ph: r() * TAU, s: 0.9 + r() * 0.4 }); } },
   labtank: { land: true, make: (o, x, y, r) => o.push({ type: 'labtank', x, y, v: Math.floor(r() * 4), ph: r() * TAU }) },
   console: { land: true, make: (o, x, y, r) => o.push({ type: 'console', x, y, v: Math.floor(r() * 3), ph: r() * TAU }) },
   cable: { land: true, make: (o, x, y, r) => o.push({ type: 'cable', x, y, n: 2 + Math.floor(r() * 3), ph: r() * TAU }) },
@@ -6236,7 +6227,9 @@ const World = {
     // In the open, water is the world below the line and there is nothing
     // behind it. In a pipe there is a pipe behind it, and hiding the pipe is
     // what made the system read as a wall with a pond in front of it.
-    if (this.isIndoor(cam.x)) ctx.globalAlpha = 0.7;
+    // Indoors there is a wall behind the water. Enough of it should show that
+    // you know it is there, and not so much that the room reads as a tank.
+    if (this.isIndoor(cam.x)) ctx.globalAlpha = 0.84;
     ctx.fillRect(0, y0, W, H - y0 + 2);
     ctx.globalAlpha = 1;
     // keep a little pixel grain in the ramp so it never reads as an airbrush
@@ -8896,11 +8889,11 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 const STAGES = [
   // ---- ZONE 1: THE SYSTEM. Five levels down, and one long climb back up.
   { id: 'facility', zone: 'river', lat: 0.14, lon: 2.68, name: 'FACILITY B', sub: 'TRANSFER ORDER 11. GET OUT OF THE BUILDING.', x: -7480, size: 0.22, diff: 0, intro: true },
-  { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE WAKE', sub: 'LEVEL ONE. DAYLIGHT DOWN THREE SHAFTS AND A HAND OF WATER.', x: -5500, size: 0.3, diff: 0.2, need: { deep: 900 } },
-  { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE MAIN INTERCEPTOR', sub: 'LEVEL TWO. FLOODED, WITH AIR AT THE CROWN.', x: -4100, size: 0.55, diff: 0.8, need: { deep: 1800 } },
-  { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'THE FLOODED GALLERY', sub: 'LEVEL THREE. NO AIR EXCEPT WHERE A SHAFT COMES DOWN.', x: -2600, size: 0.9, diff: 1.5, need: { deep: 3200 } },
-  { id: 'sump', zone: 'river', lat: 0.20, lon: 3.16, name: 'THE ACID SUMP', sub: 'LEVEL FOUR. THE BOTTOM. IT IS STILL WORKING.', x: -1300, size: 1.4, diff: 2.2, need: { deep: 4600 } },
-  { id: 'outfall', survey: true, zone: 'river', lat: 0.08, lon: 3.46, name: 'THE OUTFALL', sub: 'LEVEL FIVE. A FLIGHT OF WEIRS AND THE LIGHT AT THE TOP.', x: 400, size: 2.0, diff: 2.8, need: { deep: 6000 } },
+  { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE INTAKE', sub: 'OPEN WATER, A ROOF OVER IT, AND EVERYTHING IN IT SMALLER THAN YOU.', x: -5500, size: 0.3, diff: 0.2, need: { deep: 900 } },
+  { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE GRIT CHANNEL', sub: 'THE WALLS COME IN AND THE CROWN COMES DOWN. GO THROUGH IT FAST.', x: -4260, size: 0.55, diff: 0.8, need: { deep: 1800 } },
+  { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'THE GREAT VAULT', sub: 'SEVEN HUNDRED FEET OF WATER AND FOUR HUNDRED OF AIR OVER IT.', x: -3400, size: 0.9, diff: 1.5, need: { deep: 3200 } },
+  { id: 'sump', zone: 'river', lat: 0.20, lon: 3.16, name: 'THE SUMP', sub: 'THE DEEPEST WATER IN THE WORLD SO FAR, AND IT IS STILL WORKING.', x: -1300, size: 1.4, diff: 2.2, need: { deep: 4600 } },
+  { id: 'outfall', survey: true, zone: 'river', lat: 0.08, lon: 3.46, name: 'THE OUTFALL', sub: 'A FLIGHT OF WEIRS AND A HOLE WITH A SKY BEHIND IT.', x: 400, size: 2.0, diff: 2.8, need: { deep: 6000 } },
   // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
   { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
   { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },
@@ -10310,7 +10303,14 @@ class SkunkApe extends Entity {
 }
 // ---------- spawn helpers ----------
 const Spawn = {
-  school(x, y, kind) { if (kind === 'babygator') { const n = randi(2, 5); for (let i = 0; i < n; i++) { const g = new Gator(x + rand(-30, 30), y + rand(-10, 10), rand(0.35, 0.5)); g.name = 'GATOR HATCHLING'; g.threat = 0; G.add(g); } return null; } const d = FISH[kind] || SPECIES[kind]; const n = randi(d.school ? d.school[0] : 1, d.school ? d.school[1] : 2); const leader = new Fish(x, y, kind); G.add(leader); for (let i = 1; i < n; i++) G.add(new Fish(x + rand(-30, 30), y + rand(-20, 20), kind, leader)); return leader; },
+  school(x, y, kind) { if (kind === 'babygator') { const n = randi(2, 5); for (let i = 0; i < n; i++) { const g = new Gator(x + rand(-30, 30), y + rand(-10, 10), rand(0.35, 0.5)); g.name = 'GATOR HATCHLING'; g.threat = 0; G.add(g); } return null; } const d = FISH[kind] || SPECIES[kind]; const sc = d.school ? d.school : [1, 2];
+    // A shoal is a shoal. Two fish is a pair, and a pair is not a shoal — indoors
+    // the whole game is the water being full, so the school sizes go up.
+    const big = World.isIndoor(x) ? 2 : 1;
+    const n = randi(sc[0] * big, Math.max(sc[0] * big + 1, sc[1] * big));
+    const leader = new Fish(x, y, kind); G.add(leader);
+    for (let i = 1; i < n; i++) G.add(new Fish(x + rand(-44, 44), y + rand(-26, 26), kind, leader));
+    return leader; },
   flock(x, dir, kind, n) { for (let i = 0; i < n; i++) { const b = new Bird(x - dir * i * 26 + rand(-8, 8), -rand(80, 170) + i * 4, kind, 'fly', dir); b.vx = dir * BIRDS[kind].speed; G.add(b); } },
   heron(x) { const b = new Bird(x, 0, 'heron', 'wade'); G.add(b); return b; },
   duck(x) { const b = new Bird(x, 0, 'duck', 'float'); G.add(b); return b; },
@@ -11988,7 +11988,7 @@ class Player {
     this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.toxin = 0; this.rads = 0; this.crush = 0; this.hazT = 0;
-    this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
+    this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.rush = 0; this.rushT = 0; this.rushBest = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.headShakeT = 0; this.goreT = 0; this.snapT = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
     this.wet = 1; this.dripT = 0;
@@ -11999,7 +11999,7 @@ class Player {
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
   // The exponent is what makes a bull's bite matter; the floor under it is what
   // stops a hatchling needing ten chews to open a minnow.
-  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1); }
+  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1) * (this.rushT > 0 ? 2.4 : 1); }
   get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
@@ -12008,7 +12008,7 @@ class Player {
   get boostMul() { return this.boosting ? 1.75 : 1; }
   // Slower than it was. A crocodile is not a fish; it cruises, it does not
   // sprint, and the burst it does have is on the speed button.
-  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1); }
+  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1) * (this.rushT > 0 ? 1.6 : 1); }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -12102,6 +12102,19 @@ class Player {
     if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
+    // ---- GOLD RUSH ------------------------------------------------------
+    // The meter fills on what you eat and cashes out all at once: ten seconds
+    // where nothing can hurt you, nothing is too big to swallow, and the whole
+    // room is worth triple. It is the only reason to keep eating when you are
+    // already full, and it is the loop this game is actually about.
+    if (this.rushT > 0) {
+      this.rushT -= dt;
+      this.invuln = Math.max(this.invuln, 0.2);
+      if (chance(dt * 40)) G.fx.add({ type: 'spark', x: this.x + rand(-14, 14) * this.vis, y: this.y + rand(-9, 9) * this.vis, vx: rand(-30, 30), vy: rand(-40, 10), s: 1, color: choice(['#ffd83c', '#ffef9a', '#ffa820']), life: rand(0.3, 0.8) });
+      if (this.rushT <= 0) { this.rushT = 0; G.fx.text(this.x, this.y - 26 * this.vis, 'OVER', { color: '#c8a848', scale: 2, life: 1 }); }
+    } else if (this.rush > 0) {
+      this.rush = Math.max(0, this.rush - dt * 0.055);      // it leaks if you stop
+    }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
     // Stamina drives both halves of the speed button: hold it to run, flick it
     // upward to leap. One pool, so pushing the throttle costs you the jump.
@@ -12118,7 +12131,7 @@ class Player {
     // growth
     this.sizeTarget = massToSize(this.mass); this.size += (this.sizeTarget - this.size) * Math.min(1, 4 * dt);
     // hunger
-    this.hunger -= dt * 1.3 * this.st.hungerRate * (1 + this.size * 0.04);
+    if (this.rushT <= 0) this.hunger -= dt * 1.55 * this.st.hungerRate * (1 + this.size * 0.04);
     if (this.hunger <= 0) {
       this.hunger = 0; this.starving = true; this.hp -= this.maxHp * 0.035 * dt; SFX.heartbeat();
       if (chance(dt * 0.8)) G.fx.text(this.x, this.y - 22 * this.vis, 'STARVING', { color: '#ff8040' });
@@ -12475,7 +12488,7 @@ class Player {
     // own head, and a hatchling's head is small but so is a minnow — the flat
     // term is what keeps the first ten minutes of a run edible.
     const maw = (this.size * 0.62 + 0.2) * this.st.swallow;
-    if ((fishy && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
+    if ((fishy && e.edible) || (this.rushT > 0 && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
     // a pounce that connects lands the next bite harder
     if (this.pounceT > 0) { dmg *= this.pounceMul; crit = true; this.pounceT = 0; }
@@ -12655,6 +12668,17 @@ class Player {
   // The speed button is a throttle. Aim UP and press it and the throttle
   // becomes a leap instead: same burst it always was, paid for out of the same
   // stamina the run drinks from.
+  // The meter is full. Everything on the screen just became food.
+  goldRush() {
+    this.rush = 0; this.rushT = 10; this.rushBest++;
+    this.invuln = Math.max(this.invuln, 0.6);
+    this.hunger = 100;
+    G.slowmo(0.35, 0.7); G.zoomPunch(1.12); G.shake(6);
+    G.banner = { text: 'GOLD RUSH', sub: 'NOTHING IS TOO BIG', t: 2.4, max: 2.4, color: '#ffd83c' };
+    SFX.roar && SFX.roar(this.size, 0);
+    for (let i = 0; i < 40; i++) G.fx.add({ type: 'spark', x: this.x, y: this.y, vx: rand(-260, 260), vy: rand(-220, 160), s: 1, color: choice(['#ffd83c', '#ffef9a', '#ffa820', '#ffffff']), life: rand(0.5, 1.3) });
+  }
+
   dash(ix, iy) {
     if (this.grabbed) return;
     // The leap is off the table for now. The throttle is a throttle, and an
@@ -12749,10 +12773,15 @@ class Player {
     this.mass += gain;
     this.hunger = Math.min(100, this.hunger + e.mass * 30 / Math.pow(this.size, 1.8) * this.st.hungerRestore);
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));
-    this.combo++; this.comboT = 2.4;
+    this.combo++; this.comboT = 3.2;
+    // every mouthful winds the meter on; a big one winds it on a long way
+    if (this.rushT <= 0) {
+      this.rush = Math.min(1, this.rush + clamp(e.mass * 0.035 / Math.pow(this.size, 0.5), 0.025, 0.2));
+      if (this.rush >= 1) this.goldRush();
+    }
     const pan = G.panOf(e.x);
     if (this.combo > 1) { G.fx.text(this.x, this.y - 20 * this.vis, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
-    const pts = Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1));
+    const pts = Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1) * (this.rushT > 0 ? 3 : 1));
     G.addScore(pts);
     if (e.type !== 'gib') {
       // the score for the meal, thrown off the meal
@@ -14849,8 +14878,9 @@ const Opening = {
   // the cover you have to break, the line the handlers own, the head of the
   // interceptor under the building, and the mouth it lets out of
   LIP: -5968, DRAIN: -5950, MOUTH: -2996,
-  // where the game picks you up again: the brick bench on level one
-  WAKE: -5700,
+  // where the game picks you up again: the brick staging in the intake,
+  // which is the only dry thing in the room
+  WAKE: -5025,
   get MANHOLE() { return FACILITY.MANHOLE; },
   get DOCK() { return FACILITY.DOCK; },
   NEED_COVER: 6,
@@ -15091,7 +15121,7 @@ const Opening = {
     if (this.t > 3.6) {
       this.phase = 'done'; this.on = false; this.splashed = true;
       P.frozen = false; P.invuln = 3;
-      G.banner = { text: 'LEVEL ONE', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN.', t: 4.5, max: 4.5, color: '#9fe0c8' };
+      G.banner = { text: 'THE INTAKE', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN. EAT.', t: 4.5, max: 4.5, color: '#9fe0c8' };
     }
   },
 
@@ -16255,6 +16285,7 @@ const UI = {
     const tab = (col, on) => { if (!on) return; ctx.fillStyle = Math.floor(t * 5) % 2 ? col : mixColor(col, '#101816', 0.45); ctx.fillRect(140, ty2, 4, 8); ty2 += 10; };
     tab('#60ff60', P.poisonT > 0);
     tab('#ff5030', P.frenzyT > 0);
+    tab('#ffd83c', P.rushT > 0);
     tab('#ff6060', !!P.missingLimbs);
     // environment meters only exist where the environment is trying to kill you
     let hy2 = 66;                       // under the alarm panel, never over it
@@ -16305,6 +16336,35 @@ const UI = {
     if (P.combo > 1) {
       const sc = 1 + Math.min(2, Math.floor(P.combo / 5));
       Font.draw(ctx, 'X' + P.combo, W - 10, 56, { color: P.combo >= 10 ? '#ff40c0' : '#ffa030', align: 'right', shadow: true, scale: sc });
+      // and how long you have to keep it: a bar that empties under the number
+      const cf = clamp(P.comboT / 3.2, 0, 1);
+      ctx.fillStyle = '#1a1208'; ctx.fillRect(W - 46, 56 + 9 * sc, 36, 3);
+      ctx.fillStyle = P.combo >= 10 ? '#ff40c0' : '#ffa030'; ctx.fillRect(W - 46, 56 + 9 * sc, Math.round(36 * cf), 3);
+    }
+    // ---- THE GOLD RUSH METER --------------------------------------------
+    // The one thing on this HUD that tells you to keep eating when you are
+    // already full. It fills gold, it flashes when it is nearly there, and
+    // when it goes off the whole screen knows about it.
+    {
+      const bw = 118, bx = W / 2 - bw / 2, by = H - 20;
+      const on = P.rushT > 0, f = on ? clamp(P.rushT / 10, 0, 1) : clamp(P.rush || 0, 0, 1);
+      const near = !on && f > 0.82;
+      ctx.fillStyle = 'rgba(8,10,6,0.66)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 11);
+      ctx.fillStyle = on ? '#3a2a06' : '#181c14'; ctx.fillRect(bx, by, bw, 7);
+      const hot = on ? (Math.floor(t * 12) % 2 ? '#fff4b0' : '#ffd83c') : near && Math.floor(t * 8) % 2 ? '#fff4b0' : '#e8b028';
+      ctx.fillStyle = hot; ctx.fillRect(bx, by, Math.round(bw * f), 7);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, Math.round(bw * f), 2);
+      // notches, so the bar reads as a gauge and not as a smear
+      ctx.fillStyle = 'rgba(6,10,6,0.55)';
+      for (let i = 1; i < 5; i++) ctx.fillRect(bx + Math.round(bw * i / 5), by, 1, 7);
+      Font.draw(ctx, on ? 'GOLD RUSH  ' + Math.ceil(P.rushT) : 'GOLD RUSH', W / 2, by - 11,
+        { color: on ? (Math.floor(t * 10) % 2 ? '#fff4b0' : '#ffd83c') : near ? '#ffd83c' : 'rgba(200,178,110,0.55)', align: 'center', scale: on ? 2 : 1, outline: '#140e02' });
+      if (on) {
+        // the screen goes gold at the edges while it is running
+        const g = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.72);
+        g.addColorStop(0, 'rgba(255,200,40,0)'); g.addColorStop(1, 'rgba(255,190,40,' + (0.10 + 0.05 * Math.sin(t * 9)).toFixed(3) + ')');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      }
     }
     // apex badge and lineage pips
     let px2 = 10, py2 = H - 40;
@@ -19056,7 +19116,7 @@ const G = {
   // ---------- director ----------
   runDirector(dt) {
     const d = this.director, P = this.player, D = this.difficulty();
-    d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
+    d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.32; this.populate(D); this.populate(D); }
     d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(21 - D * 2.6, 5, 21) * rand(0.8, 1.25); this.spawnPredator(D); }
     d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     // hard cap
@@ -19064,12 +19124,18 @@ const G = {
   },
   populate(D) {
     const P = this.player, halfW = this.W / this.cam.zoom / 2;
+    // Count what is actually in front of you, not what is somewhere in the
+    // chunk. A wide net says the water is full while the screen is empty.
     let fishCount = 0, landCount = 0, total = 0;
-    for (const e of this.ents) { if (e.type === 'gib' || e.type === 'proj') continue; if (Math.abs(e.x - P.x) > halfW + 700) continue; total++; if (e.type === 'fish' || e.type === 'frog' || e.type === 'turtle' || e.type === 'bird') fishCount++; if (e.type === 'land') landCount++; }
-    if (total > 90) return;
-    const target = 16 + Math.min(24, P.size * 3);
+    for (const e of this.ents) { if (e.type === 'gib' || e.type === 'proj') continue; if (Math.abs(e.x - P.x) > halfW + 260) continue; total++; if (e.type === 'fish' || e.type === 'frog' || e.type === 'turtle' || e.type === 'bird') fishCount++; if (e.type === 'land') landCount++; }
+    if (total > 140) return;
+    // Hungry Shark's whole trick is that there is always something in front of
+    // you. Sixteen fish in a screen and a half is a pond; this is a system.
+    const target = 30 + Math.min(40, P.size * 4.5);
     if (fishCount >= target) { if (landCount < 4 && chance(0.35)) { const bx = World.findX(P.x + (chance(0.5) ? 1 : -1) * (halfW + 300), x => World.floorY(x) < -5, 1400, 40); if (bx !== null && Math.abs(bx - P.x) > halfW * 0.7) this.spawnLand(bx, D); } return; }
-    const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(80, 520)), fy = World.floorY(x);
+    // just past the edge of the shot, so a shoal crosses it rather than
+    // spawning half a screen out and wandering off the other way
+    const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(10, 130)), fy = World.floorY(x);
     if (fy < 20) { this.spawnLand(x, D); return; }
     const B = Biome.at(x);
     if (B.indoor && !B.fish.length) return;  // nothing swims in a dry containment cell
@@ -19083,7 +19149,22 @@ const G = {
     const kind = weightedPick(table.concat(extra));
     if (kind === 'mullet') { const n = randi(4, 8); const lead = new Mullet(x, clamp(rand(10, 70), 8, fy - 15)); this.add(lead); for (let i = 1; i < n; i++) this.add(new Mullet(x + rand(-30, 30), lead.y + rand(-16, 16), lead)); }
     else if (kind === 'babygator') Spawn.school(x, clamp(rand(10, 60), 8, fy - 15), 'babygator');
-    else if (SPECIES[kind] && SPECIES[kind].cat === 'fish') { const d = SPECIES[kind]; const y = d.nearFloor ? fy - 30 : clamp(rand((d.band || [10, 200])[0], (d.band || [10, 200])[1]), 10, fy - 15); Spawn.school(x, y, kind); }
+    else if (kind === 'roachswarm') { for (let i = 0; i < 6; i++) this.add(new Bottom(x + rand(-50, 50), 'roach')); }
+    else if (SPECIES[kind] && SPECIES[kind].cat === 'fish') {
+      const d = SPECIES[kind];
+      // In a flooded chamber the band is the whole chamber: a species that
+      // likes the top forty feet of a river has nowhere to be in a vault seven
+      // hundred deep, and the bottom of the room comes out empty.
+      const band = d.band || [10, 200];
+      // A chamber seven hundred feet deep spreads a school over ten screens of
+      // water and the room comes out empty. Shoals go in at roughly the depth
+      // the player is swimming at, so they cross the shot instead of missing it.
+      const halfH = this.H / this.cam.zoom / 2;
+      const y = d.nearFloor ? fy - 30
+        : B.indoor ? clamp(P.y + rand(-halfH * 1.3, halfH * 1.3), 12, Math.max(14, fy - 12))
+        : clamp(rand(band[0], band[1]), 10, fy - 15);
+      Spawn.school(x, y, kind);
+    }
     else if (kind === 'frog') this.add(new Frog(x, chance(0.3) ? 'pigfrog' : 'frog'));
     else if (kind === 'turtle') this.add(new Turtle(x, clamp(rand(30, 150), 10, fy - 15), weightedPick([['turtle', 2], ['slider', 2], ['cooter', 1.5], ['softshell', 1], ['gatorsnapper', D >= 1.5 ? 1 : 0]])));
     else if (kind === 'bottom') { const n = randi(1, 3); const kinds = B.id === 'outfall' ? [['roach', 3], ['crayfish', 2]] : B.id === 'bay' ? [['crab', 3], ['shrimp', 2], ['fiddler', 1.5]] : [['crayfish', 3], ['crab', 2], ['snail', 1.5], ['shrimp', 1.5], ['fiddler', 1]]; for (let i = 0; i < n; i++) this.add(new Bottom(x + rand(-40, 40), weightedPick(kinds))); }

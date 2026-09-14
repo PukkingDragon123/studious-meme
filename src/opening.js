@@ -20,8 +20,9 @@ const Opening = {
   // the cover you have to break, the line the handlers own, the head of the
   // interceptor under the building, and the mouth it lets out of
   LIP: -5968, DRAIN: -5950, MOUTH: -2996,
-  // where the game picks you up again: the brick bench on level one
-  WAKE: -5700,
+  // where the game picks you up again: the brick staging in the intake,
+  // which is the only dry thing in the room
+  WAKE: -5025,
   get MANHOLE() { return FACILITY.MANHOLE; },
   get DOCK() { return FACILITY.DOCK; },
   NEED_COVER: 6,
@@ -262,7 +263,7 @@ const Opening = {
     if (this.t > 3.6) {
       this.phase = 'done'; this.on = false; this.splashed = true;
       P.frozen = false; P.invuln = 3;
-      G.banner = { text: 'LEVEL ONE', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN.', t: 4.5, max: 4.5, color: '#9fe0c8' };
+      G.banner = { text: 'THE INTAKE', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN. EAT.', t: 4.5, max: 4.5, color: '#9fe0c8' };
     }
   },
 

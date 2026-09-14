@@ -68,6 +68,7 @@ const UI = {
     const tab = (col, on) => { if (!on) return; ctx.fillStyle = Math.floor(t * 5) % 2 ? col : mixColor(col, '#101816', 0.45); ctx.fillRect(140, ty2, 4, 8); ty2 += 10; };
     tab('#60ff60', P.poisonT > 0);
     tab('#ff5030', P.frenzyT > 0);
+    tab('#ffd83c', P.rushT > 0);
     tab('#ff6060', !!P.missingLimbs);
     // environment meters only exist where the environment is trying to kill you
     let hy2 = 66;                       // under the alarm panel, never over it
@@ -118,6 +119,35 @@ const UI = {
     if (P.combo > 1) {
       const sc = 1 + Math.min(2, Math.floor(P.combo / 5));
       Font.draw(ctx, 'X' + P.combo, W - 10, 56, { color: P.combo >= 10 ? '#ff40c0' : '#ffa030', align: 'right', shadow: true, scale: sc });
+      // and how long you have to keep it: a bar that empties under the number
+      const cf = clamp(P.comboT / 3.2, 0, 1);
+      ctx.fillStyle = '#1a1208'; ctx.fillRect(W - 46, 56 + 9 * sc, 36, 3);
+      ctx.fillStyle = P.combo >= 10 ? '#ff40c0' : '#ffa030'; ctx.fillRect(W - 46, 56 + 9 * sc, Math.round(36 * cf), 3);
+    }
+    // ---- THE GOLD RUSH METER --------------------------------------------
+    // The one thing on this HUD that tells you to keep eating when you are
+    // already full. It fills gold, it flashes when it is nearly there, and
+    // when it goes off the whole screen knows about it.
+    {
+      const bw = 118, bx = W / 2 - bw / 2, by = H - 20;
+      const on = P.rushT > 0, f = on ? clamp(P.rushT / 10, 0, 1) : clamp(P.rush || 0, 0, 1);
+      const near = !on && f > 0.82;
+      ctx.fillStyle = 'rgba(8,10,6,0.66)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 11);
+      ctx.fillStyle = on ? '#3a2a06' : '#181c14'; ctx.fillRect(bx, by, bw, 7);
+      const hot = on ? (Math.floor(t * 12) % 2 ? '#fff4b0' : '#ffd83c') : near && Math.floor(t * 8) % 2 ? '#fff4b0' : '#e8b028';
+      ctx.fillStyle = hot; ctx.fillRect(bx, by, Math.round(bw * f), 7);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, Math.round(bw * f), 2);
+      // notches, so the bar reads as a gauge and not as a smear
+      ctx.fillStyle = 'rgba(6,10,6,0.55)';
+      for (let i = 1; i < 5; i++) ctx.fillRect(bx + Math.round(bw * i / 5), by, 1, 7);
+      Font.draw(ctx, on ? 'GOLD RUSH  ' + Math.ceil(P.rushT) : 'GOLD RUSH', W / 2, by - 11,
+        { color: on ? (Math.floor(t * 10) % 2 ? '#fff4b0' : '#ffd83c') : near ? '#ffd83c' : 'rgba(200,178,110,0.55)', align: 'center', scale: on ? 2 : 1, outline: '#140e02' });
+      if (on) {
+        // the screen goes gold at the edges while it is running
+        const g = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.72);
+        g.addColorStop(0, 'rgba(255,200,40,0)'); g.addColorStop(1, 'rgba(255,190,40,' + (0.10 + 0.05 * Math.sin(t * 9)).toFixed(3) + ')');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      }
     }
     // apex badge and lineage pips
     let px2 = 10, py2 = H - 40;

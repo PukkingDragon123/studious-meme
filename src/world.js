@@ -489,7 +489,9 @@ const World = {
     // In the open, water is the world below the line and there is nothing
     // behind it. In a pipe there is a pipe behind it, and hiding the pipe is
     // what made the system read as a wall with a pond in front of it.
-    if (this.isIndoor(cam.x)) ctx.globalAlpha = 0.7;
+    // Indoors there is a wall behind the water. Enough of it should show that
+    // you know it is there, and not so much that the room reads as a tank.
+    if (this.isIndoor(cam.x)) ctx.globalAlpha = 0.84;
     ctx.fillRect(0, y0, W, H - y0 + 2);
     ctx.globalAlpha = 1;
     // keep a little pixel grain in the ramp so it never reads as an airbrush

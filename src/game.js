@@ -643,7 +643,7 @@ const G = {
   // ---------- director ----------
   runDirector(dt) {
     const d = this.director, P = this.player, D = this.difficulty();
-    d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.7; this.populate(D); }
+    d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.32; this.populate(D); this.populate(D); }
     d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(21 - D * 2.6, 5, 21) * rand(0.8, 1.25); this.spawnPredator(D); }
     d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     // hard cap
@@ -651,12 +651,18 @@ const G = {
   },
   populate(D) {
     const P = this.player, halfW = this.W / this.cam.zoom / 2;
+    // Count what is actually in front of you, not what is somewhere in the
+    // chunk. A wide net says the water is full while the screen is empty.
     let fishCount = 0, landCount = 0, total = 0;
-    for (const e of this.ents) { if (e.type === 'gib' || e.type === 'proj') continue; if (Math.abs(e.x - P.x) > halfW + 700) continue; total++; if (e.type === 'fish' || e.type === 'frog' || e.type === 'turtle' || e.type === 'bird') fishCount++; if (e.type === 'land') landCount++; }
-    if (total > 90) return;
-    const target = 16 + Math.min(24, P.size * 3);
+    for (const e of this.ents) { if (e.type === 'gib' || e.type === 'proj') continue; if (Math.abs(e.x - P.x) > halfW + 260) continue; total++; if (e.type === 'fish' || e.type === 'frog' || e.type === 'turtle' || e.type === 'bird') fishCount++; if (e.type === 'land') landCount++; }
+    if (total > 140) return;
+    // Hungry Shark's whole trick is that there is always something in front of
+    // you. Sixteen fish in a screen and a half is a pond; this is a system.
+    const target = 30 + Math.min(40, P.size * 4.5);
     if (fishCount >= target) { if (landCount < 4 && chance(0.35)) { const bx = World.findX(P.x + (chance(0.5) ? 1 : -1) * (halfW + 300), x => World.floorY(x) < -5, 1400, 40); if (bx !== null && Math.abs(bx - P.x) > halfW * 0.7) this.spawnLand(bx, D); } return; }
-    const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(80, 520)), fy = World.floorY(x);
+    // just past the edge of the shot, so a shoal crosses it rather than
+    // spawning half a screen out and wandering off the other way
+    const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(10, 130)), fy = World.floorY(x);
     if (fy < 20) { this.spawnLand(x, D); return; }
     const B = Biome.at(x);
     if (B.indoor && !B.fish.length) return;  // nothing swims in a dry containment cell
@@ -670,7 +676,22 @@ const G = {
     const kind = weightedPick(table.concat(extra));
     if (kind === 'mullet') { const n = randi(4, 8); const lead = new Mullet(x, clamp(rand(10, 70), 8, fy - 15)); this.add(lead); for (let i = 1; i < n; i++) this.add(new Mullet(x + rand(-30, 30), lead.y + rand(-16, 16), lead)); }
     else if (kind === 'babygator') Spawn.school(x, clamp(rand(10, 60), 8, fy - 15), 'babygator');
-    else if (SPECIES[kind] && SPECIES[kind].cat === 'fish') { const d = SPECIES[kind]; const y = d.nearFloor ? fy - 30 : clamp(rand((d.band || [10, 200])[0], (d.band || [10, 200])[1]), 10, fy - 15); Spawn.school(x, y, kind); }
+    else if (kind === 'roachswarm') { for (let i = 0; i < 6; i++) this.add(new Bottom(x + rand(-50, 50), 'roach')); }
+    else if (SPECIES[kind] && SPECIES[kind].cat === 'fish') {
+      const d = SPECIES[kind];
+      // In a flooded chamber the band is the whole chamber: a species that
+      // likes the top forty feet of a river has nowhere to be in a vault seven
+      // hundred deep, and the bottom of the room comes out empty.
+      const band = d.band || [10, 200];
+      // A chamber seven hundred feet deep spreads a school over ten screens of
+      // water and the room comes out empty. Shoals go in at roughly the depth
+      // the player is swimming at, so they cross the shot instead of missing it.
+      const halfH = this.H / this.cam.zoom / 2;
+      const y = d.nearFloor ? fy - 30
+        : B.indoor ? clamp(P.y + rand(-halfH * 1.3, halfH * 1.3), 12, Math.max(14, fy - 12))
+        : clamp(rand(band[0], band[1]), 10, fy - 15);
+      Spawn.school(x, y, kind);
+    }
     else if (kind === 'frog') this.add(new Frog(x, chance(0.3) ? 'pigfrog' : 'frog'));
     else if (kind === 'turtle') this.add(new Turtle(x, clamp(rand(30, 150), 10, fy - 15), weightedPick([['turtle', 2], ['slider', 2], ['cooter', 1.5], ['softshell', 1], ['gatorsnapper', D >= 1.5 ? 1 : 0]])));
     else if (kind === 'bottom') { const n = randi(1, 3); const kinds = B.id === 'outfall' ? [['roach', 3], ['crayfish', 2]] : B.id === 'bay' ? [['crab', 3], ['shrimp', 2], ['fiddler', 1.5]] : [['crayfish', 3], ['crab', 2], ['snail', 1.5], ['shrimp', 1.5], ['fiddler', 1]]; for (let i = 0; i < n; i++) this.add(new Bottom(x + rand(-40, 40), weightedPick(kinds))); }
