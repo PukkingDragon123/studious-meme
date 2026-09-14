@@ -113,7 +113,7 @@ const ZONE_BOSSES = {
 // the fish-shaped bosses are all the same job with different numbers
 const FISH_BOSS = {
   gnasher:    { kind: 'mutantcat', name: 'THE GNASHER', size: 2.6, cls: 1.2, hp: 900, mass: 700, spd: 150, gibs: 6, depth: 70 },
-  sludgeking: { kind: 'sewereel', name: 'THE RIVER KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
+  sludgeking: { kind: 'sewereel', name: 'THE SLUDGE KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
   anvil:      { kind: 'hammer', name: 'THE ANVIL', size: 2.2, cls: 1.35, hp: 1600, mass: 1500, spd: 200, gibs: 6, depth: 220 },
   greenwall:  { kind: 'moray', name: 'THE GREEN WALL', size: 3.0, cls: 1.45, hp: 1400, mass: 1200, spd: 140, gibs: 6, depth: 300 },
   lantern:    { kind: 'anglerfish', name: 'THE LANTERN', size: 4.2, cls: 1.9, hp: 2600, mass: 2400, spd: 155, gibs: 8, depth: 760, glow: '#7affda' },
@@ -128,7 +128,7 @@ const BOSS_SPEC = {
   shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
   broodmother: { phases: 3, hp: 1.5, adds: ['rat', 'rat', 'bigrat'], cue: ['THE LITTER COMES WITH HER', 'SHE HAS NOWHERE TO RUN'] },
   gnasher:  { phases: 3, hp: 1.4, adds: ['piranha', 'piranha'], cue: ['THE SHOAL TURNS WITH IT', 'IT STOPS PRETENDING TO BE A FISH'] },
-  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE BEND', 'THE RIVER IS ITS BODY'] },
+  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE GALLERY', 'THE SYSTEM IS ITS BODY'] },
   anvil:    { phases: 3, hp: 1.5, adds: ['barracuda', 'barracuda'], cue: ['IT CIRCLES WIDER', 'IT HAS DECIDED'] },
   greenwall: { phases: 3, hp: 1.5, adds: ['moray'], cue: ['IT COMES OUT OF THE HOLE', 'ALL OF IT COMES OUT'] },
   lantern:  { phases: 4, hp: 1.7, adds: ['anglerfish', 'isopod'], cue: ['THE LIGHT GOES OUT', 'SOMETHING ELSE LIGHTS UP', 'IT WAS NEVER A FISH'] },
@@ -446,10 +446,14 @@ const G = {
       }
     }
     const B = Biome.at(ch.x0);
-    for (let k = 0; k < 5; k++) {
+    // Level one is stocked, not thinned: a hatchling that cannot find a meal in
+    // the first two minutes has nothing to grow on and the run is over before
+    // it starts. Nine passes instead of five, and none of them skipped.
+    const passes = B.id === 'wake' ? 9 : 5;
+    for (let k = 0; k < passes; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
       const Bx = Biome.at(x);
-      if (Bx.indoor && rng() < 0.5) continue;
+      if (Bx.indoor && Bx.id !== 'wake' && rng() < 0.5) continue;
       const fy = World.floorY(x);
       if (fy < -3) { if (rng() < 0.6) this.spawnLand(x, D); continue; }
       if (fy < 30) { if (!Bx.indoor && rng() < 0.45) this.add(new Bird(x, 0, choice(['heron', 'egret', 'ibis', 'snowy', 'limpkin']), 'wade')); else if (rng() < 0.4) this.add(new Bottom(x, Bx.indoor || Bx.id === 'outfall' ? 'roach' : 'crayfish')); continue; }
@@ -533,7 +537,17 @@ const G = {
   // The swamp keeps pace with you, and it keeps pace faster than it used to:
   // distance costs more, the clock costs more, and every shed you take is a
   // standing invitation to whatever else lives out here.
-  difficulty() { const P = this.player; return (this.startDiff || 0) + P.sheds * 1.25 + Math.abs(P.x) / 2600 + this.t / 220; },
+  difficulty() {
+    const P = this.player;
+    let d = (this.startDiff || 0) + P.sheds * 1.25 + Math.abs(P.x) / 2600 + this.t / 220;
+    // The system is the first thing anybody plays, and the animal in it is the
+    // length of a hand. Zone one is held down hard, and level one is held down
+    // harder: nothing hunts you on the bench you woke up on.
+    const B = Biome.at(P.x);
+    if (B.id === 'wake' || B.lab) d = Math.min(d, 0.35);
+    else if (P.x < 1100) d = Math.min(d * 0.62, 2.4);
+    return d;
+  },
   dangerLevel() {
     const P = this.player; let d = 0;
     for (const e of this.ents) if (e.threat && !e.dead && Math.abs(e.x - P.x) < 500) d = Math.max(d, e.isBoss ? 1 : 0.6);
@@ -694,6 +708,8 @@ const G = {
   spawnPredator(D) {
     const P = this.player, halfW = this.W / this.cam.zoom / 2, side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(120, 320)), fy = World.floorY(x);
     const opts = [];
+    // level one is a tutorial with a roof on it: fish, rats, nothing with teeth
+    if (Biome.at(x).id === 'wake' || Biome.at(P.x).id === 'wake') return;
     if (D < 2) opts.push(['bass', 2]);
     if (D >= 0.8) opts.push(['moccasin', 2]);
     if (D >= 1.2) opts.push(['gator', 4]);
@@ -1027,6 +1043,8 @@ const G = {
         else {
           if (Input.hit('KeyG', 'KeyE', 'Tab')) { this.openGenes(); break; }
           if (Input.hit('KeyH')) { this.prevState = 'play'; this.state = 'help'; break; }
+          // the drawing of the system, if you are in the system to read it
+          if (Input.hit('KeyM') && World.isIndoor(this.player.x)) { this.prevState = 'play'; this.state = 'plan'; Blueprint.open(); SFX.ui(); break; }
           if (this.boss && Boss.canFinish(this.boss) && Input.bitePressed()) Finisher.begin(this.boss);
         }
         this.updateWorld(dt, false); this.runDirector(dt); Missions.tick(dt);
@@ -1075,6 +1093,10 @@ const G = {
         if (Input.hit('Digit3')) { this.settings.mouseMove = !this.settings.mouseMove; SFX.ui(); }
         if (Input.hit('Digit4')) { this.settings.touch = this.settings.touch === false; SFX.ui(); }
         if (Input.hit('KeyC')) { this.prevState = 'pause'; this.state = 'codex'; this.codexScroll = 0; SFX.ui(); }
+        break;
+      case 'plan':
+        Blueprint.t += raw;
+        if (Input.hit('Escape', 'KeyM', 'Enter') || UI.exitHit() || Input.mouse.clicked) { this.state = this.prevState || 'play'; SFX.ui(); }
         break;
       case 'help':
         if (Input.hit('Escape', 'KeyH', 'Enter') || UI.exitHit()) { this.state = this.prevState; SFX.ui(); }
@@ -1213,7 +1235,8 @@ const G = {
     // the trolley ride is framed on the tank and the two pushing it; the ride
     // down the pipe wants a little more of the pipe than that
     const tz2 = Opening.on && Opening.phase === 'carry' ? clamp(tz, 1.6, 2.2)
-      : Opening.on && (Opening.phase === 'slide' || Opening.phase === 'drop') ? clamp(tz * 0.62, 1.1, 1.7) : tz;
+      : Opening.on && Opening.phase === 'drop' ? clamp(tz * 0.62, 1.1, 1.7)
+      : Opening.on && (Opening.phase === 'black' || Opening.phase === 'wake') ? clamp(tz * 1.05, 1.9, 3.0) : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole
@@ -1324,6 +1347,8 @@ const G = {
     this.fx.drawPops(ctx, cam);
     if (indoor) Waste.drawOver(ctx, cam);
     World.drawDecor(ctx, cam, 1, day);
+    // the near side of the bore: pipes, chains and rail between you and the animal
+    if (indoor && typeof Sewer !== 'undefined') Sewer.foreground(ctx, cam);
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);
@@ -1343,6 +1368,7 @@ const G = {
       case 'dead': UI.drawDeath(ctx); break;
       case 'pause': UI.drawHUD(ctx); UI.drawPause(ctx); break;
       case 'help': UI.drawHelp(ctx); break;
+      case 'plan': Blueprint.draw(ctx); break;
       case 'codex': UI.drawCodex(ctx); break;
     }
     if (this.finisher) UI.drawFinisher(ctx);

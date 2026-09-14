@@ -14,10 +14,10 @@
 // middle of that and it wakes up. Stay out and it never touches you.
 // ---------------------------------------------------------------------------
 const LAIRS = [
-  // ---- the river -------------------------------------------------------
-  { id: 'broodmother', x: -2520, r: 220, warn: 560, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING UNDER THE FALL' },
-  { id: 'gnasher', x: -1660, r: 280, warn: 720, name: 'THE GNASHER', sign: 'bones', tell: 'THE WATER IS FULL OF BONES' },
-  { id: 'sludgeking', x: 250, r: 320, warn: 820, name: 'THE RIVER KING', sign: 'sludge', tell: 'THE MUD IS MOVING ON ITS OWN' },
+  // ---- the system ------------------------------------------------------
+  { id: 'broodmother', x: -4120, r: 200, warn: 520, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN THE BARREL' },
+  { id: 'gnasher', x: -2620, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THE GALLERY FLOOR IS ALL BONES' },
+  { id: 'sludgeking', x: -1240, r: 300, warn: 780, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
   // ---- the glades ------------------------------------------------------
   { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
   { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },

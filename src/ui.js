@@ -1546,35 +1546,50 @@ const UI = {
         px(-3, -3, 7, 1, dim('#20a040')); px(-2, -15, 1, 2, dim('#40ff60'));
         px(-11, 1, 22, 1, dim('#2a7a8a'));
         break;
-      // ---- zone 1: the river ----
-      case 'plunge':
-        // a headwall with the pipe in it, and the pool it has dug out
-        px(-12, -15, 24, 9, dim('#6b6a5e')); px(-12, -15, 24, 1, dim('#94928010'.slice(0,7)));
-        px(-4, -12, 8, 6, dim('#14181a')); px(-4, -12, 8, 1, dim('#9aa0a0'));
-        px(-1, -9, 2, 9, dim('#7fd0d8'));
-        px(-12, -4, 24, 5, dim('#2f6a76')); px(-12, -4, 24, 1, dim('#66b0b4'));
-        px(-9, -2, 3, 1, dim('#8fd8dc')); px(6, -3, 3, 1, dim('#8fd8dc'));
+      // ---- zone 1: the system ----
+      case 'wake':
+        // a barrel with a shaft of daylight down it and a bench at the invert
+        px(-12, -16, 24, 3, dim('#6a5d4e'));
+        px(-12, -13, 2, 14, dim('#6a5d4e')); px(10, -13, 2, 14, dim('#6a5d4e'));
+        px(-3, -16, 6, 12, dim('#e8dfae')); px(-2, -16, 4, 14, dim('#fff4c8'));
+        px(-10, -1, 20, 4, dim('#4c7d72')); px(-10, -1, 20, 1, dim('#8fd0c4'));
+        px(-10, -4, 5, 3, dim('#5a5044')); px(-10, -4, 5, 1, dim('#8a7c66'));
         break;
-      case 'gorge':
-        px(-12, -16, 8, 20, dim('#5f6058')); px(-12, -16, 8, 1, dim('#8a8b80'));
-        px(5, -16, 7, 19, dim('#54554e')); px(5, -16, 7, 1, dim('#7e7f75'));
-        for (let k = -13; k < 3; k += 4) { px(-12, k, 8, 1, dim('#3a3b36')); px(5, k + 2, 7, 1, dim('#3a3b36')); }
-        px(-4, -3, 9, 5, dim('#2f6a76')); px(-4, -3, 9, 1, dim('#5ea0a8'));
-        px(-3, -9, 2, 2, dim('#4a6a34')); px(2, -12, 2, 2, dim('#4a6a34'));
+      case 'interceptor':
+        // a flooded barrel with a hand of air at the crown and a pier in it
+        px(-12, -16, 24, 2, dim('#5d5347'));
+        px(-13, -14, 3, 16, dim('#5d5347')); px(10, -14, 3, 16, dim('#5d5347'));
+        px(-10, -13, 20, 3, dim('#151d1e'));
+        px(-10, -10, 20, 12, dim('#3f6a60')); px(-10, -10, 20, 1, dim('#7ab0a4'));
+        px(-2, -12, 5, 10, dim('#6a6054')); px(-2, -12, 5, 1, dim('#9a8e78'));
+        for (let k = -8; k < 2; k += 4) px(-12, k, 2, 1, dim('#3a342c'));
         break;
-      case 'rapids':
-        px(-12, -2, 24, 4, dim('#4e9a92')); px(-12, -2, 24, 1, dim('#9fe0d4'));
-        for (const [ox, oy, w] of [[-9, -5, 5], [-2, -7, 6], [5, -4, 5], [-6, -1, 4], [3, -1, 5]]) {
-          px(ox, oy, w, 4, dim('#77766a')); px(ox, oy, w, 1, dim('#a8a698'));
+      case 'gallery':
+        // no air at all: a vault full to the crown, with one bell in it
+        px(-13, -16, 26, 3, dim('#5a5a52'));
+        px(-13, -13, 26, 15, dim('#173634'));
+        for (let k = -13; k < 8; k += 6) { px(-13, k, 5, 1, dim('#3f4a42')); px(8, k + 3, 5, 1, dim('#3f4a42')); }
+        px(-3, -19, 6, 7, dim('#2b3a3a')); px(-2, -18, 4, 6, dim('#0c1616'));
+        px(-2, -13, 4, 3, dim('#7fd0d8'));
+        px(-9, -4, 3, 2, dim('#b8c0b0')); px(5, -7, 3, 2, dim('#b8c0b0'));
+        break;
+      case 'sump':
+        // the bottom, and what settled in it
+        px(-13, -16, 26, 2, dim('#5a5638'));
+        px(-13, -8, 26, 10, dim('#4f7a2e')); px(-13, -8, 26, 1, dim('#a8d020'));
+        px(-11, -5, 5, 6, dim('#8a7a20')); px(-11, -5, 5, 1, dim('#c8b840'));
+        px(2, -4, 4, 5, dim('#7a6a1c')); px(2, -4, 4, 1, dim('#b8a838'));
+        px(-3, -12, 2, 5, dim('#3a4438')); px(6, -13, 2, 6, dim('#3a4438'));
+        px(-6, -1, 3, 1, dim('#d8f048')); px(7, -2, 3, 1, dim('#d8f048'));
+        break;
+      case 'outfall':
+        // a flight of weirs with the light at the top of it
+        for (let k = 0; k < 4; k++) {
+          px(-12 + k * 6, -2 - k * 3, 7, 3 + k * 3, dim('#6a6254'));
+          px(-12 + k * 6, -2 - k * 3, 7, 1, dim('#9a9280'));
+          px(-12 + k * 6, -1 - k * 3, 7, 1, dim('#8fd0c4'));
         }
-        px(-11, -8, 3, 1, dim('#e8fffa')); px(7, -9, 3, 1, dim('#e8fffa'));
-        break;
-      case 'oxbow':
-        px(-12, -3, 24, 5, dim('#4a7a52')); px(-12, -3, 24, 1, dim('#7cb079'));
-        px(-12, 2, 24, 2, dim('#63523a'));
-        px(-11, -6, 14, 3, dim('#5d4a30')); px(-11, -6, 14, 1, dim('#7c6440'));
-        for (let i = -8; i <= 8; i += 4) px(i, -12, 1, 6, dim('#3f6a2a'));
-        px(4, -10, 6, 2, dim('#3a5a24'));
+        px(9, -16, 4, 12, dim('#d8e8e0')); px(10, -16, 2, 14, dim('#ffffff'));
         break;
       // ---- zone 3: the open ocean ----
       case 'shelf':

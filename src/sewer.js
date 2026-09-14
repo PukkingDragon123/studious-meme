@@ -90,6 +90,9 @@ const Sewer = {
       ctx.clip();
       ctx.fillStyle = mixColor(P.face, P.void, 0.55); ctx.fillRect(0, 0, W, H);
       this.masonry(ctx, cam, P, style, 0.55, 0.5);
+      // BACKGROUND: another gallery behind this one, at a third of the
+      // parallax, with its own piers and its own stair going up out of shot
+      this.farGallery(ctx, cam, S, P, style);
       this.farRibs(ctx, cam, S, P, style);
       this.depth(ctx, cam, S, P);
       this.tide(ctx, cam, S, P);
@@ -97,11 +100,253 @@ const Sewer = {
     }
     ctx.restore();
 
-    // --- the arch you are actually inside ---------------------------------
+    // --- MIDGROUND: the arch you are actually inside ----------------------
     this.nearRing(ctx, cam, S, P, style, step);
+    this.steps(ctx, cam, P);
+    this.railings(ctx, cam, P);
     this.fittings(ctx, cam, S, P, style);
     this.crownDetail(ctx, cam, S, P, style, World.t);
+    if ((Biome.at(cam.x).toxic || 0) > 0.35) this.acid(ctx, cam, S, Biome.at(cam.x));
     return true;
+  },
+
+  // ---- BACKGROUND -------------------------------------------------------
+  // A second run of the system behind this one, half a parallax step back:
+  // piers with arch heads over them, a black gallery between the piers, a side
+  // opening or two with the dead light of another level in it, and somewhere
+  // down there a flight of steps going up into nothing. It is what stops the
+  // back wall being a wall.
+  farGallery(ctx, cam, S, P, style) {
+    const W = G.W, H = G.H, z = cam.zoom, PAR = 0.42;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const back = mixColor(P.face, P.void, 0.86), pier = mixColor(P.face, P.void, 0.62);
+    const pierL = mixColor(pier, P.lit, 0.22), pierD = mixColor(P.void, pier, 0.22);
+    // the camera moves less back here, so the arcade slides against the bore
+    const ox = cam.x * PAR, oy = cam.y * PAR;
+    const cell = 104;
+    const k0 = Math.floor((ox - W / z) / cell) - 1, k1 = Math.ceil((ox + W / z) / cell) + 1;
+    // the middle of the run is the darkest thing on the screen
+    const fl = cam.toScreen(0, World.floorY(cam.x))[1], rf = cam.toScreen(0, World.roofY(cam.x) || 0)[1];
+    const midY = clamp((fl + rf) / 2, H * 0.22, H * 0.78);
+    for (let k = k0; k <= k1; k++) {
+      const sx = (k * cell - ox) * z + W / 2;
+      if (sx < -90 * z || sx > W + 90 * z) continue;
+      const h = ihash(k, 211);
+      const top = midY - (40 + h * 18) * z, bot = midY + (44 + ihash(k, 212) * 18) * z;
+      const pw = (8 + h * 4) * z;
+      // the opening between this pier and the next: the black of another run
+      px(sx, top, cell * z, bot - top, back);
+      // the pier, its lit face and the shadow it throws into the opening
+      px(sx - pw / 2, top - 6 * z, pw, bot - top + 12 * z, pier);
+      px(sx - pw / 2, top - 6 * z, pw * 0.3, bot - top + 12 * z, pierL);
+      px(sx + pw / 2 - pw * 0.24, top - 6 * z, pw * 0.24, bot - top + 12 * z, pierD);
+      px(sx - pw / 2, top - 6 * z, pw, 2 * z, pierL);
+      // an arch head springing off it
+      ctx.fillStyle = pier;
+      ctx.beginPath();
+      ctx.moveTo(sx + pw / 2, top);
+      for (let q = 0; q <= 8; q++) { const u = q / 8; ctx.lineTo(sx + pw / 2 + u * (cell * z - pw), top - Math.sin(u * Math.PI) * 20 * z); }
+      ctx.lineTo(sx + cell * z - pw / 2, top - 5 * z);
+      for (let q = 8; q >= 0; q--) { const u = q / 8; ctx.lineTo(sx + pw / 2 + u * (cell * z - pw), top - Math.sin(u * Math.PI) * 20 * z - 5 * z); }
+      ctx.closePath(); ctx.fill();
+      // every fourth bay is a doorway with the dead light of another level in it
+      if ((((k % 4) + 4) % 4) === 0) {
+        const dw = 26 * z, dh = 44 * z, dx = sx + cell * z * 0.5 - dw / 2;
+        px(dx, bot - dh, dw, dh, '#05090a');
+        px(dx, bot - dh, dw, 2 * z, pierD);
+        const gl = 0.10 + 0.04 * Math.sin(World.t * 1.6 + k);
+        px(dx + 2 * z, bot - dh + 4 * z, dw - 4 * z, dh - 6 * z, 'rgba(150,196,186,' + gl.toFixed(3) + ')');
+        // and a flight of steps going up out of it
+        for (let q = 0; q < 6; q++) px(dx + dw - 4 * z - q * 4 * z, bot - q * 5 * z - 5 * z, 5 * z, 2 * z, mixColor(pier, P.lit, 0.18));
+      }
+      // a side pipe discharging into the far run, because something always is
+      if ((((k % 7) + 7) % 7) === 3) {
+        const py2 = bot - 30 * z;
+        px(sx + cell * z * 0.34, py2, 11 * z, 11 * z, pierD);
+        px(sx + cell * z * 0.34 + 2 * z, py2 + 2 * z, 7 * z, 7 * z, '#04080a');
+        px(sx + cell * z * 0.34 + 4 * z, py2 + 8 * z, 2 * z, 26 * z, 'rgba(150,190,180,0.16)');
+      }
+    }
+    // the whole arcade sits behind a wash of the dark between here and there
+    const g = ctx.createLinearGradient(0, midY - 90 * z, 0, midY + 90 * z);
+    g.addColorStop(0, 'rgba(4,7,8,0.45)'); g.addColorStop(0.5, 'rgba(4,7,8,0.12)'); g.addColorStop(1, 'rgba(4,7,8,0.5)');
+    ctx.fillStyle = g; ctx.fillRect(0, midY - 90 * z, W, 180 * z);
+  },
+
+  // ---- the stairs -------------------------------------------------------
+  // A flight in this world is cast, not worn: a flat tread, a hard riser and a
+  // nosing that catches whatever light there is. Drawn on top of the floor so
+  // the steps read as steps and not as a ramp with a texture on it.
+  steps(ctx, cam, P) {
+    if (typeof stairAt !== 'function') return;
+    const W = G.W, z = cam.zoom, step = Math.max(2, Math.round(2 * z));
+    const nose = mixColor(P.lit, '#ffffff', 0.2), riser = mixColor(P.dark, '#000000', 0.3), tread = mixColor(P.face, P.lit, 0.22);
+    let prevY = null, prevX = null;
+    for (let sx = -step; sx <= W + step; sx += step) {
+      const wx = cam.toWorldX(sx);
+      if (!stairAt(wx)) { prevY = null; continue; }
+      const [, sy] = cam.toScreen(wx, World.floorY(wx));
+      ctx.fillStyle = tread; ctx.fillRect(sx, Math.round(sy), step, Math.ceil(3 * z));
+      ctx.fillStyle = nose; ctx.fillRect(sx, Math.round(sy), step, Math.max(1, Math.round(1.4 * z)));
+      if (prevY !== null && Math.abs(sy - prevY) > 2.2 * z) {
+        // the riser, and the shadow the nosing throws down its face
+        const top = Math.min(sy, prevY), hgt = Math.abs(sy - prevY);
+        ctx.fillStyle = riser; ctx.fillRect(sx - step, Math.round(top), step * 2, Math.round(hgt));
+        ctx.fillStyle = nose; ctx.fillRect(sx - step, Math.round(top), step * 2, Math.max(1, Math.round(1.2 * z)));
+        ctx.fillStyle = 'rgba(0,0,0,0.34)'; ctx.fillRect(sx - step, Math.round(top + 1.2 * z), step * 2, Math.max(1, Math.round(2.4 * z)));
+      }
+      prevY = sy; prevX = sx;
+    }
+    // the handrail up the flight: standards every ten feet and two rails
+    const left = cam.toWorldX(-40), right = cam.toWorldX(W + 40);
+    for (let wx = Math.floor(left / 32) * 32; wx < right; wx += 32) {
+      if (!stairAt(wx)) continue;
+      const [sx2, sy2] = cam.toScreen(wx, World.floorY(wx));
+      const [, sy3] = cam.toScreen(0, World.floorY(wx + 32));
+      ctx.fillStyle = '#57605e'; ctx.fillRect(Math.round(sx2), Math.round(sy2 - 34 * z), Math.max(1, Math.round(2.6 * z)), Math.round(34 * z));
+      ctx.fillStyle = '#7b8683'; ctx.fillRect(Math.round(sx2), Math.round(sy2 - 34 * z), Math.max(1, Math.round(1.2 * z)), Math.round(34 * z));
+      for (const off of [34, 20]) {
+        ctx.save();
+        ctx.strokeStyle = off === 34 ? '#8d9895' : '#5d6764';
+        ctx.lineWidth = Math.max(1, Math.round(2 * z));
+        ctx.beginPath(); ctx.moveTo(sx2, sy2 - off * z); ctx.lineTo(sx2 + 32 * z, sy3 - off * z); ctx.stroke();
+        ctx.restore();
+      }
+    }
+  },
+
+  // ---- the railings -----------------------------------------------------
+  // Anywhere there is dry brick to stand on, somebody bolted a rail to it in
+  // 1974 and nobody has leaned on it since.
+  railings(ctx, cam, P) {
+    const W = G.W, z = cam.zoom;
+    const left = cam.toWorldX(-40), right = cam.toWorldX(W + 40);
+    const post = '#4e5654', postL = '#79837f', rail = '#8a9591', railD = '#3c4342';
+    let run = null;
+    for (let wx = Math.floor(left / 20) * 20; wx < right + 20; wx += 20) {
+      const dry = World.floorY(wx) < -8 && (typeof stairAt !== 'function' || !stairAt(wx));
+      if (dry && !run) run = wx;
+      if ((!dry || wx >= right) && run !== null) {
+        if (wx - run > 70) this.railRun(ctx, cam, run + 12, wx - 12, post, postL, rail, railD);
+        run = null;
+      }
+    }
+  },
+  railRun(ctx, cam, x0, x1, post, postL, rail, railD) {
+    const z = cam.zoom;
+    const H1 = 40, H2 = 24;
+    const pt = (wx, h) => cam.toScreen(wx, World.floorY(wx) - h);
+    for (const h of [H1, H2]) {
+      ctx.strokeStyle = h === H1 ? rail : railD; ctx.lineWidth = Math.max(1, Math.round((h === H1 ? 2.4 : 1.8) * z));
+      ctx.beginPath();
+      for (let wx = x0; wx <= x1; wx += 18) { const [sx, sy] = pt(wx, h); if (wx === x0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy); }
+      const [ex, ey] = pt(x1, h); ctx.lineTo(ex, ey); ctx.stroke();
+    }
+    for (let wx = x0; wx <= x1; wx += 34) {
+      const [sx, sy] = cam.toScreen(wx, World.floorY(wx));
+      ctx.fillStyle = post; ctx.fillRect(Math.round(sx - z), Math.round(sy - H1 * z - 2 * z), Math.max(1, Math.round(3 * z)), Math.round(H1 * z + 3 * z));
+      ctx.fillStyle = postL; ctx.fillRect(Math.round(sx - z), Math.round(sy - H1 * z - 2 * z), Math.max(1, Math.round(1.2 * z)), Math.round(H1 * z + 3 * z));
+      ctx.fillStyle = '#2c3231'; ctx.fillRect(Math.round(sx - 4 * z), Math.round(sy - 2 * z), Math.round(9 * z), Math.round(3 * z));
+    }
+  },
+
+  // ---- the acid ---------------------------------------------------------
+  // The plating line drained into the bottom of this thing for thirty years.
+  // What is down there now is bright, it is green, and it is still working.
+  acid(ctx, cam, S, B) {
+    const W = G.W, H = G.H, z = cam.zoom;
+    const wl = cam.toScreen(0, 0)[1];
+    const lit = '#c8f030', mid = '#7aa825';
+    // the glow that comes up out of it
+    const g = ctx.createLinearGradient(0, Math.max(0, wl), 0, H);
+    g.addColorStop(0, 'rgba(150,220,50,0.06)'); g.addColorStop(1, 'rgba(110,190,40,0.20)');
+    ctx.fillStyle = g; ctx.fillRect(0, Math.max(0, wl), W, H);
+    // the scum line where it meets the brick, breathing
+    for (let i = 0; i < S.n; i++) {
+      if (!S.ok[i]) continue;
+      const sx = S.sx[i], b = S.bot[i];
+      const k = Math.sin(World.t * 1.3 + S.wx[i] * 0.02) * 1.6 * z;
+      ctx.fillStyle = 'rgba(168,208,32,0.30)'; ctx.fillRect(sx, Math.round(b - 16 * z + k), S.step + 1, Math.round(16 * z));
+      ctx.fillStyle = mid; ctx.fillRect(sx, Math.round(b - 16 * z + k), S.step + 1, Math.max(1, Math.round(1.6 * z)));
+    }
+    // fume coming off it, and the odd drip going in
+    ctx.globalAlpha = 0.14;
+    for (let i = 0; i < 22; i++) {
+      const u = ((World.t * 0.11 + ihash(i, 301)) % 1);
+      const sx = (ihash(i, 302) * W + Math.sin(World.t * 0.4 + i) * 10) % W;
+      ctx.fillStyle = lit;
+      ctx.fillRect(Math.round(sx), Math.round(wl - u * 70 * z), Math.round((5 + ihash(i, 303) * 16) * z), Math.round(3 * z));
+    }
+    ctx.globalAlpha = 1;
+    if (chance(0.5)) G.fx.add({ type: 'drop', x: cam.toWorldX(rand(0, W)), y: -rand(20, 90), vx: 0, vy: 120, s: 1, color: '#b8e030', life: 0.9 });
+  },
+
+  // ---- FOREGROUND -------------------------------------------------------
+  // What is between the camera and the animal: a main crossing the bore, a
+  // chain off a lifting eye, a bracket, a length of handrail. All of it in
+  // near-silhouette and all of it moving faster than the wall behind, because
+  // that is the only thing that tells you there is a depth to be in.
+  foreground(ctx, cam) {
+    const style = this.styleOf(Biome.at(cam.x));
+    if (!style) return;
+    const W = G.W, H = G.H, z = cam.zoom, PAR = 1.34;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const ox = cam.x * PAR, oy = cam.y * PAR;
+    const sxOf = (wx) => (wx - ox) * z + W / 2;
+    const syOf = (wy) => (wy - oy) * z + H / 2;
+    const fl = World.floorY(cam.x), rf = World.roofY(cam.x);
+    if (rf === null) return;
+    const dark = '#070b0c', darkL = '#141b1c', darkR = '#2a1c14';
+    const cell = 300;
+    const k0 = Math.floor((ox - W / z) / cell) - 1, k1 = Math.ceil((ox + W / z) / cell) + 1;
+    for (let k = k0; k <= k1; k++) {
+      const wx = k * cell, sx = sxOf(wx);
+      if (sx < -200 * z || sx > W + 200 * z) continue;
+      const pick = ((k % 4) + 4) % 4, h = ihash(k, 401);
+      if (pick === 0) {
+        // a main crossing the bore under the crown, on two brackets
+        const y = syOf(rf + 22 + h * 26), th = (16 + h * 10) * z;
+        px(sx - 190 * z, y, 380 * z, th, dark);
+        px(sx - 190 * z, y, 380 * z, 2.4 * z, darkL);
+        px(sx - 190 * z, y + th - 2 * z, 380 * z, 2 * z, '#030506');
+        for (const bx of [-120, 0, 120]) { px(sx + bx * z - 4 * z, y - 5 * z, 9 * z, th + 10 * z, darkL); px(sx + bx * z - 4 * z, y - 5 * z, 9 * z, 2 * z, '#1e2728'); }
+        // a joint with a bolt ring on it
+        px(sx - 12 * z, y - 3 * z, 24 * z, th + 6 * z, '#0d1314');
+        for (let i = 0; i < 4; i++) px(sx - 9 * z + i * 6 * z, y - 1 * z, 3 * z, 3 * z, '#232c2d');
+      } else if (pick === 1) {
+        // a chain off a lifting eye, swinging a little
+        const y0 = syOf(rf + 6), sw = Math.sin(World.t * 0.7 + k) * 5 * z;
+        px(sx - 6 * z, y0, 13 * z, 7 * z, darkL);
+        for (let i = 0; i < 16; i++) {
+          const u = i / 16, yy = y0 + 6 * z + i * 9 * z;
+          if (yy > H + 20) break;
+          px(sx + sw * u - 2 * z, yy, 5 * z, 6 * z, i % 2 ? dark : darkL);
+        }
+        px(sx + sw - 7 * z, y0 + 6 * z + 16 * 9 * z, 15 * z, 10 * z, darkR);
+      } else if (pick === 2) {
+        // a length of handrail along the near bench. It is anchored to the
+        // bottom of the frame, not to the floor: a rail across the middle of
+        // the shot is not a foreground, it is a fence between you and the game
+        const y = H - Math.min(H * 0.2, 44 * z);
+        px(sx - 200 * z, y, 400 * z, 3.4 * z, darkL);
+        px(sx - 200 * z, y + 16 * z, 400 * z, 2.4 * z, dark);
+        for (let i = -4; i <= 4; i++) px(sx + i * 46 * z, y, 4 * z, H - y);
+      } else {
+        // a cable bundle sagging across, with a tag hanging off it
+        ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, Math.round(5 * z));
+        const y = syOf(rf + 40 + h * 30);
+        ctx.beginPath(); ctx.moveTo(sx - 200 * z, y);
+        ctx.quadraticCurveTo(sx, y + 34 * z, sx + 200 * z, y); ctx.stroke();
+        ctx.strokeStyle = darkL; ctx.lineWidth = Math.max(1, Math.round(1.6 * z));
+        ctx.beginPath(); ctx.moveTo(sx - 200 * z, y - 2 * z);
+        ctx.quadraticCurveTo(sx, y + 32 * z, sx + 200 * z, y - 2 * z); ctx.stroke();
+        px(sx - 3 * z, y + 30 * z, 7 * z, 10 * z, '#2a2a1c');
+      }
+    }
+    // the frame itself goes dark at the edges: you are inside a pipe
+    const vg = ctx.createRadialGradient(W / 2, H / 2, W * 0.28, W / 2, H / 2, W * 0.74);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(2,5,6,0.55)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   },
 
   // Courses. Every brick its own value, because a wall that repeats exactly is

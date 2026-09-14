@@ -8,7 +8,7 @@
 // face of it you are looking at, what the water does to you, and what is
 // waiting at the bottom of it.
 const ZONES = [
-  { id: 'river', n: 1, name: 'THE RIVER', sub: 'WHERE THE PIPE LETS GO. THE FIRST AIR YOU HAVE EVER BEEN IN.', col: '#8ab820', x0: -7700, x1: 1100 },
+  { id: 'river', n: 1, name: 'THE SYSTEM', sub: 'FIVE LEVELS OF SOMEBODY ELSE\'S DRAINS. THE ONLY WAY OUT IS DOWN AND THEN UP.', col: '#8ab820', x0: -7700, x1: 1100 },
   { id: 'glades', n: 2, name: 'THE EVERGLADES', sub: 'PAST THE GRATE. OPEN WATER, OPEN SEASON.', col: '#7fffd8', x0: -120, x1: 19000 },
   { id: 'ocean', n: 3, name: 'THE OPEN OCEAN', sub: 'PAST THE SEAWALL. SALT, DEPTH, AND NOTHING TO HOLD ON TO.', col: '#60a8ff', x0: 19000, x1: 99999 },
 ];
@@ -16,12 +16,13 @@ const ZONE_BY_ID = {};
 for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
-  // ---- ZONE 1: THE RIVER. Where you get out, and where it is learned.
+  // ---- ZONE 1: THE SYSTEM. Five levels down, and one long climb back up.
   { id: 'facility', zone: 'river', lat: 0.14, lon: 2.68, name: 'FACILITY B', sub: 'TRANSFER ORDER 11. GET OUT OF THE BUILDING.', x: -7480, size: 0.22, diff: 0, intro: true },
-  { id: 'plunge', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE PLUNGE POOL', sub: 'UNDER THE HEADWALL. COLD, DEEP, TURNING.', x: -2700, size: 0.4, diff: 0.8, need: { deep: 1600 } },
-  { id: 'gorge', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE GORGE', sub: 'ROCK BOTH SIDES AND NOTHING GROWING ON IT', x: -1700, size: 0.8, diff: 1.6, need: { deep: 3200 } },
-  { id: 'rapids', zone: 'river', lat: 0.42, lon: 3.30, name: 'THE RAPIDS', sub: 'A BOULDER BED THE RIVER IS IN A HURRY OVER', x: -700, size: 1.3, diff: 2.4, need: { deep: 4800 } },
-  { id: 'oxbow', survey: true, zone: 'river', lat: 0.08, lon: 3.46, name: 'THE OXBOW', sub: 'IT GAVE UP HURRYING. EVERYTHING SETTLES HERE.', x: 400, size: 2.0, diff: 3.2, need: { deep: 6600 } },
+  { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE WAKE', sub: 'LEVEL ONE. DAYLIGHT DOWN THREE SHAFTS AND A HAND OF WATER.', x: -5500, size: 0.3, diff: 0.2, need: { deep: 900 } },
+  { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE MAIN INTERCEPTOR', sub: 'LEVEL TWO. FLOODED, WITH AIR AT THE CROWN.', x: -4100, size: 0.55, diff: 0.8, need: { deep: 1800 } },
+  { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'THE FLOODED GALLERY', sub: 'LEVEL THREE. NO AIR EXCEPT WHERE A SHAFT COMES DOWN.', x: -2600, size: 0.9, diff: 1.5, need: { deep: 3200 } },
+  { id: 'sump', zone: 'river', lat: 0.20, lon: 3.16, name: 'THE ACID SUMP', sub: 'LEVEL FOUR. THE BOTTOM. IT IS STILL WORKING.', x: -1300, size: 1.4, diff: 2.2, need: { deep: 4600 } },
+  { id: 'outfall', survey: true, zone: 'river', lat: 0.08, lon: 3.46, name: 'THE OUTFALL', sub: 'LEVEL FIVE. A FLIGHT OF WEIRS AND THE LIGHT AT THE TOP.', x: 400, size: 2.0, diff: 2.8, need: { deep: 6000 } },
   // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
   { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
   { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },
@@ -40,7 +41,10 @@ const STAGES = [
 const STAGE_BY_ID = {};
 for (const st of STAGES) STAGE_BY_ID[st.id] = st;
 STAGE_BY_ID.catacomb = STAGE_BY_ID.facility;     // the old names for the first site
-STAGE_BY_ID.outfall = STAGE_BY_ID.facility;
+STAGE_BY_ID.plunge = STAGE_BY_ID.wake;
+STAGE_BY_ID.gorge = STAGE_BY_ID.interceptor;
+STAGE_BY_ID.rapids = STAGE_BY_ID.gallery;
+STAGE_BY_ID.oxbow = STAGE_BY_ID.outfall;
 // sites in the order they appear on the globe, grouped by zone
 const STAGES_BY_ZONE = {};
 for (const z of ZONES) STAGES_BY_ZONE[z.id] = STAGES.filter(st => st.zone === z.id);

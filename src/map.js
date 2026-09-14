@@ -16,49 +16,74 @@ const WORKS_SECTION = [
   [-7700, -1400, -1700], [-7640, -1400, -1700], [-7400, -1400, -1700], [-7100, -1400, -1700],
   [-6800, -1400, -1700], [-6500, -1400, -1700], [-6260, -1400, -1700], [-6100, -1400, -1700],
   [-5990, -1400, -1700], [-5968, -1400, -1700],
-  // ---- THE RELIEF INTERCEPTOR: a lined pipe that gives up its hundred and
-  // forty feet in six steps, with a bench at the foot of each one. It ends in
-  // a headwall in the side of a gorge, and the gorge has a sky over it.
-  [-5958, -980, -1120],                   // the head of the shaft
-  [-5900, -960, -1080],                   // the head of the pipe
-  [-5660, -807, -869],                    // the first step
-  [-5410, -799, -899],                    // a bench, and a manhole over it
-  [-5170, -646, -708],                    // the second step
-  [-4920, -638, -738],                    // a bench, and a side inlet
-  [-4680, -485, -547],                    // the third step
-  [-4430, -477, -577],                    // a bench, and a manhole over it
-  [-4190, -324, -386],                    // the fourth step
-  [-3940, -316, -416],                    // a bench, and a side inlet
-  [-3700, -163, -225],                    // the fifth step
-  [-3450, -155, -255],                    // the last bench, under the last manhole
-  [-3210, -42, -104],                     // the sixth step
-  [-3080, -38, -120],                     // and the light starts coming up it
-  [-2996, -36, -230],                     // the mouth, in the face of the headwall
+  // ---- THE DROP. Eleven stone of cast iron gives way, the floor is not under
+  // you any more, and a hundred and forty feet of brick shaft goes past in the
+  // dark. Nobody walks this. You are unconscious for it.
+  [-5958, -1180, -1560],
+  [-5938, -700, -1080],
+  [-5918, -260, -600],
+  [-5900, -70, -340],
+];
+// ---------------------------------------------------------------------------
+// THE SYSTEM. Five levels, each flatter and deeper than the one above it,
+// joined by flights of cast steps. Headroom is the whole design: the top level
+// has a roof you can put your head into, the middle has a hand of air at the
+// crown, and the bottom two do not have air in them at all.
+// [x, floorY, roofY].
+// ---------------------------------------------------------------------------
+const SEWER_SECTION = [
+  // ---- LEVEL 1 — THE WAKE ----------------------------------------------
+  // Where the game picks you up. Wide, dry-ish, lit down three manhole shafts,
+  // a hand of water over a brick invert and a bench at either end to haul out
+  // on. Nothing in here is bigger than a rat, and that is on purpose.
+  [-5880, -58, -336], [-5800, -58, -336], [-5700, -52, -338],
+  [-5640, 20, -334], [-5540, 56, -330], [-5420, 62, -328], [-5300, 52, -330],
+  [-5200, 10, -334], [-5130, -44, -338], [-5040, -46, -338], [-4990, -38, -334],
+  // ---- STAIR A: eleven cast steps with a handrail bolted down one side ----
+  [-4950, -18, -320], [-4890, 48, -262], [-4830, 106, -206], [-4770, 162, -152], [-4720, 206, -110],
+  // ---- LEVEL 2 — THE MAIN INTERCEPTOR ------------------------------------
+  // A flooded barrel with a hand of air at the crown, and two brick piers
+  // standing out of it that you can climb onto and breathe on.
+  [-4660, 224, -102], [-4580, 248, -94], [-4500, 236, -98],
+  [-4440, 140, -110], [-4400, -34, -124], [-4350, -36, -124], [-4310, 120, -112],
+  [-4240, 250, -96], [-4140, 286, -88], [-4040, 262, -92], [-3950, 240, -98],
+  [-3900, 120, -112], [-3860, -32, -126], [-3810, -34, -126], [-3770, 130, -110],
+  [-3700, 262, -94], [-3620, 290, -86], [-3560, 296, -82],
+  // ---- STAIR B -----------------------------------------------------------
+  [-3520, 320, -60], [-3460, 378, 0], [-3400, 440, 70], [-3360, 500, 140], [-3320, 552, 212],
+  // ---- LEVEL 3 — THE FLOODED GALLERY -------------------------------------
+  // The crown is two hundred feet under the waterline. There is no air in here
+  // except two bells where a shaft comes down, and you have to know where they
+  // are before you go in.
+  [-3240, 580, 250], [-3120, 610, 282], [-3000, 596, 268],
+  [-2900, 604, 60], [-2860, 600, -38], [-2820, 598, 58],
+  [-2720, 622, 296], [-2600, 648, 322], [-2480, 630, 306],
+  [-2360, 640, 60], [-2320, 636, -34], [-2280, 638, 62],
+  [-2180, 652, 326], [-2100, 660, 334],
+  // ---- STAIR C -----------------------------------------------------------
+  [-2060, 690, 368], [-2000, 760, 440], [-1940, 838, 518], [-1900, 900, 580], [-1860, 938, 620],
+  // ---- LEVEL 4 — THE ACID SUMP -------------------------------------------
+  // The bottom of the system. Everything the plating line ever poured away is
+  // still down here and it is still working.
+  [-1760, 962, 646], [-1620, 990, 674], [-1480, 1006, 690], [-1340, 986, 670],
+  [-1200, 1010, 694], [-1060, 1032, 716], [-920, 1006, 690], [-820, 984, 668],
+  // ---- STAIR D: the way up starts ----------------------------------------
+  [-760, 940, 624], [-700, 880, 566], [-640, 812, 498], [-560, 748, 434], [-480, 700, 386],
+  // ---- LEVEL 5 — THE OUTFALL ---------------------------------------------
+  // A flight of weirs climbing back to the light, one step at a time, with the
+  // whole system running down it the other way.
+  [-400, 664, 350], [-320, 600, 288], [-240, 540, 226],
+  [-160, 482, 168], [-80, 420, 106], [0, 360, 46],
+  [80, 300, -14], [170, 244, -70], [260, 190, -124],
+  [350, 140, -172], [440, 92, -216], [530, 48, -254],
+  [620, 10, -282], [700, -16, -296], [790, -34, -304],
+  [880, -40, -308], [960, -38, -310], [1000, -36, -312],
 ];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
   ...WORKS_SECTION.map(p => [p[0], p[1]]),
-  // ===================== THE RIVER ==============================
-  // The pipe lets go into daylight for the first time. Under the headwall is
-  // a pool the discharge has been scouring out for fifty years; below that a
-  // gorge, a run of rapids over a boulder bed, and an oxbow that has given up
-  // hurrying. This is the first air the animal has ever been in.
-  // -- the plunge pool
-  [-2985, -34], [-2966, 290], [-2900, 330], [-2820, 300], [-2740, 250], [-2660, 190],
-  [-2580, 150], [-2500, 120], [-2420, 90],
-  [-2340, 20], [-2280, -34], [-2230, -46],                        // a gravel bar to haul out on
-  // -- the gorge: rock both sides, deep water, nothing growing on it
-  [-2180, 40], [-2100, 150], [-2000, 240], [-1900, 280], [-1800, 250],
-  [-1700, 200], [-1600, 230], [-1500, 260], [-1400, 190],
-  [-1320, 90], [-1260, -30], [-1220, -44],                        // a ledge under the wall
-  // -- the rapids: shallow, fast, a bed of boulders
-  [-1180, 30], [-1100, 14], [-1020, 44], [-940, 10], [-860, 40], [-780, 8],
-  [-700, 46], [-620, 12], [-540, 38], [-460, 6], [-380, 42], [-300, 14],
-  [-250, -30], [-210, -44],                                       // a shingle bank
-  // -- the oxbow: slow, brown, full of fallen timber
-  [-160, 40], [-60, 120], [40, 180], [140, 210], [260, 180], [380, 130],
-  [480, 60], [560, -28], [630, -44], [710, -26],                  // the mud bank
-  [790, 60], [880, 140], [980, 120], [1060, 60],
+  ...SEWER_SECTION.map(p => [p[0], p[1]]),
+  [1060, 60],
   [1150, -30], [1240, 40], [1330, 96], [1420, 74],
   // mangrove tangle: shallow braided water with root islands
   [1520, 60], [1600, -18], [1660, -26], [1730, 54], [1840, 86], [1950, 70], [2060, -20], [2120, -30],
@@ -108,7 +133,7 @@ const MAP_PROFILE = [
 // points the roof is interpolated exactly like the floor, so a tunnel can
 // pinch to a crawl, open into a chamber, or rise into a shaft.
 // ---------------------------------------------------------------------------
-const ROOF_PROFILE = WORKS_SECTION.map(p => [p[0], p[2]]);
+const ROOF_PROFILE = [...WORKS_SECTION.map(p => [p[0], p[2]]), ...SEWER_SECTION.map(p => [p[0], p[2]])];
 const OCEAN_CAVES = [
   // [x0, x1, roof] — overhangs and cave mouths in the trench wall
   [26050, 26600, 420], [27400, 27900, 760], [29100, 29700, 900],
@@ -119,8 +144,21 @@ const OCEAN_CAVES = [
 // rings under it. The ladder in a shaft stops eight feet above the crown,
 // which is exactly why it is no use to anything that cannot reach it.
 const MANHOLES = [
-  [-5410, 0.22], [-4430, 0.55], [-3450, 0.9],                       // over the interceptor
+  [-5700, 0.95], [-5300, 0.72], [-5020, 0.5],                       // over the wake
+  [-4400, 0.4], [-3810, 0.3],                                       // over the two piers
+  [-2860, 0.16], [-2320, 0.12],                                     // the two air bells, far down
 ];
+// Flights of steps. Concrete is not cut by weather, it is cast in lifts, so a
+// stair in this world is a real stair: a flat tread and a hard riser, every
+// one the same as the last. [x0, x1, rise].
+const STAIRS = [
+  [-4950, -4720, 23],                    // A: the wake down to the interceptor
+  [-3520, -3320, 26],                    // B: down to the gallery
+  [-2060, -1860, 25],                    // C: down to the sump
+  [-760, -480, 24],                      // D: the way up begins
+  [-400, 960, 32],                       // the weirs in the outfall
+];
+function stairAt(x) { for (const [a, b, r] of STAIRS) if (x >= a && x <= b) return r; return 0; }
 // ---------------------------------------------------------------------------
 // Monotone cubic interpolation. Straight lines between control points put a
 // crease at every one of them, and smoothstep flattens at every one of them,
@@ -171,11 +209,25 @@ const MapData = {
   // whether the fine noise that gives mud its texture is applied at all.
   // Concrete was poured to a line. Nothing under the city wobbles.
   built(x) {
-    // Only the works were poured. Everything east of the headwall is a river,
-    // and a river was not built to a line.
-    if (x >= -2985) return 0;
-    if (x >= -3100) return (-2985 - x) / 115;
+    // Everything from the laboratory to the mouth of the outfall was poured by
+    // somebody. The swamp past it was not.
+    if (x >= 1100) return 0;
+    if (x >= 1000) return (1100 - x) / 100;
     return 1;
+  },
+  // ---------------------------------------------------------------------
+  // THE OLD LANDFORM, KEPT AND NOT USED.
+  //
+  // Before the benches this was a smooth profile with two octaves of noise
+  // laid over it: every bank a sine wave, every bed a sine wave, the whole
+  // world in green corduroy. It is kept because it is the only way to get the
+  // old world back if the new one ever turns out to be wrong, and because
+  // deleting something you might want is how you end up writing it again,
+  // worse. Set MapData.legacy = true in the console to put it back.
+  // ---------------------------------------------------------------------
+  legacy: false,
+  legacyY(base, x) {
+    return base + (fbm(x * 0.0035, 3) - 0.5) * 48 + (vnoise(x * 0.02, 7) - 0.5) * 10;
   },
   // ---------------------------------------------------------------------
   // LANDFORM.
@@ -218,8 +270,16 @@ const MapData = {
     const sm = lerp(a[1], b[1], t * t * (3 - 2 * t));
     if (!this._mF) this._mF = buildSlopes(P);
     const spl = splineAt(P, this._mF, lo, x);
-    if (bu >= 1) return lerp(sm, spl, bu);                  // poured: exactly as drawn
     const base = lerp(sm, spl, bu);
+    if (bu >= 1) {
+      // Poured ground runs exactly as drawn — except on a flight of steps,
+      // where it runs as steps: a flat tread and a hard riser, and the same
+      // rise every time, because that is how a stair is cast.
+      const rise = stairAt(x);
+      if (rise) { const q = this.bench(base, rise, 0.14); return q - (((base / rise) % 1) > 0.84 ? 1.6 : 0); }
+      return base;
+    }
+    if (this.legacy) return this.legacyY(base, x);
     const C = this.cut(x);
     // The ladder is not a ladder all the way: bench height drifts along the
     // reach, so one stretch of bank is cut in low shelves and the next in
@@ -266,7 +326,7 @@ const MapData = {
 const BIOMES = [
   // ===================== SEWER NETWORK ==========================
   {
-    id: 'facility', name: 'FACILITY B', x0: -7640, x1: -5966, lab: true,
+    id: 'facility', name: 'FACILITY B', x0: -7640, x1: -5900, lab: true,
     sky: ['#0a1418', '#16242a'], water: ['#5aa060', '#2e6438', '#123018'], scum: '#6a9a4a', fog: '#1a2a30',
     parallax: ['block', 'block', 'block'], ground: ['#4a5258', '#343a40', '#1e2428'], grass: '#4a5258',
     indoor: true, roof: -1690, dark: 0.06,
@@ -275,61 +335,62 @@ const BIOMES = [
     music: 0.9,
   },
   {
-    // A lined pipe, not a tunnel: precast rings, a benched invert, a wash of
-    // water down the middle of it and nothing growing anywhere. The only light
-    // is what falls down the manhole shafts it runs under.
-    id: 'chute', name: 'THE RELIEF INTERCEPTOR', x0: -5966, x1: -2985, pipe: true,
-    sky: ['#080d10', '#121a20'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#4e565a', '#373e42', '#22282c'], grass: '#4a5458',
-    indoor: true, roof: -120, dark: 0.62, toxic: 0.1,
-    plants: [['grit', 2.2], ['trash', 1.2], ['rubble', 1], ['pipe', 0.8], ['algae', 0.6]],
-    fish: [], land: [['rat', 1.2]], structures: [],
-    music: 0.8,
+    // Where you come round. A brick barrel wide enough to stand up in, three
+    // manhole shafts throwing daylight down it, a hand of water over the
+    // invert and a dry bench at either end. Deliberately gentle: it is the
+    // first minute of the game and you are the length of a hand.
+    id: 'wake', name: 'THE WAKE', x0: -5900, x1: -4950, indoor: true,
+    sky: ['#0d1518', '#1b262a'], water: ['#4c7d72', '#2a5048', '#10241f'], scum: '#6a8a4a', fog: '#162228',
+    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a5d4e', '#4d4338', '#2f2922'], grass: '#4a5448',
+    roof: -336, dark: 0.28, toxic: 0,
+    plants: [['grit', 2], ['rubble', 1.4], ['algae', 1.2], ['moss', 1], ['pipe', 0.8], ['trash', 0.8]],
+    fish: [['minnow', 4], ['shiner', 2.4]],
+    land: [['rat', 2.2]], structures: [], music: 0.5,
   },
   {
-    // The pipe lets go into daylight. Under the headwall is a pool the
-    // discharge has been scouring out for fifty years: cold, deep, turning
-    // slowly, with a bar of washed gravel at the foot of it.
-    id: 'plunge', name: 'THE PLUNGE POOL', x0: -2985, x1: -2200, remote: true, cliff: 1,
-    sky: ['#5d7f96', '#b9cdd4'], water: ['#3f7f84', '#215055', '#0a1e22'], scum: '#6f8a5a', fog: '#9fb6bd',
-    parallax: ['oak', 'cypress', 'oak'], ground: ['#6b6a5e', '#4c4b42', '#33332d'], grass: '#5f7a44',
-    plants: [['rock', 2.6], ['algae', 1.6], ['moss', 1.4], ['weed', 1.2], ['rubble', 1.4], ['log', 0.8]],
-    fish: [['minnow', 3], ['shiner', 2.4], ['bluegill', 2], ['catfish', 1.6], ['tilapia', 1.4]],
-    land: [['rat', 2.4], ['raccoon', 1.4], ['opossum', 1]],
-    structures: [], music: 0.55,
+    // The main barrel. Flooded, with a hand of air at the crown and two brick
+    // piers standing out of it — the only two places on this level you can
+    // put your head in air without surfacing.
+    id: 'interceptor', name: 'THE MAIN INTERCEPTOR', x0: -4950, x1: -3320, indoor: true,
+    sky: ['#090f12', '#141d22'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
+    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5d5347', '#443c33', '#29241e'], grass: '#4a5458',
+    roof: -100, dark: 0.5, toxic: 0.05,
+    plants: [['grit', 2.2], ['trash', 1.4], ['rubble', 1.2], ['pipe', 1], ['algae', 1], ['moss', 0.8]],
+    fish: [['minnow', 3], ['shiner', 2.6], ['roach', 2], ['bluegill', 1.4]],
+    land: [['rat', 2]], structures: [], music: 0.7,
   },
   {
-    // Rock both sides and nothing growing on it. The water is deep here and
-    // it is the first place in the world that is bigger than you.
-    id: 'gorge', name: 'THE GORGE', x0: -2200, x1: -1200, remote: true, cliff: 1,
-    sky: ['#4a6f8c', '#a8c2cc'], water: ['#2f6a76', '#194047', '#06161a'], scum: '#5f7a4a', fog: '#93adb8',
-    parallax: ['oak', 'oak', 'cypress'], ground: ['#5f6058', '#43443e', '#2c2d29'], grass: '#54703e',
-    plants: [['rock', 3], ['moss', 2], ['vine', 1.6], ['fern', 1.4], ['algae', 1.4], ['log', 1], ['weed', 1]],
-    fish: [['catfish', 2.4], ['bass', 2], ['bluegill', 2], ['shiner', 2], ['eel', 1.2], ['flgar', 1]],
-    land: [['raccoon', 2], ['opossum', 1.4], ['rat', 2], ['rabbit', 1]],
-    structures: [], music: 0.7,
+    // Two hundred feet of water over the crown and no air in it except where a
+    // shaft comes down. You have to know where the bells are before you go in.
+    id: 'gallery', name: 'THE FLOODED GALLERY', x0: -3320, x1: -1860, indoor: true, roman: true,
+    sky: ['#060a0c', '#0e1519'], water: ['#2d5a58', '#173634', '#050f10'], scum: '#4a6a3c', fog: '#0a1214',
+    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5a52', '#403f39', '#262622'], grass: '#3f4a42',
+    roof: 300, dark: 0.76, toxic: 0.14, pressure: 0.3,
+    plants: [['rubble', 2], ['grit', 1.6], ['algae', 1.6], ['moss', 1.4], ['bones', 1], ['pipe', 0.8]],
+    fish: [['catfish', 2.2], ['eel', 2], ['bluegill', 1.6], ['roach', 2]],
+    land: [], structures: [], music: 0.85,
   },
   {
-    // A boulder bed the river is in a hurry over. Shallow enough to stand in
-    // and fast enough to take you off your feet.
-    id: 'rapids', name: 'THE RAPIDS', x0: -1200, x1: -200, cliff: 0.5,
-    sky: ['#5a86a8', '#cfe0e4'], water: ['#4e9a92', '#2a6160', '#0c2426'], scum: '#7a9250', fog: '#bcd2d6',
-    parallax: ['cypress', 'oak', 'cypress'], ground: ['#77766a', '#57564d', '#3a3a34'], grass: '#698c46',
-    plants: [['rock', 3.2], ['weed', 1.6], ['reed', 1], ['log', 1.2], ['algae', 1.2], ['oyster', 0.6], ['rubble', 1.2]],
-    fish: [['shiner', 3], ['minnow', 3], ['bluegill', 2.2], ['tilapia', 2], ['bass', 1.6], ['walkingcat', 1.2]],
-    land: [['raccoon', 2.4], ['rat', 2.4], ['rabbit', 1.4], ['opossum', 1.2]],
-    structures: [['sign', 0.8]], music: 0.45,
+    // The bottom of the system, and the end of the plating line. Everything
+    // anybody ever poured away is still down here and it is still working.
+    id: 'sump', name: 'THE ACID SUMP', x0: -1860, x1: -760, indoor: true,
+    sky: ['#060c08', '#101a12'], water: ['#4f7a2e', '#2e4a1c', '#12200c'], scum: '#a8d020', fog: '#101c10',
+    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5638', '#403d28', '#27251a'], grass: '#6a7a2a',
+    roof: 690, dark: 0.82, toxic: 0.85, pressure: 0.55,
+    plants: [['garbage', 1.6], ['rubble', 1.8], ['bones', 1.4], ['algae', 1.2], ['grit', 1.2], ['pipe', 1], ['skeleton', 0.6]],
+    fish: [['mutantcat', 1.6], ['eel', 1.8], ['catfish', 1.4]],
+    land: [], structures: [], music: 1,
   },
   {
-    // The river gives up hurrying. Brown, slow, full of fallen timber and
-    // everything the rapids could not keep hold of.
-    id: 'oxbow', name: 'THE OXBOW', x0: -200, x1: 1100,
-    sky: ['#4f8fc0', '#d8e2d4'], water: ['#4a7a52', '#2a4c32', '#0d1c13'], scum: '#7a8a42', fog: '#c4d2c0',
-    parallax: ['cypress', 'cypress', 'oak'], ground: ['#63523a', '#473a28', '#2f271b'], grass: '#5f8a36',
-    plants: [['reed', 2], ['cattail', 1.6], ['lily', 1.4], ['duckweed', 1.2], ['log', 1.6], ['root', 1.4], ['cypress', 1], ['weed', 1.4], ['moss', 0.8]],
-    fish: [['bluegill', 3], ['bass', 2.4], ['catfish', 2.4], ['tilapia', 2], ['flgar', 1.4], ['snakehead', 1.2], ['minnow', 2]],
-    land: [['raccoon', 2.6], ['opossum', 1.6], ['rat', 2.4], ['rabbit', 1.2], ['fox', 0.8]],
-    structures: [['dock', 1.2], ['sign', 0.8], ['boathouse', 0.8], ['stilthouse', 0.6]], music: 0.35,
+    // A flight of weirs climbing back to the light, with the whole system
+    // running down them the other way. The last of it is daylight.
+    id: 'outfall', name: 'THE OUTFALL', x0: -760, x1: 1100, indoor: true,
+    sky: ['#12202a', '#2e4450'], water: ['#3e7a70', '#20493f', '#0b1d1a'], scum: '#6a8a4a', fog: '#1c2e34',
+    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a6254', '#4c463b', '#2e2a23'], grass: '#5a6a42',
+    roof: -100, dark: 0.34, toxic: 0.2,
+    plants: [['grit', 1.8], ['algae', 1.8], ['moss', 1.6], ['rubble', 1.4], ['weed', 1.2], ['pipe', 0.8], ['trash', 1]],
+    fish: [['tilapia', 2.6], ['walkingcat', 2], ['bluegill', 2], ['catfish', 1.8], ['shiner', 2]],
+    land: [['rat', 1.6]], structures: [], music: 0.6,
   },
   {
     id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1100, x1: 2800,

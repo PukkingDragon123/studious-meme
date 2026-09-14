@@ -28,6 +28,48 @@ const Facility = {
 
   px(ctx, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); },
 
+  // ---- SURFACES ---------------------------------------------------------
+  // A flat fill is a flat fill at any zoom, and this building was four fifths
+  // flat fill. Everything in it bigger than a hand now gets a real texture:
+  // brushed steel, chequer plate, board-marked concrete, rolled paint, rust.
+  // All of it keyed to the world, so it stays put when the camera moves.
+  TEX: {
+    steel: (x, S) => {
+      for (let y = 0; y < S; y++) { const v = ihash(y, 7); x.fillStyle = v < 0.34 ? 'rgba(255,255,255,0.055)' : v < 0.7 ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.02)'; x.fillRect(0, y, S, 1); }
+      for (let i = 0; i < 30; i++) { x.fillStyle = 'rgba(255,255,255,0.07)'; x.fillRect((ihash(i, 8) * S) | 0, (ihash(i, 9) * S) | 0, 3 + (ihash(i, 10) * 8) | 0, 1); }
+    },
+    plate: (x, S) => {
+      // chequer plate: two teardrops a quarter out of phase, on a 12px pitch
+      for (let gy = 0; gy < S; gy += 12) for (let gx = 0; gx < S; gx += 12) {
+        const o = ((gy / 12) | 0) % 2 ? 6 : 0;
+        x.fillStyle = 'rgba(255,255,255,0.13)'; x.fillRect(gx + o + 1, gy + 3, 7, 2);
+        x.fillStyle = 'rgba(0,0,0,0.22)'; x.fillRect(gx + o + 1, gy + 5, 7, 2);
+        x.fillStyle = 'rgba(255,255,255,0.09)'; x.fillRect(gx + o + 4, gy + 8, 2, 4);
+        x.fillStyle = 'rgba(0,0,0,0.16)'; x.fillRect(gx + o + 4, gy + 10, 2, 2);
+      }
+    },
+    conc: (x, S) => {
+      for (let i = 0; i < 420; i++) { const v = ihash(i, 21); x.fillStyle = v < 0.4 ? 'rgba(255,255,255,0.05)' : v < 0.78 ? 'rgba(0,0,0,0.07)' : 'rgba(190,180,150,0.08)'; x.fillRect((ihash(i, 22) * S) | 0, (ihash(i, 23) * S) | 0, 1 + (v > 0.94 ? 2 : 0), 1); }
+      for (let y = 0; y < S; y += 16) { x.fillStyle = 'rgba(0,0,0,0.11)'; x.fillRect(0, y, S, 1); x.fillStyle = 'rgba(255,255,255,0.05)'; x.fillRect(0, y + 1, S, 1); }
+    },
+    paint: (x, S) => {
+      for (let i = 0; i < 300; i++) { const v = ihash(i, 31); x.fillStyle = v < 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'; x.fillRect((ihash(i, 32) * S) | 0, (ihash(i, 33) * S) | 0, 2, 1); }
+      for (let i = 0; i < 14; i++) { x.fillStyle = 'rgba(0,0,0,0.2)'; x.fillRect((ihash(i, 34) * S) | 0, (ihash(i, 35) * S) | 0, 2 + (ihash(i, 36) * 3) | 0, 2); }
+    },
+    rust: (x, S) => {
+      for (let i = 0; i < 160; i++) { const v = ihash(i, 41); x.fillStyle = v < 0.4 ? 'rgba(150,84,40,0.22)' : v < 0.75 ? 'rgba(96,52,26,0.24)' : 'rgba(200,140,80,0.14)'; x.fillRect((ihash(i, 42) * S) | 0, (ihash(i, 43) * S) | 0, 2 + (v * 4) | 0, 1 + (v > 0.8 ? 2 : 0)); }
+    },
+  },
+  surf(ctx, cam, x, y, w, h, base, kind, alpha) {
+    this.px(ctx, x, y, w, h, base);
+    if (w < 2 || h < 2) return;
+    const tex = Tex.get('fbs|' + kind, 48, this.TEX[kind] || this.TEX.steel);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); ctx.clip();
+    Tex.fill(ctx, tex, cam.x, cam.y, cam.zoom, alpha === undefined ? 1 : alpha);
+    ctx.restore();
+  },
+
   // ---------------------------------------------------------------------
   draw(ctx, cam, day) {
     const W = G.W, H = G.H, z = cam.zoom, C = this.C;
@@ -62,7 +104,34 @@ const Facility = {
       x.fillStyle = '#a7b4af'; x.fillRect(10, 8, 3, 1); x.fillRect(24, 22, 4, 1);
     });
     ctx.save(); ctx.beginPath(); ctx.rect(0, tileTop, W, tileBot - tileTop); ctx.clip();
-    Tex.fill(ctx, tile, cam.x, cam.y, z, 0.94); ctx.restore();
+    Tex.fill(ctx, tile, cam.x, cam.y, z, 0.94);
+    // fifty years of trolleys: the dirt in the grout, the scuff band at knee
+    // height where everything has been wheeled past, and the tiles that have
+    // been knocked out and never replaced
+    const g0 = ctx.createLinearGradient(0, tileTop, 0, tileBot);
+    g0.addColorStop(0, 'rgba(36,46,44,0.22)'); g0.addColorStop(0.35, 'rgba(36,46,44,0.02)');
+    g0.addColorStop(1, 'rgba(28,24,16,0.34)');
+    ctx.fillStyle = g0; ctx.fillRect(0, tileTop, W, tileBot - tileTop);
+    for (let wx = Math.floor(leftW / 16) * 16; wx < rightW; wx += 16) {
+      const k = Math.floor(wx / 16), [tx] = cam.toScreen(wx, 0), r = ihash(k, 61);
+      if (r < 0.10) {                                   // a tile off the wall
+        const ty = tileTop + (8 + ihash(k, 62) * 120) * z;
+        if (ty > tileBot - 18 * z) continue;
+        px(tx, ty, 15 * z, 15 * z, '#6d736e');
+        px(tx, ty, 15 * z, 2 * z, '#4c524e');
+        px(tx + 2 * z, ty + 3 * z, 11 * z, 10 * z, '#7e837c');
+        for (let i = 0; i < 6; i++) px(tx + 2 * z + ihash(k * 7 + i, 63) * 11 * z, ty + 3 * z + ihash(k * 7 + i, 64) * 10 * z, 1.6 * z, 1.6 * z, '#9aa09a');
+      } else if (r < 0.22) {                            // a crack across one
+        const ty = tileTop + (10 + ihash(k, 65) * 120) * z;
+        ctx.strokeStyle = 'rgba(70,80,76,0.6)'; ctx.lineWidth = Math.max(1, Math.round(z));
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + 9 * z, ty + 7 * z); ctx.lineTo(tx + 6 * z, ty + 15 * z); ctx.stroke();
+      }
+      if (r > 0.5) px(tx, tileBot - (18 + ihash(k, 66) * 14) * z, (6 + ihash(k, 67) * 12) * z, (3 + ihash(k, 68) * 5) * z, 'rgba(52,44,30,0.20)');
+    }
+    // the scuff band the trolleys have left along the whole run
+    px(0, tileBot - 38 * z, W, 9 * z, 'rgba(44,40,30,0.18)');
+    px(0, tileBot - 34 * z, W, 2 * z, 'rgba(30,26,18,0.26)');
+    ctx.restore();
     px(0, tileTop - 4 * z, W, 4 * z, C.rail);
     px(0, tileTop - 4 * z, W, z, '#c2ccce');
     px(0, tileTop + 6 * z, W, 3 * z, C.stripe);
@@ -84,6 +153,17 @@ const Facility = {
       if (nx > -120 && nx < W + 40) Font.draw(ctx, r.name, nx, Math.round(roofS + 52 * z), { color: 'rgba(140,164,168,0.5)', scale: Math.max(1, Math.round(z)) });
     }
 
+    // a chequer-plate walkway laid the length of the building, because a
+    // floor a trolley runs on is not a painted slab
+    this.surf(ctx, cam, 0, floorS - 14 * z, W, 14 * z, '#3f4a4e', 'plate', 0.95);
+    px(0, floorS - 14 * z, W, 1.6 * z, '#5f6c70');
+    px(0, floorS - 1.6 * z, W, 1.6 * z, '#2a3236');
+    for (let wx = Math.floor(leftW / 64) * 64; wx < rightW; wx += 64) {
+      const [sx] = cam.toScreen(wx, 0);
+      px(sx, floorS - 14 * z, 1.4 * z, 14 * z, '#2b3337');            // the joint between plates
+      px(sx + 2 * z, floorS - 11 * z, 3 * z, 3 * z, '#6d797d');       // and the screw that holds it
+      px(sx + 2 * z, floorS - 5 * z, 3 * z, 3 * z, '#6d797d');
+    }
     // hazard stripe along the base of the wall
     for (let wx = Math.floor(leftW / 24) * 24; wx < rightW; wx += 24) {
       const [sx] = cam.toScreen(wx, 0);
@@ -304,7 +384,7 @@ const Facility = {
   ceiling(ctx, cam, roofS, leftW, rightW) {
     const W = G.W, z = cam.zoom, C = this.C;
     const px = (x, y, w, h, c) => this.px(ctx, x, y, w, h, c);
-    px(0, 0, W, Math.max(0, roofS + 10 * z), C.ceil);
+    this.surf(ctx, cam, 0, 0, W, Math.max(0, roofS + 10 * z), C.ceil, 'conc', 0.8);
     px(0, roofS + 8 * z, W, 3 * z, C.ceilL);
     // beams across the soffit
     for (let wx = Math.floor(leftW / 120) * 120; wx < rightW; wx += 120) {
@@ -339,8 +419,9 @@ const Facility = {
     const z = cam.zoom, C = this.C, px = (x, y, w, h, c) => this.px(ctx, x, y, w, h, c);
     const [sx] = cam.toScreen(r.x0 + 40, 0);
     const dw = 76 * z, dh = 140 * z, dy = floorS - dh;
-    px(sx - dw / 2 - 5 * z, dy - 6 * z, dw + 10 * z, dh + 6 * z, C.steelD);
-    px(sx - dw / 2, dy, dw, dh, '#3d4a52');
+    this.surf(ctx, cam, sx - dw / 2 - 5 * z, dy - 6 * z, dw + 10 * z, dh + 6 * z, C.steelD, 'steel');
+    this.surf(ctx, cam, sx - dw / 2, dy, dw, dh, '#3d4a52', 'steel');
+    this.surf(ctx, cam, sx - dw / 2, dy + dh * 0.7, dw, dh * 0.3, '#3d4a52', 'rust', 0.75);
     px(sx - dw / 2, dy, 3 * z, dh, '#55646e');
     for (let i = 0; i < 4; i++) px(sx - dw / 2 + 4 * z, dy + 10 * z + i * 30 * z, dw - 8 * z, 3 * z, '#313d45');
     // the wheel, and the bar across it
@@ -576,7 +657,7 @@ const Facility = {
       px(sx + 16 * z, top + 18 * z, 5 * z, 34 * z, '#20282c');
       for (let k = 0; k < 6; k++) px(sx + 16 * z, top + (20 + k * 5) * z, 5 * z, 2 * z, k > 3 ? '#d04a2a' : '#3e9a6a');
       // the plinth, the mullion, the number plate and the feed hatch
-      px(sx + 9 * z, botY, pw, plinth, C.conc);
+      this.surf(ctx, cam, sx + 9 * z, botY, pw, plinth, C.conc, 'conc');
       px(sx + 9 * z, botY, pw, 3 * z, '#949a9e');
       // the plinth is cast concrete with things let into it, not a grey block
       px(sx + 9 * z, botY + 3 * z, pw, 2 * z, '#5f666a');
@@ -588,8 +669,8 @@ const Facility = {
       px(sx + w * 0.5 - 12 * z, botY + 20 * z, 24 * z, 5 * z, C.warn);    // the bay stripe
       for (let k = 0; k < 3; k++) px(sx + w * 0.5 - 9 * z + k * 8 * z, botY + 21 * z, 4 * z, 3 * z, '#1a1a1a');
       px(sx + 9 * z, floorS - 6 * z, pw, 6 * z, C.concD);
-      px(sx, top - 8 * z, 9 * z, floorS - top + 8 * z, C.steel);
-      px(sx + w - 9 * z, top - 8 * z, 9 * z, floorS - top + 8 * z, C.steel);
+      this.surf(ctx, cam, sx, top - 8 * z, 9 * z, floorS - top + 8 * z, C.steel, 'steel');
+      this.surf(ctx, cam, sx + w - 9 * z, top - 8 * z, 9 * z, floorS - top + 8 * z, C.steel, 'steel');
       px(sx, top - 8 * z, 3 * z, floorS - top + 8 * z, C.steelL);
       px(sx + 9 * z, top - 10 * z, pw, 10 * z, C.steelD);
       px(sx + 9 * z, top - 10 * z, pw, 2 * z, C.steel);

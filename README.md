@@ -2,8 +2,9 @@
 
 A 2D pixel-art, side-scrolling **eater roguelike**. You are Subject 7: a lab-made crocodile spliced
 with the genes of every animal alive. You break your tank, go down the pipe the building flushes into,
-and come out of the headwall into open air and moving water — then follow the river down to the swamp
-with the whole genome to spend, or east past the seawall and over the edge of the shelf.
+black out on the way down, and come round on a brick bench five levels under a city — then eat your way
+down the system and up the outfall into the swamp with the whole genome to spend, or east past the
+seawall and over the edge of the shelf.
 
 Eat anything that fits in your jaws. Every meal pays **gene points**, and you spend them whenever you
 like on a hexagonal **gene tree** of six lineages. How you hunt builds affinity, so the lineage that
@@ -126,7 +127,7 @@ plate at the end of the card, and a tick replaces it once the step is funded.
 | **PIGMENTATION** | the nine hides, in four batches, from base dyes up to the lines that were never released |
 | **GENE THERAPY** | the four gene lineages a crocodile is not born with, then splice tolerance for hybrids and chimeras |
 | **BIOCHEMISTRY** | standing treatments stamped onto every animal after: clotting, filtration, chitin, myostatin block, barophilic marrow, adrenal, neural accelerant |
-| **FIELD SURVEY** | the everglades, the open ocean, and a deep sounding that opens the oxbow and the trench |
+| **FIELD SURVEY** | the everglades, the open ocean, and a deep sounding that opens the outfall and the trench |
 
 Until Gene Therapy has funded a line, its genes are sealed shut in the tree —
 crosshatched and stamped, not merely dim — and its prime is not on the loadout
@@ -152,20 +153,39 @@ its own animated glyph once you have carried it out, sealed and grey until then,
 with the site it comes from written under it and what it gives you along the
 foot. Eighteen slots, and the count in the corner is the game's long score.
 
-## The river, and how you got there
+## The system, and how you got there
 
-The game starts in a building and ends up in a river. **THE RIVER** is the first
-zone and the only one open on a new save: eight and a half thousand units of
-authored map that begin as a laboratory floor, fall a hundred and forty feet down
-a pipe, and come out of a concrete headwall into the first open air the animal
-has ever been in. Four reaches follow it down — **the plunge pool** under the
-outfall, **the gorge**, **the rapids**, and **the oxbow** where it gives up
-hurrying — and the swamp is past that, once the lab has surveyed it.
+The game starts in a building and ends up under a city. **THE SYSTEM** is the
+first zone and the only one open on a new save: eight and a half thousand units
+of authored map that begin as a laboratory floor, drop a hundred and forty feet
+down a brick shaft, and lay out five levels of somebody else's drains below it.
+You go down through them and you come up the far end.
+
+| Level | What it is |
+| --- | --- |
+| **1 — The Wake** | where the game picks you up. A brick barrel wide enough to stand up in, three manhole shafts throwing daylight down it, a hand of water over the invert and a dry bench at either end |
+| **2 — The Main Interceptor** | a flooded barrel with a hand of air at the crown and two brick piers standing out of it, which are the only two places on the level you can breathe without surfacing |
+| **3 — The Flooded Gallery** | the crown is two hundred feet under the waterline. There is no air in here except two bells where a shaft comes down, and you have to know where they are before you go in |
+| **4 — The Acid Sump** | the bottom. The plating line drained into it for thirty years and it is still working |
+| **5 — The Outfall** | a flight of weirs climbing back to the light, with the whole system running down them the other way |
+
+Each level is flat, because a gallery floor is flat, and they are joined by
+**flights of cast steps** — a real stair, with a flat tread, a hard riser, a
+nosing that catches the light and a handrail bolted down one side. Press **M**
+anywhere in the system to open the **blueprint**: a drawing-office long section
+of the whole works at 1:500, white line on ferro-prussiate blue, with the five
+levels lettered, every flight shown, the manhole shafts drawn up to the street,
+a title block nobody has filled in since 1974, and a ring round where you are.
 
 You got there by transfer, and the transfer is not a cutscene. It is the game.
 **FACILITY B** is a building, not a wall: six rooms in a line, a hundred and
-forty feet above the river, dead level because they are floors, drawn by the
-same renderer as everything else. Above the tiled dado the wall carries what a
+forty feet above the system, dead level because they are floors, drawn by the
+same renderer as everything else — and textured, not filled. Brushed steel on
+the doors and the pen mullions, board-marked concrete on the soffit and the
+plinths, **chequer plate** down the whole length of the walkway with a joint and
+two screws every plate, rust creeping up the bottom third of the blast door, and
+fifty years of trolleys on the tile: dirt in the grout, a scuff band at knee
+height, cracked tiles and tiles knocked clean off the wall and never replaced. Above the tiled dado the wall carries what a
 wall carries — trunking, conduit drops, a louvred supply grille, an observation
 window into a room you are not going into, a camera on a bracket, a hose reel, a
 board of breakers half of them thrown. Under the slab is the service void, and
@@ -193,49 +213,44 @@ exactly two ways out of it.
 
 **The cover.** Stand on the manhole in the access chamber and bite it. Cast
 iron, eleven stone of it, and it goes on the sixth go — then the floor is not
-under you any more and what catches you is **the relief interceptor**.
+under you any more, and nothing catches you.
 
 **The dock.** Keep walking east instead and you get to the end of the building,
 where two handlers are waiting beside a crate with a truck behind them. They do
 not fight you. They pick you up. **RECAPTURED — TRANSFER ORDER 11 COMPLETE**,
 and the run is over before it started.
 
-That is the ride down, and it takes about twenty seconds with the throttle held. It is not a cutscene
-either: the interceptor is three thousand units of authored map, a lined pipe
-that gives up its hundred and forty feet in six steps with a bench at the foot
-of each one. Precast rings every segment, a benched invert with the wash down
-the middle of it, banks of washed grit, step irons up the back, side inlets
-spitting in as you pass, and three **manhole shafts** overhead — cast cover,
-rings, a ladder whose bottom rung stops well short of the crown, and a cone of
-daylight that lands on the invert in front of you. Where the floor falls away
-faster than you do you leave it and come down on the next bench. Hold right to
-go faster. A gauge on the edge of the screen counts the feet off.
+That is not the ride down. There is no ride down. Eleven stone of cast iron
+gives way, the floor is not under you any more, and a hundred and forty feet of
+brick shaft goes past in the dark with the cover fragments still coming after
+you. Nothing the length of a hand stays awake through that.
 
-The pipe ends in the sky. The mouth is a hole in a hundred-and-forty-foot
-**headwall** — poured in lifts, ribbed with counterforts, spalled, stained,
-weeping out of five weep holes, green where the spray reaches it and black under
-the water — with a ladder nobody has climbed since 1974 up one side and the
-building's stair tower and vent stacks standing over the coping. The grille that
-used to be across the mouth is hanging off one hinge. What comes out of the mouth
-is the plume, and what is under the plume is the plunge pool, and the splash is
-your first location and your first air.
+**The screen goes out.** It stays out for three seconds with a pulse behind it
+and SOME TIME LATER written across the middle, and while it is out the game
+moves you a hundred and forty feet down and three quarters of a mile east,
+because the animal did not see that either. Then the eye opens — twice, badly,
+the lids coming in from the top and the bottom of the frame before they stay
+open — and the first thing in it is a shaft of daylight a hundred and forty feet
+up, landing on a brick bench with you on it.
 
-The way out is the river itself. Three mechanisms hold the last gate, each in
-its own reach and each a small game you start by biting it: **the sluice wheel**
-turned on a beat, **the gate levers** thrown in the order the lamps showed you,
-**the counterweight** held and let go in the band. A miss costs a notch, not your
-life. Engage all three and the outflow opens, and the zone's relic surfaces on
-the way to it. The everglades are past that, once the lab has surveyed them.
+The way out is the far end. Three mechanisms hold the outfall gate, one to each
+lift of the weirs, each a small game you start by biting it: **the sluice
+wheel** turned on a beat, **the gate levers** thrown in the order the lamps
+showed you, **the counterweight** held and let go in the band. A miss costs a
+notch, not your life. Engage all three and the gate opens, and the zone's relic
+surfaces on the way to it. The everglades are past that, once the lab has
+surveyed them.
 
-## Nobody works the top of the river
+## Level one is a tutorial with a roof on it
 
-The plunge pool and the gorge are marked **remote**, and remote means what it
-says: no fishermen, no rangers, no tourists, no survey crews, no traplines, no
-structures. Nobody climbs down a hundred and forty feet of headwall to stand in
-a gorge. A reach like that has animals in it and nothing else, which is the only
-reason a 0.3 ft hatchling survives the first five minutes of the game. People
-start at the rapids, where there is a bank to stand on, and there are plenty of
-them by the oxbow.
+The first zone used to net a 0.3 ft hatchling inside a minute. It is held down
+hard now, and level one is held down harder: **nothing with teeth spawns there
+at all** — the predator director returns before it picks — the difficulty curve
+is clamped to a fifth of its value for the whole level and to two thirds for the
+rest of the zone, and the chunk stocker makes nine passes instead of five, so
+there is something to eat within a body length of wherever you come round. The
+standing orders start at five fish. The acid is only in the sump, which is level
+four, which is a long way down from where you start.
 
 ## What they poured down here
 
@@ -291,7 +306,7 @@ yours. Snacks keep you alive. They do not build an animal.
 Every release site has one big thing placed by hand rather than left to the
 chunk spawner, and a short list of authored props around it — a dock and two
 crab traps and a boat ramp at the fish camp, the gauging station and its stilling
-well on the rapids, channel markers out in the bay. Nothing is placed twice on
+well on the weirs, channel markers out in the bay. Nothing is placed twice on
 the same few feet of bank — something you can see coming, orient by, hide under and remember
 the place by afterwards. The biggest is **THE CAUSEWAY**: four lanes on concrete
 piers with its middle span in the water, lamp standards still on the parapet,
@@ -356,7 +371,8 @@ each kind off.
 Indoors the ground is man-made from the floor up: poured concrete in hard steps
 with block coursing down the face of it, a lit lip along every surface, and
 blockwork wherever a ledge steps. The lab is tiled. No soil strata, no roots, no
-mountains behind the pipes — it is wall, arch and water until the pipe runs out.
+mountains behind the pipes — it is wall, arch and water for the whole of zone
+one, because the whole of zone one was poured by somebody.
 
 ## The ground is cut, not rolled
 
@@ -373,10 +389,23 @@ machine actually sits. The step height itself wanders along the map so the
 terraces never march. A lip of a foot or two catches the light at the top of
 each riser, fine grit roughens the flats and leaves the risers clean, and the
 whole thing crossfades away to nothing where the ground turns built, so a
-laboratory floor is dead level and a gorge is a staircase of ledges. Under it
-the strata are drawn as thirty closely spaced fills rather than three, with
-dithered seams between them, so the body of the ground reads as sediment and
-not as a painted stripe.
+laboratory floor is dead level and a cypress bank is a staircase of ledges.
+Under it the strata are drawn as thirty closely spaced fills rather than three,
+with dithered seams between them, so the body of the ground reads as sediment
+and not as a painted stripe.
+
+Poured ground gets none of that — it runs exactly as it was drawn — **except on
+a flight of steps**. Every stair in the system is declared as a range with a
+rise, and inside that range the profile is quantised onto it: the same tread and
+the same riser every time, because that is how a stair is cast. It is the same
+`bench` function doing both jobs, once for a hillside and once for a staircase,
+which is the whole reason the staircase came out looking like a staircase.
+
+**The old landform is still in the file.** `MapData.legacyY` is the pre-bench
+terrain — a smooth profile with two octaves of noise over it, every bank a sine
+wave — kept, commented, and not used. `MapData.legacy = true` in the console
+puts it back. It is there because deleting something you might want is how you
+end up writing it again, worse.
 
 ## Animal traits
 
@@ -429,38 +458,34 @@ equator. A site you have not earned is a sealed grey pin.
 
 A **RELEASE** button sends you. It used to be the word ENTER, which is not a key a tablet has.
 
-### Zone 1 — The River
+### Zone 1 — The System
 
-The pipe is drawn as a bore, not as a room: a section of masonry with a hole
-through it, and the hole goes somewhere. Precast concrete with a ring joint
-every segment, an arch you are actually inside — voussoirs round the crown, the
+The bore is drawn as a bore, not as a room: a section of masonry with a hole
+through it, and the hole goes somewhere. But a bore on its own is a corridor,
+so it is drawn in three depths now.
+
+**Background.** A second run of the system behind this one, at 0.42 parallax:
+piers with arch heads springing off them, a black gallery between the piers,
+every fourth bay a doorway with the dead light of another level in it and a
+flight of steps going up out of it, and a side pipe discharging into it every
+seventh, because something always is.
+
+**Midground.** The arch you are actually inside — voussoirs round the crown, the
 invert lip, a rib every bay with a cable slung between the ribs and a caged
-bulkhead lamp under every other one — and behind it another wall half a parallax
-step back with arch ribs marching away at three depths into black. Underground
-the water body goes translucent, because there is a pipe behind it and hiding
-the pipe made the system read as a wall with a pond in front of it.
+bulkhead lamp under every other one — plus the stair treads and nosings, and the
+**handrail** that gets bolted to every stretch of dry brick in the place.
 
-Then the pipe ends, and everything after it is outside. Four reaches, each with
-its own bed, its own palette and its own idea of how fast water should move:
+**Foreground.** At 1.34 parallax, in near-silhouette, between the camera and the
+animal: a main crossing the bore on brackets with a bolted joint in it, a chain
+off a lifting eye swinging a little, a cable bundle sagging across with a tag on
+it, and a length of handrail anchored to the bottom of the frame. A rail across
+the middle of the shot is not a foreground, it is a fence between you and the
+game, so it is pinned low.
 
-| Reach | What it is |
-| --- | --- |
-| **Facility B** | six rooms and two ways out of them. Only one of them is yours |
-| **The Relief Interceptor** | the lined pipe you came down. Six steps, five benches, three manholes, one way |
-| **The Plunge Pool** | three hundred and thirty feet of cold green water turning under the outfall, walled on one side by the headwall you came out of |
-| **The Gorge** | rock both sides and nothing growing on it. Deep, still, and the first place in the world that is bigger than you |
-| **The Rapids** | a boulder bed the river is in a hurry over. Shallow enough to stand in and fast enough to take you off your feet |
-| **The Oxbow** | the river gives up hurrying. Brown, slow, full of fallen timber and everything the rapids could not keep hold of |
-
-The gorge and the plunge pool are walled with **canyon layers** rather than a
-treeline: four parallax depths of square-shouldered buttress, each masked out of
-one silhouette so the bedding planes run straight across the whole layer instead
-of stopping at every block. Each buttress gets its own stone tint, its own joint
-crack with a shadow beside it and a lit arris on the far side, a talus of scree
-and loose block heaped against its foot, and the layer in front of it keeping
-the sun off that foot. Scrub only grows on the ledges of the two nearest layers.
-The canyon fades in and out across the biome crossfade, so the walls close in as
-you come down out of the pool and open out again as the rapids let go.
+**The acid.** Below a certain level the water is bright, green, and working: a
+glow coming up out of it, a scum line breathing against the brick, fume coming
+off the surface and the odd drip going in. It fills a **FILTH** meter that
+eventually starts taking health.
 
 ### Zone 2 — The Everglades
 
@@ -521,10 +546,11 @@ the vault on the globe screen and apply to every run afterwards.
 | Site | Order | Relic | What it does |
 | --- | --- | --- | --- |
 | Facility B | open the weir | Subject Tag | start every run with 2 gene points |
-| The Plunge Pool | kill 4 predators | The Surveyor's Lamp | you see in the dark |
-| The Gorge | dive to 260m | Rock Anchor Bolt | +15% armour |
-| The Rapids | kill a boss | The Gauging Station Wheel | filth builds half as fast |
-| The Oxbow | take 14 fish | A Length of Rebar | bites pierce armour |
+| The Wake | take 5 fish | The Ganger's Lamp | you see in the dark |
+| The Main Interceptor | take 9 fish | A Ring Segment Bolt | +15% armour |
+| The Flooded Gallery | kill 3 predators | The Penstock Wheel | filth builds half as fast |
+| The Acid Sump | dive to 900m | The Sludge Crown | toxic blood, immune to venom |
+| The Outfall | open the weir | A Length of Rebar | bites pierce armour |
 | Mangrove Tangle | take 14 fish | Drowned Man's Ring | +8% bite |
 | Gator Joe's Camp | wreck 3 builds | Gator Joe's Skull | +10% max health |
 | Cypress Swamp | kill 5 predators | Blackwater Knee | +2 strain tolerance |
@@ -545,7 +571,7 @@ comes for a full-grown animal. Which one you meet is decided by where you are st
 
 | Zone | Mini-bosses | World boss |
 | --- | --- | --- |
-| The River | The Broodmother, The Gnasher | The River King |
+| The System | The Broodmother, The Gnasher | The Sludge King |
 | The Everglades | Old Scar, the war boat, Mother Python | The Skunk Ape |
 | The Open Ocean | The Anvil, The Green Wall | The Lantern |
 

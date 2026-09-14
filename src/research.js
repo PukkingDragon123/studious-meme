@@ -61,7 +61,7 @@ const RESEARCH = [
     nodes: [
       { id: 'f.glades', name: 'DOWNRIVER SURVEY', cost: 4, line: 'OPENS THE EVERGLADES', grant: { zone: ['glades'] } },
       { id: 'f.ocean', name: 'OFFSHORE SURVEY', cost: 7, need: ['f.glades'], line: 'OPENS THE OPEN OCEAN', grant: { zone: ['ocean'] } },
-      { id: 'f.deep', name: 'DEEP SOUNDING', cost: 11, need: ['f.ocean'], line: 'OPENS THE OXBOW AND THE TRENCH', grant: { site: ['oxbow', 'trench'] } },
+      { id: 'f.deep', name: 'DEEP SOUNDING', cost: 11, need: ['f.ocean'], line: 'OPENS THE OUTFALL AND THE TRENCH', grant: { site: ['outfall', 'trench'] } },
     ],
   },
 ];

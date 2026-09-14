@@ -20,6 +20,8 @@ const Opening = {
   // the cover you have to break, the line the handlers own, the head of the
   // interceptor under the building, and the mouth it lets out of
   LIP: -5968, DRAIN: -5950, MOUTH: -2996,
+  // where the game picks you up again: the brick bench on level one
+  WAKE: -5700,
   get MANHOLE() { return FACILITY.MANHOLE; },
   get DOCK() { return FACILITY.DOCK; },
   NEED_COVER: 6,
@@ -72,8 +74,8 @@ const Opening = {
     if (this.phase === 'carry') this.carry(dt);
     else if (this.phase === 'loose') this.loose(dt);
     else if (this.phase === 'drop') this.drop(dt);
-    else if (this.phase === 'slide') this.slide(dt);
-    else if (this.phase === 'launch') this.launch(dt);
+    else if (this.phase === 'black') this.black(dt);
+    else if (this.phase === 'wake') this.wake(dt);
     else if (this.phase === 'caught') this.caughtHold(dt);
   },
 
@@ -196,102 +198,72 @@ const Opening = {
     }
   },
 
-  // Straight down the shaft under the drain, turning as you go, until the head
-  // of the pipe comes up to meet you.
+  // ---- THE DROP --------------------------------------------------------
+  // Eleven stone of cast iron gives way and the floor is not under you any
+  // more. What follows is not a ride down a pipe. It is a hundred and forty
+  // feet of brick shaft in the dark, and nothing the length of a hand stays
+  // awake through it.
   drop(dt) {
     const P = G.player;
-    // a frozen animal has its velocity cleared for it every frame, so the fall
-    // is carried here and handed back for the camera to lead on
     P.frozen = true;
-    this.fall += 1150 * dt; P.y += this.fall * dt;
-    P.x = approach(P.x, this.DRAIN, dt * 330);
+    this.fall += 1250 * dt; P.y += this.fall * dt;
+    P.x = approach(P.x, this.DRAIN, dt * 300);
     P.vx = 0; P.vy = this.fall;
-    P.angle = lerp(P.angle, 1.05, 1 - Math.exp(-dt * 3.2));
-    P.facing = 1; P.jaw = 0.35;
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.2, false);
-    if (chance(dt * 20)) G.fx.add({ type: 'drop', x: P.x + rand(-10, 10), y: P.y - rand(0, 40), vx: rand(-14, 14), vy: rand(120, 240), s: 1, color: '#9ad8c0', life: 1 });
-    G.fx.glow && G.fx.glow(P.x, P.y, 14 * P.vis, '#a8e0c8', 0.12);
-    // The building's own floor is still under you for the first half of this,
-    // and it is not a landing: the shaft rakes east under the dock and only
-    // the head of the interceptor counts as ground.
-    const gy = World.floorY(P.x) - 4 * P.vis;
-    if ((P.x >= this.DRAIN - 10 && P.y >= gy) || this.t > 2.4) {
-      P.x = Math.max(P.x, this.DRAIN - 10);
-      this.startSlide();
-    }
+    P.angle = lerp(P.angle, 1.15, 1 - Math.exp(-dt * 3.6));
+    P.facing = 1; P.jaw = 0.5;
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.4, false);
+    // brick dust and cover fragments going past upward, because you are not
+    if (chance(dt * 26)) G.fx.add({ type: 'splinter', x: P.x + rand(-18, 18), y: P.y - rand(10, 90), vx: rand(-40, 40), vy: rand(-320, -140), s: 1, w: randi(1, 3), color: choice(['#6a6252', '#3e3a32', '#8a8578']), rot: rand(TAU), vr: rand(-10, 10), life: 1.2 });
+    G.fx.glow && G.fx.glow(P.x, P.y, 14 * P.vis, '#a8e0c8', 0.10);
+    if (this.t > 1.15) this.blackOut();
   },
 
-  startSlide() {
+  // ---- THE BLACKOUT ----------------------------------------------------
+  // The screen goes out. The game moves you a hundred and forty feet and
+  // three quarters of a mile while it is out, and you do not get to see it,
+  // because neither did the animal.
+  blackOut() {
     const P = G.player;
-    this.phase = 'slide'; this.t = 0; this.rideT = 0; this.slideV = 80; this.air = 0;
-    P.y = World.floorY(P.x) - 4 * P.vis; P.vy = 0; this.fall = 0;
-    G.shake(7); SFX.thud && SFX.thud(0); SFX.splash && SFX.splash(1.2);
-    G.fx.splash && G.fx.splash(P.x, 1.2, 0);
-    G.banner = { text: 'THE INTERCEPTOR', sub: 'IT ONLY GOES ONE WAY', t: 3.4, max: 3.4, color: '#7fd8c0' };
+    this.phase = 'black'; this.t = 0; this.fall = 0;
+    P.frozen = true; P.vx = 0; P.vy = 0; P.invuln = 14;
+    G.shake(13); SFX.thud && SFX.thud(0);
+    this.land();
+    G.banner = null; G.dispatch = null;
   },
-
-  // Twenty seconds of lined pipe. The floor is real map, the physics are the
-  // game's, and the only thing the script does is hold you facing down it and
-  // keep a hand on the throttle so the ride reads.
-  slide(dt) {
+  // put the animal on the bench on level one, with the camera already on it
+  land() {
     const P = G.player;
-    this.rideT += dt;
+    P.x = this.WAKE; P.y = World.floorY(this.WAKE) - 4 * P.vis;
+    P.angle = 0.12; P.vx = 0; P.vy = 0;
+    P.chain.reset(P.x, P.y, 0);
+    G.cam.x = P.x; G.cam.y = P.y - 16;
+  },
+  black(dt) {
+    const P = G.player;
+    P.frozen = true; P.vx = 0; P.vy = 0;
+    P.y = World.floorY(P.x) - 4 * P.vis;
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.08, false);
+    G.cam.x = P.x; G.cam.y = P.y - 16;
+    if (this.t > 3.2) { this.phase = 'wake'; this.t = 0; SFX.splash && SFX.splash(0.5); }
+  },
+  // Coming round. The eye opens twice before it stays open, and the first
+  // thing in it is a shaft of daylight a hundred and forty feet up.
+  wake(dt) {
+    const P = G.player;
     P.frozen = true;
-    const fy = World.floorY(P.x), slope = (World.floorY(P.x + 26) - fy) / 26;
-    // steep pipe, faster ride; the benches at the foot of each step slow you
-    const steer = Input.axis()[0];
-    const target = clamp(78 + Math.max(0, slope) * 150 + steer * 34, 54, 210);
-    this.slideV = approach(this.slideV, target, dt * (slope > 0.3 ? 140 : 50));
-    P.x += this.slideV * dt;
-    P.vx = this.slideV;                       // so the camera leads down the pipe
-    // gravity does the rest: where the floor falls away faster than you do, you
-    // leave it, and you come down again on the bench at the bottom of the step
-    this.fall += 1150 * dt; P.y += this.fall * dt; P.vy = this.fall;
-    const gy = World.floorY(P.x) - 4 * P.vis;
-    if (P.y >= gy) {
-      if (this.air > 0.18 && this.fall > 150) {
-        G.shake(Math.min(8, this.fall / 50)); SFX.thud && SFX.thud(0);
-        for (let i = 0; i < 10; i++) G.fx.add({ type: 'drop', x: P.x + rand(-8, 8), y: gy, vx: rand(-70, 70), vy: rand(-120, -20), s: 1, color: '#9ad8c0', life: 0.7 });
-      }
-      P.y = gy; this.fall = 0; P.vy = 0; this.air = 0;
-    } else this.air += dt;
-    // nose down the pipe, and up a little while airborne
-    const aim = Math.atan2(slope, 1) * (this.air > 0.12 ? 0.45 : 1) + (this.air > 0.12 ? 0.18 : 0);
-    P.angle = lerp(P.angle, aim, 1 - Math.exp(-dt * 9));
-    P.facing = 1; P.jaw = 0.2 + Math.abs(Math.sin(this.rideT * 5)) * 0.2;
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.5 + this.slideV / 160, false);
-    // the wash you are riding on, and the grit coming off the invert
-    if (this.air <= 0.02) {
-      if (chance(dt * 34)) G.fx.add({ type: 'drop', x: P.x - rand(0, 14), y: gy - rand(0, 5), vx: -this.slideV * rand(0.2, 0.5), vy: rand(-90, -20), s: 1, color: choice(['#9ad8c0', '#cfe8dc', '#7fb8a0']), life: rand(0.5, 1) });
-      if (chance(dt * 8)) G.fx.smoke && G.fx.smoke(P.x - 10, gy - 2, 1, '#5a6a60');
+    P.y = World.floorY(P.x) - 4 * P.vis;
+    P.angle = lerp(P.angle, 0, 1 - Math.exp(-dt * 2.2));
+    P.jaw = Math.max(0, 0.45 - this.t * 0.22);
+    P.facing = 1;
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.22 + Math.max(0, 1 - this.t) * 0.5, false);
+    G.cam.x = lerp(G.cam.x, P.x + 30, 1 - Math.exp(-dt * 1.4));
+    G.cam.y = lerp(G.cam.y, P.y - 24, 1 - Math.exp(-dt * 1.4));
+    if (chance(dt * 3)) G.fx.add({ type: 'drop', x: P.x + rand(-20, 20), y: World.floorY(P.x) - 60, vx: 0, vy: 90, s: 1, color: '#9ad8c0', life: 1.1 });
+    if (this.t > 3.6) {
+      this.phase = 'done'; this.on = false; this.splashed = true;
+      P.frozen = false; P.invuln = 3;
+      G.banner = { text: 'LEVEL ONE', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN.', t: 4.5, max: 4.5, color: '#9fe0c8' };
     }
-    if (chance(dt * 2.2)) SFX.clank && SFX.clank(rand(-0.5, 0.5));
-    // a wet animal in a dark pipe: keep a highlight on it or it is a smudge
-    G.fx.glow && G.fx.glow(P.x, P.y, 13 * P.vis, '#a8e0c8', 0.10);
-    if (P.x > this.MOUTH) this.launchOut();
-  },
-
-  launchOut() {
-    const P = G.player;
-    this.phase = 'launch'; this.t = 0;
-    P.frozen = false; P.invuln = 4;
-    P.vx = this.slideV * 1.15; P.vy = -30; this.fall = 0;
-    G.slowmo(0.45, 0.7); G.shake(6);
-    G.banner = { text: 'OUT', sub: '', t: 1.2, max: 1.2, color: '#9fe0c8' };
-    for (let i = 0; i < 30; i++) G.fx.add({ type: 'drop', x: P.x + rand(-10, 6), y: P.y + rand(-8, 6), vx: rand(40, 220), vy: rand(-90, 60), s: 1, color: choice(['#9ad8c0', '#cfe8dc']), life: rand(0.8, 1.8) });
-  },
-
-  launch(dt) {
-    const P = G.player;
-    if (!this.splashed && P.inWater) {
-      this.splashed = true; this.phase = 'done'; this.on = false;
-      G.shake(10); G.fx.splash && G.fx.splash(P.x, 2.6, 0); Water.splash && Water.splash(P.x, 200, 50); SFX.splash && SFX.splash(2.5);
-      G.banner = { text: 'THE RIVER', sub: 'FIRST AIR. GET DOWNSTREAM.', t: 4.5, max: 4.5, color: '#9fe0c8' };
-      P.invuln = 2;
-    }
-    // a bad bounce off the lip: if it has not found water in four seconds, it
-    // is on the cistern floor somewhere, and the run starts anyway
-    if (this.t > 4 && !this.splashed) { this.splashed = true; this.phase = 'done'; this.on = false; G.banner = { text: 'THE RIVER', sub: 'FIRST AIR. GET DOWNSTREAM.', t: 4.5, max: 4.5, color: '#9fe0c8' }; }
   },
 
   breach() {
@@ -338,15 +310,50 @@ const Opening = {
       Font.draw(ctx, 'TRANSFER ORDER 11 COMPLETE', W / 2, H - 44, { color: '#ff8c40', align: 'center', outline: '#1a0a06' });
       return;
     }
-    if (this.phase === 'slide') {
-      // a depth gauge: how much pipe is left under you
-      const P = G.player, u = clamp((P.x - this.DRAIN) / (this.MOUTH - this.DRAIN), 0, 1);
-      ctx.fillStyle = 'rgba(6,14,14,0.6)'; ctx.fillRect(W - 18, 40, 8, 120);
-      ctx.fillStyle = '#2a3a34'; ctx.fillRect(W - 17, 41, 6, 118);
-      ctx.fillStyle = '#7fd8c0'; ctx.fillRect(W - 17, 41, 6, Math.round(118 * u));
-      ctx.fillStyle = '#cfe8dc'; ctx.fillRect(W - 19, Math.round(41 + 118 * u) - 1, 10, 2);
-      Font.draw(ctx, Math.round((1 - u) * 140) + 'FT', W - 14, 166, { color: '#7fd8c0', align: 'center' });
-      if (this.rideT < 3.2 && Math.floor(G.t * 3) % 2) Font.draw(ctx, 'HOLD RIGHT TO GO FASTER', W / 2, H - 40, { color: '#cfe8dc', align: 'center', outline: '#0a1a08' });
+    // ---- the shaft closing over, the dark, and the eye opening again -----
+    if (this.phase === 'drop') {
+      // the light of the access chamber going up and away from you
+      const u = clamp(this.t / 1.15, 0, 1);
+      ctx.fillStyle = 'rgba(3,5,6,' + (u * u * 0.94).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
+      return;
+    }
+    if (this.phase === 'black') {
+      ctx.fillStyle = '#030506'; ctx.fillRect(0, 0, W, H);
+      // a pulse, because something down there is still working
+      const b = 0.10 + 0.09 * Math.max(0, Math.sin(this.t * 3.4));
+      const g = ctx.createRadialGradient(W / 2, H / 2, 4, W / 2, H / 2, W * 0.42);
+      g.addColorStop(0, 'rgba(120,30,30,' + b.toFixed(3) + ')'); g.addColorStop(1, 'rgba(120,30,30,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      if (this.t > 1.5) {
+        const a = Math.min(1, (this.t - 1.5) / 0.9) * (Math.floor(G.t * 1.6) % 2 ? 0.85 : 0.5);
+        Font.draw(ctx, 'SOME TIME LATER', W / 2, H / 2 - 6, { color: 'rgba(150,176,172,' + a.toFixed(2) + ')', align: 'center' });
+      }
+      return;
+    }
+    if (this.phase === 'wake') {
+      // two blinks and then it stays open: the lids come in from top and
+      // bottom and the gap between them is the only thing you can see through
+      const u = clamp(this.t / 3.6, 0, 1);
+      let open = clamp(u * 2.4, 0, 1);
+      if (this.t < 0.5) open = this.t / 0.5 * 0.45;
+      else if (this.t < 0.85) open = 0.45 - (this.t - 0.5) / 0.35 * 0.42;
+      else if (this.t < 1.6) open = 0.03 + (this.t - 0.85) / 0.75 * 0.72;
+      else if (this.t < 1.85) open = 0.75 - (this.t - 1.6) / 0.25 * 0.35;
+      else open = Math.min(1, 0.4 + (this.t - 1.85) / 1.1 * 0.6);
+      const lid = Math.round((H / 2) * (1 - open));
+      if (lid > 0) {
+        ctx.fillStyle = '#030506';
+        ctx.fillRect(0, 0, W, lid); ctx.fillRect(0, H - lid, W, lid);
+        ctx.fillStyle = 'rgba(30,44,44,0.9)';
+        ctx.fillRect(0, lid, W, 2); ctx.fillRect(0, H - lid - 2, W, 2);
+      }
+      // whatever is left of the dark, and the swimming that goes with it
+      ctx.fillStyle = 'rgba(3,5,6,' + ((1 - open) * 0.55).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
+      const vg = ctx.createRadialGradient(W / 2, H / 2, W * 0.16, W / 2, H / 2, W * 0.62);
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(2,6,8,' + (0.7 - open * 0.4).toFixed(2) + ')');
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+      if (this.t > 2.2 && Math.floor(G.t * 2) % 2) Font.draw(ctx, 'THE SYSTEM', W / 2, 30, { color: 'rgba(159,224,200,0.8)', align: 'center', outline: '#04100c' });
+      return;
     }
   },
 };

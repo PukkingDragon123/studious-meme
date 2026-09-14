@@ -2,10 +2,11 @@
 // ---------------------------------------------------------------------------
 // THE MECHANISMS.
 //
-// The catacombs are not a place you swim out of. The outflow at the east end
-// is barred, and the bar is on a system the Romans built: a valve, a bank of
-// levers, a counterweight, each in its own chamber, each one a thing you have
-// to work with your mouth because it is the only tool you have.
+// The system is not a place you swim out of. The outfall at the east end is
+// barred, and the bar is on gear nobody has turned since 1974: a sluice wheel,
+// a bank of gate levers and a counterweight, one on each lift of the weirs,
+// each one a thing you have to work with your mouth because it is the only
+// tool you have.
 //
 // Every mechanism is a small game. Bite it and the world holds still around
 // you while you play: a wheel you turn on a rhythm, levers you throw in the
@@ -18,11 +19,11 @@ const MECH_DEFS = {
   levers: { name: 'THE GATE LEVERS', line: 'THE LAMPS SHOW THE ORDER.', game: 'sequence', need: 4 },
   chain: { name: 'THE COUNTERWEIGHT', line: 'HOLD. LET GO IN THE BAND.', game: 'hold', need: 3 },
 };
-// where they stand in the first site, on the dry ledges, and the gate they open
+// One to a lift, up the flight of weirs in the outfall, and the gate at the top
 const CATACOMB_MECHS = [
-  { kind: 'valve', x: -2260 }, { kind: 'levers', x: -1240 }, { kind: 'chain', x: -230 },
+  { kind: 'valve', x: -300 }, { kind: 'levers', x: 280 }, { kind: 'chain', x: 640 },
 ];
-const CATACOMB_GATE = 700;
+const CATACOMB_GATE = 950;
 
 class Mechanism extends Entity {
   constructor(x, kind) {
@@ -92,11 +93,10 @@ const Puzzles = {
     if (!stage || !stage.intro) return;
     this.stage = stage;
     for (const m of CATACOMB_MECHS) {
-      // on the nearest dry stone to where it was drawn
-      const x = World.findX(m.x, xx => World.floorY(xx) < -6, 300, 8);
-      const e = new Mechanism(x === null ? m.x : x, m.kind); G.add(e); this.mechs.push(e);
+      // exactly where it was drawn: these are bolted to a weir, not scattered
+      const e = new Mechanism(m.x, m.kind); G.add(e); this.mechs.push(e);
     }
-    const g = new Structure(CATACOMB_GATE, 'sluice'); g.puzzleGate = true; g.name = 'THE OUTFLOW'; G.add(g); this.gate = g;
+    const g = new Structure(CATACOMB_GATE, 'sluice'); g.puzzleGate = true; g.name = 'THE OUTFALL GATE'; G.add(g); this.gate = g;
   },
 
   // ---- the games ----------------------------------------------------------
@@ -124,8 +124,8 @@ const Puzzles = {
       Missions.bump('puzzle');
       // somewhere in the walls, something old turns over
       G.shake(4); SFX.clank && SFX.clank(0);
-      if (this.solved >= CATACOMB_MECHS.length) { this.exitOpen = true; G.banner = { text: 'THE OUTFLOW IS OPEN', sub: 'EAST. GO.', t: 4, max: 4, color: '#8ce8a0' }; }
-      else G.banner = { text: (CATACOMB_MECHS.length - this.solved) + ' TO GO', sub: 'THE OUTFLOW IS STILL SHUT', t: 3, max: 3, color: '#c8a050' };
+      if (this.solved >= CATACOMB_MECHS.length) { this.exitOpen = true; G.banner = { text: 'THE OUTFALL IS OPEN', sub: 'EAST. UP. GO.', t: 4, max: 4, color: '#8ce8a0' }; }
+      else G.banner = { text: (CATACOMB_MECHS.length - this.solved) + ' TO GO', sub: 'THE OUTFALL IS STILL SHUT', t: 3, max: 3, color: '#c8a050' };
     } else {
       G.banner = { text: 'IT SLIPPED', sub: 'BITE IT AGAIN', t: 2.2, max: 2.2, color: '#ff8c40' };
       SFX.hurt && SFX.hurt();
