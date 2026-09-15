@@ -452,6 +452,8 @@ const G = {
     const passes = B.id === 'wake' ? 9 : 5;
     for (let k = 0; k < passes; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
+      // same rule as the director: nothing gets stocked on a scarp
+      if (Math.abs(World.floorY(x + 30) - World.floorY(x)) > 90) continue;
       const Bx = Biome.at(x);
       if (Bx.indoor && Bx.id !== 'wake' && rng() < 0.5) continue;
       const fy = World.floorY(x);
@@ -666,7 +668,7 @@ const G = {
     const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(10, 130)), fy = World.floorY(x);
     // never stock a cliff: a shaft wall or a weir face drops a hundred feet in
     // thirty, and anything put down at the deep end of it ends up inside rock
-    if (Math.abs(World.floorY(x + 30) - fy) > 150 || Math.abs(World.floorY(x - 30) - fy) > 150) return;
+    if (Math.abs(World.floorY(x + 30) - fy) > 90 || Math.abs(World.floorY(x - 30) - fy) > 90) return;
     if (fy < 20) { this.spawnLand(x, D); return; }
     const B = Biome.at(x);
     if (B.indoor && !B.fish.length) return;  // nothing swims in a dry containment cell

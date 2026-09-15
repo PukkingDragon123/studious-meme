@@ -155,9 +155,17 @@ const Facility = {
 
     // a chequer-plate walkway laid the length of the building, because a
     // floor a trolley runs on is not a painted slab
-    this.surf(ctx, cam, 0, floorS - 14 * z, W, 14 * z, '#3f4a4e', 'plate', 0.95);
-    px(0, floorS - 14 * z, W, 1.6 * z, '#5f6c70');
-    px(0, floorS - 1.6 * z, W, 1.6 * z, '#2a3236');
+    // ...with a hole in it where the chamber is, because that is what a
+    // manhole is: the plate stops, the frame starts, and the lid sits in it
+    const [mhx] = cam.toScreen(FACILITY.MANHOLE, 0), mhw = 40 * z;
+    const spans = (mhx > -mhw - 20 && mhx < W + mhw + 20)
+      ? [[0, mhx - mhw], [mhx + mhw, W - (mhx + mhw)]] : [[0, W]];
+    for (const [px0, pw] of spans) {
+      if (pw <= 1) continue;
+      this.surf(ctx, cam, px0, floorS - 14 * z, pw, 14 * z, '#3f4a4e', 'plate', 0.95);
+      px(px0, floorS - 14 * z, pw, 1.6 * z, '#5f6c70');
+      px(px0, floorS - 1.6 * z, pw, 1.6 * z, '#2a3236');
+    }
     for (let wx = Math.floor(leftW / 64) * 64; wx < rightW; wx += 64) {
       const [sx] = cam.toScreen(wx, 0);
       px(sx, floorS - 14 * z, 1.4 * z, 14 * z, '#2b3337');            // the joint between plates
@@ -178,37 +186,149 @@ const Facility = {
   drawFloor(ctx, cam) {
     const z = cam.zoom, C = this.C, px = (x, y, w, h, c) => this.px(ctx, x, y, w, h, c);
     const mx = FACILITY.MANHOLE, [sx, sy] = cam.toScreen(mx, World.floorY(mx));
-    if (sx > -140 && sx < G.W + 140) {
-      const st = typeof Opening !== 'undefined' && Opening.on ? Opening.coverT || 0 : 0;
-      const broken = typeof Opening !== 'undefined' && Opening.coverBroken;
-      // the frame, bedded into the slab
-      px(sx - 30 * z, sy - 3 * z, 60 * z, 5 * z, '#6f6a5f');
-      px(sx - 30 * z, sy - 3 * z, 60 * z, z, '#8a8578');
-      px(sx - 26 * z, sy - 5 * z, 52 * z, 4 * z, '#585349');
-      if (!broken) {
-        // the cover, and what biting it has done to it so far
-        px(sx - 24 * z, sy - 7 * z, 48 * z, 5 * z, '#4a463d');
-        px(sx - 24 * z, sy - 7 * z, 48 * z, z, '#635e53');
-        for (let i = 0; i < 7; i++) px(sx - 20 * z + i * 6 * z, sy - 6 * z, 4 * z, 3 * z, '#565144');
-        px(sx - 3 * z, sy - 8 * z, 6 * z, z, '#2c2a25');
-        if (st > 0) {
-          ctx.strokeStyle = 'rgba(255,220,160,' + (0.4 + st * 0.6).toFixed(2) + ')'; ctx.lineWidth = Math.max(1, Math.round(z));
-          for (let k = 0; k < Math.ceil(st * 7); k++) {
-            const a = k * 1.9; ctx.beginPath(); ctx.moveTo(sx, sy - 5 * z);
-            ctx.lineTo(sx + Math.cos(a) * 22 * z * (0.4 + st * 0.6), sy - 5 * z + Math.sin(a) * 4 * z);
-            ctx.stroke();
-          }
-        }
-      } else {
-        px(sx - 24 * z, sy - 6 * z, 48 * z, 26 * z, '#080b0c');
-        px(sx - 24 * z, sy - 6 * z, 48 * z, 2 * z, '#2a2820');
-        px(sx + 26 * z, sy - 18 * z, 5 * z, 18 * z, '#4a463d');   // the cover, thrown clear
-        px(sx + 24 * z, sy - 19 * z, 9 * z, 2 * z, '#635e53');
+    if (sx < -180 || sx > G.W + 180) return;
+    const st = typeof Opening !== 'undefined' && Opening.on ? Opening.coverT || 0 : 0;
+    const hits = typeof Opening !== 'undefined' ? (Opening.coverHits || 0) : 0;
+    const broken = typeof Opening !== 'undefined' && Opening.coverBroken;
+    const T = World.t;
+    const R = 34;                                   // cover radius, world units
+
+    // ---- THE CHAMBER ITSELF ---------------------------------------------
+    // A manhole is not a disc on a floor. It is a chamber: a benched invert
+    // under it, a run of step irons up the back, a cast frame bedded in the
+    // slab on a mortar joint, and a lid nobody has lifted since 1974.
+    // the slab it is set into, worn to a shine round the frame
+    ctx.globalAlpha = 0.5;
+    px(sx - (R + 26) * z, sy - 2 * z, (R + 26) * 2 * z, 3 * z, '#5c6468');
+    ctx.globalAlpha = 1;
+    if (broken) {
+      // ---- OPEN --------------------------------------------------------
+      // the shaft: rings going down, step irons up the back of it, and the
+      // light of the access chamber falling in as a hard-edged wedge
+      // the shaft, and only when it is open: a shut lid has a floor under it
+      px(sx - (R - 4) * z, sy - 8 * z, (R - 4) * 2 * z, 70 * z, '#05070a');
+      for (let i = 0; i < 7; i++) {
+        const y0 = sy - 2 * z + i * 10 * z, w0 = (R - 4 - i * 1.4) * z;
+        px(sx - w0, y0, w0 * 2, 9 * z, i % 2 ? '#0c1114' : '#090d10');
+        px(sx - w0, y0, w0 * 2, 1.6 * z, '#1b2429');
+        px(sx - w0, y0 + 8 * z, w0 * 2, 1.2 * z, '#040608');
       }
-      // and the sign painted on the slab beside it
-      px(sx - 44 * z, sy - 2 * z, 10 * z, 2 * z, C.warn);
-      px(sx + 34 * z, sy - 2 * z, 10 * z, 2 * z, C.warn);
+      for (let i = 0; i < 6; i++) px(sx + (R - 16) * z, sy + 4 * z + i * 10 * z, 11 * z, 2.4 * z, '#4b4336');
+      ctx.globalAlpha = 0.20;
+      ctx.fillStyle = '#cfe4ea';
+      ctx.beginPath();
+      ctx.moveTo(sx - (R - 4) * z, sy - 3 * z); ctx.lineTo(sx + (R - 4) * z, sy - 3 * z);
+      ctx.lineTo(sx + 8 * z, sy + 66 * z); ctx.lineTo(sx - 18 * z, sy + 66 * z); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      // a draught coming up out of it
+      if (chance(0.5)) G.fx.add({ type: 'smoke', x: mx + rand(-20, 20), y: World.floorY(mx) + rand(0, 30), vx: rand(-10, 10), vy: -rand(14, 40), s: rand(3, 8), color: '#5d6a70', life: rand(1.2, 2.4) });
     }
+
+    // ---- THE FRAME -------------------------------------------------------
+    // cast iron, square, bedded on mortar, with the corners chamfered off
+    // ...drawn as two cheeks, so the hole in the middle of it is a hole
+    for (const sgn of [-1, 1]) {
+      const inner = sgn < 0 ? sx - (R - 4) * z : sx + (R - 4) * z;
+      const outer = sgn < 0 ? sx - (R + 13) * z : sx + (R + 13) * z;
+      const x0c = Math.min(inner, outer), wc = Math.abs(outer - inner);
+      px(x0c, sy - 8 * z, wc, 8 * z, '#6f6a5f');
+      px(x0c, sy - 8 * z, wc, 1.4 * z, '#948d7c');
+      px(x0c, sy - 2 * z, wc, 2 * z, '#3d3930');
+      px(x0c, sy - 17 * z, wc, 9.4 * z, '#5a5449');
+      px(x0c, sy - 17 * z, wc, 1.4 * z, '#7d7666');
+      px(x0c, sy - 9 * z, wc, 1.4 * z, '#312e27');
+      // the seating the lid drops onto, one step in from the outside
+      px(sgn < 0 ? inner : inner - 4 * z, sy - 9.5 * z, 4 * z, 2.4 * z, '#413c33');
+    }
+    // mortar, cracked where the frame has worked loose
+    px(sx - (R + 18) * z, sy - 7 * z, 6 * z, 7 * z, '#8a8578');
+    px(sx + (R + 12) * z, sy - 7 * z, 6 * z, 7 * z, '#8a8578');
+
+    if (!broken) {
+      // ---- THE LID -------------------------------------------------------
+      // The one on the floor of every access chamber in the city: a raised rim
+      // with a foundry legend cast round it, a diamond tread pattern inside
+      // that, two pick holes, and a hinge on the east side.
+      const lift = st > 0 ? Math.sin(T * 26) * st * 2.6 * z : 0;   // it rings when you hit it
+      const ly = sy - 15 * z + lift;
+      // the body, and the bevel the rim throws
+      px(sx - R * z, ly, R * 2 * z, 7 * z, '#4a463d');
+      px(sx - R * z, ly, R * 2 * z, 1.6 * z, '#6d6759');
+      px(sx - R * z, ly + 5.4 * z, R * 2 * z, 1.6 * z, '#2b2823');
+      // the raised outer rim, with the legend cast into it
+      px(sx - R * z, ly + 0.6 * z, R * 2 * z, 1.4 * z, '#5f5a4d');
+      for (let i = 0; i < 16; i++) {
+        const u = i / 16;
+        px(sx - (R - 3) * z + u * (R - 3) * 2 * z, ly + 1.2 * z, 1.6 * z, 1.6 * z, i % 3 ? '#7d7768' : '#8e8878');
+      }
+      // the diamond tread: two sets of bars crossing, which is what makes it a
+      // manhole cover and not a dinner plate
+      for (let i = 0; i < 9; i++) {
+        const ox = -R + 4 + i * 6.6;
+        px(sx + ox * z, ly + 3 * z, 4.2 * z, 2.2 * z, '#585144');
+        px(sx + ox * z, ly + 3 * z, 4.2 * z, 0.9 * z, '#6b6455');
+        px(sx + (ox + 2) * z, ly + 4.6 * z, 4.2 * z, 1.4 * z, '#413c33');
+      }
+      // two pick holes and the hinge
+      px(sx - 12 * z, ly + 2.4 * z, 4 * z, 2.6 * z, '#14120e');
+      px(sx + 8 * z, ly + 2.4 * z, 4 * z, 2.6 * z, '#14120e');
+      px(sx + (R - 4) * z, ly + 1 * z, 6 * z, 5 * z, '#6b6455');
+      px(sx + (R - 3) * z, ly + 2.4 * z, 3 * z, 2.4 * z, '#312d26');
+      // rust in the joint, and a boot scuff across the tread
+      ctx.globalAlpha = 0.45;
+      for (let i = 0; i < 9; i++) px(sx - R * z + ihash(i, 71) * R * 2 * z, ly + 5 * z, 2.4 * z, 2 * z, ihash(i, 72) > 0.5 ? '#7a4a24' : '#5a3418');
+      ctx.globalAlpha = 0.22; px(sx - 16 * z, ly + 2.6 * z, 30 * z, 2 * z, '#0e0c08'); ctx.globalAlpha = 1;
+
+      // ---- WHAT BITING IT HAS DONE SO FAR --------------------------------
+      if (hits > 0) {
+        // the casting cracks from the middle out, one crack per go, and the
+        // crack lets a thread of light up out of the shaft
+        ctx.lineWidth = Math.max(1, Math.round(z));
+        for (let k = 0; k < Math.min(hits, 6); k++) {
+          const a = k * 1.9 + 0.4, len = (10 + k * 3.4) * z;
+          ctx.strokeStyle = 'rgba(12,10,8,0.9)';
+          ctx.beginPath(); ctx.moveTo(sx, ly + 3.5 * z);
+          ctx.lineTo(sx + Math.cos(a) * len, ly + 3.5 * z + Math.sin(a) * len * 0.22); ctx.stroke();
+          ctx.strokeStyle = 'rgba(180,210,220,' + (0.10 + hits * 0.06).toFixed(2) + ')';
+          ctx.beginPath(); ctx.moveTo(sx, ly + 3 * z);
+          ctx.lineTo(sx + Math.cos(a) * len, ly + 3 * z + Math.sin(a) * len * 0.22); ctx.stroke();
+        }
+        // dust jumping off the lid on every ring
+        if (st > 0 && chance(0.4)) G.fx.add({ type: 'splinter', x: mx + rand(-26, 26), y: World.floorY(mx) - 12, vx: rand(-40, 40), vy: -rand(20, 90), s: 1, w: 2, color: choice(['#8a8578', '#5e5a52']), rot: rand(TAU), vr: rand(-9, 9), life: 1 });
+      }
+      // the prompt ring, so you know it is a thing and not a floor tile
+      const P = G.player;
+      if (P && !broken && typeof Opening !== 'undefined' && Opening.on && Opening.phase === 'loose') {
+        const k = 0.45 + 0.35 * Math.sin(T * 4);
+        ctx.globalAlpha = k;
+        px(sx - (R + 14) * z, sy - 14 * z, 3 * z, 12 * z, C.warn);
+        px(sx + (R + 11) * z, sy - 14 * z, 3 * z, 12 * z, C.warn);
+        ctx.globalAlpha = 1;
+      }
+    } else {
+      // the lid, flipped clear and leaning on the slab where it landed
+      const lx = sx + (R + 22) * z;
+      ctx.save(); ctx.translate(lx, sy - 2 * z); ctx.rotate(-1.16);
+      ctx.fillStyle = '#4a463d'; ctx.fillRect(Math.round(-R * z), Math.round(-3.5 * z), Math.round(R * 2 * z), Math.round(7 * z));
+      ctx.fillStyle = '#6d6759'; ctx.fillRect(Math.round(-R * z), Math.round(-3.5 * z), Math.round(R * 2 * z), Math.max(1, Math.round(1.6 * z)));
+      ctx.fillStyle = '#585144';
+      for (let i = 0; i < 9; i++) ctx.fillRect(Math.round((-R + 4 + i * 6.6) * z), Math.round(-1 * z), Math.max(1, Math.round(4.2 * z)), Math.max(1, Math.round(2.2 * z)));
+      ctx.restore();
+      // the gouge it cut in the floor tile on the way over
+      ctx.globalAlpha = 0.5; px(sx + (R + 4) * z, sy - 2 * z, 18 * z, 2.4 * z, '#2a2f31'); ctx.globalAlpha = 1;
+    }
+
+    // ---- THE MARKINGS ROUND IT -------------------------------------------
+    // hazard hatching painted on the slab, a chamber number stencilled beside
+    // it and a confined-space triangle
+    ctx.globalAlpha = 0.65;
+    for (let i = 0; i < 7; i++) {
+      px(sx - (R + 54) * z + i * 7 * z, sy - 2.4 * z, 4 * z, 2.4 * z, i % 2 ? C.warn : '#1a1a1a');
+      px(sx + (R + 12) * z + i * 7 * z, sy - 2.4 * z, 4 * z, 2.4 * z, i % 2 ? C.warn : '#1a1a1a');
+    }
+    ctx.globalAlpha = 1;
+    px(sx - (R + 52) * z, sy - 9 * z, 14 * z, 7 * z, '#d8d4c2');
+    for (let i = 0; i < 3; i++) px(sx - (R + 49) * z + i * 4 * z, sy - 7 * z, 2 * z, 3 * z, '#2a2a26');
   },
 
   // --- THE UPPER WALL ---------------------------------------------------
@@ -471,6 +591,22 @@ const Facility = {
       } else {
         px(sx - 9 * z, by + 10 * z, 18 * z, 14 * z, C.warn); px(sx - 9 * z, by + 10 * z, 18 * z, 2 * z, C.warnL);
         px(sx - 4 * z, by + 14 * z, 8 * z, 6 * z, '#1a1a1a');
+      }
+    }
+    // ---- the room's actual equipment, out of the title room's parts bin ---
+    // Same racks, same sequencer, same monitors, same fume hood as the lab on
+    // the front of the game, because it is the same lab.
+    if (typeof Lab !== 'undefined' && Lab.piece) {
+      // one bay of equipment between every pair of doors, so it furnishes the
+      // room instead of papering it
+      const FLOORS = ['rack', 'rack2', 'seq', 'centri'];
+      for (let wx = Math.floor(L / 240) * 240 + 120; wx < R; wx += 240) {
+        if (wx < r.x0 + 60 || wx > r.x1 - 60) continue;
+        const k = Math.floor(wx / 240), pick = ((k % 4) + 4) % 4;
+        const [sx] = cam.toScreen(wx, 0);
+        Lab.piece(ctx, FLOORS[pick], sx - 26 * z, floorS - 14 * z, z * 0.6);
+        Lab.piece(ctx, FLOORS[(pick + 2) % 4], sx + 24 * z, floorS - 14 * z, z * 0.6);
+        Lab.hang(ctx, k % 2 ? 'helix' : 'curve', sx, floorS - 122 * z, z * 0.55);
       }
     }
   },
@@ -755,11 +891,23 @@ const Facility = {
   plant(ctx, cam, r, floorS, roofS) {
     const z = cam.zoom, C = this.C, px = (x, y, w, h, c) => this.px(ctx, x, y, w, h, c);
     const [x0] = cam.toScreen(r.x0, 0), w = (r.x1 - r.x0) * z;
+    // the control end of the plant room, built out of the title room's parts
+    if (typeof Lab !== 'undefined' && Lab.piece) {
+      Lab.hang(ctx, 'board', x0 + w - 46 * z, floorS - 126 * z, z * 0.62);
+      Lab.hang(ctx, 'curve', x0 + w - 46 * z, floorS - 86 * z, z * 0.6);
+      Lab.piece(ctx, 'fume', x0 + w - 46 * z, floorS - 14 * z, z * 0.62);
+      Lab.piece(ctx, 'centri', x0 + 16 * z, floorS - 14 * z, z * 0.6);
+    }
     // filter vessels
     for (let i = 0; i < 3; i++) {
       const vx = x0 + (24 + i * 48) * z, vh = 96 * z;
-      px(vx - 15 * z, floorS - vh, 30 * z, vh, '#5c6a70');
+      this.surf(ctx, cam, vx - 15 * z, floorS - vh, 30 * z, vh, '#5c6a70', 'steel');
       px(vx - 15 * z, floorS - vh, 8 * z, vh, '#748188');
+      // a pressure vessel has weld seams round it and a sight glass down one side
+      for (let k = 1; k < 4; k++) { px(vx - 15 * z, floorS - vh + k * vh / 4, 30 * z, 1.6 * z, '#47535a'); px(vx - 15 * z, floorS - vh + k * vh / 4 + 1.6 * z, 30 * z, 1 * z, '#7d8a90'); }
+      px(vx + 8 * z, floorS - vh + 12 * z, 4 * z, vh - 26 * z, '#2b3438');
+      px(vx + 9 * z, floorS - vh + 14 * z, 2 * z, vh - 34 * z, 'rgba(120,200,190,0.5)');
+      px(vx + 9 * z, floorS - vh + 14 * z + (vh - 34 * z) * 0.42, 2 * z, (vh - 34 * z) * 0.58, 'rgba(60,140,130,0.85)');
       px(vx - 17 * z, floorS - vh - 7 * z, 34 * z, 8 * z, '#48555c');
       px(vx - 17 * z, floorS - 8 * z, 34 * z, 8 * z, '#3a454b');
       for (let k = 0; k < 3; k++) px(vx - 15 * z, floorS - vh + (16 + k * 26) * z, 30 * z, 2 * z, '#44515a');
@@ -843,7 +991,7 @@ const Facility = {
     // a coil of hose and a stack of spare covers against the wall
     for (let k = 0; k < 3; k++) {
       ctx.strokeStyle = k % 2 ? '#c8a020' : '#9a7a18'; ctx.lineWidth = Math.max(1, Math.round(2.4 * z));
-      ctx.beginPath(); ctx.arc(x0 + 70 * z, floorS - 12 * z, (6 + k * 4) * z, Math.PI, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x0 + 30 * z, floorS - 12 * z, (6 + k * 4) * z, Math.PI, TAU); ctx.stroke();
     }
     for (let k = 0; k < 3; k++) { px(x0 + w - 90 * z + k * 2 * z, floorS - 6 * z - k * 5 * z, 34 * z, 5 * z, '#4a463d'); px(x0 + w - 90 * z + k * 2 * z, floorS - 6 * z - k * 5 * z, 34 * z, z, '#635e53'); }
     // cones and the tape between them, which is the only thing keeping you out

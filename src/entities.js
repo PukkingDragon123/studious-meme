@@ -1300,8 +1300,17 @@ const Spawn = {
     // the whole game is the water being full, so the school sizes go up.
     const big = World.isIndoor(x) ? 2 : 1;
     const n = randi(sc[0] * big, Math.max(sc[0] * big + 1, sc[1] * big));
-    const leader = new Fish(x, y, kind); G.add(leader);
-    for (let i = 1; i < n; i++) G.add(new Fish(x + rand(-44, 44), y + rand(-26, 26), kind, leader));
+    // every member is clamped to its own column: a shoal scattered round a
+    // leader standing next to a scarp puts half of itself inside the rock
+    const put = (fx2, fy2, lead) => {
+      const fl = World.floorY(fx2), rf = World.roofY(fx2);
+      let yy = Math.min(fy2, fl - 8);
+      if (rf !== null) yy = Math.max(yy, rf + 8);
+      if (yy >= fl - 2) return null;
+      const f = new Fish(fx2, yy, kind, lead); G.add(f); return f;
+    };
+    const leader = put(x, y, undefined) || (() => { const f = new Fish(x, y, kind); G.add(f); return f; })();
+    for (let i = 1; i < n; i++) put(x + rand(-44, 44), y + rand(-26, 26), leader);
     return leader; },
   flock(x, dir, kind, n) { for (let i = 0; i < n; i++) { const b = new Bird(x - dir * i * 26 + rand(-8, 8), -rand(80, 170) + i * 4, kind, 'fly', dir); b.vx = dir * BIRDS[kind].speed; G.add(b); } },
   heron(x) { const b = new Bird(x, 0, 'heron', 'wade'); G.add(b); return b; },

@@ -47,7 +47,7 @@ class Player {
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.toxin = 0; this.rads = 0; this.crush = 0; this.hazT = 0;
     this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
-    this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.headShakeT = 0; this.goreT = 0; this.snapT = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
+    this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.headShakeT = 0; this.shakePow = 1; this.clampT = 0; this.goreT = 0; this.snapT = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
     this.wet = 1; this.dripT = 0;
     Trials.reset(this);
@@ -366,7 +366,8 @@ class Player {
     if (this.onLand) this.legPhase += Math.abs(this.vx) * dt * (TAU / Math.max(7, 13 * this.vis));
     else this.legPhase += dt * (2 + swim * 7);
     // shaking what you have just bitten, and the blood that stays on the teeth
-    if (this.headShakeT > 0) this.headShakeT -= dt;
+    if (this.headShakeT > 0) { this.headShakeT -= dt; if (this.headShakeT <= 0) this.shakePow = 1; }
+    if (this.clampT > 0) this.clampT -= dt;
     if (this.pounceT > 0) this.pounceT -= dt;
     if (this.goreT > 0) this.goreT -= dt * 0.25;
     if (this.snapT > 0) this.snapT -= dt;
@@ -384,8 +385,12 @@ class Player {
       // and the body itself gets the shove, so the lunge covers ground
       if (u >= 0.46 && u < 0.58 && !this.strikePushed) { this.strikePushed = true; const push = (this.onLand ? 90 : 170) * Math.sqrt(this.vis); this.vx += Math.cos(this.angle) * push; if (!this.onLand) this.vy += Math.sin(this.angle) * push; }
       if (u >= 0.58 && !this.biteHit) { this.biteHit = true; this.doBiteHit(); }
+      // a bite that landed holds its jaws shut on the way back instead of
+      // opening them again on the recoil
+      if (this.clampT > 0 && u > 0.6) this.jaw = Math.min(this.jaw, 0.04);
       if (this.biteT <= 0) { this.jaw = 0; this.strike = null; this.strikePushed = false; }
-    } else if (this.latched) this.jaw = 0.3;
+    } else if (this.clampT > 0) this.jaw = 0.03;
+    else if (this.latched) this.jaw = 0.3;
     else if (this.grabbed) this.jaw = 0.6;
     else this.jaw = lerp(this.jaw, this.moving && sp > this.speedMax * 0.6 ? 0.12 : 0, 0.1);
     // latched prey
@@ -524,9 +529,8 @@ class Player {
       SFX.chomp(this.size);
       if (this.inWater) { G.fx.bubbles(sx, sy, 3, 4 * this.size); G.fx.silt && G.fx.silt(sx, sy, 1, 8); }
     } else {
-      this.headShakeT = 0.34; this.goreT = Math.max(this.goreT, 3.2);
+      this.headShakeT = Math.max(this.headShakeT, 0.4); this.goreT = Math.max(this.goreT, 3.2);
       G.hitstop(0.04);
-      for (let i = 0; i < 5; i++) G.fx.add({ type: 'spark', x: sx + rand(-4, 4) * this.vis, y: sy + rand(-4, 4) * this.vis, vx: Math.cos(this.angle) * rand(40, 140), vy: Math.sin(this.angle) * rand(40, 140), s: 1, color: '#ffffff', life: 0.18 });
     }
     this.biteCount++;
     if (this.st.leviathan && this.biteCount % 6 === 0) this.shockwave();
@@ -556,10 +560,14 @@ class Player {
     const big = e.mass >= 60;
     G.hitstop(big ? 0.09 : 0.05); G.shake((this.st.quake ? 6 : 3) + Math.min(dmg, 40) * 0.15);
     if (this.st.quake) { G.fx.shock(e.x, e.y, 26 * Math.sqrt(this.size), '#ffd060', 0.3); }
-    // The bite reads as a burst of stars off the point of contact rather than
-    // a comic-book word over the animal's head.
-    const spk = crit ? '#ffe86a' : big ? '#ffd8a0' : '#cfeeff';
-    G.fx.sparkle(sx, sy, crit ? 16 : big ? 14 : 9, spk, crit ? 1.5 : big ? 1.25 : 0.95, dx, dy);
+    // No effect layer. What a bite looks like is a crocodile biting: the jaws
+    // clamp and hold, the head worries the thing side to side, and the whole
+    // animal jolts back on the impact. All of that is on the rig.
+    this.clampT = big ? 0.5 : 0.34;
+    this.headShakeT = Math.max(this.headShakeT, big ? 0.62 : crit ? 0.5 : 0.4);
+    this.shakePow = big ? 1.5 : crit ? 1.25 : 1;
+    const jolt = (big ? 120 : crit ? 90 : 60) * Math.sqrt(this.vis);
+    this.vx -= dx * jolt; if (!this.onLand) this.vy -= dy * jolt * 0.5;
     if (crit) G.fx.text(e.x, e.y - 14 * e.size, 'CRITICAL!', { color: '#ffe040', scale: 2 });
     SFX.crunch(this.size, e.pan);
     if (this.st.venom && !e.dead) { e.poison = Math.max(e.poison, 3); e.poisonDmg = dmg * this.st.venom / 3; }
@@ -572,7 +580,6 @@ class Player {
   gulp(e) {
     e.gulped = true; const s = e.spr;
     if (s) G.fx.add({ type: 'suck', img: s.c, x: e.x, y: e.y, w: s.w, h: s.h, size: e.size, facing: e.facing, life: 0.16 });
-    G.fx.sparkle(e.x, e.y, 7, '#cfeeff', 0.5 + Math.min(1.1, e.size * 0.5));
     if (e.bleeds || e.type === 'gib') G.fx.blood(e.x, e.y, 4, 0, 0, 30, e.bloodColors || BLOOD_COLORS);
     e.die(this); SFX.gulp(this.size, e.pan); this.gulpT = 0.2;
   }
@@ -902,21 +909,10 @@ class Player {
       legTuck: this.onLand ? 0 : clamp(spd2 / (this.speedMax * 0.7 + 1), 0, 1),
       legSwing: this.onLand ? 0.55 : 0.3,
       breath: this.moving ? 0 : Math.sin(this.t * 2.1) * 0.5 + 0.5,
-      headShake: this.headShakeT > 0 ? Math.sin(this.t * 46) * 0.22 * this.headShakeT : 0,
+      headShake: this.headShakeT > 0 ? Math.sin(this.t * 44) * 0.3 * this.shakePow * this.headShakeT : 0,
       gore: this.goreT,
     };
     drawCroc(ctx, this.chain, this.parts, this.vis, opts);
-    // the snap: a white crescent thrown off the jaws on the frame they close
-    if (this.snapT > 0) {
-      const [sx2, sy2] = this.snout, a = this.angle, k = this.snapT / 0.14;
-      ctx.save(); ctx.translate(sx2, sy2); ctx.rotate(a);
-      ctx.globalAlpha = clamp(k, 0, 1) * 0.9;
-      ctx.strokeStyle = '#eafff4'; ctx.lineWidth = Math.max(1, 1.6 * this.vis);
-      ctx.beginPath(); ctx.arc(0, 0, (7 + 13 * (1 - k)) * this.vis, -1.1, 1.1); ctx.stroke();
-      ctx.globalAlpha = clamp(k, 0, 1) * 0.5;
-      ctx.beginPath(); ctx.arc(0, 0, (3 + 8 * (1 - k)) * this.vis, -0.8, 0.8); ctx.stroke();
-      ctx.globalAlpha = 1; ctx.restore();
-    }
     if (this.wet > 0.06 && !this.hidden) {
       const n = this.chain.nodes, w = this.wet;
       // Darken: water on a hide sinks its value. Drawn as one non-overlapping

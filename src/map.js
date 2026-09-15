@@ -560,7 +560,12 @@ const Biome = {
       const B = this.at(x);
       // only the corridor and the plant room have loose equipment standing in
       // them: a hall of pens has pens, and a loading dock has a dock
-      if (B.lab) { const r = FACILITY.roomAt(x); if (r && (r.id === 'corridor' || r.id === 'plant')) this.labBay(x, out); }
+      // The corridor and the plant room used to be scattered with loose props —
+      // tanks, crates, drums, consoles — on top of a room that already had a
+      // trolley, doors, wall fittings and a services void in it. The equipment
+      // is drawn by the room itself now, out of the title screen's parts bin,
+      // so nothing is dressed twice.
+      if (B.lab) return;
     }
   },
   // One bay of the corridor. Four of them repeat along it: a tank with its

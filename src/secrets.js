@@ -14,8 +14,8 @@
 // ---------------------------------------------------------------------------
 const SECRETS = [
   // ---- zone 1: the building, the sewer and San Francisco ---------------
-  { id: 's.pens', x: -6700, y: -1414, name: 'A SEALED PEN', line: 'PEN NINE WAS NEVER ON THE MANIFEST.', gp: 2 },
-  { id: 's.plant', x: -6380, y: -1414, name: 'THE PLANT ROOM VOID', line: 'SOMEBODY LIVED DOWN HERE FOR A WHILE.', gp: 2 },
+  { id: 's.pens', x: -6700, y: -1452, name: 'A SEALED PEN', line: 'PEN NINE WAS NEVER ON THE MANIFEST.', gp: 2 },
+  { id: 's.plant', x: -6380, y: -1452, name: 'THE PLANT ROOM VOID', line: 'SOMEBODY LIVED DOWN HERE FOR A WHILE.', gp: 2 },
   { id: 's.sewer', x: -5240, name: 'A BRICKED-UP CONNECTION', line: 'IT GOES SOMEWHERE. IT DOES NOT GO FAR.', gp: 3 },
   { id: 's.weir', x: -4700, name: 'UNDER THE SECOND WEIR', line: 'FIFTY YEARS OF THINGS THAT WOULD NOT GO OVER.', gp: 3 },
   { id: 's.creek', x: -3980, name: 'A STORM DRAIN', line: 'THE CITY PUTS ITS RAIN IN HERE AND FORGETS.', gp: 3 },
@@ -56,7 +56,7 @@ const Secrets = {
   hit(s, P, sx, sy, dx, dy) {
     if (s.open) return;
     s.hp -= Math.max(7, P.biteDmg * 1.4); s.flash = 0.12;
-    G.fx.sparkle(sx, sy, 10, '#ffe86a', 1.1, dx, dy);
+    G.fx.sparks(sx, sy, 8, dx, dy);
     SFX.clank && SFX.clank(G.panOf(s.x)); G.shake(4); G.hitstop(0.05);
     for (let i = 0; i < 4; i++) G.fx.add({ type: 'splinter', x: sx, y: sy, vx: rand(-90, 90), vy: -rand(20, 110), s: 1, w: 3, color: choice(['#8a7050', '#6a5438']), rot: rand(TAU), vr: rand(-8, 8), life: 2.4 });
     if (s.hp > 0) return;
@@ -71,7 +71,7 @@ const Secrets = {
     G.addScore(2500 + s.def.gp * 600);
     G.shake(10); G.slowmo(0.35, 0.7); G.whiteFlash(0.25);
     SFX.levelup && SFX.levelup(); SFX.pick && SFX.pick();
-    G.fx.sparkle(s.x, s.y, 26, '#ffe86a', 2.2);
+    G.fx.sparks(s.x, s.y, 16);
     for (let i = 0; i < 26; i++) G.fx.add({ type: 'spark', x: s.x, y: s.y, vx: rand(-200, 200), vy: rand(-220, 120), s: 1, color: choice(['#ffe86a', '#ffffff', '#ffb040']), life: rand(0.5, 1.4) });
     G.banner = { text: 'SECRET FOUND  ' + this.count() + '/' + this.total(), sub: s.def.name + ' — ' + s.def.line, t: 4.6, max: 4.6, color: '#ffe86a' };
     G.stats.secrets = (G.stats.secrets || 0) + 1;

@@ -232,6 +232,49 @@ const Lab = {
       }
     });
   },
+  // ---- THE PARTS BIN -----------------------------------------------------
+  // The title screen is a room full of drawn furniture, and Facility B is the
+  // same building. Rather than draw the racks, the sequencer, the jars and the
+  // fume hood twice — once well here and once badly over there — the banks are
+  // baked once into a sheet and the world blits rectangles out of it. Same
+  // pixels, same palette, same lab.
+  //
+  // [x, y-from-floor, w, h] in title-room coordinates.
+  SHEET: {
+    rack:  [8, -96, 38, 96],
+    rack2: [52, -96, 38, 96],
+    seq:   [6, -152, 86, 50],
+    helix: [100, -180, 70, 48],
+    curve: [100, -134, 70, 36],
+    jars:  [390, -120, 134, 34],
+    centri: [390, -46, 44, 46],
+    fume:  [462, -88, 100, 88],
+    board: [534, -192, 102, 66],
+  },
+  sheet() {
+    if (this._sheet) return this._sheet;
+    const c = mkCanvas(LAB.W, LAB.H), o = ctxOf(c);
+    o.imageSmoothingEnabled = false;
+    // baked at a fixed instant: the lights are lit, the rotor is stopped, and
+    // none of it needs to animate on a wall four hundred feet underground
+    this.leftBank(o, 0.7); this.rightBank(o, 0.7);
+    this._sheet = c; return c;
+  },
+  // one piece of the title room, standing on the floor at (cx, by)
+  piece(ctx, name, cx, by, s) {
+    const r = this.SHEET[name]; if (!r) return;
+    const [x, dy, w, h] = r, y = LAB.FLOOR + dy;
+    const dw = Math.max(1, Math.round(w * s)), dh = Math.max(1, Math.round(h * s));
+    ctx.drawImage(this.sheet(), x, y, w, h, Math.round(cx - dw / 2), Math.round(by - dh), dw, dh);
+  },
+  // and one hung on a wall at (cx, cy) rather than stood on the floor
+  hang(ctx, name, cx, cy, s) {
+    const r = this.SHEET[name]; if (!r) return;
+    const [x, dy, w, h] = r, y = LAB.FLOOR + dy;
+    const dw = Math.max(1, Math.round(w * s)), dh = Math.max(1, Math.round(h * s));
+    ctx.drawImage(this.sheet(), x, y, w, h, Math.round(cx - dw / 2), Math.round(cy - dh / 2), dw, dh);
+  },
+
   monitor(ctx, x, y, w, h, t, inner) {
     ctx.fillStyle = '#0a1114'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
     ctx.fillStyle = '#25383e'; ctx.fillRect(x - 2, y - 2, w + 4, 2);

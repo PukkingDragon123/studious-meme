@@ -184,8 +184,15 @@ and a rail full of people looking down at the water you are in; and one
 
 You got there by transfer, and the transfer is not a cutscene. It is the game.
 **FACILITY B** is a building, not a wall: six rooms in a line, a hundred and
-forty feet above the system, dead level because they are floors, drawn by the
-same renderer as everything else — and textured, not filled. Brushed steel on
+forty feet above the system, dead level because they are floors, and furnished
+**out of the title screen's own parts bin**. The racks, the sequencer, the
+helix and growth-curve monitors, the specimen jars, the centrifuge, the fume
+hood and the whiteboard are baked once off the front-end room and blitted into
+the world: same pixels, same palette, same lab, drawn once. The loose props
+that used to be scattered on top of all that — tanks, crates, drums, consoles —
+are gone, because nothing should be dressed twice.
+
+It is textured, not filled. Brushed steel on
 the doors and the pen mullions, board-marked concrete on the soffit and the
 plinths, **chequer plate** down the whole length of the walkway with a joint and
 two screws every plate, rust creeping up the bottom third of the blast door, and
@@ -204,7 +211,7 @@ few hundred units with a pump in it and the float switch up.
 | **Transfer corridor** | white tile to shoulder height under a capping rail and a painted stripe, doors with portholes and keypads, a hose reel, a distribution board, a spill kit |
 | **Habitat hall** | a run of glass-fronted pens with crocodiles in them — the same chain, parts and renderer the player is drawn with, solved on a slow idle so they breathe, drift and gape at nothing. Shallow water to a marked line, a haul-out rock, a drain, a heat lamp over each, algae up the inside of the glass, feed hatches, a keeper's gantry, a services bulkhead with valve wheels, numbered plates, one pane cracked from the inside and one pen standing open |
 | **Plant room** | the filtration that keeps the pens alive — vessels, a manifold with valve wheels, a pump running, a puddle under the leak |
-| **Access chamber** | bare block, a sump pump and its rising main, a ladder somebody never finished, and a cast manhole set in the floor |
+| **Access chamber** | bare block, a sump pump and its rising main, a ladder somebody never finished, and **the manhole** |
 | **Loading dock** | a shutter, a leveller, and the next truck backed up to it with its doors open and empty crates racked inside |
 
 The trolley is a structure on castors that turn. The tank on it is a real tank,
@@ -246,6 +253,24 @@ notch, not your life. Engage all three and the gate opens, and the zone's relic
 surfaces on the way to it. The everglades are past that, once the lab has
 surveyed them.
 
+## The manhole
+
+The way out of the building is a hole in the floor, so it is built like one.
+The chequer-plate walkway **stops** either side of it and the cast frame starts:
+two cheeks bedded on mortar with the seating the lid drops onto stepped in from
+the outside. The lid is the one on the floor of every access chamber in the
+city — a raised rim with a foundry legend cast round it, diamond tread bars
+inside that, two pick holes, a hinge on the east side, rust in the joint and a
+boot scuff across the tread.
+
+Bite it and it **rings**: the whole lid jumps in the frame, dust comes off it,
+and a crack opens from the middle out — one more crack every go, each one
+letting a thread of light up out of the shaft. On the sixth it goes. What is
+left is a shaft with precast rings going down it, step irons up the back, a
+hard-edged wedge of the room's light falling in, a draught coming up, and the
+lid itself flipped clear and leaning on the slab where it landed with the gouge
+it cut in the floor on the way over.
+
 ## Keep eating
 
 Hunger drains the whole time you are not eating and starvation takes health off
@@ -256,11 +281,13 @@ stealth panel that used to sit there has gone, and so has the gold rush.
 **The combo.** Every mouthful inside three and a bit seconds of the last one
 winds a multiplier on, with a bar under the number counting down.
 
-**The bite.** A bite is a **burst of four-point stars** off the point of
-contact now — a white flash, a ring of sparkles thrown on an even spread, and a
-few slow motes left drifting in the water — instead of a comic-book word over
-the animal's head. A crit throws more of them, in gold. Swallowing something
-whole throws a small one.
+**The bite.** No effect layer at all — no word pop, no sparkles, no flash. What
+a bite looks like is a crocodile biting, and all of that is on the rig: the head
+draws back and the jaw cracks open, the whole animal whips forward, the jaws
+close, and then — if it connected — **the jaws stay shut** through the recoil
+instead of opening again, **the head worries the thing side to side** harder and
+longer the bigger it was, and **the whole animal jolts backwards** along its own
+axis off the impact. Gore still comes off the prey; nothing comes off the bite.
 
 **Density.** The director stocks to thirty-plus visible prey, counts only what
 is within a screen and a bit, puts shoals in just past the edge of the shot at
