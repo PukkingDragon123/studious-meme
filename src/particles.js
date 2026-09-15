@@ -44,6 +44,24 @@ class FXSystem {
   // a footprint or drag mark pressed into the shore mud
   print(x, y, w, dir) { this.add({ type: 'print', x, y, w, dir, life: 40 }); }
   feathers(x, y, n, color = '#f0f0e8') { for (let i = 0; i < n; i++) this.add({ type: 'feather', x, y, vx: rand(-60, 60), vy: rand(-90, 10), s: 1, color: chance(0.7) ? color : '#b8b8b0', seed: rand(TAU), life: rand(2.5, 5) }); }
+  // ---- THE BITE SPARKLE -------------------------------------------------
+  // A bite used to be a comic-book word and a shake. It is a burst of four
+  // point stars now: a white core that flashes out, a ring of stars thrown on
+  // an even spread so it reads as an impact and not as confetti, and a few
+  // slow drifting motes left behind in the water.
+  sparkle(x, y, n = 10, col = '#ffffff', power = 1, dx = 0, dy = 0) {
+    this.add({ type: 'flash', x, y, r0: 3 * power, r: 22 * power, color: col, life: 0.16 });
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + rand(-0.22, 0.22), sp = rand(70, 220) * power;
+      this.add({ type: 'sparkle', x, y, vx: Math.cos(a) * sp + dx * 60, vy: Math.sin(a) * sp + dy * 60,
+        s: rand(0.7, 1.9) * power, color: i % 3 === 0 ? '#ffffff' : col, rot: rand(TAU), vr: rand(-10, 10), life: rand(0.22, 0.55) });
+    }
+    for (let i = 0; i < Math.round(n * 0.4); i++) {
+      const a = rand(TAU), sp = rand(8, 34);
+      this.add({ type: 'sparkle', x: x + rand(-6, 6), y: y + rand(-6, 6), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 10,
+        s: rand(0.4, 0.9) * power, color: col, rot: rand(TAU), vr: rand(-3, 3), life: rand(0.5, 1.1) });
+    }
+  }
   sparks(x, y, n, dx = 0, dy = 0) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(40, 180); this.add({ type: 'spark', x, y, vx: Math.cos(a) * sp + dx * 80, vy: Math.sin(a) * sp + dy * 80, s: 1, color: choice(['#fff8c0', '#ffd060', '#ff9030']), life: rand(0.15, 0.4) }); } }
   bones(x, y, n, power = 90) {
     for (let i = 0; i < n; i++) {
@@ -146,6 +164,8 @@ class FXSystem {
           p.y += p.vy * dt; break;
         }
         case 'spark': { p.vy += 250 * dt; p.x += p.vx * dt; p.y += p.vy * dt; break; }
+        case 'sparkle': { p.vx *= 1 - Math.min(1, 6 * dt); p.vy *= 1 - Math.min(1, 6 * dt); p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; break; }
+        case 'flash': break;
         case 'splinter': {
           if (under) { p.vy = approach(p.vy, p.y > surf + 3 ? -35 : 0, 160 * dt); p.vx *= 0.97; p.vr *= 0.9; if (p.y < surf + 3) p.y = surf + Math.sin(p.t * 3) * 1.2; }
           else { p.vy += 560 * dt; }
@@ -212,6 +232,31 @@ class FXSystem {
           break;
         }
         case 'spark': { ctx.globalAlpha = lf; ctx.fillStyle = p.color; const s = Math.max(1, Math.round(z)); ctx.fillRect(Math.round(sx), Math.round(sy), s, s); break; }
+        case 'sparkle': {
+          // a four-point star, drawn as two tapering bars so it stays pixel art
+          const k = lf > 0.75 ? (1 - lf) / 0.25 : lf / 0.75;
+          const r = Math.max(1, Math.round(p.s * 4 * z * (0.4 + k * 0.8)));
+          const th = Math.max(1, Math.round(p.s * z * 0.9));
+          ctx.globalAlpha = Math.min(1, k * 1.3);
+          ctx.save(); ctx.translate(Math.round(sx), Math.round(sy)); ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-r, -(th >> 1) - (th & 1 ? 0 : 0), r * 2, th);
+          ctx.fillRect(-(th >> 1), -r, th, r * 2);
+          if (r > 3) { ctx.fillStyle = '#ffffff'; ctx.fillRect(-1, -1, 2, 2); }
+          ctx.restore();
+          break;
+        }
+        case 'flash': {
+          const k = 1 - lf, r = lerp(p.r0, p.r, k * k) * z;
+          ctx.globalAlpha = lf * 0.85; ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = p.color;
+          ctx.fillRect(Math.round(sx - r), Math.round(sy - r * 0.22), Math.round(r * 2), Math.max(1, Math.round(r * 0.44)));
+          ctx.fillRect(Math.round(sx - r * 0.22), Math.round(sy - r), Math.max(1, Math.round(r * 0.44)), Math.round(r * 2));
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(Math.round(sx - r * 0.3), Math.round(sy - r * 0.3), Math.max(1, Math.round(r * 0.6)), Math.max(1, Math.round(r * 0.6)));
+          ctx.globalCompositeOperation = 'source-over';
+          break;
+        }
         case 'splinter': { ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; ctx.save(); ctx.translate(sx, sy); ctx.rotate(p.rot); ctx.fillRect(0, 0, Math.max(1, p.w * z), Math.max(1, p.s * z)); ctx.restore(); break; }
         case 'bone': {
           ctx.globalAlpha = lf < 0.25 ? lf / 0.25 : 1;

@@ -439,9 +439,16 @@ const Facility = {
     for (let wx = Math.floor(L / 240) * 240; wx < R; wx += 240) {
       if (wx < r.x0 + 40 || wx > r.x1 - 40) continue;
       const [sx] = cam.toScreen(wx, 0), dw = 46 * z, dh = 96 * z, dy = floorS - dh;
-      px(sx - dw / 2 - 3 * z, dy - 3 * z, dw + 6 * z, dh + 3 * z, '#2f3a40');
-      px(sx - dw / 2, dy, dw, dh, '#2f6a58');
+      this.surf(ctx, cam, sx - dw / 2 - 3 * z, dy - 3 * z, dw + 6 * z, dh + 3 * z, '#2f3a40', 'steel');
+      this.surf(ctx, cam, sx - dw / 2, dy, dw, dh, '#2f6a58', 'paint');
       px(sx - dw / 2, dy, 2 * z, dh, '#3f8a72');
+      // a door is two leaves with a stile between them, a kick plate at the
+      // bottom and a scuffed arc where the leaf has swung a thousand times
+      px(sx - 1 * z, dy, 2 * z, dh, '#204a3e');
+      this.surf(ctx, cam, sx - dw / 2 + 2 * z, dy + dh - 16 * z, dw - 4 * z, 14 * z, '#5d6a66', 'plate', 0.85);
+      px(sx - dw / 2 + 2 * z, dy + dh - 16 * z, dw - 4 * z, 1.4 * z, '#7d8a86');
+      ctx.globalAlpha = 0.16; px(sx - dw / 2 + 3 * z, dy + dh * 0.5, dw - 6 * z, 10 * z, '#0a1412'); ctx.globalAlpha = 1;
+      for (const hy2 of [0.22, 0.52, 0.82]) { px(sx - dw / 2 - 1 * z, dy + dh * hy2, 3 * z, 8 * z, '#54625e'); px(sx + dw / 2 - 2 * z, dy + dh * hy2, 3 * z, 8 * z, '#54625e'); }
       px(sx - 9 * z, dy + 14 * z, 18 * z, 22 * z, '#0e1a1e');
       px(sx - 7 * z, dy + 16 * z, 7 * z, 7 * z, 'rgba(150,220,205,0.30)');
       px(sx + dw / 2 - 12 * z, dy + 48 * z, 7 * z, 3 * z, '#c0c8c0');
@@ -1073,7 +1080,7 @@ const Facility = {
     const [x0] = cam.toScreen(r.x0, 0), w = (r.x1 - r.x0) * z;
     // the shutter box and the opening under it
     const oy = floorS - 168 * z;
-    px(x0 + 16 * z, oy - 18 * z, w - 16 * z, 18 * z, '#39444a');
+    this.surf(ctx, cam, x0 + 16 * z, oy - 18 * z, w - 16 * z, 18 * z, '#39444a', 'steel');
     px(x0 + 16 * z, oy - 18 * z, w - 16 * z, 3 * z, '#55636b');
     for (let i = 0; i < 4; i++) px(x0 + 16 * z, oy - 14 * z + i * 4 * z, w - 16 * z, 2 * z, '#2c353a');
     // the night outside, and the truck backed into it
@@ -1088,7 +1095,7 @@ const Facility = {
       px(wx2 - 2 * z, floorS - 12 * z, 4 * z, 4 * z, '#4a5154');
     }
     // the box body, its roll doors open on the dark inside
-    px(tx, floorS - 130 * z, tw, 104 * z, '#8f4437');
+    this.surf(ctx, cam, tx, floorS - 130 * z, tw, 104 * z, '#8f4437', 'paint');
     px(tx, floorS - 130 * z, tw, 5 * z, '#b85d4c');
     px(tx, floorS - 30 * z, tw, 4 * z, '#5e2c23');
     for (let i = 0; i < 7; i++) px(tx + (5 + i * 15) * z, floorS - 124 * z, 2 * z, 92 * z, '#7a382d');

@@ -22,6 +22,40 @@ class Structure extends Entity {
         this.pilings = []; for (let i = 0; i < 4; i++) this.pilings.push({ ox: -18 + i * 12, hp: 45, dead: false });
         this.r = 30 * this.ss; break;
       }
+      // ---- SAN FRANCISCO ------------------------------------------------
+      case 'pier': {
+        // A working pier: a concrete deck on a forest of creosoted piles, a
+        // rail, bollards, a lamp standard and a shed at the shore end.
+        this.name = 'THE PIER'; this.hp = 900; this.armor = 30; this.deckY = -30;
+        this.len = 150 + Math.round(this.seed * 120);
+        this.dir = World.floorY(x - 90) < 0 ? 1 : -1;
+        this.pilings = [];
+        const n = Math.max(5, Math.round(this.len / 26));
+        for (let i = 1; i <= n; i++) this.pilings.push({ ox: this.dir * (i * this.len / n), hp: 60, dead: false });
+        this.r = this.len * this.ss; break;
+      }
+      case 'sealdock': {
+        // The floats at Pier 39. Four of them, and everything that fits on a
+        // float is asleep on it.
+        this.name = 'THE FLOATS'; this.hp = 260; this.deckY = -6; this.w = 96; this.r = 52 * this.ss;
+        this.floats = [];
+        for (let i = 0; i < 4; i++) this.floats.push({ ox: -42 + i * 28, n: 1 + Math.floor(ihash(i + Math.round(x), 71) * 3) });
+        break;
+      }
+      case 'ferry': {
+        // A tourist boat on its mooring, white hull, red trim, a rail full of
+        // people looking at the water you are in.
+        this.name = 'TOUR BOAT'; this.hp = 420; this.armor = 20; this.r = 46 * this.ss;
+        this.len = 82 + Math.round(this.seed * 28); this.dir = this.seed > 0.5 ? 1 : -1;
+        this.deckY = -18; this.bob = this.seed * TAU; break;
+      }
+      case 'gate': {
+        // One tower of the bridge, standing in the strait. You cannot break
+        // it, you cannot climb it, and it is the only thing in the zone you
+        // can see from anywhere in the zone.
+        this.name = 'THE SOUTH TOWER'; this.hp = 99999; this.armor = 99; this.r = 26 * this.ss;
+        this.towerH = 420; break;
+      }
       case 'boatramp': { this.name = 'BOAT RAMP'; this.hp = 400; this.armor = 40; this.r = 30 * this.ss; this.dir = World.floorY(x - 50) < 0 ? 1 : -1; break; }
       case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16 * this.ss; this.deckY = -58; break; }
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
@@ -249,6 +283,116 @@ class Structure extends Entity {
       ctx.fillStyle = '#3a5a3a'; ctx.fillRect(Math.round(ox - 2), Math.round((World.surface(this.x + ox * ss) - y) / ss), 4, 3);
     };
     switch (this.kind) {
+      // ---- SAN FRANCISCO --------------------------------------------------
+      case 'pier': {
+        const L = this.len * f, dY = this.deckY;
+        for (const p of this.pilings) piling(p.ox, dY + 2, (fy - y) / ss, p.dead);
+        // cross-bracing between the piles, which is what makes a pier a pier
+        ctx.fillStyle = 'rgba(58,42,24,0.9)';
+        for (let i = 1; i < this.pilings.length; i++) {
+          const a = this.pilings[i - 1].ox, b = this.pilings[i].ox;
+          if (this.pilings[i].dead || this.pilings[i - 1].dead) continue;
+          ctx.save(); ctx.beginPath(); ctx.moveTo(a, dY + 16); ctx.lineTo(b, dY + 30); ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(58,42,24,0.9)'; ctx.stroke(); ctx.restore();
+        }
+        // the deck: concrete on a timber bearer, with a kerb and a rail
+        const x0 = Math.round(Math.min(0, L)), w0 = Math.round(Math.abs(L));
+        ctx.fillStyle = '#7b7568'; ctx.fillRect(x0, Math.round(dY), w0, 7);
+        ctx.fillStyle = '#9b958a'; ctx.fillRect(x0, Math.round(dY), w0, 2);
+        ctx.fillStyle = '#4a453c'; ctx.fillRect(x0, Math.round(dY + 6), w0, 2);
+        for (let i = 0; i < w0; i += 18) { ctx.fillStyle = 'rgba(48,44,38,0.5)'; ctx.fillRect(x0 + i, Math.round(dY), 1, 7); }
+        // rail: two lines on posts, and a bollard every third post
+        for (let i = 0; i <= 8; i++) {
+          const pxx = f * (i * this.len / 8);
+          ctx.fillStyle = '#5c6468'; ctx.fillRect(Math.round(pxx - 1), Math.round(dY - 13), 2, 13);
+          if (i % 3 === 0) { ctx.fillStyle = '#3d4448'; ctx.fillRect(Math.round(pxx - 4), Math.round(dY - 7), 8, 7); ctx.fillStyle = '#5c6468'; ctx.fillRect(Math.round(pxx - 5), Math.round(dY - 9), 10, 3); }
+        }
+        ctx.fillStyle = '#8d979b'; ctx.fillRect(x0, Math.round(dY - 13), w0, 2);
+        ctx.fillStyle = '#5c6468'; ctx.fillRect(x0, Math.round(dY - 8), w0, 1.4);
+        // a lamp standard at the far end, lit after dark
+        const lx = f * this.len * 0.9;
+        ctx.fillStyle = '#4a5054'; ctx.fillRect(Math.round(lx - 1), Math.round(dY - 40), 2, 27);
+        ctx.fillStyle = this.lightOn ? '#ffe6a0' : '#6a7074'; ctx.fillRect(Math.round(lx - 4), Math.round(dY - 44), 8, 5);
+        if (this.lightOn) { ctx.globalAlpha = 0.18; ctx.fillStyle = '#ffd070'; ctx.fillRect(Math.round(lx - 16), Math.round(dY - 42), 32, 42); ctx.globalAlpha = 1; }
+        // a shed at the shore end
+        ctx.fillStyle = '#6b4a38'; ctx.fillRect(Math.round(f * -14), Math.round(dY - 34), 28, 34);
+        ctx.fillStyle = '#8a6148'; ctx.fillRect(Math.round(f * -14), Math.round(dY - 34), 28, 3);
+        ctx.fillStyle = '#2a1d16'; ctx.fillRect(Math.round(f * -8), Math.round(dY - 26), 7, 9);
+        ctx.fillStyle = '#b8341e'; ctx.fillRect(Math.round(f * 1), Math.round(dY - 27), 10, 4);
+        break;
+      }
+      case 'sealdock': {
+        // the gangway down to the floats
+        ctx.fillStyle = '#6b5a3e'; ctx.fillRect(-56, -22, 16, 3);
+        ctx.fillStyle = '#8a7450'; ctx.fillRect(-56, -22, 16, 1);
+        for (const fl of this.floats) {
+          const ox = fl.ox * f;
+          const bob = Math.sin(World.t * 1.1 + fl.ox) * 1.4;
+          ctx.fillStyle = '#7d6a4c'; ctx.fillRect(Math.round(ox - 12), Math.round(-4 + bob), 24, 5);
+          ctx.fillStyle = '#9a8663'; ctx.fillRect(Math.round(ox - 12), Math.round(-4 + bob), 24, 2);
+          ctx.fillStyle = '#4a3c28'; ctx.fillRect(Math.round(ox - 12), Math.round(1 + bob), 24, 2);
+          // the sea lions on it: a lump, a head, a flipper, and a snore
+          for (let k = 0; k < fl.n; k++) {
+            const sx2 = ox - 7 + k * 7, br = Math.sin(World.t * 1.6 + k * 2 + fl.ox) * 0.6;
+            ctx.fillStyle = '#5b4632'; ctx.fillRect(Math.round(sx2 - 5), Math.round(-10 + bob + br), 11, 6);
+            ctx.fillStyle = '#6d5541'; ctx.fillRect(Math.round(sx2 - 5), Math.round(-10 + bob + br), 11, 2);
+            ctx.fillStyle = '#4a3828'; ctx.fillRect(Math.round(sx2 + 4), Math.round(-13 + bob + br), 4, 4);
+            ctx.fillStyle = '#17110c'; ctx.fillRect(Math.round(sx2 + 6), Math.round(-12 + bob + br), 1, 1);
+            ctx.fillStyle = '#4a3828'; ctx.fillRect(Math.round(sx2 - 7), Math.round(-6 + bob + br), 4, 2);
+          }
+        }
+        break;
+      }
+      case 'ferry': {
+        const L = this.len, d = this.dir * f, bob = Math.sin(World.t * 0.8 + this.bob) * 1.6;
+        const hy = Math.round(-6 + bob);
+        // hull: white, with a red boot stripe and a rubbing strake
+        ctx.fillStyle = '#e4e6e2'; ctx.fillRect(Math.round(-L / 2), hy - 12, L, 14);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(-L / 2), hy - 12, L, 3);
+        ctx.fillStyle = '#b8341e'; ctx.fillRect(Math.round(-L / 2), hy + 1, L, 4);
+        ctx.fillStyle = '#1e2a30'; ctx.fillRect(Math.round(-L / 2), hy + 5, L, 2);
+        // a bow, because a rectangle is a barge
+        ctx.fillStyle = '#e4e6e2';
+        ctx.beginPath(); ctx.moveTo(d * L / 2, hy - 12); ctx.lineTo(d * (L / 2 + 14), hy - 4); ctx.lineTo(d * L / 2, hy + 5); ctx.closePath(); ctx.fill();
+        // the house on top, with windows and a rail full of people
+        ctx.fillStyle = '#dfe2de'; ctx.fillRect(Math.round(-L * 0.3), hy - 28, Math.round(L * 0.6), 16);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(-L * 0.3), hy - 28, Math.round(L * 0.6), 2);
+        for (let i = 0; i < 7; i++) { ctx.fillStyle = '#2d4550'; ctx.fillRect(Math.round(-L * 0.27 + i * L * 0.078), hy - 24, Math.round(L * 0.05), 6); }
+        ctx.fillStyle = '#b8341e'; ctx.fillRect(Math.round(-L * 0.06), hy - 40, 7, 12);
+        ctx.fillStyle = '#e8e8e4'; ctx.fillRect(Math.round(-L * 0.06), hy - 40, 7, 3);
+        // tourists at the rail, all looking down at you
+        ctx.fillStyle = '#7a8890'; ctx.fillRect(Math.round(-L * 0.34), hy - 32, Math.round(L * 0.68), 1.4);
+        for (let i = 0; i < 6; i++) {
+          const px2 = Math.round(-L * 0.3 + i * L * 0.12), sw = Math.sin(World.t * 1.3 + i) * 0.7;
+          ctx.fillStyle = ['#c85a4a', '#4a7ac8', '#e0c040', '#48a068', '#9a5ac8', '#d8d8d0'][i % 6];
+          ctx.fillRect(px2, Math.round(hy - 40 + sw), 3, 8);
+          ctx.fillStyle = '#d8ac8a'; ctx.fillRect(px2, Math.round(hy - 43 + sw), 3, 3);
+        }
+        break;
+      }
+      case 'gate': {
+        // one tower of the bridge, in international orange, rising out of the
+        // water with the deck and two cables hanging off it
+        const th = this.towerH, pierW = 26;
+        ctx.fillStyle = '#5d5a52'; ctx.fillRect(-pierW / 2 - 4, -8, pierW + 8, Math.round((fy - y) / ss) + 8);
+        ctx.fillStyle = '#75726a'; ctx.fillRect(-pierW / 2 - 4, -8, pierW + 8, 3);
+        for (const lx of [-8, 8]) {
+          ctx.fillStyle = '#c4531f'; ctx.fillRect(lx - 5, -th, 10, th);
+          ctx.fillStyle = '#e4713a'; ctx.fillRect(lx - 5, -th, 3, th);
+          ctx.fillStyle = '#8c3612'; ctx.fillRect(lx + 2, -th, 3, th);
+        }
+        for (let i = 0; i < 7; i++) { const yy = -th + 26 + i * (th - 40) / 7; ctx.fillStyle = '#c4531f'; ctx.fillRect(-13, Math.round(yy), 26, 7); ctx.fillStyle = '#e4713a'; ctx.fillRect(-13, Math.round(yy), 26, 2); }
+        ctx.fillStyle = '#c4531f'; ctx.fillRect(-16, Math.round(-th * 0.42), 32, 9);
+        ctx.fillStyle = '#e4713a'; ctx.fillRect(-16, Math.round(-th * 0.42), 32, 2);
+        // the deck going off both ways, and the main cable over the top
+        ctx.fillStyle = '#a8441a'; ctx.fillRect(-160, Math.round(-th * 0.42) - 3, 320, 4);
+        ctx.strokeStyle = '#d4602c'; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(-160, Math.round(-th * 0.42) - 60); ctx.quadraticCurveTo(0, -th + 6, 160, Math.round(-th * 0.42) - 60); ctx.stroke();
+        ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(212,96,44,0.7)';
+        for (let i = -6; i <= 6; i++) { const hx2 = i * 24; const u = Math.abs(i) / 6; const cy2 = -th + 6 + (Math.round(-th * 0.42) - 60 - (-th + 6)) * u * u; ctx.beginPath(); ctx.moveTo(hx2, cy2); ctx.lineTo(hx2, Math.round(-th * 0.42) - 3); ctx.stroke(); }
+        // the aircraft light
+        ctx.fillStyle = Math.sin(World.t * 2.2) > 0 ? '#ff6a50' : '#5a2018'; ctx.fillRect(-2, -th - 4, 4, 4);
+        break;
+      }
       case 'dock': {
         const L = this.len, dY = this.deckY;
         for (const p of this.pilings) piling(p.ox, dY, (fy - y) / ss, p.dead);
@@ -730,6 +874,9 @@ function trySpawnStructure(x, rng, difficulty) {
     if (k === 'shop') return land && (deepAt(120) || deepAt(-120));
     if (k === 'stilthouse') return open && fy < 320;
     if (k === 'crabtrap' || k === 'buoy') return open;
+    if (k === 'pier') return land && (deepAt(160) || deepAt(-160));
+    if (k === 'sealdock' || k === 'ferry') return open && fy > 120;
+    if (k === 'gate') return fy > 400;
     if (k === 'wreck') return fy > 150 && World.floorY(x - 90) > 110 && World.floorY(x + 90) > 110;
     if (k === 'boathouse') return land && (deepAt(120) || deepAt(-120));
     if (k === 'pumphouse') return land && (deepAt(100) || deepAt(-100));
@@ -769,6 +916,10 @@ function trySpawnStructure(x, rng, difficulty) {
       G.add(s); return true;
     }
     case 'tower': { const s = new Structure(x, 'tower'); if (rng() < 0.6) s.addOccupant('ranger', 0, s.deckY); G.add(s); return true; }
+    case 'pier': G.add(new Structure(x, 'pier')); return true;
+    case 'sealdock': G.add(new Structure(x, 'sealdock')); return true;
+    case 'ferry': G.add(new Structure(x, 'ferry')); return true;
+    case 'gate': G.add(new Structure(x, 'gate')); return true;
     case 'boatramp': G.add(new Structure(x, 'boatramp')); return true;
     case 'crabtrap': G.add(new Structure(x, 'crabtrap')); return true;
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;

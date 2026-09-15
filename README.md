@@ -2,14 +2,13 @@
 
 A 2D pixel-art, side-scrolling **eater roguelike**. You are Subject 7: a lab-made crocodile spliced
 with the genes of every animal alive. You break your tank, go down the shaft the building flushes into,
-black out on the way, and come round on a brick staging in a drowned works under a city — then eat your
-way through it and up the outfall into the swamp with the whole genome to spend, or east past the
-seawall and over the edge of the shelf.
+black out on the way, and come round on a brick staging in a sewer under San Francisco. Get out of the
+sewer, down Islais Creek, past the wharf, into the bay, and under the Golden Gate into the Pacific.
 
 Everything in the water is food or is going to eat you, and which one it is depends on how big you have
-got. Hunger drains the whole time you are not eating. Chain mouthfuls for a multiplier, fill the **gold
-rush** meter and cash it out for ten seconds where nothing can hurt you and nothing is too big to
-swallow.
+got. Hunger drains the whole time you are not eating. Chain mouthfuls for a multiplier. Every lair is a
+room with fog gates on it, and every stretch of the map has one thing in it that is not on the way to
+anything.
 
 Eat anything that fits in your jaws. Every meal pays **gene points**, and you spend them whenever you
 like on a hexagonal **gene tree** of six lineages. How you hunt builds affinity, so the lineage that
@@ -158,35 +157,30 @@ its own animated glyph once you have carried it out, sealed and grey until then,
 with the site it comes from written under it and what it gives you along the
 foot. Eighteen slots, and the count in the corner is the game's long score.
 
-## The system, and how you got there
+## Out of the building and into San Francisco
 
-The game starts in a building and ends up under a city. **THE SYSTEM** is the
-first zone and the only one open on a new save. It is not a pipe. It is a
-drowned works: one continuous body of water eight and a half thousand units
-long, three hundred to a thousand feet deep, with a vault over it and three
-hundred feet of air between the vault and the waterline. You can dive to the
-bottom of it, you can breach out of the top of it, and there is something to
-eat everywhere in between.
+Zone one is a route, not a level. It starts on a laboratory floor a hundred and
+forty feet up and ends in the Pacific, and every part of it is somewhere you
+are trying to leave.
 
-| Chamber | What it is |
+| Place | What it is |
 | --- | --- |
-| **The Intake** | where the game picks you up. Three hundred feet of water under you, three hundred of air over it, and a brick staging in the middle you can climb out onto |
-| **The Grit Channel** | a neck. The walls come in and the crown comes down, and you go through it fast because there is nothing in here worth stopping for |
-| **The Great Vault** | the biggest room anybody ever built and then forgot about: seven hundred feet of water, four hundred of air, and a pier standing up out of the middle of it |
-| **The Screens** | a second neck, with the bar screens across it |
-| **The Sump** | the deepest water in the world so far, and the last of the plating line lying on the bottom of it |
-| **The Outfall** | the floor climbs a flight of weirs, the crown holds, and at the top of it there is a hole with a sky behind it |
+| **Facility B** | six rooms in a line and two ways out of them. Only one of them is yours |
+| **The Sewer** | one chamber, four shafts of daylight, a brick staging to come round on and a way out at the east end. A thousand units, because the point of a sewer is leaving it |
+| **The Outfall** | four weirs and a hole with a sky behind it. The last roofed thing in the zone |
+| **Islais Creek** | a city's river. Concrete both sides, a bridge every half mile, a trolley in the bed of it and a heron that has made its peace with all of that |
+| **The Wharf** | timber piles by the thousand, floating docks with sea lions asleep on them, a tourist boat every ten minutes and a crab pot on every fourth piling |
+| **The Bay** | cold, deep, grey-green, with a rock out in the middle of it and a container ship going over the top of you |
+| **The Golden Gate** | the strait. The deepest water in the zone, a current that runs like a river, and a tower standing in it in international orange |
 
-The two piers are the only dry ground in seven thousand units, and each one has
-a **flight of cast steps** up out of the water onto it — a real stair, flat
-tread, hard riser, a lit nosing and a handrail down one side, cut by the same
-`bench` function that cuts a hillside. The third flight is the weirs in the
-outfall, and it runs the whole way to daylight.
-
-Press **M** anywhere in the system for the **blueprint**: a drawing-office long
-section at 1:500, white line on ferro-prussiate blue, the chambers lettered,
-every flight shown, the manhole shafts drawn up to the street, a title block
-nobody has filled in since 1974, and a ring round where you are.
+The water gets colder and bigger the whole way east, and so does what is in it:
+minnows and roach in the sewer, **sea lions and harbour seals** on the wharf
+floats, **bull sharks and bonnetheads** in the bay, and everything at once in
+the Gate. Four new man-made things are built for it — a **pier** on a forest of
+creosoted piles with a rail, bollards and a lamp standard; the **floats** with
+sea lions asleep on them; a moored **tour boat**, white hull, red boot stripe
+and a rail full of people looking down at the water you are in; and one
+**tower** of the bridge with the deck and the main cable hanging off it.
 
 You got there by transfer, and the transfer is not a cutscene. It is the game.
 **FACILITY B** is a building, not a wall: six rooms in a line, a hundred and
@@ -254,41 +248,63 @@ surveyed them.
 
 ## Keep eating
 
-The loop is the loop a hungry shark has. Hunger drains the whole time you are
-not eating and starvation takes health off you when it hits zero. Everything in
-the water is food or is going to eat you, and which one it is depends on how big
-you have got.
+Hunger drains the whole time you are not eating and starvation takes health off
+you when it hits zero. The HUD is two bars: **health**, and **hunger** under it
+with a jaw that opens wider the emptier you are. That is the whole of it — the
+stealth panel that used to sit there has gone, and so has the gold rush.
 
 **The combo.** Every mouthful inside three and a bit seconds of the last one
-winds a multiplier on. The number sits over the score with a bar under it
-counting down, so you can see exactly how long you have to find the next thing.
+winds a multiplier on, with a bar under the number counting down.
 
-**The gold rush.** This is the reason to keep eating when you are already full.
-Every meal winds a gold meter across the bottom of the screen — a big meal winds
-it a long way — and it leaks back down if you stop. Fill it and it cashes out
-all at once: **ten seconds where nothing can hurt you, nothing is too big to
-swallow, you move half again as fast, you bite for more than twice as much and
-the whole room is worth triple.** The screen goes gold at the edges, the animal
-throws sparks, and the meter runs back down as a timer. It is the only mechanic
-in the game that rewards greed, and it is the one the zone is built around.
+**The bite.** A bite is a **burst of four-point stars** off the point of
+contact now — a white flash, a ring of sparkles thrown on an even spread, and a
+few slow motes left drifting in the water — instead of a comic-book word over
+the animal's head. A crit throws more of them, in gold. Swallowing something
+whole throws a small one.
 
-**Density.** A pond with sixteen fish in it is not this game. The director
-stocks to thirty-plus visible prey and counts only what is actually in front of
-you, shoals go in at roughly the depth you are swimming at rather than being
-spread over ten screens of a seven-hundred-foot room, they go in just past the
-edge of the shot so they cross it instead of wandering off, and indoors a shoal
-is twice the size it is outdoors.
+**Density.** The director stocks to thirty-plus visible prey, counts only what
+is within a screen and a bit, puts shoals in just past the edge of the shot at
+roughly the depth you are swimming at, and doubles school sizes indoors.
 
-## Level one is a tutorial with a roof on it
+## The fog gates
+
+A boss that turns up in open water is an encounter you can swim away from,
+which means it is one you never learn. Every lair is a **room** now. Swim into
+the middle of one and two walls of fog come down across the water, one either
+side, and they stay down until one of you is dead. Put your nose in one and it
+pushes you back and says NO WAY PAST.
+
+While they are down the shot changes: a letterbox closes over the top and
+bottom of the screen with a gold rule on it, the boss's name goes up in the
+middle, and an arrow points off the side of the frame if the thing has got
+behind you. Kill it and the fog lifts with **TERRITORY TAKEN** across a gold
+band. Die and it lifts anyway, and the thing is still in there.
+
+## Secrets
+
+Eleven of them, one to each stretch of the route, authored and always in the
+same place: a sealed pen in the habitat hall, the void under the plant room, a
+bricked-up connection in the sewer, the space under the second weir, a storm
+drain in the creek, a hollow in a bridge footing, the underside of the pier
+deck, a hull that went down at her mooring in 1961, an outfall that is not on
+any drawing in the city, the bottom of the rock in the bay, and the caisson
+under the bridge tower.
+
+You find one by seeing it — a glint on a rusted grate set into a wall — and you
+open it by biting the grate three or four times. Inside is gene points, a full
+heal, and a lot of score. Nothing tells you they are there and nothing marks
+them on the plan.
+
+## The sewer is a tutorial with a roof on it
 
 The first zone used to net a 0.3 ft hatchling inside a minute. It is held down
-hard now, and the intake is held down harder: **nothing with teeth spawns there
-at all** — the predator director returns before it picks — the difficulty curve
-is clamped to a fifth of its value for the whole chamber and to two thirds for
-the rest of the zone, and the chunk stocker makes nine passes instead of five,
-so there is something to eat within a body length of wherever you come round.
-The standing orders start at five fish. The acid is only in the sump, which is
-a long way down from where you start.
+hard now, and the sewer chamber is held down harder: **nothing with teeth
+spawns there at all** — the predator director returns before it picks — the
+difficulty curve is clamped to a fifth of its value for the whole chamber and
+to two thirds for the rest of the zone, and the chunk stocker makes nine passes
+instead of five, so there is something to eat within a body length of wherever
+you come round. The standing order is five fish. Nothing in the chamber is
+bigger than a rat.
 
 ## What they poured down here
 

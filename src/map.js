@@ -32,47 +32,42 @@ const WORKS_SECTION = [
 // [x, floorY, roofY].
 // ---------------------------------------------------------------------------
 const SEWER_SECTION = [
-  // ---- THE INTAKE ------------------------------------------------------
-  // Where the game picks you up. Three hundred feet of water under you, three
-  // hundred of air over it, and a brick staging in the middle you can climb
-  // out onto. Open in every direction, which is the whole point.
-  [-5880, 300, -300], [-5760, 330, -308], [-5620, 316, -300],
-  [-5480, 352, -316], [-5320, 330, -306], [-5180, 300, -300],
-  [-5120, 150, -294], [-5060, -34, -288], [-4990, -36, -288], [-4930, 150, -294],
-  [-4860, 320, -304], [-4700, 348, -312], [-4560, 326, -304], [-4440, 300, -296],
-  // ---- THE GRIT CHANNEL ------------------------------------------------
-  // A neck. The walls come in and the crown comes down, and you go through it
-  // fast because there is nothing in here worth stopping for.
-  [-4360, 210, -206], [-4280, 172, -176], [-4200, 180, -180], [-4120, 240, -226],
-  // ---- THE GREAT VAULT -------------------------------------------------
-  // The biggest room anybody ever built and then forgot about. Seven hundred
-  // feet of water and four hundred of air, with a pier standing up out of the
-  // middle of it.
-  [-4000, 420, -320], [-3820, 560, -392], [-3620, 660, -420], [-3400, 700, -424],
-  [-3180, 672, -418], [-2960, 700, -424], [-2740, 640, -408],
-  [-2640, 330, -402], [-2580, -34, -398], [-2500, -36, -398], [-2440, 330, -402],
-  [-2360, 560, -404],
-  // ---- THE SCREENS -----------------------------------------------------
-  [-2260, 340, -232], [-2180, 300, -206], [-2100, 316, -212],
-  // ---- THE SUMP --------------------------------------------------------
-  // The deepest water in the game so far, and the last of the plating line
-  // lying on the bottom of it.
-  [-2000, 520, -250], [-1840, 760, -262], [-1680, 900, -270], [-1500, 960, -274],
-  [-1320, 930, -270], [-1140, 980, -276], [-960, 910, -268], [-820, 820, -262],
-  // ---- THE OUTFALL -----------------------------------------------------
-  // The floor climbs a flight of weirs, the crown holds, and at the top of it
-  // there is a hole with a sky behind it.
-  [-680, 700, -272], [-520, 600, -280], [-360, 500, -288], [-200, 410, -294],
-  [-40, 330, -300], [120, 260, -304], [280, 196, -308],
-  [440, 140, -312], [600, 88, -316], [740, 40, -318],
-  [860, -16, -320], [940, -34, -322], [1000, -36, -324],
+  // ---- THE SEWER -------------------------------------------------------
+  // One chamber and a way out of it. It used to be seven thousand units of
+  // drains; it is a thousand now, because the point of a sewer is leaving it.
+  [-5880, 300, -300], [-5760, 330, -308], [-5640, 316, -300],
+  [-5520, 150, -294], [-5460, -34, -288], [-5390, -36, -288], [-5330, 150, -294],
+  [-5240, 300, -302], [-5120, 330, -306], [-5000, 300, -298],
+  // ---- THE OUTFALL: four weirs and a hole with a sky behind it ---------
+  [-4900, 240, -292], [-4800, 180, -290], [-4700, 120, -294],
+  [-4620, 60, -300], [-4540, 10, -306], [-4480, -26, -312], [-4440, -34, -316],
 ];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
   ...WORKS_SECTION.map(p => [p[0], p[1]]),
   ...SEWER_SECTION.map(p => [p[0], p[1]]),
-  [1060, 60],
-  [1150, -30], [1240, 40], [1330, 96], [1420, 74],
+  // ===================== SAN FRANCISCO ==========================
+  // Out of the pipe and into a city's water: a concrete creek between two
+  // embankments, the wharf where it meets the bay, the bay itself, and the
+  // strait at the end of it with the bridge over the top.
+  // -- ISLAIS CREEK: an urban river, walled both sides, shallow and filthy
+  [-4400, -30], [-4340, 60], [-4260, 96], [-4160, 84], [-4060, 110],
+  [-3960, 90], [-3860, 120], [-3760, 96], [-3660, 130], [-3560, 104],
+  [-3460, 140], [-3360, 112], [-3260, 150], [-3160, 120],
+  [-3060, 34], [-3000, -30], [-2940, -34], [-2880, 40],            // a slip you can haul out on
+  [-2800, 150],
+  // -- THE WHARF: timber piles, floating docks, tourist boats
+  [-2700, 220], [-2560, 260], [-2420, 240], [-2280, 280], [-2140, 250],
+  [-2020, 190], [-1940, -28], [-1880, -36], [-1820, 200],          // a landing stage
+  [-1700, 290], [-1560, 330], [-1420, 300],
+  // -- THE BAY: open, deep, cold
+  [-1280, 420], [-1120, 560], [-960, 660], [-800, 720], [-640, 700],
+  [-480, 760], [-320, 700], [-160, 640],
+  [-60, 300], [0, -32], [60, -40], [120, 320],                     // a rock out in the bay
+  // -- THE GOLDEN GATE: the strait. Deepest water in the zone, and a current
+  [240, 560], [380, 780], [520, 940], [660, 1010], [800, 960],
+  [940, 840], [1040, 620],
+  [1150, 200], [1260, -30], [1330, 40], [1400, 96], [1460, 74],
   // mangrove tangle: shallow braided water with root islands
   [1520, 60], [1600, -18], [1660, -26], [1730, 54], [1840, 86], [1950, 70], [2060, -20], [2120, -30],
   [2200, 62], [2320, 104], [2450, 92], [2560, 40], [2660, -30], [2730, -48], [2800, -40],
@@ -132,18 +127,14 @@ const OCEAN_CAVES = [
 // rings under it. The ladder in a shaft stops eight feet above the crown,
 // which is exactly why it is no use to anything that cannot reach it.
 const MANHOLES = [
-  [-5400, 0.95], [-4900, 0.75], [-4600, 0.5],                       // over the intake
-  [-3600, 0.5], [-2960, 0.4], [-2560, 0.55],                        // over the vault
-  [-1400, 0.18], [-1000, 0.14],                                     // over the sump
-  [-200, 0.4], [420, 0.55], [820, 0.8],                             // up the outfall
+  [-5700, 0.95], [-5430, 0.8], [-5150, 0.6], [-4880, 0.7],          // over the chamber
 ];
 // Flights of steps. Concrete is not cut by weather, it is cast in lifts, so a
 // stair in this world is a real stair: a flat tread and a hard riser, every
 // one the same as the last. [x0, x1, rise].
 const STAIRS = [
-  [-5140, -4910, 26],                    // up onto the intake staging
-  [-2660, -2400, 26],                    // up onto the pier in the vault
-  [-680, 1000, 40],                      // the weirs, all the way to the light
+  [-5540, -5310, 26],                    // up onto the staging you wake on
+  [-4900, -4440, 34],                    // the weirs, all the way to the light
 ];
 function stairAt(x) { for (const [a, b, r] of STAIRS) if (x >= a && x <= b) return r; return 0; }
 // ---------------------------------------------------------------------------
@@ -196,10 +187,11 @@ const MapData = {
   // whether the fine noise that gives mud its texture is applied at all.
   // Concrete was poured to a line. Nothing under the city wobbles.
   built(x) {
-    // Everything from the laboratory to the mouth of the outfall was poured by
-    // somebody. The swamp past it was not.
-    if (x >= 1100) return 0;
-    if (x >= 1000) return (1100 - x) / 100;
+    // The works end at the mouth of the outfall. Past it is a city, and a city
+    // walls its creek in concrete for a mile before it lets it go.
+    if (x >= -2800) return 0;
+    if (x >= -4400) return clamp((-2800 - x) / 1600, 0, 1) * 0.7;   // the walled creek
+    if (x >= -4440) return 1;
     return 1;
   },
   // ---------------------------------------------------------------------
@@ -322,65 +314,81 @@ const BIOMES = [
     music: 0.9,
   },
   {
-    // Where you come round. A brick barrel wide enough to stand up in, three
-    // manhole shafts throwing daylight down it, a hand of water over the
-    // invert and a dry bench at either end. Deliberately gentle: it is the
-    // first minute of the game and you are the length of a hand.
-    id: 'wake', name: 'THE INTAKE', x0: -5900, x1: -4400, indoor: true,
+    // One chamber, four shafts of daylight, a brick staging to come round on
+    // and a way out at the east end. That is the whole sewer now.
+    id: 'wake', name: 'THE SEWER', x0: -5900, x1: -4900, indoor: true,
     sky: ['#0d1518', '#1b262a'], water: ['#4c7d72', '#2a5048', '#10241f'], scum: '#6a8a4a', fog: '#162228',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a5d4e', '#4d4338', '#2f2922'], grass: '#4a5448',
-    roof: -300, dark: 0.22, toxic: 0,
+    roof: -300, dark: 0.2, toxic: 0,
     plants: [['algae', 2.6], ['weed', 2.2], ['trash', 1.4], ['rock', 1.6], ['sunkbranch', 1], ['shellbed', 0.8]],
     fish: [['minnow', 5], ['shiner', 4], ['bluegill', 2.4], ['roach', 2.4], ['tilapia', 1.6]],
     land: [['rat', 2.2]], structures: [], music: 0.5,
   },
   {
-    // The main barrel. Flooded, with a hand of air at the crown and two brick
-    // piers standing out of it — the only two places on this level you can
-    // put your head in air without surfacing.
-    id: 'interceptor', name: 'THE GRIT CHANNEL', x0: -4400, x1: -4000, indoor: true,
-    sky: ['#090f12', '#141d22'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5d5347', '#443c33', '#29241e'], grass: '#4a5458',
-    roof: -190, dark: 0.4, toxic: 0.05,
-    plants: [['algae', 2.2], ['weed', 1.8], ['trash', 1.6], ['rock', 2], ['shellbed', 0.8]],
-    fish: [['minnow', 4], ['shiner', 3.4], ['roach', 3], ['bluegill', 2.6], ['tilapia', 2], ['catfish', 1.2]],
-    land: [['rat', 2]], structures: [], music: 0.7,
-  },
-  {
-    // Two hundred feet of water over the crown and no air in it except where a
-    // shaft comes down. You have to know where the bells are before you go in.
-    id: 'gallery', name: 'THE GREAT VAULT', x0: -4000, x1: -2100, indoor: true, roman: true,
-    sky: ['#060a0c', '#0e1519'], water: ['#2d5a58', '#173634', '#050f10'], scum: '#4a6a3c', fog: '#0a1214',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5a52', '#403f39', '#262622'], grass: '#3f4a42',
-    roof: -420, dark: 0.3, toxic: 0.08, pressure: 0.25,
-    plants: [['algae', 2.4], ['weed', 1.6], ['rock', 2.2], ['bones', 1.2], ['trash', 1.2], ['sunkbranch', 1.2], ['kelp', 1.4]],
-    fish: [['shiner', 3.4], ['roach', 3], ['bluegill', 3], ['tilapia', 2.4], ['catfish', 2.2], ['eel', 1.6], ['bass', 1.4]],
-    land: [], structures: [], music: 0.85,
-  },
-  {
-    // The bottom of the system, and the end of the plating line. Everything
-    // anybody ever poured away is still down here and it is still working.
-    id: 'sump', name: 'THE SUMP', x0: -2100, x1: -760, indoor: true,
-    sky: ['#060c08', '#101a12'], water: ['#4f7a2e', '#2e4a1c', '#12200c'], scum: '#a8d020', fog: '#101c10',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5638', '#403d28', '#27251a'], grass: '#6a7a2a',
-    roof: -266, dark: 0.42, toxic: 0.55, pressure: 0.45,
-    plants: [['bones', 2], ['rock', 2], ['algae', 1.6], ['trash', 1.6], ['kelp', 1.4], ['sunkbranch', 1]],
-    fish: [['roach', 3], ['catfish', 2.4], ['eel', 2.2], ['bluegill', 2], ['mutantcat', 1.4], ['flgar', 1.2]],
-    land: [], structures: [], music: 1,
-  },
-  {
-    // A flight of weirs climbing back to the light, with the whole system
-    // running down them the other way. The last of it is daylight.
-    id: 'outfall', name: 'THE OUTFALL', x0: -760, x1: 1100, indoor: true,
+    // Four weirs and a hole with a sky behind it. The last roofed thing in
+    // the zone and the first daylight the animal has ever been under.
+    id: 'interceptor', name: 'THE OUTFALL', x0: -4900, x1: -4400, indoor: true,
     sky: ['#12202a', '#2e4450'], water: ['#3e7a70', '#20493f', '#0b1d1a'], scum: '#6a8a4a', fog: '#1c2e34',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a6254', '#4c463b', '#2e2a23'], grass: '#5a6a42',
-    roof: -300, dark: 0.3, toxic: 0.1,
-    plants: [['algae', 2.2], ['weed', 2.4], ['rock', 1.8], ['trash', 1.2], ['shellbed', 1], ['sunkbranch', 0.8]],
-    fish: [['tilapia', 3.4], ['walkingcat', 2.4], ['bluegill', 3], ['catfish', 2.2], ['shiner', 3.4], ['minnow', 3], ['bass', 1.6]],
-    land: [['rat', 1.6]], structures: [], music: 0.6,
+    roof: -300, dark: 0.16, toxic: 0.06,
+    plants: [['algae', 2.2], ['weed', 2.4], ['rock', 1.8], ['trash', 1.2], ['shellbed', 1]],
+    fish: [['tilapia', 3], ['shiner', 3.4], ['bluegill', 2.6], ['minnow', 3], ['walkingcat', 1.6]],
+    land: [['rat', 1.4]], structures: [], music: 0.55,
   },
   {
-    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1100, x1: 2800,
+    // ISLAIS CREEK. A city's river: two concrete embankments, a bridge every
+    // half mile, a shopping trolley in the bed of it and a heron that has made
+    // its peace with all of that.
+    id: 'gallery', name: 'ISLAIS CREEK', x0: -4400, x1: -2800, town: true,
+    sky: ['#6e8ea6', '#c6d4d8'], water: ['#4a7a72', '#2c4e48', '#12241f'], scum: '#7a8a46', fog: '#b0c0c4',
+    parallax: ['block', 'tower', 'block'], ground: ['#7a7468', '#55504a', '#33302c'], grass: '#6a7a44',
+    toxic: 0.12,
+    plants: [['algae', 2.2], ['weed', 2], ['trash', 2.2], ['rock', 1.6], ['rubble', 1.4], ['reed', 1], ['sunkbranch', 1.2]],
+    fish: [['shiner', 3.4], ['bluegill', 2.6], ['tilapia', 2.4], ['walkingcat', 2], ['bass', 1.6], ['catfish', 1.6]],
+    land: [['rat', 2.4], ['raccoon', 1.6], ['fisherman', 1], ['tourist', 0.8]],
+    structures: [['manhole', 1.4], ['pipe', 1.4], ['billboard', 1], ['boatramp', 1], ['seawall', 1.6], ['wreck', 0.8]],
+    music: 0.4,
+  },
+  {
+    // THE WHARF. Timber piles by the thousand, floating docks with sea lions
+    // asleep on them, a tourist boat every ten minutes and a crab pot on every
+    // fourth piling.
+    id: 'sump', name: 'THE WHARF', x0: -2800, x1: -1400, town: true,
+    sky: ['#6898b8', '#d4e0e0'], water: ['#3d7f8a', '#22505a', '#0c2026'], scum: '#6a8a4a', fog: '#bcd0d4',
+    parallax: ['tower', 'block', 'shack'], ground: ['#6a6458', '#4a463c', '#2c2a24'], grass: '#5f7444',
+    plants: [['kelp', 2.4], ['algae', 2], ['oyster', 2], ['shellbed', 1.8], ['weed', 1.4], ['rock', 1.4], ['trash', 1.2]],
+    fish: [['shiner', 3], ['sardine', 3.4], ['bluegill', 2], ['bass', 2], ['catfish', 1.6], ['bonnet', 1.2], ['sealion', 2.4], ['harborseal', 2]],
+    land: [['tourist', 2.4], ['fisherman', 2], ['raccoon', 1.4], ['rat', 1.6]],
+    structures: [['pier', 2.6], ['sealdock', 2.2], ['ferry', 1.8], ['crabtrap', 2], ['buoy', 1.4], ['dock', 1.4], ['boathouse', 1], ['seawall', 1.2]],
+    music: 0.35,
+  },
+  {
+    // THE BAY. Cold, deep, grey-green, with a rock out in the middle of it and
+    // a container ship going over the top of you.
+    id: 'outfall', name: 'THE BAY', x0: -1400, x1: 120,
+    sky: ['#5a92c0', '#cfdfe4'], water: ['#2f7484', '#1a4450', '#071a22'], scum: '#5f7a46', fog: '#aac4cc',
+    parallax: ['tower', 'island', 'block'], ground: ['#6a6a62', '#494942', '#2b2b26'], grass: '#5a7040',
+    pressure: 0.2,
+    plants: [['kelp', 2.6], ['algae', 1.8], ['shellbed', 2], ['oyster', 1.4], ['rock', 2.2], ['fan', 1], ['weed', 1.2]],
+    fish: [['sardine', 3.6], ['shiner', 2.6], ['bass', 2], ['bonnet', 1.8], ['harborseal', 2.4], ['sealion', 2], ['shark', 1.4], ['ray', 1.4], ['dolphin', 1]],
+    land: [['tourist', 1.2], ['fisherman', 1]],
+    structures: [['buoy', 2.4], ['wreck', 1.6], ['ferry', 1.4], ['pier', 1], ['crabtrap', 1.2], ['seawall', 1]],
+    music: 0.5,
+  },
+  {
+    // THE GOLDEN GATE. The strait, the deepest water in the zone, a current
+    // that runs like a river and two towers standing in it.
+    id: 'gate', name: 'THE GOLDEN GATE', x0: 120, x1: 1260, open: true,
+    sky: ['#4a86bc', '#c8dce6'], water: ['#276c84', '#133c4c', '#04141c'], scum: '#557040', fog: '#a4bcc8',
+    parallax: ['tower', 'bluff', 'tower'], ground: ['#5e6060', '#414342', '#26282a'], grass: '#546c3c',
+    pressure: 0.45,
+    plants: [['kelp', 3.2], ['fan', 1.6], ['rock', 2.4], ['shellbed', 1.6], ['sponge', 1], ['algae', 1.2]],
+    fish: [['sardine', 3.4], ['shark', 2.4], ['sealion', 2.6], ['harborseal', 2], ['bonnet', 1.8], ['dolphin', 1.4], ['ray', 1.2], ['grouper', 0.8]],
+    land: [], structures: [['gate', 3], ['buoy', 2], ['wreck', 1.4], ['ferry', 1.2]],
+    music: 0.8,
+  },
+  {
+    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1260, x1: 2800,
     sky: ['#4d8fd0', '#cfe6f2'], water: ['#3a9a86', '#1e5c50', '#08201d'], scum: '#6a8a4a', fog: '#bfe0e6',
     parallax: ['mangrove', 'palm', 'mangrove'], ground: ['#5a4a34', '#463726', '#32281a'], grass: '#4f8a3a',
     plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1], ['duckweed', 1], ['palm', 0.6], ['fern', 0.8]],

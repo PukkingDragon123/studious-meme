@@ -16,13 +16,14 @@ const ZONE_BY_ID = {};
 for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
-  // ---- ZONE 1: THE SYSTEM. Five levels down, and one long climb back up.
+  // ---- ZONE 1: OUT OF THE BUILDING AND INTO SAN FRANCISCO.
   { id: 'facility', zone: 'river', lat: 0.14, lon: 2.68, name: 'FACILITY B', sub: 'TRANSFER ORDER 11. GET OUT OF THE BUILDING.', x: -7480, size: 0.22, diff: 0, intro: true },
-  { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE INTAKE', sub: 'OPEN WATER, A ROOF OVER IT, AND EVERYTHING IN IT SMALLER THAN YOU.', x: -5500, size: 0.3, diff: 0.2, need: { deep: 900 } },
-  { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE GRIT CHANNEL', sub: 'THE WALLS COME IN AND THE CROWN COMES DOWN. GO THROUGH IT FAST.', x: -4260, size: 0.55, diff: 0.8, need: { deep: 1800 } },
-  { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'THE GREAT VAULT', sub: 'SEVEN HUNDRED FEET OF WATER AND FOUR HUNDRED OF AIR OVER IT.', x: -3400, size: 0.9, diff: 1.5, need: { deep: 3200 } },
-  { id: 'sump', zone: 'river', lat: 0.20, lon: 3.16, name: 'THE SUMP', sub: 'THE DEEPEST WATER IN THE WORLD SO FAR, AND IT IS STILL WORKING.', x: -1300, size: 1.4, diff: 2.2, need: { deep: 4600 } },
-  { id: 'outfall', survey: true, zone: 'river', lat: 0.08, lon: 3.46, name: 'THE OUTFALL', sub: 'A FLIGHT OF WEIRS AND A HOLE WITH A SKY BEHIND IT.', x: 400, size: 2.0, diff: 2.8, need: { deep: 6000 } },
+  { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE SEWER', sub: 'ONE CHAMBER, FOUR SHAFTS OF DAYLIGHT, AND A WAY OUT.', x: -5500, size: 0.3, diff: 0.2, need: { deep: 700 } },
+  { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE OUTFALL', sub: 'FOUR WEIRS AND A HOLE WITH A SKY BEHIND IT.', x: -4640, size: 0.45, diff: 0.5, need: { deep: 1400 } },
+  { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'ISLAIS CREEK', sub: 'A CITY RIVER. CONCRETE BOTH SIDES AND A TROLLEY IN THE BED.', x: -3600, size: 0.7, diff: 1.0, need: { deep: 2400 } },
+  { id: 'sump', zone: 'river', lat: 0.20, lon: 3.16, name: 'THE WHARF', sub: 'TIMBER PILES, SEA LIONS ASLEEP ON THE FLOATS, A TOURIST BOAT EVERY TEN MINUTES.', x: -2200, size: 1.1, diff: 1.6, need: { deep: 3600 } },
+  { id: 'outfall', zone: 'river', lat: 0.08, lon: 3.46, name: 'THE BAY', sub: 'COLD, DEEP, GREY-GREEN, AND A SHIP GOING OVER THE TOP OF YOU.', x: -700, size: 1.8, diff: 2.3, need: { deep: 5000 } },
+  { id: 'gate', survey: true, zone: 'river', lat: 0.34, lon: 3.58, name: 'THE GOLDEN GATE', sub: 'THE STRAIT. A CURRENT LIKE A RIVER AND TWO TOWERS STANDING IN IT.', x: 600, size: 2.6, diff: 3.0, need: { deep: 6600 } },
   // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
   { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
   { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },

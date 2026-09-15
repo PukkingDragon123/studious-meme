@@ -744,7 +744,7 @@ const Font = (() => {
     lines.forEach((l, i) => draw(ctx, l, x, y + i * lh, opts));
     return lines.length;
   }
-  return { draw, width, drawWrapped, glyph, H: 7 };
+  return { draw, width, drawWrapped, glyph, H: 7, W: 5 };
 })();
 
 /* ===== src/audio.js ===== */
@@ -2483,6 +2483,11 @@ F('sawfish', 'SMALLTOOTH SAWFISH', 12, 500, { len: 100, h: 0.2, snout: 'gar', ta
 F('shark', 'BULL SHARK', 8, 250, { len: 84, h: 0.3, snout: 'point', tail: 'lunate', back: '#6a7f8a', mid: '#9aaeb8', belly: '#d8dfe0', dark: '#2a3a44', dorsal: 'sail', teeth: true }, { speed: 175, band: [60, 800], school: [1, 1], flee: 0, pred: 22 });
 F('bonnet', 'BONNETHEAD SHARK', 3.5, 20, { len: 70, h: 0.26, snout: 'blunt', tail: 'lunate', back: '#7a8a8a', mid: '#a8b8b8', belly: '#e0e8e8', dark: '#2a3a3a', dorsal: 'sail', teeth: true }, { speed: 130, band: [40, 400], school: [1, 2], flee: 80, aggr: 8, aggrMax: 2 });
 F('dolphin', 'BOTTLENOSE DOLPHIN', 8, 400, { len: 84, h: 0.3, snout: 'point', tail: 'lunate', back: '#4a5a66', mid: '#8a9aa6', belly: '#d8e0e6', dark: '#1e2a34', dorsal: 'sail' }, { speed: 200, band: [30, 400], school: [2, 4], flee: 220, mammal: true, jumper: true });
+F('sardine', 'PACIFIC SARDINE', 0.7, 0.4, { len: 34, h: 0.2, snout: 'point', tail: 'fork', back: '#3a5a72', mid: '#9ab8c8', belly: '#f0f4f6', dark: '#1a2c3a', dorsal: 'soft' }, { speed: 150, band: [10, 400], school: [6, 14], flee: 170 });
+// ---- San Francisco mammals. Both swim on the fish rig, both haul out, and
+// both are the reason the wharf sounds the way it does.
+F('sealion', 'CALIFORNIA SEA LION', 7, 600, { len: 82, h: 0.4, snout: 'blunt', tail: 'round', back: '#4a3a2c', mid: '#6d5541', belly: '#9a7f62', dark: '#231a12', dorsal: 'none', flipper: true }, { speed: 185, band: [6, 420], school: [2, 5], flee: 140, mammal: true, jumper: true, aggr: 6, aggrMax: 2.2 });
+F('harborseal', 'HARBOR SEAL', 5, 240, { len: 70, h: 0.44, snout: 'blunt', tail: 'round', back: '#5c5f5e', mid: '#8d9190', belly: '#c4c8c4', dark: '#2a2d2c', pattern: 'spots', spot: '#1a1c1a', dorsal: 'none', flipper: true }, { speed: 150, band: [6, 360], school: [1, 3], flee: 170, mammal: true });
 F('manatee', 'MANATEE', 10, 1000, { len: 92, h: 0.42, snout: 'blunt', tail: 'round', back: '#6a7070', mid: '#8a9090', belly: '#a8aeae', dark: '#2e3434', dorsal: 'none' }, { speed: 30, band: [20, 300], school: [1, 2], flee: 60, mammal: true });
 
 // ------------------------------------------------------------ birds
@@ -2639,6 +2644,24 @@ class FXSystem {
   // a footprint or drag mark pressed into the shore mud
   print(x, y, w, dir) { this.add({ type: 'print', x, y, w, dir, life: 40 }); }
   feathers(x, y, n, color = '#f0f0e8') { for (let i = 0; i < n; i++) this.add({ type: 'feather', x, y, vx: rand(-60, 60), vy: rand(-90, 10), s: 1, color: chance(0.7) ? color : '#b8b8b0', seed: rand(TAU), life: rand(2.5, 5) }); }
+  // ---- THE BITE SPARKLE -------------------------------------------------
+  // A bite used to be a comic-book word and a shake. It is a burst of four
+  // point stars now: a white core that flashes out, a ring of stars thrown on
+  // an even spread so it reads as an impact and not as confetti, and a few
+  // slow drifting motes left behind in the water.
+  sparkle(x, y, n = 10, col = '#ffffff', power = 1, dx = 0, dy = 0) {
+    this.add({ type: 'flash', x, y, r0: 3 * power, r: 22 * power, color: col, life: 0.16 });
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + rand(-0.22, 0.22), sp = rand(70, 220) * power;
+      this.add({ type: 'sparkle', x, y, vx: Math.cos(a) * sp + dx * 60, vy: Math.sin(a) * sp + dy * 60,
+        s: rand(0.7, 1.9) * power, color: i % 3 === 0 ? '#ffffff' : col, rot: rand(TAU), vr: rand(-10, 10), life: rand(0.22, 0.55) });
+    }
+    for (let i = 0; i < Math.round(n * 0.4); i++) {
+      const a = rand(TAU), sp = rand(8, 34);
+      this.add({ type: 'sparkle', x: x + rand(-6, 6), y: y + rand(-6, 6), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 10,
+        s: rand(0.4, 0.9) * power, color: col, rot: rand(TAU), vr: rand(-3, 3), life: rand(0.5, 1.1) });
+    }
+  }
   sparks(x, y, n, dx = 0, dy = 0) { for (let i = 0; i < n; i++) { const a = rand(TAU), sp = rand(40, 180); this.add({ type: 'spark', x, y, vx: Math.cos(a) * sp + dx * 80, vy: Math.sin(a) * sp + dy * 80, s: 1, color: choice(['#fff8c0', '#ffd060', '#ff9030']), life: rand(0.15, 0.4) }); } }
   bones(x, y, n, power = 90) {
     for (let i = 0; i < n; i++) {
@@ -2741,6 +2764,8 @@ class FXSystem {
           p.y += p.vy * dt; break;
         }
         case 'spark': { p.vy += 250 * dt; p.x += p.vx * dt; p.y += p.vy * dt; break; }
+        case 'sparkle': { p.vx *= 1 - Math.min(1, 6 * dt); p.vy *= 1 - Math.min(1, 6 * dt); p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; break; }
+        case 'flash': break;
         case 'splinter': {
           if (under) { p.vy = approach(p.vy, p.y > surf + 3 ? -35 : 0, 160 * dt); p.vx *= 0.97; p.vr *= 0.9; if (p.y < surf + 3) p.y = surf + Math.sin(p.t * 3) * 1.2; }
           else { p.vy += 560 * dt; }
@@ -2807,6 +2832,31 @@ class FXSystem {
           break;
         }
         case 'spark': { ctx.globalAlpha = lf; ctx.fillStyle = p.color; const s = Math.max(1, Math.round(z)); ctx.fillRect(Math.round(sx), Math.round(sy), s, s); break; }
+        case 'sparkle': {
+          // a four-point star, drawn as two tapering bars so it stays pixel art
+          const k = lf > 0.75 ? (1 - lf) / 0.25 : lf / 0.75;
+          const r = Math.max(1, Math.round(p.s * 4 * z * (0.4 + k * 0.8)));
+          const th = Math.max(1, Math.round(p.s * z * 0.9));
+          ctx.globalAlpha = Math.min(1, k * 1.3);
+          ctx.save(); ctx.translate(Math.round(sx), Math.round(sy)); ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-r, -(th >> 1) - (th & 1 ? 0 : 0), r * 2, th);
+          ctx.fillRect(-(th >> 1), -r, th, r * 2);
+          if (r > 3) { ctx.fillStyle = '#ffffff'; ctx.fillRect(-1, -1, 2, 2); }
+          ctx.restore();
+          break;
+        }
+        case 'flash': {
+          const k = 1 - lf, r = lerp(p.r0, p.r, k * k) * z;
+          ctx.globalAlpha = lf * 0.85; ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = p.color;
+          ctx.fillRect(Math.round(sx - r), Math.round(sy - r * 0.22), Math.round(r * 2), Math.max(1, Math.round(r * 0.44)));
+          ctx.fillRect(Math.round(sx - r * 0.22), Math.round(sy - r), Math.max(1, Math.round(r * 0.44)), Math.round(r * 2));
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(Math.round(sx - r * 0.3), Math.round(sy - r * 0.3), Math.max(1, Math.round(r * 0.6)), Math.max(1, Math.round(r * 0.6)));
+          ctx.globalCompositeOperation = 'source-over';
+          break;
+        }
         case 'splinter': { ctx.globalAlpha = lf < 0.3 ? lf / 0.3 : 1; ctx.fillStyle = p.color; ctx.save(); ctx.translate(sx, sy); ctx.rotate(p.rot); ctx.fillRect(0, 0, Math.max(1, p.w * z), Math.max(1, p.s * z)); ctx.restore(); break; }
         case 'bone': {
           ctx.globalAlpha = lf < 0.25 ? lf / 0.25 : 1;
@@ -3022,47 +3072,42 @@ const WORKS_SECTION = [
 // [x, floorY, roofY].
 // ---------------------------------------------------------------------------
 const SEWER_SECTION = [
-  // ---- THE INTAKE ------------------------------------------------------
-  // Where the game picks you up. Three hundred feet of water under you, three
-  // hundred of air over it, and a brick staging in the middle you can climb
-  // out onto. Open in every direction, which is the whole point.
-  [-5880, 300, -300], [-5760, 330, -308], [-5620, 316, -300],
-  [-5480, 352, -316], [-5320, 330, -306], [-5180, 300, -300],
-  [-5120, 150, -294], [-5060, -34, -288], [-4990, -36, -288], [-4930, 150, -294],
-  [-4860, 320, -304], [-4700, 348, -312], [-4560, 326, -304], [-4440, 300, -296],
-  // ---- THE GRIT CHANNEL ------------------------------------------------
-  // A neck. The walls come in and the crown comes down, and you go through it
-  // fast because there is nothing in here worth stopping for.
-  [-4360, 210, -206], [-4280, 172, -176], [-4200, 180, -180], [-4120, 240, -226],
-  // ---- THE GREAT VAULT -------------------------------------------------
-  // The biggest room anybody ever built and then forgot about. Seven hundred
-  // feet of water and four hundred of air, with a pier standing up out of the
-  // middle of it.
-  [-4000, 420, -320], [-3820, 560, -392], [-3620, 660, -420], [-3400, 700, -424],
-  [-3180, 672, -418], [-2960, 700, -424], [-2740, 640, -408],
-  [-2640, 330, -402], [-2580, -34, -398], [-2500, -36, -398], [-2440, 330, -402],
-  [-2360, 560, -404],
-  // ---- THE SCREENS -----------------------------------------------------
-  [-2260, 340, -232], [-2180, 300, -206], [-2100, 316, -212],
-  // ---- THE SUMP --------------------------------------------------------
-  // The deepest water in the game so far, and the last of the plating line
-  // lying on the bottom of it.
-  [-2000, 520, -250], [-1840, 760, -262], [-1680, 900, -270], [-1500, 960, -274],
-  [-1320, 930, -270], [-1140, 980, -276], [-960, 910, -268], [-820, 820, -262],
-  // ---- THE OUTFALL -----------------------------------------------------
-  // The floor climbs a flight of weirs, the crown holds, and at the top of it
-  // there is a hole with a sky behind it.
-  [-680, 700, -272], [-520, 600, -280], [-360, 500, -288], [-200, 410, -294],
-  [-40, 330, -300], [120, 260, -304], [280, 196, -308],
-  [440, 140, -312], [600, 88, -316], [740, 40, -318],
-  [860, -16, -320], [940, -34, -322], [1000, -36, -324],
+  // ---- THE SEWER -------------------------------------------------------
+  // One chamber and a way out of it. It used to be seven thousand units of
+  // drains; it is a thousand now, because the point of a sewer is leaving it.
+  [-5880, 300, -300], [-5760, 330, -308], [-5640, 316, -300],
+  [-5520, 150, -294], [-5460, -34, -288], [-5390, -36, -288], [-5330, 150, -294],
+  [-5240, 300, -302], [-5120, 330, -306], [-5000, 300, -298],
+  // ---- THE OUTFALL: four weirs and a hole with a sky behind it ---------
+  [-4900, 240, -292], [-4800, 180, -290], [-4700, 120, -294],
+  [-4620, 60, -300], [-4540, 10, -306], [-4480, -26, -312], [-4440, -34, -316],
 ];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
   ...WORKS_SECTION.map(p => [p[0], p[1]]),
   ...SEWER_SECTION.map(p => [p[0], p[1]]),
-  [1060, 60],
-  [1150, -30], [1240, 40], [1330, 96], [1420, 74],
+  // ===================== SAN FRANCISCO ==========================
+  // Out of the pipe and into a city's water: a concrete creek between two
+  // embankments, the wharf where it meets the bay, the bay itself, and the
+  // strait at the end of it with the bridge over the top.
+  // -- ISLAIS CREEK: an urban river, walled both sides, shallow and filthy
+  [-4400, -30], [-4340, 60], [-4260, 96], [-4160, 84], [-4060, 110],
+  [-3960, 90], [-3860, 120], [-3760, 96], [-3660, 130], [-3560, 104],
+  [-3460, 140], [-3360, 112], [-3260, 150], [-3160, 120],
+  [-3060, 34], [-3000, -30], [-2940, -34], [-2880, 40],            // a slip you can haul out on
+  [-2800, 150],
+  // -- THE WHARF: timber piles, floating docks, tourist boats
+  [-2700, 220], [-2560, 260], [-2420, 240], [-2280, 280], [-2140, 250],
+  [-2020, 190], [-1940, -28], [-1880, -36], [-1820, 200],          // a landing stage
+  [-1700, 290], [-1560, 330], [-1420, 300],
+  // -- THE BAY: open, deep, cold
+  [-1280, 420], [-1120, 560], [-960, 660], [-800, 720], [-640, 700],
+  [-480, 760], [-320, 700], [-160, 640],
+  [-60, 300], [0, -32], [60, -40], [120, 320],                     // a rock out in the bay
+  // -- THE GOLDEN GATE: the strait. Deepest water in the zone, and a current
+  [240, 560], [380, 780], [520, 940], [660, 1010], [800, 960],
+  [940, 840], [1040, 620],
+  [1150, 200], [1260, -30], [1330, 40], [1400, 96], [1460, 74],
   // mangrove tangle: shallow braided water with root islands
   [1520, 60], [1600, -18], [1660, -26], [1730, 54], [1840, 86], [1950, 70], [2060, -20], [2120, -30],
   [2200, 62], [2320, 104], [2450, 92], [2560, 40], [2660, -30], [2730, -48], [2800, -40],
@@ -3122,18 +3167,14 @@ const OCEAN_CAVES = [
 // rings under it. The ladder in a shaft stops eight feet above the crown,
 // which is exactly why it is no use to anything that cannot reach it.
 const MANHOLES = [
-  [-5400, 0.95], [-4900, 0.75], [-4600, 0.5],                       // over the intake
-  [-3600, 0.5], [-2960, 0.4], [-2560, 0.55],                        // over the vault
-  [-1400, 0.18], [-1000, 0.14],                                     // over the sump
-  [-200, 0.4], [420, 0.55], [820, 0.8],                             // up the outfall
+  [-5700, 0.95], [-5430, 0.8], [-5150, 0.6], [-4880, 0.7],          // over the chamber
 ];
 // Flights of steps. Concrete is not cut by weather, it is cast in lifts, so a
 // stair in this world is a real stair: a flat tread and a hard riser, every
 // one the same as the last. [x0, x1, rise].
 const STAIRS = [
-  [-5140, -4910, 26],                    // up onto the intake staging
-  [-2660, -2400, 26],                    // up onto the pier in the vault
-  [-680, 1000, 40],                      // the weirs, all the way to the light
+  [-5540, -5310, 26],                    // up onto the staging you wake on
+  [-4900, -4440, 34],                    // the weirs, all the way to the light
 ];
 function stairAt(x) { for (const [a, b, r] of STAIRS) if (x >= a && x <= b) return r; return 0; }
 // ---------------------------------------------------------------------------
@@ -3186,10 +3227,11 @@ const MapData = {
   // whether the fine noise that gives mud its texture is applied at all.
   // Concrete was poured to a line. Nothing under the city wobbles.
   built(x) {
-    // Everything from the laboratory to the mouth of the outfall was poured by
-    // somebody. The swamp past it was not.
-    if (x >= 1100) return 0;
-    if (x >= 1000) return (1100 - x) / 100;
+    // The works end at the mouth of the outfall. Past it is a city, and a city
+    // walls its creek in concrete for a mile before it lets it go.
+    if (x >= -2800) return 0;
+    if (x >= -4400) return clamp((-2800 - x) / 1600, 0, 1) * 0.7;   // the walled creek
+    if (x >= -4440) return 1;
     return 1;
   },
   // ---------------------------------------------------------------------
@@ -3312,65 +3354,81 @@ const BIOMES = [
     music: 0.9,
   },
   {
-    // Where you come round. A brick barrel wide enough to stand up in, three
-    // manhole shafts throwing daylight down it, a hand of water over the
-    // invert and a dry bench at either end. Deliberately gentle: it is the
-    // first minute of the game and you are the length of a hand.
-    id: 'wake', name: 'THE INTAKE', x0: -5900, x1: -4400, indoor: true,
+    // One chamber, four shafts of daylight, a brick staging to come round on
+    // and a way out at the east end. That is the whole sewer now.
+    id: 'wake', name: 'THE SEWER', x0: -5900, x1: -4900, indoor: true,
     sky: ['#0d1518', '#1b262a'], water: ['#4c7d72', '#2a5048', '#10241f'], scum: '#6a8a4a', fog: '#162228',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a5d4e', '#4d4338', '#2f2922'], grass: '#4a5448',
-    roof: -300, dark: 0.22, toxic: 0,
+    roof: -300, dark: 0.2, toxic: 0,
     plants: [['algae', 2.6], ['weed', 2.2], ['trash', 1.4], ['rock', 1.6], ['sunkbranch', 1], ['shellbed', 0.8]],
     fish: [['minnow', 5], ['shiner', 4], ['bluegill', 2.4], ['roach', 2.4], ['tilapia', 1.6]],
     land: [['rat', 2.2]], structures: [], music: 0.5,
   },
   {
-    // The main barrel. Flooded, with a hand of air at the crown and two brick
-    // piers standing out of it — the only two places on this level you can
-    // put your head in air without surfacing.
-    id: 'interceptor', name: 'THE GRIT CHANNEL', x0: -4400, x1: -4000, indoor: true,
-    sky: ['#090f12', '#141d22'], water: ['#3f6a60', '#204038', '#0a1614'], scum: '#5a7a48', fog: '#101a1e',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5d5347', '#443c33', '#29241e'], grass: '#4a5458',
-    roof: -190, dark: 0.4, toxic: 0.05,
-    plants: [['algae', 2.2], ['weed', 1.8], ['trash', 1.6], ['rock', 2], ['shellbed', 0.8]],
-    fish: [['minnow', 4], ['shiner', 3.4], ['roach', 3], ['bluegill', 2.6], ['tilapia', 2], ['catfish', 1.2]],
-    land: [['rat', 2]], structures: [], music: 0.7,
-  },
-  {
-    // Two hundred feet of water over the crown and no air in it except where a
-    // shaft comes down. You have to know where the bells are before you go in.
-    id: 'gallery', name: 'THE GREAT VAULT', x0: -4000, x1: -2100, indoor: true, roman: true,
-    sky: ['#060a0c', '#0e1519'], water: ['#2d5a58', '#173634', '#050f10'], scum: '#4a6a3c', fog: '#0a1214',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5a52', '#403f39', '#262622'], grass: '#3f4a42',
-    roof: -420, dark: 0.3, toxic: 0.08, pressure: 0.25,
-    plants: [['algae', 2.4], ['weed', 1.6], ['rock', 2.2], ['bones', 1.2], ['trash', 1.2], ['sunkbranch', 1.2], ['kelp', 1.4]],
-    fish: [['shiner', 3.4], ['roach', 3], ['bluegill', 3], ['tilapia', 2.4], ['catfish', 2.2], ['eel', 1.6], ['bass', 1.4]],
-    land: [], structures: [], music: 0.85,
-  },
-  {
-    // The bottom of the system, and the end of the plating line. Everything
-    // anybody ever poured away is still down here and it is still working.
-    id: 'sump', name: 'THE SUMP', x0: -2100, x1: -760, indoor: true,
-    sky: ['#060c08', '#101a12'], water: ['#4f7a2e', '#2e4a1c', '#12200c'], scum: '#a8d020', fog: '#101c10',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#5a5638', '#403d28', '#27251a'], grass: '#6a7a2a',
-    roof: -266, dark: 0.42, toxic: 0.55, pressure: 0.45,
-    plants: [['bones', 2], ['rock', 2], ['algae', 1.6], ['trash', 1.6], ['kelp', 1.4], ['sunkbranch', 1]],
-    fish: [['roach', 3], ['catfish', 2.4], ['eel', 2.2], ['bluegill', 2], ['mutantcat', 1.4], ['flgar', 1.2]],
-    land: [], structures: [], music: 1,
-  },
-  {
-    // A flight of weirs climbing back to the light, with the whole system
-    // running down them the other way. The last of it is daylight.
-    id: 'outfall', name: 'THE OUTFALL', x0: -760, x1: 1100, indoor: true,
+    // Four weirs and a hole with a sky behind it. The last roofed thing in
+    // the zone and the first daylight the animal has ever been under.
+    id: 'interceptor', name: 'THE OUTFALL', x0: -4900, x1: -4400, indoor: true,
     sky: ['#12202a', '#2e4450'], water: ['#3e7a70', '#20493f', '#0b1d1a'], scum: '#6a8a4a', fog: '#1c2e34',
     parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a6254', '#4c463b', '#2e2a23'], grass: '#5a6a42',
-    roof: -300, dark: 0.3, toxic: 0.1,
-    plants: [['algae', 2.2], ['weed', 2.4], ['rock', 1.8], ['trash', 1.2], ['shellbed', 1], ['sunkbranch', 0.8]],
-    fish: [['tilapia', 3.4], ['walkingcat', 2.4], ['bluegill', 3], ['catfish', 2.2], ['shiner', 3.4], ['minnow', 3], ['bass', 1.6]],
-    land: [['rat', 1.6]], structures: [], music: 0.6,
+    roof: -300, dark: 0.16, toxic: 0.06,
+    plants: [['algae', 2.2], ['weed', 2.4], ['rock', 1.8], ['trash', 1.2], ['shellbed', 1]],
+    fish: [['tilapia', 3], ['shiner', 3.4], ['bluegill', 2.6], ['minnow', 3], ['walkingcat', 1.6]],
+    land: [['rat', 1.4]], structures: [], music: 0.55,
   },
   {
-    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1100, x1: 2800,
+    // ISLAIS CREEK. A city's river: two concrete embankments, a bridge every
+    // half mile, a shopping trolley in the bed of it and a heron that has made
+    // its peace with all of that.
+    id: 'gallery', name: 'ISLAIS CREEK', x0: -4400, x1: -2800, town: true,
+    sky: ['#6e8ea6', '#c6d4d8'], water: ['#4a7a72', '#2c4e48', '#12241f'], scum: '#7a8a46', fog: '#b0c0c4',
+    parallax: ['block', 'tower', 'block'], ground: ['#7a7468', '#55504a', '#33302c'], grass: '#6a7a44',
+    toxic: 0.12,
+    plants: [['algae', 2.2], ['weed', 2], ['trash', 2.2], ['rock', 1.6], ['rubble', 1.4], ['reed', 1], ['sunkbranch', 1.2]],
+    fish: [['shiner', 3.4], ['bluegill', 2.6], ['tilapia', 2.4], ['walkingcat', 2], ['bass', 1.6], ['catfish', 1.6]],
+    land: [['rat', 2.4], ['raccoon', 1.6], ['fisherman', 1], ['tourist', 0.8]],
+    structures: [['manhole', 1.4], ['pipe', 1.4], ['billboard', 1], ['boatramp', 1], ['seawall', 1.6], ['wreck', 0.8]],
+    music: 0.4,
+  },
+  {
+    // THE WHARF. Timber piles by the thousand, floating docks with sea lions
+    // asleep on them, a tourist boat every ten minutes and a crab pot on every
+    // fourth piling.
+    id: 'sump', name: 'THE WHARF', x0: -2800, x1: -1400, town: true,
+    sky: ['#6898b8', '#d4e0e0'], water: ['#3d7f8a', '#22505a', '#0c2026'], scum: '#6a8a4a', fog: '#bcd0d4',
+    parallax: ['tower', 'block', 'shack'], ground: ['#6a6458', '#4a463c', '#2c2a24'], grass: '#5f7444',
+    plants: [['kelp', 2.4], ['algae', 2], ['oyster', 2], ['shellbed', 1.8], ['weed', 1.4], ['rock', 1.4], ['trash', 1.2]],
+    fish: [['shiner', 3], ['sardine', 3.4], ['bluegill', 2], ['bass', 2], ['catfish', 1.6], ['bonnet', 1.2], ['sealion', 2.4], ['harborseal', 2]],
+    land: [['tourist', 2.4], ['fisherman', 2], ['raccoon', 1.4], ['rat', 1.6]],
+    structures: [['pier', 2.6], ['sealdock', 2.2], ['ferry', 1.8], ['crabtrap', 2], ['buoy', 1.4], ['dock', 1.4], ['boathouse', 1], ['seawall', 1.2]],
+    music: 0.35,
+  },
+  {
+    // THE BAY. Cold, deep, grey-green, with a rock out in the middle of it and
+    // a container ship going over the top of you.
+    id: 'outfall', name: 'THE BAY', x0: -1400, x1: 120,
+    sky: ['#5a92c0', '#cfdfe4'], water: ['#2f7484', '#1a4450', '#071a22'], scum: '#5f7a46', fog: '#aac4cc',
+    parallax: ['tower', 'island', 'block'], ground: ['#6a6a62', '#494942', '#2b2b26'], grass: '#5a7040',
+    pressure: 0.2,
+    plants: [['kelp', 2.6], ['algae', 1.8], ['shellbed', 2], ['oyster', 1.4], ['rock', 2.2], ['fan', 1], ['weed', 1.2]],
+    fish: [['sardine', 3.6], ['shiner', 2.6], ['bass', 2], ['bonnet', 1.8], ['harborseal', 2.4], ['sealion', 2], ['shark', 1.4], ['ray', 1.4], ['dolphin', 1]],
+    land: [['tourist', 1.2], ['fisherman', 1]],
+    structures: [['buoy', 2.4], ['wreck', 1.6], ['ferry', 1.4], ['pier', 1], ['crabtrap', 1.2], ['seawall', 1]],
+    music: 0.5,
+  },
+  {
+    // THE GOLDEN GATE. The strait, the deepest water in the zone, a current
+    // that runs like a river and two towers standing in it.
+    id: 'gate', name: 'THE GOLDEN GATE', x0: 120, x1: 1260, open: true,
+    sky: ['#4a86bc', '#c8dce6'], water: ['#276c84', '#133c4c', '#04141c'], scum: '#557040', fog: '#a4bcc8',
+    parallax: ['tower', 'bluff', 'tower'], ground: ['#5e6060', '#414342', '#26282a'], grass: '#546c3c',
+    pressure: 0.45,
+    plants: [['kelp', 3.2], ['fan', 1.6], ['rock', 2.4], ['shellbed', 1.6], ['sponge', 1], ['algae', 1.2]],
+    fish: [['sardine', 3.4], ['shark', 2.4], ['sealion', 2.6], ['harborseal', 2], ['bonnet', 1.8], ['dolphin', 1.4], ['ray', 1.2], ['grouper', 0.8]],
+    land: [], structures: [['gate', 3], ['buoy', 2], ['wreck', 1.4], ['ferry', 1.2]],
+    music: 0.8,
+  },
+  {
+    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1260, x1: 2800,
     sky: ['#4d8fd0', '#cfe6f2'], water: ['#3a9a86', '#1e5c50', '#08201d'], scum: '#6a8a4a', fog: '#bfe0e6',
     parallax: ['mangrove', 'palm', 'mangrove'], ground: ['#5a4a34', '#463726', '#32281a'], grass: '#4f8a3a',
     plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1], ['duckweed', 1], ['palm', 0.6], ['fern', 0.8]],
@@ -4840,9 +4898,16 @@ const Facility = {
     for (let wx = Math.floor(L / 240) * 240; wx < R; wx += 240) {
       if (wx < r.x0 + 40 || wx > r.x1 - 40) continue;
       const [sx] = cam.toScreen(wx, 0), dw = 46 * z, dh = 96 * z, dy = floorS - dh;
-      px(sx - dw / 2 - 3 * z, dy - 3 * z, dw + 6 * z, dh + 3 * z, '#2f3a40');
-      px(sx - dw / 2, dy, dw, dh, '#2f6a58');
+      this.surf(ctx, cam, sx - dw / 2 - 3 * z, dy - 3 * z, dw + 6 * z, dh + 3 * z, '#2f3a40', 'steel');
+      this.surf(ctx, cam, sx - dw / 2, dy, dw, dh, '#2f6a58', 'paint');
       px(sx - dw / 2, dy, 2 * z, dh, '#3f8a72');
+      // a door is two leaves with a stile between them, a kick plate at the
+      // bottom and a scuffed arc where the leaf has swung a thousand times
+      px(sx - 1 * z, dy, 2 * z, dh, '#204a3e');
+      this.surf(ctx, cam, sx - dw / 2 + 2 * z, dy + dh - 16 * z, dw - 4 * z, 14 * z, '#5d6a66', 'plate', 0.85);
+      px(sx - dw / 2 + 2 * z, dy + dh - 16 * z, dw - 4 * z, 1.4 * z, '#7d8a86');
+      ctx.globalAlpha = 0.16; px(sx - dw / 2 + 3 * z, dy + dh * 0.5, dw - 6 * z, 10 * z, '#0a1412'); ctx.globalAlpha = 1;
+      for (const hy2 of [0.22, 0.52, 0.82]) { px(sx - dw / 2 - 1 * z, dy + dh * hy2, 3 * z, 8 * z, '#54625e'); px(sx + dw / 2 - 2 * z, dy + dh * hy2, 3 * z, 8 * z, '#54625e'); }
       px(sx - 9 * z, dy + 14 * z, 18 * z, 22 * z, '#0e1a1e');
       px(sx - 7 * z, dy + 16 * z, 7 * z, 7 * z, 'rgba(150,220,205,0.30)');
       px(sx + dw / 2 - 12 * z, dy + 48 * z, 7 * z, 3 * z, '#c0c8c0');
@@ -5474,7 +5539,7 @@ const Facility = {
     const [x0] = cam.toScreen(r.x0, 0), w = (r.x1 - r.x0) * z;
     // the shutter box and the opening under it
     const oy = floorS - 168 * z;
-    px(x0 + 16 * z, oy - 18 * z, w - 16 * z, 18 * z, '#39444a');
+    this.surf(ctx, cam, x0 + 16 * z, oy - 18 * z, w - 16 * z, 18 * z, '#39444a', 'steel');
     px(x0 + 16 * z, oy - 18 * z, w - 16 * z, 3 * z, '#55636b');
     for (let i = 0; i < 4; i++) px(x0 + 16 * z, oy - 14 * z + i * 4 * z, w - 16 * z, 2 * z, '#2c353a');
     // the night outside, and the truck backed into it
@@ -5489,7 +5554,7 @@ const Facility = {
       px(wx2 - 2 * z, floorS - 12 * z, 4 * z, 4 * z, '#4a5154');
     }
     // the box body, its roll doors open on the dark inside
-    px(tx, floorS - 130 * z, tw, 104 * z, '#8f4437');
+    this.surf(ctx, cam, tx, floorS - 130 * z, tw, 104 * z, '#8f4437', 'paint');
     px(tx, floorS - 130 * z, tw, 5 * z, '#b85d4c');
     px(tx, floorS - 30 * z, tw, 4 * z, '#5e2c23');
     for (let i = 0; i < 7; i++) px(tx + (5 + i * 15) * z, floorS - 124 * z, 2 * z, 92 * z, '#7a382d');
@@ -8887,13 +8952,14 @@ const ZONE_BY_ID = {};
 for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
-  // ---- ZONE 1: THE SYSTEM. Five levels down, and one long climb back up.
+  // ---- ZONE 1: OUT OF THE BUILDING AND INTO SAN FRANCISCO.
   { id: 'facility', zone: 'river', lat: 0.14, lon: 2.68, name: 'FACILITY B', sub: 'TRANSFER ORDER 11. GET OUT OF THE BUILDING.', x: -7480, size: 0.22, diff: 0, intro: true },
-  { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE INTAKE', sub: 'OPEN WATER, A ROOF OVER IT, AND EVERYTHING IN IT SMALLER THAN YOU.', x: -5500, size: 0.3, diff: 0.2, need: { deep: 900 } },
-  { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE GRIT CHANNEL', sub: 'THE WALLS COME IN AND THE CROWN COMES DOWN. GO THROUGH IT FAST.', x: -4260, size: 0.55, diff: 0.8, need: { deep: 1800 } },
-  { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'THE GREAT VAULT', sub: 'SEVEN HUNDRED FEET OF WATER AND FOUR HUNDRED OF AIR OVER IT.', x: -3400, size: 0.9, diff: 1.5, need: { deep: 3200 } },
-  { id: 'sump', zone: 'river', lat: 0.20, lon: 3.16, name: 'THE SUMP', sub: 'THE DEEPEST WATER IN THE WORLD SO FAR, AND IT IS STILL WORKING.', x: -1300, size: 1.4, diff: 2.2, need: { deep: 4600 } },
-  { id: 'outfall', survey: true, zone: 'river', lat: 0.08, lon: 3.46, name: 'THE OUTFALL', sub: 'A FLIGHT OF WEIRS AND A HOLE WITH A SKY BEHIND IT.', x: 400, size: 2.0, diff: 2.8, need: { deep: 6000 } },
+  { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE SEWER', sub: 'ONE CHAMBER, FOUR SHAFTS OF DAYLIGHT, AND A WAY OUT.', x: -5500, size: 0.3, diff: 0.2, need: { deep: 700 } },
+  { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE OUTFALL', sub: 'FOUR WEIRS AND A HOLE WITH A SKY BEHIND IT.', x: -4640, size: 0.45, diff: 0.5, need: { deep: 1400 } },
+  { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'ISLAIS CREEK', sub: 'A CITY RIVER. CONCRETE BOTH SIDES AND A TROLLEY IN THE BED.', x: -3600, size: 0.7, diff: 1.0, need: { deep: 2400 } },
+  { id: 'sump', zone: 'river', lat: 0.20, lon: 3.16, name: 'THE WHARF', sub: 'TIMBER PILES, SEA LIONS ASLEEP ON THE FLOATS, A TOURIST BOAT EVERY TEN MINUTES.', x: -2200, size: 1.1, diff: 1.6, need: { deep: 3600 } },
+  { id: 'outfall', zone: 'river', lat: 0.08, lon: 3.46, name: 'THE BAY', sub: 'COLD, DEEP, GREY-GREEN, AND A SHIP GOING OVER THE TOP OF YOU.', x: -700, size: 1.8, diff: 2.3, need: { deep: 5000 } },
+  { id: 'gate', survey: true, zone: 'river', lat: 0.34, lon: 3.58, name: 'THE GOLDEN GATE', sub: 'THE STRAIT. A CURRENT LIKE A RIVER AND TWO TOWERS STANDING IN IT.', x: 600, size: 2.6, diff: 3.0, need: { deep: 6600 } },
   // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
   { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
   { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },
@@ -10669,6 +10735,40 @@ class Structure extends Entity {
         this.pilings = []; for (let i = 0; i < 4; i++) this.pilings.push({ ox: -18 + i * 12, hp: 45, dead: false });
         this.r = 30 * this.ss; break;
       }
+      // ---- SAN FRANCISCO ------------------------------------------------
+      case 'pier': {
+        // A working pier: a concrete deck on a forest of creosoted piles, a
+        // rail, bollards, a lamp standard and a shed at the shore end.
+        this.name = 'THE PIER'; this.hp = 900; this.armor = 30; this.deckY = -30;
+        this.len = 150 + Math.round(this.seed * 120);
+        this.dir = World.floorY(x - 90) < 0 ? 1 : -1;
+        this.pilings = [];
+        const n = Math.max(5, Math.round(this.len / 26));
+        for (let i = 1; i <= n; i++) this.pilings.push({ ox: this.dir * (i * this.len / n), hp: 60, dead: false });
+        this.r = this.len * this.ss; break;
+      }
+      case 'sealdock': {
+        // The floats at Pier 39. Four of them, and everything that fits on a
+        // float is asleep on it.
+        this.name = 'THE FLOATS'; this.hp = 260; this.deckY = -6; this.w = 96; this.r = 52 * this.ss;
+        this.floats = [];
+        for (let i = 0; i < 4; i++) this.floats.push({ ox: -42 + i * 28, n: 1 + Math.floor(ihash(i + Math.round(x), 71) * 3) });
+        break;
+      }
+      case 'ferry': {
+        // A tourist boat on its mooring, white hull, red trim, a rail full of
+        // people looking at the water you are in.
+        this.name = 'TOUR BOAT'; this.hp = 420; this.armor = 20; this.r = 46 * this.ss;
+        this.len = 82 + Math.round(this.seed * 28); this.dir = this.seed > 0.5 ? 1 : -1;
+        this.deckY = -18; this.bob = this.seed * TAU; break;
+      }
+      case 'gate': {
+        // One tower of the bridge, standing in the strait. You cannot break
+        // it, you cannot climb it, and it is the only thing in the zone you
+        // can see from anywhere in the zone.
+        this.name = 'THE SOUTH TOWER'; this.hp = 99999; this.armor = 99; this.r = 26 * this.ss;
+        this.towerH = 420; break;
+      }
       case 'boatramp': { this.name = 'BOAT RAMP'; this.hp = 400; this.armor = 40; this.r = 30 * this.ss; this.dir = World.floorY(x - 50) < 0 ? 1 : -1; break; }
       case 'tower': { this.name = 'RANGER TOWER'; this.hp = 200; this.r = 16 * this.ss; this.deckY = -58; break; }
       case 'crabtrap': { this.name = 'CRAB TRAP'; this.hp = 20; this.r = 8 * this.ss; this.floatY = 0; this.deep = World.floorY(x) - 4; this.baited = true; break; }
@@ -10896,6 +10996,116 @@ class Structure extends Entity {
       ctx.fillStyle = '#3a5a3a'; ctx.fillRect(Math.round(ox - 2), Math.round((World.surface(this.x + ox * ss) - y) / ss), 4, 3);
     };
     switch (this.kind) {
+      // ---- SAN FRANCISCO --------------------------------------------------
+      case 'pier': {
+        const L = this.len * f, dY = this.deckY;
+        for (const p of this.pilings) piling(p.ox, dY + 2, (fy - y) / ss, p.dead);
+        // cross-bracing between the piles, which is what makes a pier a pier
+        ctx.fillStyle = 'rgba(58,42,24,0.9)';
+        for (let i = 1; i < this.pilings.length; i++) {
+          const a = this.pilings[i - 1].ox, b = this.pilings[i].ox;
+          if (this.pilings[i].dead || this.pilings[i - 1].dead) continue;
+          ctx.save(); ctx.beginPath(); ctx.moveTo(a, dY + 16); ctx.lineTo(b, dY + 30); ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(58,42,24,0.9)'; ctx.stroke(); ctx.restore();
+        }
+        // the deck: concrete on a timber bearer, with a kerb and a rail
+        const x0 = Math.round(Math.min(0, L)), w0 = Math.round(Math.abs(L));
+        ctx.fillStyle = '#7b7568'; ctx.fillRect(x0, Math.round(dY), w0, 7);
+        ctx.fillStyle = '#9b958a'; ctx.fillRect(x0, Math.round(dY), w0, 2);
+        ctx.fillStyle = '#4a453c'; ctx.fillRect(x0, Math.round(dY + 6), w0, 2);
+        for (let i = 0; i < w0; i += 18) { ctx.fillStyle = 'rgba(48,44,38,0.5)'; ctx.fillRect(x0 + i, Math.round(dY), 1, 7); }
+        // rail: two lines on posts, and a bollard every third post
+        for (let i = 0; i <= 8; i++) {
+          const pxx = f * (i * this.len / 8);
+          ctx.fillStyle = '#5c6468'; ctx.fillRect(Math.round(pxx - 1), Math.round(dY - 13), 2, 13);
+          if (i % 3 === 0) { ctx.fillStyle = '#3d4448'; ctx.fillRect(Math.round(pxx - 4), Math.round(dY - 7), 8, 7); ctx.fillStyle = '#5c6468'; ctx.fillRect(Math.round(pxx - 5), Math.round(dY - 9), 10, 3); }
+        }
+        ctx.fillStyle = '#8d979b'; ctx.fillRect(x0, Math.round(dY - 13), w0, 2);
+        ctx.fillStyle = '#5c6468'; ctx.fillRect(x0, Math.round(dY - 8), w0, 1.4);
+        // a lamp standard at the far end, lit after dark
+        const lx = f * this.len * 0.9;
+        ctx.fillStyle = '#4a5054'; ctx.fillRect(Math.round(lx - 1), Math.round(dY - 40), 2, 27);
+        ctx.fillStyle = this.lightOn ? '#ffe6a0' : '#6a7074'; ctx.fillRect(Math.round(lx - 4), Math.round(dY - 44), 8, 5);
+        if (this.lightOn) { ctx.globalAlpha = 0.18; ctx.fillStyle = '#ffd070'; ctx.fillRect(Math.round(lx - 16), Math.round(dY - 42), 32, 42); ctx.globalAlpha = 1; }
+        // a shed at the shore end
+        ctx.fillStyle = '#6b4a38'; ctx.fillRect(Math.round(f * -14), Math.round(dY - 34), 28, 34);
+        ctx.fillStyle = '#8a6148'; ctx.fillRect(Math.round(f * -14), Math.round(dY - 34), 28, 3);
+        ctx.fillStyle = '#2a1d16'; ctx.fillRect(Math.round(f * -8), Math.round(dY - 26), 7, 9);
+        ctx.fillStyle = '#b8341e'; ctx.fillRect(Math.round(f * 1), Math.round(dY - 27), 10, 4);
+        break;
+      }
+      case 'sealdock': {
+        // the gangway down to the floats
+        ctx.fillStyle = '#6b5a3e'; ctx.fillRect(-56, -22, 16, 3);
+        ctx.fillStyle = '#8a7450'; ctx.fillRect(-56, -22, 16, 1);
+        for (const fl of this.floats) {
+          const ox = fl.ox * f;
+          const bob = Math.sin(World.t * 1.1 + fl.ox) * 1.4;
+          ctx.fillStyle = '#7d6a4c'; ctx.fillRect(Math.round(ox - 12), Math.round(-4 + bob), 24, 5);
+          ctx.fillStyle = '#9a8663'; ctx.fillRect(Math.round(ox - 12), Math.round(-4 + bob), 24, 2);
+          ctx.fillStyle = '#4a3c28'; ctx.fillRect(Math.round(ox - 12), Math.round(1 + bob), 24, 2);
+          // the sea lions on it: a lump, a head, a flipper, and a snore
+          for (let k = 0; k < fl.n; k++) {
+            const sx2 = ox - 7 + k * 7, br = Math.sin(World.t * 1.6 + k * 2 + fl.ox) * 0.6;
+            ctx.fillStyle = '#5b4632'; ctx.fillRect(Math.round(sx2 - 5), Math.round(-10 + bob + br), 11, 6);
+            ctx.fillStyle = '#6d5541'; ctx.fillRect(Math.round(sx2 - 5), Math.round(-10 + bob + br), 11, 2);
+            ctx.fillStyle = '#4a3828'; ctx.fillRect(Math.round(sx2 + 4), Math.round(-13 + bob + br), 4, 4);
+            ctx.fillStyle = '#17110c'; ctx.fillRect(Math.round(sx2 + 6), Math.round(-12 + bob + br), 1, 1);
+            ctx.fillStyle = '#4a3828'; ctx.fillRect(Math.round(sx2 - 7), Math.round(-6 + bob + br), 4, 2);
+          }
+        }
+        break;
+      }
+      case 'ferry': {
+        const L = this.len, d = this.dir * f, bob = Math.sin(World.t * 0.8 + this.bob) * 1.6;
+        const hy = Math.round(-6 + bob);
+        // hull: white, with a red boot stripe and a rubbing strake
+        ctx.fillStyle = '#e4e6e2'; ctx.fillRect(Math.round(-L / 2), hy - 12, L, 14);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(-L / 2), hy - 12, L, 3);
+        ctx.fillStyle = '#b8341e'; ctx.fillRect(Math.round(-L / 2), hy + 1, L, 4);
+        ctx.fillStyle = '#1e2a30'; ctx.fillRect(Math.round(-L / 2), hy + 5, L, 2);
+        // a bow, because a rectangle is a barge
+        ctx.fillStyle = '#e4e6e2';
+        ctx.beginPath(); ctx.moveTo(d * L / 2, hy - 12); ctx.lineTo(d * (L / 2 + 14), hy - 4); ctx.lineTo(d * L / 2, hy + 5); ctx.closePath(); ctx.fill();
+        // the house on top, with windows and a rail full of people
+        ctx.fillStyle = '#dfe2de'; ctx.fillRect(Math.round(-L * 0.3), hy - 28, Math.round(L * 0.6), 16);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(-L * 0.3), hy - 28, Math.round(L * 0.6), 2);
+        for (let i = 0; i < 7; i++) { ctx.fillStyle = '#2d4550'; ctx.fillRect(Math.round(-L * 0.27 + i * L * 0.078), hy - 24, Math.round(L * 0.05), 6); }
+        ctx.fillStyle = '#b8341e'; ctx.fillRect(Math.round(-L * 0.06), hy - 40, 7, 12);
+        ctx.fillStyle = '#e8e8e4'; ctx.fillRect(Math.round(-L * 0.06), hy - 40, 7, 3);
+        // tourists at the rail, all looking down at you
+        ctx.fillStyle = '#7a8890'; ctx.fillRect(Math.round(-L * 0.34), hy - 32, Math.round(L * 0.68), 1.4);
+        for (let i = 0; i < 6; i++) {
+          const px2 = Math.round(-L * 0.3 + i * L * 0.12), sw = Math.sin(World.t * 1.3 + i) * 0.7;
+          ctx.fillStyle = ['#c85a4a', '#4a7ac8', '#e0c040', '#48a068', '#9a5ac8', '#d8d8d0'][i % 6];
+          ctx.fillRect(px2, Math.round(hy - 40 + sw), 3, 8);
+          ctx.fillStyle = '#d8ac8a'; ctx.fillRect(px2, Math.round(hy - 43 + sw), 3, 3);
+        }
+        break;
+      }
+      case 'gate': {
+        // one tower of the bridge, in international orange, rising out of the
+        // water with the deck and two cables hanging off it
+        const th = this.towerH, pierW = 26;
+        ctx.fillStyle = '#5d5a52'; ctx.fillRect(-pierW / 2 - 4, -8, pierW + 8, Math.round((fy - y) / ss) + 8);
+        ctx.fillStyle = '#75726a'; ctx.fillRect(-pierW / 2 - 4, -8, pierW + 8, 3);
+        for (const lx of [-8, 8]) {
+          ctx.fillStyle = '#c4531f'; ctx.fillRect(lx - 5, -th, 10, th);
+          ctx.fillStyle = '#e4713a'; ctx.fillRect(lx - 5, -th, 3, th);
+          ctx.fillStyle = '#8c3612'; ctx.fillRect(lx + 2, -th, 3, th);
+        }
+        for (let i = 0; i < 7; i++) { const yy = -th + 26 + i * (th - 40) / 7; ctx.fillStyle = '#c4531f'; ctx.fillRect(-13, Math.round(yy), 26, 7); ctx.fillStyle = '#e4713a'; ctx.fillRect(-13, Math.round(yy), 26, 2); }
+        ctx.fillStyle = '#c4531f'; ctx.fillRect(-16, Math.round(-th * 0.42), 32, 9);
+        ctx.fillStyle = '#e4713a'; ctx.fillRect(-16, Math.round(-th * 0.42), 32, 2);
+        // the deck going off both ways, and the main cable over the top
+        ctx.fillStyle = '#a8441a'; ctx.fillRect(-160, Math.round(-th * 0.42) - 3, 320, 4);
+        ctx.strokeStyle = '#d4602c'; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(-160, Math.round(-th * 0.42) - 60); ctx.quadraticCurveTo(0, -th + 6, 160, Math.round(-th * 0.42) - 60); ctx.stroke();
+        ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(212,96,44,0.7)';
+        for (let i = -6; i <= 6; i++) { const hx2 = i * 24; const u = Math.abs(i) / 6; const cy2 = -th + 6 + (Math.round(-th * 0.42) - 60 - (-th + 6)) * u * u; ctx.beginPath(); ctx.moveTo(hx2, cy2); ctx.lineTo(hx2, Math.round(-th * 0.42) - 3); ctx.stroke(); }
+        // the aircraft light
+        ctx.fillStyle = Math.sin(World.t * 2.2) > 0 ? '#ff6a50' : '#5a2018'; ctx.fillRect(-2, -th - 4, 4, 4);
+        break;
+      }
       case 'dock': {
         const L = this.len, dY = this.deckY;
         for (const p of this.pilings) piling(p.ox, dY, (fy - y) / ss, p.dead);
@@ -11377,6 +11587,9 @@ function trySpawnStructure(x, rng, difficulty) {
     if (k === 'shop') return land && (deepAt(120) || deepAt(-120));
     if (k === 'stilthouse') return open && fy < 320;
     if (k === 'crabtrap' || k === 'buoy') return open;
+    if (k === 'pier') return land && (deepAt(160) || deepAt(-160));
+    if (k === 'sealdock' || k === 'ferry') return open && fy > 120;
+    if (k === 'gate') return fy > 400;
     if (k === 'wreck') return fy > 150 && World.floorY(x - 90) > 110 && World.floorY(x + 90) > 110;
     if (k === 'boathouse') return land && (deepAt(120) || deepAt(-120));
     if (k === 'pumphouse') return land && (deepAt(100) || deepAt(-100));
@@ -11416,6 +11629,10 @@ function trySpawnStructure(x, rng, difficulty) {
       G.add(s); return true;
     }
     case 'tower': { const s = new Structure(x, 'tower'); if (rng() < 0.6) s.addOccupant('ranger', 0, s.deckY); G.add(s); return true; }
+    case 'pier': G.add(new Structure(x, 'pier')); return true;
+    case 'sealdock': G.add(new Structure(x, 'sealdock')); return true;
+    case 'ferry': G.add(new Structure(x, 'ferry')); return true;
+    case 'gate': G.add(new Structure(x, 'gate')); return true;
     case 'boatramp': G.add(new Structure(x, 'boatramp')); return true;
     case 'crabtrap': G.add(new Structure(x, 'crabtrap')); return true;
     case 'buoy': G.add(new Structure(x, 'buoy')); return true;
@@ -11471,16 +11688,18 @@ const ARTIFACTS = [
   { id: 'core', stage: 'seawall', name: 'CONTAINMENT CORE', line: 'THE THING THEY GREW YOU AROUND. IT STILL HUMS.',
     boon: '+50% STAMINA', col: '#40f0c8', glyph: 'core', apply: P => { P.st.dashCharges += 1; } },
   // ---- ZONE 1: the river ----
-  { id: 'lamp', stage: 'wake', name: "THE GANGER'S LAMP", line: 'LEFT ON THE BENCH IN 1974 BY SOMEBODY WHO MEANT TO COME BACK FOR IT.',
+  { id: 'lamp', stage: 'wake', name: "THE GANGER'S LAMP", line: 'LEFT ON THE STAGING IN 1974 BY SOMEBODY WHO MEANT TO COME BACK FOR IT.',
     boon: 'YOU SEE IN THE DARK', col: '#ffbe50', glyph: 'lamp2', apply: P => { P.st.nightEyes = true; } },
-  { id: 'bolt', stage: 'interceptor', name: 'A RING SEGMENT BOLT', line: 'IT HELD THE BARREL SHUT FOR FIFTY YEARS. NOW IT HOLDS YOU TOGETHER.',
+  { id: 'bolt', stage: 'interceptor', name: 'A WEIR GATE BOLT', line: 'IT HELD THE LAST GATE SHUT FOR FIFTY YEARS. NOW IT HOLDS YOU TOGETHER.',
     boon: '+15% ARMOUR', col: '#9aa2a8', glyph: 'bolt', apply: P => { P.st.armor += 0.15; } },
-  { id: 'valve', stage: 'gallery', name: 'THE PENSTOCK WHEEL', line: 'TURNED ONCE, IN 1974, AND NEVER AGAIN.',
+  { id: 'valve', stage: 'gallery', name: 'A SHOPPING TROLLEY WHEEL', line: 'SOMEBODY PUSHED IT INTO THE CREEK IN 1988. IT HAS BEEN TURNING EVER SINCE.',
     boon: 'FILTH BUILDS HALF AS FAST', col: '#b4c840', glyph: 'valve', apply: P => { P.st.toxRes *= 2; } },
   { id: 'rebar', stage: 'outfall', name: 'A LENGTH OF REBAR', line: 'WASHED OUT OF A WEIR AND CARRIED SIX MILES, STILL BENT WHERE IT TORE.',
     boon: 'BITES PIERCE ARMOUR', col: '#a86a3a', glyph: 'rebar', apply: P => { P.st.pierce = true; } },
-  { id: 'crown', stage: 'sump', name: 'THE SLUDGE CROWN', line: 'IT SETTLED OUT OF THE PLATING LINE AND SET. NOTHING ELSE DOWN THERE IS THIS CLEAN.',
+  { id: 'crown', stage: 'sump', name: 'A SEA LION TAG', line: 'NUMBER 411. SOMEBODY AT THE MARINE CENTER WILL NOTICE IT IS GONE.',
     boon: 'TOXIC BLOOD, IMMUNE TO VENOM', col: '#a8d020', glyph: 'core', apply: P => { P.st.venomRes = 1; P.st.toxRes *= 2; P.st.spiteDmg = (P.st.spiteDmg || 0) + 0.25; } },
+  { id: 'rivet', stage: 'gate', name: 'A BRIDGE RIVET', line: 'ONE OF SIX HUNDRED THOUSAND. IT CAME OUT WHEN YOU PULLED ON THE TOWER.',
+    boon: '+12% SWIM SPEED IN CURRENT', col: '#e4713a', glyph: 'bolt', apply: P => { P.st.speed *= 1.12; } },
   // ---- ZONE 3: the open ocean ----
   { id: 'net', stage: 'shelf', name: 'A TORN TRAWL NET', line: 'IT TOOK EVERYTHING ON THIS SHELF FOR THIRTY YEARS. YOU TOOK IT.',
     boon: '+25% LATCH DAMAGE', col: '#cfd4c0', glyph: 'net', apply: P => { P.st.latchMul *= 1.25; } },
@@ -11507,10 +11726,11 @@ const MISSIONS = {
   seawall:    { title: 'KAIJU PROTOCOL', line: 'WRECK 8 BOATS OR BUILDS', kind: 'wreck', target: 8 },
   // ---- ZONE 1 ----
   wake:        { title: 'FIND YOUR FEET', line: 'TAKE 5 FISH', kind: 'fish', target: 5 },
-  interceptor: { title: 'WORK THE BARREL', line: 'TAKE 9 FISH', kind: 'fish', target: 9 },
-  gallery:     { title: 'HOLD THE GALLERY', line: 'KILL 3 PREDATORS', kind: 'threat', target: 3 },
-  sump:        { title: 'THE BOTTOM', line: 'DIVE TO', kind: 'depth', target: 900, unit: 'M' },
-  outfall:     { title: 'GET OUT', line: 'OPEN THE WEIR', kind: 'puzzle', target: 3 },
+  interceptor: { title: 'GET OUT', line: 'OPEN THE WEIR', kind: 'puzzle', target: 3 },
+  gallery:     { title: 'WORK THE CREEK', line: 'TAKE 10 FISH', kind: 'fish', target: 10 },
+  sump:        { title: 'CLEAR THE WHARF', line: 'TAKE 6 PEOPLE', kind: 'human', target: 6 },
+  outfall:     { title: 'HOLD THE BAY', line: 'KILL 4 PREDATORS', kind: 'threat', target: 4 },
+  gate:        { title: 'UNDER THE BRIDGE', line: 'KILL A BOSS', kind: 'boss', target: 1 },
   // ---- ZONE 3 ----
   shelf:      { title: 'GRAZE THE MEADOW', line: 'TAKE 18 FISH', kind: 'fish', target: 18 },
   reef:       { title: 'STRIP THE REEF', line: 'TAKE 24 FISH', kind: 'fish', target: 24 },
@@ -11544,16 +11764,18 @@ const STORY = {
   seawall: ['IT IS AT THE HARBOUR WALL. THE CITY IS BEHIND THE HARBOUR WALL.', 'IT IS TAKING THE WALL APART.',
     'THE WALL IS GONE. GET EVERYBODY OUT.', 'THAT CORE IS WHAT WE BUILT IT AROUND. IT HAS COME BACK FOR IT.'],
   // ---- ZONE 1 ----
-  wake: ['IT WENT DOWN THE SHAFT AND IT IS NOT AT THE BOTTOM OF IT.', 'SOMETHING IS MOVING ON LEVEL ONE.',
+  wake: ['IT WENT DOWN THE SHAFT AND IT IS NOT AT THE BOTTOM OF IT.', 'SOMETHING IS MOVING IN THE CHAMBER.',
     'IT IS EATING. THAT IS ALL IT IS DOING.'],
-  interceptor: ['LEVEL TWO IS A FLOODED BARREL. WE CANNOT PUT ANYBODY IN IT.', 'IT IS USING THE PIERS TO BREATHE.',
-    'WE HAVE LOST IT IN THE INTERCEPTOR.'],
-  gallery: ['LEVEL THREE HAS NO AIR IN IT. IT SHOULD NOT BE ABLE TO STAY DOWN THERE.', 'IT IS HOLDING THE GALLERY.',
-    'THE GALLERY IS ITS NOW.'],
-  sump: ['LEVEL FOUR IS THE SUMP. THE PLATING LINE DRAINED INTO IT FOR THIRTY YEARS.', 'IT IS SWIMMING IN THE SUMP. DELIBERATELY.',
-    'WHATEVER IS DOWN THERE IS NOT WHAT WE PUT IN.'],
-  outfall: ['IT IS ON THE WEIRS. THE WEIRS GO UP.', 'IT IS THREE LIFTS OFF DAYLIGHT.',
-    'IF IT MAKES THE OUTFALL WE LOSE IT FOR GOOD.'],
+  interceptor: ['THERE IS AN OUTFALL AT THE EAST END AND WE CANNOT SHUT IT.', 'IT IS ON THE WEIRS. THE WEIRS GO UP.',
+    'IF IT MAKES THE MOUTH WE LOSE IT INTO A CITY.'],
+  gallery: ['IT IS IN ISLAIS CREEK. THAT IS A PUBLIC WATERWAY.', 'PEOPLE FISH OFF THAT EMBANKMENT.',
+    'WE HAVE LOST IT UNDER THE THIRD STREET BRIDGE.'],
+  sump: ['IT IS AT THE WHARF. THERE ARE FOUR THOUSAND PEOPLE AT THE WHARF.', 'CLEAR THE FLOATS. CLEAR ALL OF THEM.',
+    'THE SEA LIONS HAVE GONE. THEY DO NOT DO THAT.'],
+  outfall: ['IT IS IN THE BAY NOW. OPEN WATER, COLD, AND IT DOES NOT CARE.', 'IT IS WORKING THE SHIPPING CHANNEL.',
+    'THE BAY IS ITS. WE ARE NOT GETTING IT BACK.'],
+  gate: ['IT IS UNDER THE BRIDGE. THAT IS THE LAST NARROW WATER BEFORE THE PACIFIC.', 'SOMETHING ELSE LIVES IN THE STRAIT.',
+    'WHATEVER WAS HOLDING THE GATE IS NOT HOLDING IT NOW.'],
   // ---- ZONE 3 ----
   shelf: ['PAST THE WALL THE BOTTOM SHELVES OUT. TWENTY MILES OF SEAGRASS.', 'THE SHELF IS EMPTYING AHEAD OF IT.',
     'NOTHING LEFT ON THE SHELF BUT SAND.', 'THIRTY YEARS OF THAT NET DRAGGING THIS BOTTOM. IT LASTED ONE AFTERNOON.'],
@@ -11988,7 +12210,7 @@ class Player {
     this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.toxin = 0; this.rads = 0; this.crush = 0; this.hazT = 0;
-    this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.rush = 0; this.rushT = 0; this.rushBest = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
+    this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.headShakeT = 0; this.goreT = 0; this.snapT = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
     this.wet = 1; this.dripT = 0;
@@ -11999,7 +12221,7 @@ class Player {
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
   // The exponent is what makes a bull's bite matter; the floor under it is what
   // stops a hatchling needing ten chews to open a minnow.
-  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1) * (this.rushT > 0 ? 2.4 : 1); }
+  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1) }
   get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
@@ -12008,7 +12230,7 @@ class Player {
   get boostMul() { return this.boosting ? 1.75 : 1; }
   // Slower than it was. A crocodile is not a fish; it cruises, it does not
   // sprint, and the burst it does have is on the speed button.
-  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1) * (this.rushT > 0 ? 1.6 : 1); }
+  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1) }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -12102,19 +12324,6 @@ class Player {
     if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
-    // ---- GOLD RUSH ------------------------------------------------------
-    // The meter fills on what you eat and cashes out all at once: ten seconds
-    // where nothing can hurt you, nothing is too big to swallow, and the whole
-    // room is worth triple. It is the only reason to keep eating when you are
-    // already full, and it is the loop this game is actually about.
-    if (this.rushT > 0) {
-      this.rushT -= dt;
-      this.invuln = Math.max(this.invuln, 0.2);
-      if (chance(dt * 40)) G.fx.add({ type: 'spark', x: this.x + rand(-14, 14) * this.vis, y: this.y + rand(-9, 9) * this.vis, vx: rand(-30, 30), vy: rand(-40, 10), s: 1, color: choice(['#ffd83c', '#ffef9a', '#ffa820']), life: rand(0.3, 0.8) });
-      if (this.rushT <= 0) { this.rushT = 0; G.fx.text(this.x, this.y - 26 * this.vis, 'OVER', { color: '#c8a848', scale: 2, life: 1 }); }
-    } else if (this.rush > 0) {
-      this.rush = Math.max(0, this.rush - dt * 0.055);      // it leaks if you stop
-    }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
     // Stamina drives both halves of the speed button: hold it to run, flick it
     // upward to leap. One pool, so pushing the throttle costs you the jump.
@@ -12131,7 +12340,7 @@ class Player {
     // growth
     this.sizeTarget = massToSize(this.mass); this.size += (this.sizeTarget - this.size) * Math.min(1, 4 * dt);
     // hunger
-    if (this.rushT <= 0) this.hunger -= dt * 1.55 * this.st.hungerRate * (1 + this.size * 0.04);
+    this.hunger -= dt * 1.55 * this.st.hungerRate * (1 + this.size * 0.04);
     if (this.hunger <= 0) {
       this.hunger = 0; this.starving = true; this.hp -= this.maxHp * 0.035 * dt; SFX.heartbeat();
       if (chance(dt * 0.8)) G.fx.text(this.x, this.y - 22 * this.vis, 'STARVING', { color: '#ff8040' });
@@ -12413,6 +12622,12 @@ class Player {
     // a full mouth cannot bite: every press works the meal instead
     if (this.mouth) { if (this.biteCd > 0) return; this.biteCd = 0.16; this.chew(1); return; }
     if (this.biteCd > 0) return;
+    // a grate over a hole in a wall takes priority over anything swimming past
+    if (typeof Secrets !== 'undefined') {
+      const [gsx, gsy] = this.snout;
+      const sec = Secrets.at(gsx, gsy, this.biteRange);
+      if (sec) { this.biteCd = 0.22; this.biteT = 0.18; Secrets.hit(sec, this, gsx, gsy, this.facing, 0); return; }
+    }
     if (this.grabbed) {
       this.breakFree++; this.biteCd = 0.25; this.rollT = 1; SFX.chomp(this.size); G.shake(4); G.fx.bubbles(this.x, this.y, 6, 10 * this.size);
       G.fx.text(this.x, this.y - 20 * this.vis, this.breakFree >= 3 ? 'BROKE FREE!' : 'STRUGGLE! ' + (3 - this.breakFree), { color: '#ffd060' });
@@ -12488,7 +12703,7 @@ class Player {
     // own head, and a hatchling's head is small but so is a minnow — the flat
     // term is what keeps the first ten minutes of a run edible.
     const maw = (this.size * 0.62 + 0.2) * this.st.swallow;
-    if ((fishy && e.edible) || (this.rushT > 0 && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
+    if ((fishy && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
     // a pounce that connects lands the next bite harder
     if (this.pounceT > 0) { dmg *= this.pounceMul; crit = true; this.pounceT = 0; }
@@ -12505,7 +12720,11 @@ class Player {
     const big = e.mass >= 60;
     G.hitstop(big ? 0.09 : 0.05); G.shake((this.st.quake ? 6 : 3) + Math.min(dmg, 40) * 0.15);
     if (this.st.quake) { G.fx.shock(e.x, e.y, 26 * Math.sqrt(this.size), '#ffd060', 0.3); }
-    G.fx.text(e.x, e.y - 14 * e.size, crit ? 'CRITICAL!' : choice(['CHOMP!', 'CRUNCH!', 'SNAP!', 'RIP!']), { color: crit ? '#ffe040' : '#ffffff', scale: crit ? 2 : 1 });
+    // The bite reads as a burst of stars off the point of contact rather than
+    // a comic-book word over the animal's head.
+    const spk = crit ? '#ffe86a' : big ? '#ffd8a0' : '#cfeeff';
+    G.fx.sparkle(sx, sy, crit ? 16 : big ? 14 : 9, spk, crit ? 1.5 : big ? 1.25 : 0.95, dx, dy);
+    if (crit) G.fx.text(e.x, e.y - 14 * e.size, 'CRITICAL!', { color: '#ffe040', scale: 2 });
     SFX.crunch(this.size, e.pan);
     if (this.st.venom && !e.dead) { e.poison = Math.max(e.poison, 3); e.poisonDmg = dmg * this.st.venom / 3; }
     if (this.st.bleed && !e.dead) { e.bleedT = 3; e.bleedDmg = dmg * 0.12; }
@@ -12517,6 +12736,7 @@ class Player {
   gulp(e) {
     e.gulped = true; const s = e.spr;
     if (s) G.fx.add({ type: 'suck', img: s.c, x: e.x, y: e.y, w: s.w, h: s.h, size: e.size, facing: e.facing, life: 0.16 });
+    G.fx.sparkle(e.x, e.y, 7, '#cfeeff', 0.5 + Math.min(1.1, e.size * 0.5));
     if (e.bleeds || e.type === 'gib') G.fx.blood(e.x, e.y, 4, 0, 0, 30, e.bloodColors || BLOOD_COLORS);
     e.die(this); SFX.gulp(this.size, e.pan); this.gulpT = 0.2;
   }
@@ -12668,17 +12888,6 @@ class Player {
   // The speed button is a throttle. Aim UP and press it and the throttle
   // becomes a leap instead: same burst it always was, paid for out of the same
   // stamina the run drinks from.
-  // The meter is full. Everything on the screen just became food.
-  goldRush() {
-    this.rush = 0; this.rushT = 10; this.rushBest++;
-    this.invuln = Math.max(this.invuln, 0.6);
-    this.hunger = 100;
-    G.slowmo(0.35, 0.7); G.zoomPunch(1.12); G.shake(6);
-    G.banner = { text: 'GOLD RUSH', sub: 'NOTHING IS TOO BIG', t: 2.4, max: 2.4, color: '#ffd83c' };
-    SFX.roar && SFX.roar(this.size, 0);
-    for (let i = 0; i < 40; i++) G.fx.add({ type: 'spark', x: this.x, y: this.y, vx: rand(-260, 260), vy: rand(-220, 160), s: 1, color: choice(['#ffd83c', '#ffef9a', '#ffa820', '#ffffff']), life: rand(0.5, 1.3) });
-  }
-
   dash(ix, iy) {
     if (this.grabbed) return;
     // The leap is off the table for now. The throttle is a throttle, and an
@@ -12774,14 +12983,9 @@ class Player {
     this.hunger = Math.min(100, this.hunger + e.mass * 30 / Math.pow(this.size, 1.8) * this.st.hungerRestore);
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));
     this.combo++; this.comboT = 3.2;
-    // every mouthful winds the meter on; a big one winds it on a long way
-    if (this.rushT <= 0) {
-      this.rush = Math.min(1, this.rush + clamp(e.mass * 0.035 / Math.pow(this.size, 0.5), 0.025, 0.2));
-      if (this.rush >= 1) this.goldRush();
-    }
     const pan = G.panOf(e.x);
     if (this.combo > 1) { G.fx.text(this.x, this.y - 20 * this.vis, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
-    const pts = Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1) * (this.rushT > 0 ? 3 : 1));
+    const pts = Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1));
     G.addScore(pts);
     if (e.type !== 'gib') {
       // the score for the meal, thrown off the meal
@@ -14150,9 +14354,9 @@ const Labyrinth = {
 // ---------------------------------------------------------------------------
 const LAIRS = [
   // ---- the system ------------------------------------------------------
-  { id: 'broodmother', x: -4120, r: 200, warn: 520, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN THE BARREL' },
-  { id: 'gnasher', x: -2620, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THE GALLERY FLOOR IS ALL BONES' },
-  { id: 'sludgeking', x: -1240, r: 300, warn: 780, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
+  { id: 'broodmother', x: -3620, r: 210, warn: 540, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING UNDER THE BRIDGE' },
+  { id: 'gnasher', x: -2280, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THERE ARE BONES ON EVERY PILING' },
+  { id: 'sludgeking', x: 640, r: 330, warn: 860, name: 'THE GATEKEEPER', sign: 'sludge', tell: 'THE CURRENT IS GOING THE WRONG WAY' },
   // ---- the glades ------------------------------------------------------
   { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
   { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
@@ -14213,6 +14417,8 @@ const Lairs = {
     if (!this.woken[L.id] && d < L.r && !G.boss) {
       this.woken[L.id] = 1;
       G.spawnBoss(L.id, L.x);
+      // and the door shuts behind you
+      if (typeof Arena !== 'undefined') Arena.begin(L, G.boss);
     }
   },
 
@@ -14238,6 +14444,256 @@ const Lairs = {
     ctx.globalAlpha = 1;
     Font.draw(ctx, Math.round(d / 10) + 'M', x, y + 10, { color: col, align: 'center' });
     ctx.fillStyle = col; ctx.fillRect(x + dir * 6, y - 1, 3, 2);
+  },
+};
+
+/* ===== src/arena.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// THE ARENA.
+//
+// A boss that turns up in open water is an encounter you can swim away from,
+// which means it is an encounter you never learn. So every lair is a room now.
+// Walk into the middle of one and two walls of fog come down across the water,
+// one either side, and they stay down until one of you is dead.
+//
+// While they are down the shot changes: the name goes up in the middle of the
+// screen, the bar under it is the only thing on the HUD that matters, and the
+// water between the gates is the whole world. Kill it and the fog lifts with a
+// line of gold across the screen. Die and it lifts anyway, and the thing is
+// still in there waiting the next time you come.
+// ---------------------------------------------------------------------------
+const Arena = {
+  on: false, x: 0, r: 0, t: 0, openT: 0, closeT: 0, lair: null, name: '', wonT: 0,
+
+  reset() { this.on = false; this.lair = null; this.t = 0; this.openT = 0; this.closeT = 0; this.wonT = 0; },
+
+  // shut the gates around a lair
+  begin(L, boss) {
+    this.on = true; this.lair = L; this.x = L.x; this.r = Math.max(210, L.r);
+    this.name = (boss && boss.name) || L.name; this.t = 0; this.closeT = 1.1; this.openT = 0; this.wonT = 0;
+    G.shake(9); SFX.growl && SFX.growl(0);
+    G.banner = { text: this.name, sub: 'NO WAY PAST', t: 3, max: 3, color: '#ff8c40' };
+  },
+
+  // the fight is over, whoever won it
+  end(won) {
+    if (!this.on) return;
+    this.on = false; this.openT = 1.3; this.wonT = won ? 3.2 : 0;
+    if (won) { G.shake(6); G.slowmo(0.4, 0.8); }
+  },
+
+  update(dt) {
+    if (this.openT > 0) this.openT -= dt;
+    if (this.wonT > 0) this.wonT -= dt;
+    if (!this.on) return;
+    this.t += dt;
+    if (this.closeT > 0) this.closeT -= dt;
+    const P = G.player;
+    if (!P || P.dead) { this.end(false); return; }
+    // the boss got away, or was never there
+    if (!G.boss || G.boss.dead) { this.end(!!(G.boss && G.boss.dead)); return; }
+    // the gates: you can put your nose in them and nothing more
+    const half = this.r;
+    for (const side of [-1, 1]) {
+      const gx = this.x + side * half;
+      const d = (P.x - gx) * side;
+      if (d > -6) {
+        P.x = gx - side * 6;
+        if (P.vx * side > 0) P.vx *= -0.35;
+        if (chance(dt * 24)) G.fx.add({ type: 'smoke', x: gx, y: P.y + rand(-20, 20), vx: -side * rand(10, 40), vy: rand(-20, 6), s: rand(3, 8), color: '#cfd8e0', life: rand(0.6, 1.4) });
+        if (this.nagT === undefined || this.nagT <= 0) { this.nagT = 3; G.fx.text(P.x, P.y - 24 * P.vis, 'NO WAY PAST', { color: '#ffd060' }); }
+      }
+    }
+    if (this.nagT > 0) this.nagT -= dt;
+    // fog boiling off both gates, all the time, so you never forget they are there
+    if (chance(dt * 18)) {
+      const side = chance(0.5) ? 1 : -1, gx = this.x + side * half;
+      const sy = rand(World.surface(gx) - 20, World.floorY(gx));
+      G.fx.add({ type: 'smoke', x: gx + rand(-5, 5), y: sy, vx: rand(-8, 8), vy: rand(-26, -4), s: rand(4, 11), color: chance(0.5) ? '#d8e2ea' : '#aebcc8', life: rand(1.2, 2.6) });
+    }
+  },
+
+  // the wall itself, drawn in world space so it sits in the water properly
+  drawWorld(ctx) {
+    if (!this.on && this.openT <= 0) return;
+    const cam = G.cam, z = cam.zoom, H = G.H;
+    const k = this.on ? clamp(1 - this.closeT / 1.1, 0, 1) : clamp(this.openT / 1.3, 0, 1);
+    if (k <= 0.01) return;
+    for (const side of [-1, 1]) {
+      const gx = this.x + side * this.r;
+      const [sx] = cam.toScreen(gx, 0);
+      if (sx < -90 || sx > G.W + 90) continue;
+      const w = 26 * z * k;
+      // the body of it: a curtain with a lit edge, breathing
+      const g = ctx.createLinearGradient(sx - w, 0, sx + w, 0);
+      g.addColorStop(0, 'rgba(150,170,190,0)');
+      g.addColorStop(0.35, 'rgba(198,214,226,' + (0.30 * k).toFixed(3) + ')');
+      g.addColorStop(0.5, 'rgba(236,244,250,' + (0.52 * k).toFixed(3) + ')');
+      g.addColorStop(0.65, 'rgba(198,214,226,' + (0.30 * k).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(150,170,190,0)');
+      ctx.fillStyle = g; ctx.fillRect(Math.round(sx - w), 0, Math.round(w * 2), H);
+      // bands drifting up it
+      ctx.globalAlpha = 0.30 * k;
+      for (let i = 0; i < 9; i++) {
+        const u = ((this.t * 0.16 + i / 9) % 1);
+        const yy = H - u * (H + 40);
+        const ww = w * (0.55 + 0.5 * Math.sin(u * 7 + i));
+        ctx.fillStyle = i % 2 ? '#eef6fb' : '#b8c8d6';
+        ctx.fillRect(Math.round(sx - ww), Math.round(yy), Math.round(ww * 2), Math.max(1, Math.round(5 * z)));
+      }
+      ctx.globalAlpha = 1;
+      // the hard line down the middle, which is the bit that says "no"
+      ctx.fillStyle = 'rgba(248,252,255,' + (0.55 * k).toFixed(3) + ')';
+      ctx.fillRect(Math.round(sx - 1 * z), 0, Math.max(1, Math.round(2 * z)), H);
+    }
+  },
+
+  // and the frame round the fight, in screen space
+  draw(ctx) {
+    const W = G.W, H = G.H;
+    if (this.wonT > 0) {
+      const u = clamp(this.wonT / 3.2, 0, 1), a = u > 0.85 ? (1 - u) / 0.15 : u / 0.85;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(10,8,4,0.5)'; ctx.fillRect(0, H / 2 - 26, W, 52);
+      ctx.fillStyle = '#c8a24a'; ctx.fillRect(0, H / 2 - 26, W, 1); ctx.fillRect(0, H / 2 + 25, W, 1);
+      Font.draw(ctx, 'TERRITORY TAKEN', W / 2, H / 2 - 10, { color: '#ffe8a0', align: 'center', scale: 2, outline: '#2a1c06' });
+      Font.draw(ctx, this.name, W / 2, H / 2 + 10, { color: '#c8a24a', align: 'center' });
+      ctx.globalAlpha = 1;
+    }
+    if (!this.on) return;
+    // the arena is a room, so it gets a room's letterbox
+    const k = clamp(1 - this.closeT / 1.1, 0, 1), bar = Math.round(12 * k);
+    ctx.fillStyle = 'rgba(4,6,8,0.85)';
+    ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
+    ctx.fillStyle = 'rgba(200,162,74,0.5)';
+    ctx.fillRect(0, bar, W, 1); ctx.fillRect(0, H - bar - 1, W, 1);
+    // which way the thing is, if it is off the side of the shot
+    const b = G.boss;
+    if (b && !b.dead) {
+      const [bx] = G.cam.toScreen(b.x, b.y);
+      if (bx < 0 || bx > W) { const d = bx < 0 ? -1 : 1; Font.draw(ctx, d < 0 ? '<' : '>', d < 0 ? 8 : W - 8, H / 2 - 4, { color: '#ff6060', align: 'center', scale: 3, shadow: true }); }
+    }
+  },
+};
+
+/* ===== src/secrets.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// SECRETS.
+//
+// Every stretch of this map has one thing in it that is not on the way to
+// anything. A drain in the embankment with a rusted grate over it, a gap
+// behind a kelp bed, a chamber under a pier that only opens if you go under
+// the deck instead of over it. They are authored, they are always in the same
+// place, and they are worth going and finding: gene points, a full heal, and
+// a lot of score.
+//
+// You find one by seeing it — a glint on a grate in a wall — and you open it
+// by biting the grate. Nothing tells you they are there.
+// ---------------------------------------------------------------------------
+const SECRETS = [
+  // ---- zone 1: the building, the sewer and San Francisco ---------------
+  { id: 's.pens', x: -6700, y: -1414, name: 'A SEALED PEN', line: 'PEN NINE WAS NEVER ON THE MANIFEST.', gp: 2 },
+  { id: 's.plant', x: -6380, y: -1414, name: 'THE PLANT ROOM VOID', line: 'SOMEBODY LIVED DOWN HERE FOR A WHILE.', gp: 2 },
+  { id: 's.sewer', x: -5240, name: 'A BRICKED-UP CONNECTION', line: 'IT GOES SOMEWHERE. IT DOES NOT GO FAR.', gp: 3 },
+  { id: 's.weir', x: -4700, name: 'UNDER THE SECOND WEIR', line: 'FIFTY YEARS OF THINGS THAT WOULD NOT GO OVER.', gp: 3 },
+  { id: 's.creek', x: -3980, name: 'A STORM DRAIN', line: 'THE CITY PUTS ITS RAIN IN HERE AND FORGETS.', gp: 3 },
+  { id: 's.bridge', x: -3260, name: 'THE BRIDGE FOOTING', line: 'A VOID IN THE PIER NOBODY POURED PROPERLY.', gp: 4 },
+  { id: 's.pier', x: -2420, name: 'UNDER THE PIER DECK', line: 'GO UNDER IT. NOBODY EVER GOES UNDER IT.', gp: 4 },
+  { id: 's.hull', x: -1700, name: 'A SUNK HULL', line: 'SHE WENT DOWN AT HER MOORING IN 1961.', gp: 4 },
+  { id: 's.bay', x: -820, name: 'AN OUTFALL NOBODY LOGGED', line: 'IT IS NOT ON ANY DRAWING IN THE CITY.', gp: 5 },
+  { id: 's.rock', x: 60, name: 'UNDER THE ROCK', line: 'THERE IS A WAY IN AT THE BOTTOM OF IT.', gp: 5 },
+  { id: 's.gate', x: 720, name: 'THE TOWER CAISSON', line: 'THEY SANK IT IN 1933 AND SEALED IT WITH SOMETHING INSIDE.', gp: 6 },
+];
+const SECRET_BY_ID = {};
+for (const s of SECRETS) SECRET_BY_ID[s.id] = s;
+
+const Secrets = {
+  found: {}, live: [], nearT: 0,
+
+  reset() { this.found = {}; this.live = []; this.nearT = 0; },
+
+  // put every one within reach of this run into the world
+  begin() {
+    this.reset();
+    for (const S of SECRETS) {
+      // on the wall of whatever it is set into: the nearest ground below it
+      const y = S.y !== undefined ? S.y : World.floorY(S.x) - 22;
+      this.live.push({ def: S, x: S.x, y, open: false, hp: 26, t: rand(0, TAU), flash: 0, openT: 0 });
+    }
+  },
+
+  count() { return Object.keys(this.found).length; },
+  total() { return SECRETS.length; },
+
+  at(x, y, r) {
+    for (const s of this.live) if (!s.open && Math.abs(s.x - x) < r + 16 && Math.abs(s.y - y) < r + 18) return s;
+    return null;
+  },
+
+  // bitten: the grate gives on the third or fourth go
+  hit(s, P, sx, sy, dx, dy) {
+    if (s.open) return;
+    s.hp -= Math.max(7, P.biteDmg * 1.4); s.flash = 0.12;
+    G.fx.sparkle(sx, sy, 10, '#ffe86a', 1.1, dx, dy);
+    SFX.clank && SFX.clank(G.panOf(s.x)); G.shake(4); G.hitstop(0.05);
+    for (let i = 0; i < 4; i++) G.fx.add({ type: 'splinter', x: sx, y: sy, vx: rand(-90, 90), vy: -rand(20, 110), s: 1, w: 3, color: choice(['#8a7050', '#6a5438']), rot: rand(TAU), vr: rand(-8, 8), life: 2.4 });
+    if (s.hp > 0) return;
+    this.open(s);
+  },
+
+  open(s) {
+    s.open = true; s.openT = 2.6; this.found[s.def.id] = 1;
+    const P = G.player;
+    P.genePoints += s.def.gp; P.newPoints += s.def.gp;
+    P.hp = P.maxHp; P.hunger = 100;
+    G.addScore(2500 + s.def.gp * 600);
+    G.shake(10); G.slowmo(0.35, 0.7); G.whiteFlash(0.25);
+    SFX.levelup && SFX.levelup(); SFX.pick && SFX.pick();
+    G.fx.sparkle(s.x, s.y, 26, '#ffe86a', 2.2);
+    for (let i = 0; i < 26; i++) G.fx.add({ type: 'spark', x: s.x, y: s.y, vx: rand(-200, 200), vy: rand(-220, 120), s: 1, color: choice(['#ffe86a', '#ffffff', '#ffb040']), life: rand(0.5, 1.4) });
+    G.banner = { text: 'SECRET FOUND  ' + this.count() + '/' + this.total(), sub: s.def.name + ' — ' + s.def.line, t: 4.6, max: 4.6, color: '#ffe86a' };
+    G.stats.secrets = (G.stats.secrets || 0) + 1;
+  },
+
+  update(dt) {
+    for (const s of this.live) { s.t += dt; if (s.flash > 0) s.flash -= dt; if (s.openT > 0) s.openT -= dt; }
+  },
+
+  // drawn in world space with the rest of the decor
+  draw(ctx, cam) {
+    const z = cam.zoom, W = G.W;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    for (const s of this.live) {
+      const [sx, sy] = cam.toScreen(s.x, s.y);
+      if (sx < -60 || sx > W + 60) continue;
+      const w = 30 * z, h = 34 * z;
+      // the alcove: a squared hole in whatever it is set into
+      px(sx - w / 2 - 3 * z, sy - h / 2 - 3 * z, w + 6 * z, h + 6 * z, '#3a352c');
+      px(sx - w / 2 - 3 * z, sy - h / 2 - 3 * z, w + 6 * z, 2 * z, '#5d564a');
+      px(sx - w / 2, sy - h / 2, w, h, '#07090a');
+      if (s.open) {
+        // what was in it, still glittering
+        const k = clamp(s.openT / 2.6, 0, 1);
+        px(sx - w / 2, sy - h / 2, w, h, 'rgba(255,210,90,' + (0.10 + 0.16 * k).toFixed(3) + ')');
+        for (let i = 0; i < 7; i++) {
+          const a = s.t * 0.7 + i, r = (6 + (i % 3) * 5) * z;
+          px(sx + Math.cos(a) * r, sy + Math.sin(a * 1.3) * r * 0.6, 2 * z, 2 * z, i % 2 ? '#ffe86a' : '#ffffff');
+        }
+        px(sx - 9 * z, sy + h / 2 - 5 * z, 18 * z, 4 * z, '#8a6a2a');
+        continue;
+      }
+      // the grate: flats and uprights, rusted, with one bar already gone
+      const rust = s.flash > 0 ? '#ffd8a0' : '#7a5a34';
+      for (let i = 0; i < 5; i++) { if (i === 3) continue; px(sx - w / 2 + 2 * z + i * (w - 4 * z) / 5, sy - h / 2 + 2 * z, 3 * z, h - 4 * z, rust); }
+      for (let i = 0; i < 3; i++) px(sx - w / 2 + 2 * z, sy - h / 2 + 3 * z + i * (h - 8 * z) / 2, w - 4 * z, 2.4 * z, shade(rust, 1.2));
+      px(sx - w / 2, sy - h / 2, w, 2 * z, '#9a7a48');
+      // the glint that is the only thing telling you it is there
+      const g = 0.4 + 0.6 * Math.max(0, Math.sin(s.t * 1.7));
+      px(sx + 4 * z, sy - 2 * z, 2.4 * z, 2.4 * z, 'rgba(255,232,106,' + g.toFixed(2) + ')');
+      if (g > 0.85) { px(sx + 1 * z, sy - 1 * z, 9 * z, 1 * z, 'rgba(255,240,160,0.5)'); px(sx + 4 * z, sy - 5 * z, 1 * z, 9 * z, 'rgba(255,240,160,0.5)'); }
+    }
   },
 };
 
@@ -14404,11 +14860,31 @@ class Mechanism extends Entity {
     const x = Math.round(this.x), y = Math.round(this.y);
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + a, y + b, Math.max(1, w), Math.max(1, h)); };
     const on = this.done, t = G.t;
-    // a plinth of the same stone as the rest of it
-    px(-18, -6, 36, 6, '#5e574a'); px(-18, -6, 36, 1, '#8a8272');
+    // ---- the machine it is bolted to, not a plinth -----------------------
+    // a cast base on four feet, with a nameplate, a grease nipple, a puddle of
+    // oil under it and fifty years of rust creeping up the castings
+    px(-24, -4, 48, 5, '#2e2a22'); px(-24, -4, 48, 1, '#4a4438');
+    for (const fx2 of [-21, -8, 6, 18]) { px(fx2, -1, 5, 3, '#3c372c'); px(fx2, -1, 5, 1, '#5e574a'); }
+    px(-19, -13, 38, 9, '#5e574a'); px(-19, -13, 38, 2, '#8a8272'); px(-19, -6, 38, 2, '#3a352b');
+    for (let i = 0; i < 6; i++) px(-17 + i * 7, -11, 2, 2, '#403a2e');                 // bolt heads
+    px(-13, -10, 22, 5, '#7d7464'); px(-13, -10, 22, 1, '#a49a86');                    // the nameplate
+    for (let i = 0; i < 5; i++) px(-11 + i * 4, -8, 2, 1, '#3a352b');
+    // rust, always creeping up from the foot
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 12; i++) { const rx = -19 + ihash(i + Math.round(this.x), 61) * 38; px(rx, -8 + ihash(i, 62) * 4, 2, 2 + ihash(i, 63) * 4, ihash(i, 64) > 0.5 ? '#7a4a24' : '#5a3418'); }
+    ctx.globalAlpha = 1;
+    px(-3, -16, 3, 3, '#8a7a4a');                                                      // grease nipple
     if (this.kind === 'valve') {
-      // a bronze wheel on a stem, greened over, with a spoke that shows the turn
-      px(-2, -22, 4, 16, '#3a3428'); px(-1, -22, 1, 16, '#5a5040');
+      // a bronze wheel on a stem, greened over, with a spoke that shows the
+      // turn — and the gland, the yoke and the stem it actually drives
+      px(-6, -20, 12, 8, '#4a4436'); px(-6, -20, 12, 2, '#6e6653');                    // the gland
+      px(-9, -26, 18, 6, '#3f3a2d'); px(-9, -26, 18, 1, '#5f5949');                    // the yoke
+      px(-2, -24, 4, 16, '#3a3428'); px(-1, -24, 1, 16, '#5a5040');
+      px(-2, -34, 4, 10, on ? '#c8a050' : '#6a6454');                                  // the rising stem
+      // the position indicator plate beside it: SHUT at the bottom, OPEN at the top
+      px(10, -36, 6, 26, '#4a4436'); px(10, -36, 6, 1, '#6e6653');
+      for (let i = 0; i < 5; i++) px(11, -33 + i * 5, 4, 1, '#2a271f');
+      px(10, Math.round(-33 + (1 - clamp(this.turn / (TAU * 1.2), 0, 1)) * 20), 6, 2, on ? '#8ce8a0' : '#ffb03c');
       ctx.save(); ctx.translate(x, y - 26); ctx.rotate(this.turn);
       ctx.strokeStyle = on ? '#c8a050' : '#5a7a5a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.stroke();
       ctx.fillStyle = on ? '#e0c070' : '#7a9a6a';
@@ -14416,20 +14892,36 @@ class Mechanism extends Entity {
       ctx.fillStyle = '#ffe080'; ctx.fillRect(Math.round(Math.cos(-Math.PI / 2) * 8) - 1, Math.round(Math.sin(-Math.PI / 2) * 8) - 1, 3, 3);
       ctx.restore();
     } else if (this.kind === 'levers') {
-      // three levers in a bronze rack, each with a lamp over it
-      px(-16, -20, 32, 4, '#3a3428'); px(-16, -20, 32, 1, '#6a6050');
+      // three levers in a rack with a quadrant plate, numbered, each with a
+      // lamp on a hood over it and a tag wired to the handle
+      px(-20, -22, 40, 8, '#3a3428'); px(-20, -22, 40, 2, '#6a6050'); px(-20, -16, 40, 2, '#241f16');
+      for (let i = 0; i < 3; i++) { px(-13 + i * 10, -20, 6, 4, '#2a251a'); px(-12 + i * 10, -19, 1, 2, '#8a8070'); px(-10 + i * 10, -19, 1, 2, '#8a8070'); }
+      px(-20, -34, 40, 3, '#413a2c'); px(-20, -34, 40, 1, '#67604e');                  // the lamp hood
       for (let k = 0; k < 3; k++) {
         const lx = -10 + k * 10, thrown = this.done || (Puzzles.qte && Puzzles.qte.mech === this && Puzzles.qte.input.indexOf(k) >= 0 && false);
-        px(lx - 1, -18, 3, 12, '#5a5040');
-        ctx.save(); ctx.translate(x + lx, y - 18); ctx.rotate(thrown ? 0.7 : -0.5); ctx.fillStyle = '#8a8070'; ctx.fillRect(-1, -12, 3, 12); ctx.fillStyle = '#c8a050'; ctx.fillRect(-2, -14, 5, 4); ctx.restore();
+        px(lx - 1, -20, 3, 14, '#5a5040');
+        ctx.save(); ctx.translate(x + lx, y - 20); ctx.rotate(thrown ? 0.7 : -0.5);
+        ctx.fillStyle = '#6c6454'; ctx.fillRect(-2, -13, 4, 13);
+        ctx.fillStyle = '#8a8070'; ctx.fillRect(-1, -13, 2, 13);
+        ctx.fillStyle = '#c8a050'; ctx.fillRect(-3, -16, 6, 5); ctx.fillStyle = '#e8c878'; ctx.fillRect(-3, -16, 6, 1);
+        ctx.fillStyle = '#d8d2c0'; ctx.fillRect(2, -9, 4, 5);                            // the tag on the handle
+        ctx.restore();
         const lit = this.done || (this.lamp === k && this.lampT > 0);
         px(lx - 2, -30, 5, 5, lit ? ['#ff8060', '#ffe060', '#7affda'][k] : '#2a2418');
         if (lit) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,220,150,0.25)'; ctx.fillRect(x + lx - 6, y - 34, 13, 13); ctx.globalCompositeOperation = 'source-over'; }
       }
     } else {
-      // a chain over a pulley with a stone weight on it, and the band it has to sit in
+      // a chain over a pulley with a counterweight on it, the band it has to
+      // sit in, a drum, a pawl and a ratchet wheel the chain comes off
       const top = -70, wy = -18 - this.weight * 40;
-      px(-14, top - 4, 28, 4, '#3a3428'); px(0, top, 1, 70, '#8a8070');
+      px(-18, top - 8, 36, 7, '#3a3428'); px(-18, top - 8, 36, 2, '#6a6050');           // the headstock
+      px(-16, top - 22, 4, 14, '#413a2c'); px(12, top - 22, 4, 14, '#413a2c');          // its legs
+      ctx.save(); ctx.translate(x, y + top - 3); ctx.rotate(-this.weight * 3.1);
+      ctx.strokeStyle = '#7a7262'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.stroke();
+      ctx.fillStyle = '#5a5244'; for (let k = 0; k < 8; k++) { const a = k * TAU / 8; ctx.fillRect(Math.round(Math.cos(a) * 7) - 1, Math.round(Math.sin(a) * 7) - 1, 2, 2); }
+      ctx.restore();
+      px(6, top - 8, 7, 4, '#8a8070'); px(6, top - 8, 7, 1, '#b4ab94');                 // the pawl
+      px(0, top, 1, 70, '#8a8070');
       for (let k = 0; k < 14; k++) px(-1, top + 4 + k * 5, 3, 2, k % 2 ? '#a89a80' : '#6a6050');
       px(-6, Math.round(wy) - 10, 12, 12, on ? '#c8a050' : '#7a7262'); px(-6, Math.round(wy) - 10, 12, 1, '#a89a80');
       px(-5, Math.round(wy) - 7, 10, 1, '#4a4438'); px(-5, Math.round(wy) - 4, 10, 1, '#4a4438');
@@ -14878,9 +15370,9 @@ const Opening = {
   // the cover you have to break, the line the handlers own, the head of the
   // interceptor under the building, and the mouth it lets out of
   LIP: -5968, DRAIN: -5950, MOUTH: -2996,
-  // where the game picks you up again: the brick staging in the intake,
-  // which is the only dry thing in the room
-  WAKE: -5025,
+  // where the game picks you up again: the brick staging in the chamber,
+  // which is the only dry thing in it
+  WAKE: -5425,
   get MANHOLE() { return FACILITY.MANHOLE; },
   get DOCK() { return FACILITY.DOCK; },
   NEED_COVER: 6,
@@ -15058,23 +15550,19 @@ const Opening = {
   },
 
   // ---- THE DROP --------------------------------------------------------
-  // Eleven stone of cast iron gives way and the floor is not under you any
-  // more. What follows is not a ride down a pipe. It is a hundred and forty
-  // feet of brick shaft in the dark, and nothing the length of a hand stays
-  // awake through it.
+  // You do not see this. Eleven stone of cast iron gives way, the floor is not
+  // under you any more, and the light goes out in a third of a second — before
+  // the animal has fallen far enough to look at anything. Showing the fall was
+  // showing a crocodile sliding down a texture; not showing it is a floor
+  // opening under you, which is the thing that actually happened.
   drop(dt) {
     const P = G.player;
     P.frozen = true;
-    this.fall += 1250 * dt; P.y += this.fall * dt;
-    P.x = approach(P.x, this.DRAIN, dt * 300);
-    P.vx = 0; P.vy = this.fall;
-    P.angle = lerp(P.angle, 1.15, 1 - Math.exp(-dt * 3.6));
-    P.facing = 1; P.jaw = 0.5;
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.4, false);
-    // brick dust and cover fragments going past upward, because you are not
-    if (chance(dt * 26)) G.fx.add({ type: 'splinter', x: P.x + rand(-18, 18), y: P.y - rand(10, 90), vx: rand(-40, 40), vy: rand(-320, -140), s: 1, w: randi(1, 3), color: choice(['#6a6252', '#3e3a32', '#8a8578']), rot: rand(TAU), vr: rand(-10, 10), life: 1.2 });
-    G.fx.glow && G.fx.glow(P.x, P.y, 14 * P.vis, '#a8e0c8', 0.10);
-    if (this.t > 1.15) this.blackOut();
+    P.vx = 0; P.vy = 0;
+    P.y += 260 * dt;                        // just enough that the cover line moves
+    P.angle = lerp(P.angle, 0.9, 1 - Math.exp(-dt * 8));
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.2, false);
+    if (this.t > 0.34) this.blackOut();
   },
 
   // ---- THE BLACKOUT ----------------------------------------------------
@@ -15121,7 +15609,7 @@ const Opening = {
     if (this.t > 3.6) {
       this.phase = 'done'; this.on = false; this.splashed = true;
       P.frozen = false; P.invuln = 3;
-      G.banner = { text: 'THE INTAKE', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN. EAT.', t: 4.5, max: 4.5, color: '#9fe0c8' };
+      G.banner = { text: 'THE SEWER', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN. GET OUT.', t: 4.5, max: 4.5, color: '#9fe0c8' };
     }
   },
 
@@ -15172,8 +15660,8 @@ const Opening = {
     // ---- the shaft closing over, the dark, and the eye opening again -----
     if (this.phase === 'drop') {
       // the light of the access chamber going up and away from you
-      const u = clamp(this.t / 1.15, 0, 1);
-      ctx.fillStyle = 'rgba(3,5,6,' + (u * u * 0.94).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
+      const u = clamp(this.t / 0.3, 0, 1);
+      ctx.fillStyle = 'rgba(3,5,6,' + Math.min(1, u * u * 1.15).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
       return;
     }
     if (this.phase === 'black') {
@@ -16250,45 +16738,39 @@ const UI = {
     const P = G.player, W = G.W, H = G.H, t = G.t;
     const lowHp = P.hp / P.maxHp < 0.3;
     // vitals block
-    ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, 6, 130, 30);
-    this.bracket(ctx, 6, 6, 130, 30, 'rgba(120,220,200,0.45)', 5);
-    this.meter(ctx, 30, 10, 100, 8, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff7a6a' : '#d83a2a', '#2a0e0c');
-    this.meter(ctx, 30, 23, 100, 6, P.hunger / 100, P.starving && Math.floor(t * 8) % 2 ? '#ffe080' : '#e0902a', '#2a1c0a');
+    ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, 6, 130, 24);
+    this.bracket(ctx, 6, 6, 130, 24, 'rgba(120,220,200,0.45)', 5);
+    this.meter(ctx, 30, 10, 100, 12, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff7a6a' : '#d83a2a', '#2a0e0c');
     // heart + jaw icons
     ctx.fillStyle = lowHp && Math.floor(t * 6) % 2 ? '#ff8a7a' : '#d83a2a';
     ctx.fillRect(12, 11, 4, 5); ctx.fillRect(18, 11, 4, 5); ctx.fillRect(11, 13, 12, 3); ctx.fillRect(13, 16, 8, 2); ctx.fillRect(15, 18, 4, 2);
-    ctx.fillStyle = '#e0902a'; ctx.fillRect(12, 23, 11, 3); ctx.fillStyle = '#f4f0e0';
-    for (let i = 0; i < 4; i++) ctx.fillRect(13 + i * 3, 26, 2, 2);
-    ctx.fillRect(12, 28, 11, 2);
-    // ---- how much of you they have worked out, and how much the water is
-    // doing for you. These two bars are the whole stealth game.
+    // ---- HUNGER ----------------------------------------------------------
+    // The only meter under the health bar. It was a stealth panel with an eye
+    // and two bars in it, which is a lot of furniture for a game about eating.
     {
-      const st = Alarm.stage(), lv = Alarm.level, con = Alarm.concealment(P), hid = Alarm.hidden(P);
-      const ax = 6, ay = 40, aw = 130;
-      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(ax, ay, aw, 24);
-      this.bracket(ctx, ax, ay, aw, 24, Alarm.flashT > 0 && Math.floor(t * 12) % 2 ? st.col : 'rgba(120,220,200,0.35)', 5);
-      // an eye that opens as they get surer
-      const ec = lv > 0.62 ? st.col : lv > 0.3 ? st.col : '#3f6f66';
-      ctx.fillStyle = ec;
-      const lid = Math.round(3 * (1 - clamp(lv * 1.4, 0, 1)));
-      ctx.fillRect(ax + 6, ay + 5 + lid, 11, 7 - lid * 2);
-      ctx.fillStyle = '#0a1412'; ctx.fillRect(ax + 10, ay + 6 + lid, 3, 5 - lid * 2);
-      this.meter(ctx, ax + 22, ay + 5, aw - 30, 6, lv, st.col, '#2a1408');
-      // and the cover you are under
-      ctx.fillStyle = hid ? '#3fd0a8' : '#4a5a58';
-      ctx.fillRect(ax + 6, ay + 15, 4, 6); ctx.fillRect(ax + 5, ay + 14, 6, 2);
-      this.meter(ctx, ax + 22, ay + 15, aw - 30 - (hid ? 40 : 0), 5, con, hid ? '#3fd0a8' : '#7a8a86', '#0d1e1c');
-      if (hid) Font.draw(ctx, 'HIDDEN', ax + aw - 5, ay + 14, { color: '#3fd0a8', align: 'right' });
+      const hx = 6, hy = 33, hw = 130, f = clamp(P.hunger / 100, 0, 1);
+      const low = f < 0.28, crit = P.starving;
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(hx, hy, hw, 22);
+      this.bracket(ctx, hx, hy, hw, 22, crit && Math.floor(t * 10) % 2 ? '#ff7a4a' : 'rgba(224,144,42,0.4)', 5);
+      // a jaw that opens wider the emptier you are
+      const gap = Math.round(1 + (1 - f) * 4);
+      ctx.fillStyle = crit && Math.floor(t * 8) % 2 ? '#ffe080' : low ? '#ff9a3a' : '#e0902a';
+      ctx.fillRect(hx + 7, hy + 7 - gap, 13, 3);
+      ctx.fillRect(hx + 7, hy + 12 + gap, 13, 3);
+      ctx.fillStyle = '#f4f0e0';
+      for (let i = 0; i < 4; i++) { ctx.fillRect(hx + 8 + i * 3, hy + 10 - gap, 2, 2); ctx.fillRect(hx + 8 + i * 3, hy + 11 + gap, 2, 2); }
+      const col = crit && Math.floor(t * 8) % 2 ? '#ffe080' : low ? '#ff9a3a' : '#e0902a';
+      this.meter(ctx, hx + 26, hy + 6, hw - 34, 10, f, col, '#2a1c0a');
+      Font.draw(ctx, crit ? 'STARVING' : 'HUNGER', hx + 28, hy + 8, { color: crit ? '#1a0c04' : 'rgba(20,14,6,0.55)' });
     }
     // status reads as a column of lit tabs rather than three words
     let ty2 = 8;
     const tab = (col, on) => { if (!on) return; ctx.fillStyle = Math.floor(t * 5) % 2 ? col : mixColor(col, '#101816', 0.45); ctx.fillRect(140, ty2, 4, 8); ty2 += 10; };
     tab('#60ff60', P.poisonT > 0);
     tab('#ff5030', P.frenzyT > 0);
-    tab('#ffd83c', P.rushT > 0);
     tab('#ff6060', !!P.missingLimbs);
     // environment meters only exist where the environment is trying to kill you
-    let hy2 = 66;                       // under the alarm panel, never over it
+    let hy2 = 60;                       // under the hunger bar, never over it
     const haz = (label, v, col, warn) => {
       if (v <= 0.5) return;
       const f = clamp(v / 100, 0, 1), hot = f > 0.72;
@@ -16340,31 +16822,6 @@ const UI = {
       const cf = clamp(P.comboT / 3.2, 0, 1);
       ctx.fillStyle = '#1a1208'; ctx.fillRect(W - 46, 56 + 9 * sc, 36, 3);
       ctx.fillStyle = P.combo >= 10 ? '#ff40c0' : '#ffa030'; ctx.fillRect(W - 46, 56 + 9 * sc, Math.round(36 * cf), 3);
-    }
-    // ---- THE GOLD RUSH METER --------------------------------------------
-    // The one thing on this HUD that tells you to keep eating when you are
-    // already full. It fills gold, it flashes when it is nearly there, and
-    // when it goes off the whole screen knows about it.
-    {
-      const bw = 118, bx = W / 2 - bw / 2, by = H - 20;
-      const on = P.rushT > 0, f = on ? clamp(P.rushT / 10, 0, 1) : clamp(P.rush || 0, 0, 1);
-      const near = !on && f > 0.82;
-      ctx.fillStyle = 'rgba(8,10,6,0.66)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 11);
-      ctx.fillStyle = on ? '#3a2a06' : '#181c14'; ctx.fillRect(bx, by, bw, 7);
-      const hot = on ? (Math.floor(t * 12) % 2 ? '#fff4b0' : '#ffd83c') : near && Math.floor(t * 8) % 2 ? '#fff4b0' : '#e8b028';
-      ctx.fillStyle = hot; ctx.fillRect(bx, by, Math.round(bw * f), 7);
-      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, Math.round(bw * f), 2);
-      // notches, so the bar reads as a gauge and not as a smear
-      ctx.fillStyle = 'rgba(6,10,6,0.55)';
-      for (let i = 1; i < 5; i++) ctx.fillRect(bx + Math.round(bw * i / 5), by, 1, 7);
-      Font.draw(ctx, on ? 'GOLD RUSH  ' + Math.ceil(P.rushT) : 'GOLD RUSH', W / 2, by - 11,
-        { color: on ? (Math.floor(t * 10) % 2 ? '#fff4b0' : '#ffd83c') : near ? '#ffd83c' : 'rgba(200,178,110,0.55)', align: 'center', scale: on ? 2 : 1, outline: '#140e02' });
-      if (on) {
-        // the screen goes gold at the edges while it is running
-        const g = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.72);
-        g.addColorStop(0, 'rgba(255,200,40,0)'); g.addColorStop(1, 'rgba(255,190,40,' + (0.10 + 0.05 * Math.sin(t * 9)).toFixed(3) + ')');
-        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      }
     }
     // apex badge and lineage pips
     let px2 = 10, py2 = H - 40;
@@ -16943,8 +17400,70 @@ const UI = {
     // --- one number that matters, and nothing else
     const d = Research.data();
     if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
-    Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
-    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
+    this.titleChrome(ctx, t);
+  },
+
+  // ---- THE FRAME ROUND THE TITLE ----------------------------------------
+  // The room was doing all the work and the screen round it was doing none.
+  // This is the rest of it: a strapline under the sign, a stencilled crate
+  // number, a status strip along the bottom with the three numbers a player
+  // actually wants before they press anything, and a pass of glass over the
+  // whole thing — vignette, scanlines and dust — so it reads as a monitor in
+  // a corridor rather than a canvas.
+  titleChrome(ctx, t) {
+    const W = G.W, H = G.H;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    // the strapline, on its own little plate under the sign
+    const sub = 'SUBJECT 7 — TRANSFER ORDER 11';
+    const sw2 = Font.width(sub) + 14;
+    px(W / 2 - sw2 / 2, 68, sw2, 13, 'rgba(6,16,18,0.82)');
+    px(W / 2 - sw2 / 2, 68, sw2, 1, 'rgba(122,255,218,0.35)');
+    px(W / 2 - sw2 / 2, 80, sw2, 1, 'rgba(122,255,218,0.18)');
+    Font.draw(ctx, sub, W / 2, 71, { color: Math.floor(t * 1.2) % 2 ? '#8fd8c8' : '#6fb8ac', align: 'center' });
+
+    // ---- the status strip ------------------------------------------------
+    const by = H - 15;
+    px(0, by, W, 15, 'rgba(4,10,11,0.92)');
+    px(0, by, W, 1, 'rgba(122,255,218,0.30)');
+    // hazard chevrons along the strip, because everything in this building has them
+    ctx.globalAlpha = 0.12;
+    for (let i = 0; i < W; i += 16) px(i, by + 12, 8, 3, i % 32 ? '#c8a020' : '#1a1a1a');
+    ctx.globalAlpha = 1;
+    const cell = (x, label, val, col) => {
+      Font.draw(ctx, label, x, by + 3, { color: '#3f6f66' });
+      Font.draw(ctx, val, x + Font.width(label) + 6, by + 3, { color: col });
+    };
+    cell(8, 'BEST', fmt(G.save.best || 0), '#ffe060');
+    const rel = (G.save.relics || []).length, tot = (typeof ARTIFACTS !== 'undefined' ? ARTIFACTS.length : 18);
+    cell(96, 'RELICS', rel + '/' + tot, rel > 0 ? '#9fe0c8' : '#4f7f74');
+    cell(186, 'DATA', String(Research.data()), Research.data() > 0 ? '#ffe060' : '#4f7f74');
+    Font.draw(ctx, 'WASD MOVE   J BITE   M PLAN   H HELP', W / 2 + 40, by + 3, { color: '#3f6f66', align: 'center' });
+    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, by + 3, { color: '#3f6f66', align: 'right' });
+
+    // ---- glass ------------------------------------------------------------
+    // dust in the beam of the spotlights
+    ctx.globalAlpha = 0.16;
+    for (let i = 0; i < 46; i++) {
+      const u = (t * 0.06 + ihash(i, 91)) % 1;
+      const x = ihash(i, 92) * W + Math.sin(t * 0.5 + i) * 6;
+      px(x, (1 - u) * H, 1, 1, i % 4 ? '#cfe8e0' : '#ffe9b0');
+    }
+    ctx.globalAlpha = 1;
+    // scanlines, then a vignette, then one slow sheen travelling across
+    ctx.globalAlpha = 0.10; ctx.fillStyle = '#000000';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+    ctx.globalAlpha = 1;
+    const g = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.78);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(2,8,10,0.62)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const sx2 = ((t * 0.16) % 1.6 - 0.3) * W;
+    ctx.globalAlpha = 0.05; ctx.globalCompositeOperation = 'lighter';
+    const sg = ctx.createLinearGradient(sx2 - 60, 0, sx2 + 60, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(210,240,255,1)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg; ctx.fillRect(sx2 - 60, 0, 120, H);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    // and a frame, so the whole thing is inside something
+    px(0, 0, W, 1, 'rgba(122,255,218,0.22)'); px(0, 0, 1, H, 'rgba(122,255,218,0.14)'); px(W - 1, 0, 1, H, 'rgba(122,255,218,0.14)');
   },
   // ---------- the research lab ----------
   // A wall of five programme cylinders and, beside the one you are looking at,
@@ -18586,7 +19105,7 @@ const ZONE_BOSSES = {
 // the fish-shaped bosses are all the same job with different numbers
 const FISH_BOSS = {
   gnasher:    { kind: 'mutantcat', name: 'THE GNASHER', size: 2.6, cls: 1.2, hp: 900, mass: 700, spd: 150, gibs: 6, depth: 70 },
-  sludgeking: { kind: 'sewereel', name: 'THE SLUDGE KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
+  sludgeking: { kind: 'shark', name: 'THE GATEKEEPER', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
   anvil:      { kind: 'hammer', name: 'THE ANVIL', size: 2.2, cls: 1.35, hp: 1600, mass: 1500, spd: 200, gibs: 6, depth: 220 },
   greenwall:  { kind: 'moray', name: 'THE GREEN WALL', size: 3.0, cls: 1.45, hp: 1400, mass: 1200, spd: 140, gibs: 6, depth: 300 },
   lantern:    { kind: 'anglerfish', name: 'THE LANTERN', size: 4.2, cls: 1.9, hp: 2600, mass: 2400, spd: 155, gibs: 8, depth: 760, glow: '#7affda' },
@@ -18601,7 +19120,7 @@ const BOSS_SPEC = {
   shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
   broodmother: { phases: 3, hp: 1.5, adds: ['rat', 'rat', 'bigrat'], cue: ['THE LITTER COMES WITH HER', 'SHE HAS NOWHERE TO RUN'] },
   gnasher:  { phases: 3, hp: 1.4, adds: ['piranha', 'piranha'], cue: ['THE SHOAL TURNS WITH IT', 'IT STOPS PRETENDING TO BE A FISH'] },
-  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE GALLERY', 'THE SYSTEM IS ITS BODY'] },
+  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE CURRENT TURNS', 'IT FILLS THE STRAIT', 'THE GATE IS ITS BODY'] },
   anvil:    { phases: 3, hp: 1.5, adds: ['barracuda', 'barracuda'], cue: ['IT CIRCLES WIDER', 'IT HAS DECIDED'] },
   greenwall: { phases: 3, hp: 1.5, adds: ['moray'], cue: ['IT COMES OUT OF THE HOLE', 'ALL OF IT COMES OUT'] },
   lantern:  { phases: 4, hp: 1.7, adds: ['anglerfish', 'isopod'], cue: ['THE LIGHT GOES OUT', 'SOMETHING ELSE LIGHTS UP', 'IT WAS NEVER A FISH'] },
@@ -18699,7 +19218,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -19056,6 +19575,7 @@ const G = {
     this.stats.bosses++; this.addScore(10000);
     // its stretch is quiet from here on: nothing else moves in
     if (typeof Lairs !== 'undefined') Lairs.clear(e.lairId);
+    if (typeof Arena !== 'undefined') Arena.end(true);
     this.banner = { text: e.name + ' DEFEATED', sub: '+10,000', t: 4, max: 4, color: '#ffd060' };
     this.slowmo(0.2, 1.2); this.zoomPunch(1.15); SFX.roar(3); SFX.levelup(); this.whiteFlash(0.6);
     if (this.boss === e) this.boss = null;
@@ -19136,6 +19656,9 @@ const G = {
     // just past the edge of the shot, so a shoal crosses it rather than
     // spawning half a screen out and wandering off the other way
     const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(10, 130)), fy = World.floorY(x);
+    // never stock a cliff: a shaft wall or a weir face drops a hundred feet in
+    // thirty, and anything put down at the deep end of it ends up inside rock
+    if (Math.abs(World.floorY(x + 30) - fy) > 150 || Math.abs(World.floorY(x - 30) - fy) > 150) return;
     if (fy < 20) { this.spawnLand(x, D); return; }
     const B = Biome.at(x);
     if (B.indoor && !B.fish.length) return;  // nothing swims in a dry containment cell
@@ -19707,7 +20230,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -19799,6 +20322,7 @@ const G = {
     if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
     World.drawDecor(ctx, cam, 0, day);
+    Secrets.draw(ctx, cam);
     if (indoor) Waste.draw(ctx, cam);
     this.fx.drawClouds(ctx, cam);
     // world space
@@ -19834,6 +20358,7 @@ const G = {
     if (this.state === 'egg') this.drawEgg(ctx);
     if (this.morph) Morph.drawWorld(ctx);
     if (this.drop) Drop.drawWorld(ctx);
+    Arena.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
@@ -19848,6 +20373,7 @@ const G = {
     World.drawNight(ctx, cam, day);
     World.drawDeepGlow(ctx, cam, day);
     World.drawKaiju(ctx, cam, day);
+    Arena.draw(ctx);
     Cine.draw(ctx);
     UI.drawScreenFx(ctx);
     switch (this.state) {

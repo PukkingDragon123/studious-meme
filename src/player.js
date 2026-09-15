@@ -46,7 +46,7 @@ class Player {
     this.qteLast = -1; this.qteLastT = 0; this.perfectT = 0;
     this.invuln = 0; this.hurtFlash = 0; this.hurtT = -9; this.dead = false; this.deathT = 0; this.cause = ''; this.killer = null;
     this.toxin = 0; this.rads = 0; this.crush = 0; this.hazT = 0;
-    this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.rush = 0; this.rushT = 0; this.rushBest = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
+    this.combo = 0; this.comboT = 0; this.frenzyT = 0; this.stillT = 0; this.ambushReady = false; this.ambushT = 0; this.moving = false; this.wasAir = false; this.airT = 0; this.onLand = false; this.jumpCd = 0;
     this.poisonT = 0; this.venomDps = 0; this.legPhase = 0; this.headShakeT = 0; this.goreT = 0; this.snapT = 0; this.ghosts = []; this.ghostT = 0; this.starving = false; this.gulpT = 0;
     this.frozen = false; this.hidden = false; this.mudT = 0; this.printT = 0;
     this.wet = 1; this.dripT = 0;
@@ -57,7 +57,7 @@ class Player {
   get maxHp() { return Math.round((60 + 45 * this.size) * this.st.hpMul); }
   // The exponent is what makes a bull's bite matter; the floor under it is what
   // stops a hatchling needing ten chews to open a minnow.
-  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1) * (this.rushT > 0 ? 2.4 : 1); }
+  get biteDmg() { return Math.max(2.4, 5 * Math.pow(this.size, 1.3)) * this.st.bite * this.strainMul * (this.frenzyT > 0 ? 1.3 : 1) }
   get biteRange() { return (9 + 6 * this.vis) * this.st.biteRadius * (this.st.airGrab && !this.inWater ? 1.7 : 1); }
   get snout() { const h = this.chain.nodes[0], L = 16 * this.vis; return [h.x + Math.cos(h.a) * L, h.y + Math.sin(h.a) * L]; }
   get lengthFt() { return 1.5 * this.size; }
@@ -66,7 +66,7 @@ class Player {
   get boostMul() { return this.boosting ? 1.75 : 1; }
   // Slower than it was. A crocodile is not a fish; it cruises, it does not
   // sprint, and the burst it does have is on the speed button.
-  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1) * (this.rushT > 0 ? 1.6 : 1); }
+  get speedMax() { return (96 + 22 * Math.sqrt(this.size)) * this.st.speed * this.strainMul * this.boostMul * (this.frenzyT > 0 ? 1.4 : 1) }
   get inWater() { return this.y > World.surface(this.x); }
   nearestDist(x, y) { let m = 1e9; for (const n of this.chain.nodes) { const d = dist(x, y, n.x, n.y); if (d < m) m = d; } return m - 4 * this.vis; }
   recomputeStats() { const ratio = this.hp / this.lastMax; this.lastMax = this.maxHp; this.hp = clamp(ratio * this.maxHp, 1, this.maxHp); }
@@ -160,19 +160,6 @@ class Player {
     if (this.frozen) { this.vx = this.vy = 0; this.chain.solve(this.x, this.y, this.angle, this.vis, dt, 0); return; }
     if (this.invuln > 0) this.invuln -= dt; if (this.hurtFlash > 0) this.hurtFlash -= dt; if (this.biteCd > 0) this.biteCd -= dt; if (this.jumpCd > 0) this.jumpCd -= dt;
     if (this.frenzyT > 0) this.frenzyT -= dt;
-    // ---- GOLD RUSH ------------------------------------------------------
-    // The meter fills on what you eat and cashes out all at once: ten seconds
-    // where nothing can hurt you, nothing is too big to swallow, and the whole
-    // room is worth triple. It is the only reason to keep eating when you are
-    // already full, and it is the loop this game is actually about.
-    if (this.rushT > 0) {
-      this.rushT -= dt;
-      this.invuln = Math.max(this.invuln, 0.2);
-      if (chance(dt * 40)) G.fx.add({ type: 'spark', x: this.x + rand(-14, 14) * this.vis, y: this.y + rand(-9, 9) * this.vis, vx: rand(-30, 30), vy: rand(-40, 10), s: 1, color: choice(['#ffd83c', '#ffef9a', '#ffa820']), life: rand(0.3, 0.8) });
-      if (this.rushT <= 0) { this.rushT = 0; G.fx.text(this.x, this.y - 26 * this.vis, 'OVER', { color: '#c8a848', scale: 2, life: 1 }); }
-    } else if (this.rush > 0) {
-      this.rush = Math.max(0, this.rush - dt * 0.055);      // it leaks if you stop
-    }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
     // Stamina drives both halves of the speed button: hold it to run, flick it
     // upward to leap. One pool, so pushing the throttle costs you the jump.
@@ -189,7 +176,7 @@ class Player {
     // growth
     this.sizeTarget = massToSize(this.mass); this.size += (this.sizeTarget - this.size) * Math.min(1, 4 * dt);
     // hunger
-    if (this.rushT <= 0) this.hunger -= dt * 1.55 * this.st.hungerRate * (1 + this.size * 0.04);
+    this.hunger -= dt * 1.55 * this.st.hungerRate * (1 + this.size * 0.04);
     if (this.hunger <= 0) {
       this.hunger = 0; this.starving = true; this.hp -= this.maxHp * 0.035 * dt; SFX.heartbeat();
       if (chance(dt * 0.8)) G.fx.text(this.x, this.y - 22 * this.vis, 'STARVING', { color: '#ff8040' });
@@ -471,6 +458,12 @@ class Player {
     // a full mouth cannot bite: every press works the meal instead
     if (this.mouth) { if (this.biteCd > 0) return; this.biteCd = 0.16; this.chew(1); return; }
     if (this.biteCd > 0) return;
+    // a grate over a hole in a wall takes priority over anything swimming past
+    if (typeof Secrets !== 'undefined') {
+      const [gsx, gsy] = this.snout;
+      const sec = Secrets.at(gsx, gsy, this.biteRange);
+      if (sec) { this.biteCd = 0.22; this.biteT = 0.18; Secrets.hit(sec, this, gsx, gsy, this.facing, 0); return; }
+    }
     if (this.grabbed) {
       this.breakFree++; this.biteCd = 0.25; this.rollT = 1; SFX.chomp(this.size); G.shake(4); G.fx.bubbles(this.x, this.y, 6, 10 * this.size);
       G.fx.text(this.x, this.y - 20 * this.vis, this.breakFree >= 3 ? 'BROKE FREE!' : 'STRUGGLE! ' + (3 - this.breakFree), { color: '#ffd060' });
@@ -546,7 +539,7 @@ class Player {
     // own head, and a hatchling's head is small but so is a minnow — the flat
     // term is what keeps the first ten minutes of a run edible.
     const maw = (this.size * 0.62 + 0.2) * this.st.swallow;
-    if ((fishy && e.edible) || (this.rushT > 0 && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
+    if ((fishy && e.edible) || (e.sizeClass <= maw && e.edible && (!e.armor || this.st.pierce || this.st.ironStomach))) { this.gulp(e); return; }
     let dmg = this.biteDmg, crit = false;
     // a pounce that connects lands the next bite harder
     if (this.pounceT > 0) { dmg *= this.pounceMul; crit = true; this.pounceT = 0; }
@@ -563,7 +556,11 @@ class Player {
     const big = e.mass >= 60;
     G.hitstop(big ? 0.09 : 0.05); G.shake((this.st.quake ? 6 : 3) + Math.min(dmg, 40) * 0.15);
     if (this.st.quake) { G.fx.shock(e.x, e.y, 26 * Math.sqrt(this.size), '#ffd060', 0.3); }
-    G.fx.text(e.x, e.y - 14 * e.size, crit ? 'CRITICAL!' : choice(['CHOMP!', 'CRUNCH!', 'SNAP!', 'RIP!']), { color: crit ? '#ffe040' : '#ffffff', scale: crit ? 2 : 1 });
+    // The bite reads as a burst of stars off the point of contact rather than
+    // a comic-book word over the animal's head.
+    const spk = crit ? '#ffe86a' : big ? '#ffd8a0' : '#cfeeff';
+    G.fx.sparkle(sx, sy, crit ? 16 : big ? 14 : 9, spk, crit ? 1.5 : big ? 1.25 : 0.95, dx, dy);
+    if (crit) G.fx.text(e.x, e.y - 14 * e.size, 'CRITICAL!', { color: '#ffe040', scale: 2 });
     SFX.crunch(this.size, e.pan);
     if (this.st.venom && !e.dead) { e.poison = Math.max(e.poison, 3); e.poisonDmg = dmg * this.st.venom / 3; }
     if (this.st.bleed && !e.dead) { e.bleedT = 3; e.bleedDmg = dmg * 0.12; }
@@ -575,6 +572,7 @@ class Player {
   gulp(e) {
     e.gulped = true; const s = e.spr;
     if (s) G.fx.add({ type: 'suck', img: s.c, x: e.x, y: e.y, w: s.w, h: s.h, size: e.size, facing: e.facing, life: 0.16 });
+    G.fx.sparkle(e.x, e.y, 7, '#cfeeff', 0.5 + Math.min(1.1, e.size * 0.5));
     if (e.bleeds || e.type === 'gib') G.fx.blood(e.x, e.y, 4, 0, 0, 30, e.bloodColors || BLOOD_COLORS);
     e.die(this); SFX.gulp(this.size, e.pan); this.gulpT = 0.2;
   }
@@ -726,17 +724,6 @@ class Player {
   // The speed button is a throttle. Aim UP and press it and the throttle
   // becomes a leap instead: same burst it always was, paid for out of the same
   // stamina the run drinks from.
-  // The meter is full. Everything on the screen just became food.
-  goldRush() {
-    this.rush = 0; this.rushT = 10; this.rushBest++;
-    this.invuln = Math.max(this.invuln, 0.6);
-    this.hunger = 100;
-    G.slowmo(0.35, 0.7); G.zoomPunch(1.12); G.shake(6);
-    G.banner = { text: 'GOLD RUSH', sub: 'NOTHING IS TOO BIG', t: 2.4, max: 2.4, color: '#ffd83c' };
-    SFX.roar && SFX.roar(this.size, 0);
-    for (let i = 0; i < 40; i++) G.fx.add({ type: 'spark', x: this.x, y: this.y, vx: rand(-260, 260), vy: rand(-220, 160), s: 1, color: choice(['#ffd83c', '#ffef9a', '#ffa820', '#ffffff']), life: rand(0.5, 1.3) });
-  }
-
   dash(ix, iy) {
     if (this.grabbed) return;
     // The leap is off the table for now. The throttle is a throttle, and an
@@ -832,14 +819,9 @@ class Player {
     this.hunger = Math.min(100, this.hunger + e.mass * 30 / Math.pow(this.size, 1.8) * this.st.hungerRestore);
     this.hp = Math.min(this.maxHp, this.hp + this.maxHp * clamp(e.mass / (12 * Math.pow(this.size, 1.5)), 0.02, 0.35));
     this.combo++; this.comboT = 3.2;
-    // every mouthful winds the meter on; a big one winds it on a long way
-    if (this.rushT <= 0) {
-      this.rush = Math.min(1, this.rush + clamp(e.mass * 0.035 / Math.pow(this.size, 0.5), 0.025, 0.2));
-      if (this.rush >= 1) this.goldRush();
-    }
     const pan = G.panOf(e.x);
     if (this.combo > 1) { G.fx.text(this.x, this.y - 20 * this.vis, 'COMBO X' + this.combo, { color: this.combo >= 10 ? '#ff40c0' : this.combo >= 5 ? '#ffa030' : '#ffe060', scale: Math.min(1 + Math.floor(this.combo / 4), 3) }); SFX.combo(this.combo, pan); }
-    const pts = Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1) * (this.rushT > 0 ? 3 : 1));
+    const pts = Math.round(e.mass * 10 * (1 + this.combo * 0.1) * (e.threat ? 2 : 1));
     G.addScore(pts);
     if (e.type !== 'gib') {
       // the score for the meal, thrown off the meal

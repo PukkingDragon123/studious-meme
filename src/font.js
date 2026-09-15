@@ -118,5 +118,5 @@ const Font = (() => {
     lines.forEach((l, i) => draw(ctx, l, x, y + i * lh, opts));
     return lines.length;
   }
-  return { draw, width, drawWrapped, glyph, H: 7 };
+  return { draw, width, drawWrapped, glyph, H: 7, W: 5 };
 })();

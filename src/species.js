@@ -37,6 +37,11 @@ F('sawfish', 'SMALLTOOTH SAWFISH', 12, 500, { len: 100, h: 0.2, snout: 'gar', ta
 F('shark', 'BULL SHARK', 8, 250, { len: 84, h: 0.3, snout: 'point', tail: 'lunate', back: '#6a7f8a', mid: '#9aaeb8', belly: '#d8dfe0', dark: '#2a3a44', dorsal: 'sail', teeth: true }, { speed: 175, band: [60, 800], school: [1, 1], flee: 0, pred: 22 });
 F('bonnet', 'BONNETHEAD SHARK', 3.5, 20, { len: 70, h: 0.26, snout: 'blunt', tail: 'lunate', back: '#7a8a8a', mid: '#a8b8b8', belly: '#e0e8e8', dark: '#2a3a3a', dorsal: 'sail', teeth: true }, { speed: 130, band: [40, 400], school: [1, 2], flee: 80, aggr: 8, aggrMax: 2 });
 F('dolphin', 'BOTTLENOSE DOLPHIN', 8, 400, { len: 84, h: 0.3, snout: 'point', tail: 'lunate', back: '#4a5a66', mid: '#8a9aa6', belly: '#d8e0e6', dark: '#1e2a34', dorsal: 'sail' }, { speed: 200, band: [30, 400], school: [2, 4], flee: 220, mammal: true, jumper: true });
+F('sardine', 'PACIFIC SARDINE', 0.7, 0.4, { len: 34, h: 0.2, snout: 'point', tail: 'fork', back: '#3a5a72', mid: '#9ab8c8', belly: '#f0f4f6', dark: '#1a2c3a', dorsal: 'soft' }, { speed: 150, band: [10, 400], school: [6, 14], flee: 170 });
+// ---- San Francisco mammals. Both swim on the fish rig, both haul out, and
+// both are the reason the wharf sounds the way it does.
+F('sealion', 'CALIFORNIA SEA LION', 7, 600, { len: 82, h: 0.4, snout: 'blunt', tail: 'round', back: '#4a3a2c', mid: '#6d5541', belly: '#9a7f62', dark: '#231a12', dorsal: 'none', flipper: true }, { speed: 185, band: [6, 420], school: [2, 5], flee: 140, mammal: true, jumper: true, aggr: 6, aggrMax: 2.2 });
+F('harborseal', 'HARBOR SEAL', 5, 240, { len: 70, h: 0.44, snout: 'blunt', tail: 'round', back: '#5c5f5e', mid: '#8d9190', belly: '#c4c8c4', dark: '#2a2d2c', pattern: 'spots', spot: '#1a1c1a', dorsal: 'none', flipper: true }, { speed: 150, band: [6, 360], school: [1, 3], flee: 170, mammal: true });
 F('manatee', 'MANATEE', 10, 1000, { len: 92, h: 0.42, snout: 'blunt', tail: 'round', back: '#6a7070', mid: '#8a9090', belly: '#a8aeae', dark: '#2e3434', dorsal: 'none' }, { speed: 30, band: [20, 300], school: [1, 2], flee: 60, mammal: true });
 
 // ------------------------------------------------------------ birds

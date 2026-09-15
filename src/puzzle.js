@@ -45,11 +45,31 @@ class Mechanism extends Entity {
     const x = Math.round(this.x), y = Math.round(this.y);
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + a, y + b, Math.max(1, w), Math.max(1, h)); };
     const on = this.done, t = G.t;
-    // a plinth of the same stone as the rest of it
-    px(-18, -6, 36, 6, '#5e574a'); px(-18, -6, 36, 1, '#8a8272');
+    // ---- the machine it is bolted to, not a plinth -----------------------
+    // a cast base on four feet, with a nameplate, a grease nipple, a puddle of
+    // oil under it and fifty years of rust creeping up the castings
+    px(-24, -4, 48, 5, '#2e2a22'); px(-24, -4, 48, 1, '#4a4438');
+    for (const fx2 of [-21, -8, 6, 18]) { px(fx2, -1, 5, 3, '#3c372c'); px(fx2, -1, 5, 1, '#5e574a'); }
+    px(-19, -13, 38, 9, '#5e574a'); px(-19, -13, 38, 2, '#8a8272'); px(-19, -6, 38, 2, '#3a352b');
+    for (let i = 0; i < 6; i++) px(-17 + i * 7, -11, 2, 2, '#403a2e');                 // bolt heads
+    px(-13, -10, 22, 5, '#7d7464'); px(-13, -10, 22, 1, '#a49a86');                    // the nameplate
+    for (let i = 0; i < 5; i++) px(-11 + i * 4, -8, 2, 1, '#3a352b');
+    // rust, always creeping up from the foot
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 12; i++) { const rx = -19 + ihash(i + Math.round(this.x), 61) * 38; px(rx, -8 + ihash(i, 62) * 4, 2, 2 + ihash(i, 63) * 4, ihash(i, 64) > 0.5 ? '#7a4a24' : '#5a3418'); }
+    ctx.globalAlpha = 1;
+    px(-3, -16, 3, 3, '#8a7a4a');                                                      // grease nipple
     if (this.kind === 'valve') {
-      // a bronze wheel on a stem, greened over, with a spoke that shows the turn
-      px(-2, -22, 4, 16, '#3a3428'); px(-1, -22, 1, 16, '#5a5040');
+      // a bronze wheel on a stem, greened over, with a spoke that shows the
+      // turn — and the gland, the yoke and the stem it actually drives
+      px(-6, -20, 12, 8, '#4a4436'); px(-6, -20, 12, 2, '#6e6653');                    // the gland
+      px(-9, -26, 18, 6, '#3f3a2d'); px(-9, -26, 18, 1, '#5f5949');                    // the yoke
+      px(-2, -24, 4, 16, '#3a3428'); px(-1, -24, 1, 16, '#5a5040');
+      px(-2, -34, 4, 10, on ? '#c8a050' : '#6a6454');                                  // the rising stem
+      // the position indicator plate beside it: SHUT at the bottom, OPEN at the top
+      px(10, -36, 6, 26, '#4a4436'); px(10, -36, 6, 1, '#6e6653');
+      for (let i = 0; i < 5; i++) px(11, -33 + i * 5, 4, 1, '#2a271f');
+      px(10, Math.round(-33 + (1 - clamp(this.turn / (TAU * 1.2), 0, 1)) * 20), 6, 2, on ? '#8ce8a0' : '#ffb03c');
       ctx.save(); ctx.translate(x, y - 26); ctx.rotate(this.turn);
       ctx.strokeStyle = on ? '#c8a050' : '#5a7a5a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.stroke();
       ctx.fillStyle = on ? '#e0c070' : '#7a9a6a';
@@ -57,20 +77,36 @@ class Mechanism extends Entity {
       ctx.fillStyle = '#ffe080'; ctx.fillRect(Math.round(Math.cos(-Math.PI / 2) * 8) - 1, Math.round(Math.sin(-Math.PI / 2) * 8) - 1, 3, 3);
       ctx.restore();
     } else if (this.kind === 'levers') {
-      // three levers in a bronze rack, each with a lamp over it
-      px(-16, -20, 32, 4, '#3a3428'); px(-16, -20, 32, 1, '#6a6050');
+      // three levers in a rack with a quadrant plate, numbered, each with a
+      // lamp on a hood over it and a tag wired to the handle
+      px(-20, -22, 40, 8, '#3a3428'); px(-20, -22, 40, 2, '#6a6050'); px(-20, -16, 40, 2, '#241f16');
+      for (let i = 0; i < 3; i++) { px(-13 + i * 10, -20, 6, 4, '#2a251a'); px(-12 + i * 10, -19, 1, 2, '#8a8070'); px(-10 + i * 10, -19, 1, 2, '#8a8070'); }
+      px(-20, -34, 40, 3, '#413a2c'); px(-20, -34, 40, 1, '#67604e');                  // the lamp hood
       for (let k = 0; k < 3; k++) {
         const lx = -10 + k * 10, thrown = this.done || (Puzzles.qte && Puzzles.qte.mech === this && Puzzles.qte.input.indexOf(k) >= 0 && false);
-        px(lx - 1, -18, 3, 12, '#5a5040');
-        ctx.save(); ctx.translate(x + lx, y - 18); ctx.rotate(thrown ? 0.7 : -0.5); ctx.fillStyle = '#8a8070'; ctx.fillRect(-1, -12, 3, 12); ctx.fillStyle = '#c8a050'; ctx.fillRect(-2, -14, 5, 4); ctx.restore();
+        px(lx - 1, -20, 3, 14, '#5a5040');
+        ctx.save(); ctx.translate(x + lx, y - 20); ctx.rotate(thrown ? 0.7 : -0.5);
+        ctx.fillStyle = '#6c6454'; ctx.fillRect(-2, -13, 4, 13);
+        ctx.fillStyle = '#8a8070'; ctx.fillRect(-1, -13, 2, 13);
+        ctx.fillStyle = '#c8a050'; ctx.fillRect(-3, -16, 6, 5); ctx.fillStyle = '#e8c878'; ctx.fillRect(-3, -16, 6, 1);
+        ctx.fillStyle = '#d8d2c0'; ctx.fillRect(2, -9, 4, 5);                            // the tag on the handle
+        ctx.restore();
         const lit = this.done || (this.lamp === k && this.lampT > 0);
         px(lx - 2, -30, 5, 5, lit ? ['#ff8060', '#ffe060', '#7affda'][k] : '#2a2418');
         if (lit) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,220,150,0.25)'; ctx.fillRect(x + lx - 6, y - 34, 13, 13); ctx.globalCompositeOperation = 'source-over'; }
       }
     } else {
-      // a chain over a pulley with a stone weight on it, and the band it has to sit in
+      // a chain over a pulley with a counterweight on it, the band it has to
+      // sit in, a drum, a pawl and a ratchet wheel the chain comes off
       const top = -70, wy = -18 - this.weight * 40;
-      px(-14, top - 4, 28, 4, '#3a3428'); px(0, top, 1, 70, '#8a8070');
+      px(-18, top - 8, 36, 7, '#3a3428'); px(-18, top - 8, 36, 2, '#6a6050');           // the headstock
+      px(-16, top - 22, 4, 14, '#413a2c'); px(12, top - 22, 4, 14, '#413a2c');          // its legs
+      ctx.save(); ctx.translate(x, y + top - 3); ctx.rotate(-this.weight * 3.1);
+      ctx.strokeStyle = '#7a7262'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.stroke();
+      ctx.fillStyle = '#5a5244'; for (let k = 0; k < 8; k++) { const a = k * TAU / 8; ctx.fillRect(Math.round(Math.cos(a) * 7) - 1, Math.round(Math.sin(a) * 7) - 1, 2, 2); }
+      ctx.restore();
+      px(6, top - 8, 7, 4, '#8a8070'); px(6, top - 8, 7, 1, '#b4ab94');                 // the pawl
+      px(0, top, 1, 70, '#8a8070');
       for (let k = 0; k < 14; k++) px(-1, top + 4 + k * 5, 3, 2, k % 2 ? '#a89a80' : '#6a6050');
       px(-6, Math.round(wy) - 10, 12, 12, on ? '#c8a050' : '#7a7262'); px(-6, Math.round(wy) - 10, 12, 1, '#a89a80');
       px(-5, Math.round(wy) - 7, 10, 1, '#4a4438'); px(-5, Math.round(wy) - 4, 10, 1, '#4a4438');

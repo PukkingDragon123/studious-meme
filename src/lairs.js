@@ -15,9 +15,9 @@
 // ---------------------------------------------------------------------------
 const LAIRS = [
   // ---- the system ------------------------------------------------------
-  { id: 'broodmother', x: -4120, r: 200, warn: 520, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN THE BARREL' },
-  { id: 'gnasher', x: -2620, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THE GALLERY FLOOR IS ALL BONES' },
-  { id: 'sludgeking', x: -1240, r: 300, warn: 780, name: 'THE SLUDGE KING', sign: 'sludge', tell: 'THE SLUDGE IS MOVING ON ITS OWN' },
+  { id: 'broodmother', x: -3620, r: 210, warn: 540, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING UNDER THE BRIDGE' },
+  { id: 'gnasher', x: -2280, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THERE ARE BONES ON EVERY PILING' },
+  { id: 'sludgeking', x: 640, r: 330, warn: 860, name: 'THE GATEKEEPER', sign: 'sludge', tell: 'THE CURRENT IS GOING THE WRONG WAY' },
   // ---- the glades ------------------------------------------------------
   { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
   { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
@@ -78,6 +78,8 @@ const Lairs = {
     if (!this.woken[L.id] && d < L.r && !G.boss) {
       this.woken[L.id] = 1;
       G.spawnBoss(L.id, L.x);
+      // and the door shuts behind you
+      if (typeof Arena !== 'undefined') Arena.begin(L, G.boss);
     }
   },
 

@@ -33,45 +33,39 @@ const UI = {
     const P = G.player, W = G.W, H = G.H, t = G.t;
     const lowHp = P.hp / P.maxHp < 0.3;
     // vitals block
-    ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, 6, 130, 30);
-    this.bracket(ctx, 6, 6, 130, 30, 'rgba(120,220,200,0.45)', 5);
-    this.meter(ctx, 30, 10, 100, 8, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff7a6a' : '#d83a2a', '#2a0e0c');
-    this.meter(ctx, 30, 23, 100, 6, P.hunger / 100, P.starving && Math.floor(t * 8) % 2 ? '#ffe080' : '#e0902a', '#2a1c0a');
+    ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(6, 6, 130, 24);
+    this.bracket(ctx, 6, 6, 130, 24, 'rgba(120,220,200,0.45)', 5);
+    this.meter(ctx, 30, 10, 100, 12, P.hp / P.maxHp, lowHp && Math.floor(t * 6) % 2 ? '#ff7a6a' : '#d83a2a', '#2a0e0c');
     // heart + jaw icons
     ctx.fillStyle = lowHp && Math.floor(t * 6) % 2 ? '#ff8a7a' : '#d83a2a';
     ctx.fillRect(12, 11, 4, 5); ctx.fillRect(18, 11, 4, 5); ctx.fillRect(11, 13, 12, 3); ctx.fillRect(13, 16, 8, 2); ctx.fillRect(15, 18, 4, 2);
-    ctx.fillStyle = '#e0902a'; ctx.fillRect(12, 23, 11, 3); ctx.fillStyle = '#f4f0e0';
-    for (let i = 0; i < 4; i++) ctx.fillRect(13 + i * 3, 26, 2, 2);
-    ctx.fillRect(12, 28, 11, 2);
-    // ---- how much of you they have worked out, and how much the water is
-    // doing for you. These two bars are the whole stealth game.
+    // ---- HUNGER ----------------------------------------------------------
+    // The only meter under the health bar. It was a stealth panel with an eye
+    // and two bars in it, which is a lot of furniture for a game about eating.
     {
-      const st = Alarm.stage(), lv = Alarm.level, con = Alarm.concealment(P), hid = Alarm.hidden(P);
-      const ax = 6, ay = 40, aw = 130;
-      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(ax, ay, aw, 24);
-      this.bracket(ctx, ax, ay, aw, 24, Alarm.flashT > 0 && Math.floor(t * 12) % 2 ? st.col : 'rgba(120,220,200,0.35)', 5);
-      // an eye that opens as they get surer
-      const ec = lv > 0.62 ? st.col : lv > 0.3 ? st.col : '#3f6f66';
-      ctx.fillStyle = ec;
-      const lid = Math.round(3 * (1 - clamp(lv * 1.4, 0, 1)));
-      ctx.fillRect(ax + 6, ay + 5 + lid, 11, 7 - lid * 2);
-      ctx.fillStyle = '#0a1412'; ctx.fillRect(ax + 10, ay + 6 + lid, 3, 5 - lid * 2);
-      this.meter(ctx, ax + 22, ay + 5, aw - 30, 6, lv, st.col, '#2a1408');
-      // and the cover you are under
-      ctx.fillStyle = hid ? '#3fd0a8' : '#4a5a58';
-      ctx.fillRect(ax + 6, ay + 15, 4, 6); ctx.fillRect(ax + 5, ay + 14, 6, 2);
-      this.meter(ctx, ax + 22, ay + 15, aw - 30 - (hid ? 40 : 0), 5, con, hid ? '#3fd0a8' : '#7a8a86', '#0d1e1c');
-      if (hid) Font.draw(ctx, 'HIDDEN', ax + aw - 5, ay + 14, { color: '#3fd0a8', align: 'right' });
+      const hx = 6, hy = 33, hw = 130, f = clamp(P.hunger / 100, 0, 1);
+      const low = f < 0.28, crit = P.starving;
+      ctx.fillStyle = 'rgba(6,12,12,0.6)'; ctx.fillRect(hx, hy, hw, 22);
+      this.bracket(ctx, hx, hy, hw, 22, crit && Math.floor(t * 10) % 2 ? '#ff7a4a' : 'rgba(224,144,42,0.4)', 5);
+      // a jaw that opens wider the emptier you are
+      const gap = Math.round(1 + (1 - f) * 4);
+      ctx.fillStyle = crit && Math.floor(t * 8) % 2 ? '#ffe080' : low ? '#ff9a3a' : '#e0902a';
+      ctx.fillRect(hx + 7, hy + 7 - gap, 13, 3);
+      ctx.fillRect(hx + 7, hy + 12 + gap, 13, 3);
+      ctx.fillStyle = '#f4f0e0';
+      for (let i = 0; i < 4; i++) { ctx.fillRect(hx + 8 + i * 3, hy + 10 - gap, 2, 2); ctx.fillRect(hx + 8 + i * 3, hy + 11 + gap, 2, 2); }
+      const col = crit && Math.floor(t * 8) % 2 ? '#ffe080' : low ? '#ff9a3a' : '#e0902a';
+      this.meter(ctx, hx + 26, hy + 6, hw - 34, 10, f, col, '#2a1c0a');
+      Font.draw(ctx, crit ? 'STARVING' : 'HUNGER', hx + 28, hy + 8, { color: crit ? '#1a0c04' : 'rgba(20,14,6,0.55)' });
     }
     // status reads as a column of lit tabs rather than three words
     let ty2 = 8;
     const tab = (col, on) => { if (!on) return; ctx.fillStyle = Math.floor(t * 5) % 2 ? col : mixColor(col, '#101816', 0.45); ctx.fillRect(140, ty2, 4, 8); ty2 += 10; };
     tab('#60ff60', P.poisonT > 0);
     tab('#ff5030', P.frenzyT > 0);
-    tab('#ffd83c', P.rushT > 0);
     tab('#ff6060', !!P.missingLimbs);
     // environment meters only exist where the environment is trying to kill you
-    let hy2 = 66;                       // under the alarm panel, never over it
+    let hy2 = 60;                       // under the hunger bar, never over it
     const haz = (label, v, col, warn) => {
       if (v <= 0.5) return;
       const f = clamp(v / 100, 0, 1), hot = f > 0.72;
@@ -123,31 +117,6 @@ const UI = {
       const cf = clamp(P.comboT / 3.2, 0, 1);
       ctx.fillStyle = '#1a1208'; ctx.fillRect(W - 46, 56 + 9 * sc, 36, 3);
       ctx.fillStyle = P.combo >= 10 ? '#ff40c0' : '#ffa030'; ctx.fillRect(W - 46, 56 + 9 * sc, Math.round(36 * cf), 3);
-    }
-    // ---- THE GOLD RUSH METER --------------------------------------------
-    // The one thing on this HUD that tells you to keep eating when you are
-    // already full. It fills gold, it flashes when it is nearly there, and
-    // when it goes off the whole screen knows about it.
-    {
-      const bw = 118, bx = W / 2 - bw / 2, by = H - 20;
-      const on = P.rushT > 0, f = on ? clamp(P.rushT / 10, 0, 1) : clamp(P.rush || 0, 0, 1);
-      const near = !on && f > 0.82;
-      ctx.fillStyle = 'rgba(8,10,6,0.66)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 11);
-      ctx.fillStyle = on ? '#3a2a06' : '#181c14'; ctx.fillRect(bx, by, bw, 7);
-      const hot = on ? (Math.floor(t * 12) % 2 ? '#fff4b0' : '#ffd83c') : near && Math.floor(t * 8) % 2 ? '#fff4b0' : '#e8b028';
-      ctx.fillStyle = hot; ctx.fillRect(bx, by, Math.round(bw * f), 7);
-      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, Math.round(bw * f), 2);
-      // notches, so the bar reads as a gauge and not as a smear
-      ctx.fillStyle = 'rgba(6,10,6,0.55)';
-      for (let i = 1; i < 5; i++) ctx.fillRect(bx + Math.round(bw * i / 5), by, 1, 7);
-      Font.draw(ctx, on ? 'GOLD RUSH  ' + Math.ceil(P.rushT) : 'GOLD RUSH', W / 2, by - 11,
-        { color: on ? (Math.floor(t * 10) % 2 ? '#fff4b0' : '#ffd83c') : near ? '#ffd83c' : 'rgba(200,178,110,0.55)', align: 'center', scale: on ? 2 : 1, outline: '#140e02' });
-      if (on) {
-        // the screen goes gold at the edges while it is running
-        const g = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.72);
-        g.addColorStop(0, 'rgba(255,200,40,0)'); g.addColorStop(1, 'rgba(255,190,40,' + (0.10 + 0.05 * Math.sin(t * 9)).toFixed(3) + ')');
-        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      }
     }
     // apex badge and lineage pips
     let px2 = 10, py2 = H - 40;
@@ -726,8 +695,70 @@ const UI = {
     // --- one number that matters, and nothing else
     const d = Research.data();
     if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
-    Font.draw(ctx, 'BEST ' + fmt(G.save.best || 0), 8, H - 10, { color: '#3f6f66' });
-    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, H - 10, { color: '#3f6f66', align: 'right' });
+    this.titleChrome(ctx, t);
+  },
+
+  // ---- THE FRAME ROUND THE TITLE ----------------------------------------
+  // The room was doing all the work and the screen round it was doing none.
+  // This is the rest of it: a strapline under the sign, a stencilled crate
+  // number, a status strip along the bottom with the three numbers a player
+  // actually wants before they press anything, and a pass of glass over the
+  // whole thing — vignette, scanlines and dust — so it reads as a monitor in
+  // a corridor rather than a canvas.
+  titleChrome(ctx, t) {
+    const W = G.W, H = G.H;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    // the strapline, on its own little plate under the sign
+    const sub = 'SUBJECT 7 — TRANSFER ORDER 11';
+    const sw2 = Font.width(sub) + 14;
+    px(W / 2 - sw2 / 2, 68, sw2, 13, 'rgba(6,16,18,0.82)');
+    px(W / 2 - sw2 / 2, 68, sw2, 1, 'rgba(122,255,218,0.35)');
+    px(W / 2 - sw2 / 2, 80, sw2, 1, 'rgba(122,255,218,0.18)');
+    Font.draw(ctx, sub, W / 2, 71, { color: Math.floor(t * 1.2) % 2 ? '#8fd8c8' : '#6fb8ac', align: 'center' });
+
+    // ---- the status strip ------------------------------------------------
+    const by = H - 15;
+    px(0, by, W, 15, 'rgba(4,10,11,0.92)');
+    px(0, by, W, 1, 'rgba(122,255,218,0.30)');
+    // hazard chevrons along the strip, because everything in this building has them
+    ctx.globalAlpha = 0.12;
+    for (let i = 0; i < W; i += 16) px(i, by + 12, 8, 3, i % 32 ? '#c8a020' : '#1a1a1a');
+    ctx.globalAlpha = 1;
+    const cell = (x, label, val, col) => {
+      Font.draw(ctx, label, x, by + 3, { color: '#3f6f66' });
+      Font.draw(ctx, val, x + Font.width(label) + 6, by + 3, { color: col });
+    };
+    cell(8, 'BEST', fmt(G.save.best || 0), '#ffe060');
+    const rel = (G.save.relics || []).length, tot = (typeof ARTIFACTS !== 'undefined' ? ARTIFACTS.length : 18);
+    cell(96, 'RELICS', rel + '/' + tot, rel > 0 ? '#9fe0c8' : '#4f7f74');
+    cell(186, 'DATA', String(Research.data()), Research.data() > 0 ? '#ffe060' : '#4f7f74');
+    Font.draw(ctx, 'WASD MOVE   J BITE   M PLAN   H HELP', W / 2 + 40, by + 3, { color: '#3f6f66', align: 'center' });
+    Font.draw(ctx, SFX.muted ? 'SOUND OFF' : 'SOUND ON', W - 8, by + 3, { color: '#3f6f66', align: 'right' });
+
+    // ---- glass ------------------------------------------------------------
+    // dust in the beam of the spotlights
+    ctx.globalAlpha = 0.16;
+    for (let i = 0; i < 46; i++) {
+      const u = (t * 0.06 + ihash(i, 91)) % 1;
+      const x = ihash(i, 92) * W + Math.sin(t * 0.5 + i) * 6;
+      px(x, (1 - u) * H, 1, 1, i % 4 ? '#cfe8e0' : '#ffe9b0');
+    }
+    ctx.globalAlpha = 1;
+    // scanlines, then a vignette, then one slow sheen travelling across
+    ctx.globalAlpha = 0.10; ctx.fillStyle = '#000000';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+    ctx.globalAlpha = 1;
+    const g = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.78);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(2,8,10,0.62)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const sx2 = ((t * 0.16) % 1.6 - 0.3) * W;
+    ctx.globalAlpha = 0.05; ctx.globalCompositeOperation = 'lighter';
+    const sg = ctx.createLinearGradient(sx2 - 60, 0, sx2 + 60, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(210,240,255,1)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg; ctx.fillRect(sx2 - 60, 0, 120, H);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    // and a frame, so the whole thing is inside something
+    px(0, 0, W, 1, 'rgba(122,255,218,0.22)'); px(0, 0, 1, H, 'rgba(122,255,218,0.14)'); px(W - 1, 0, 1, H, 'rgba(122,255,218,0.14)');
   },
   // ---------- the research lab ----------
   // A wall of five programme cylinders and, beside the one you are looking at,

@@ -20,9 +20,9 @@ const Opening = {
   // the cover you have to break, the line the handlers own, the head of the
   // interceptor under the building, and the mouth it lets out of
   LIP: -5968, DRAIN: -5950, MOUTH: -2996,
-  // where the game picks you up again: the brick staging in the intake,
-  // which is the only dry thing in the room
-  WAKE: -5025,
+  // where the game picks you up again: the brick staging in the chamber,
+  // which is the only dry thing in it
+  WAKE: -5425,
   get MANHOLE() { return FACILITY.MANHOLE; },
   get DOCK() { return FACILITY.DOCK; },
   NEED_COVER: 6,
@@ -200,23 +200,19 @@ const Opening = {
   },
 
   // ---- THE DROP --------------------------------------------------------
-  // Eleven stone of cast iron gives way and the floor is not under you any
-  // more. What follows is not a ride down a pipe. It is a hundred and forty
-  // feet of brick shaft in the dark, and nothing the length of a hand stays
-  // awake through it.
+  // You do not see this. Eleven stone of cast iron gives way, the floor is not
+  // under you any more, and the light goes out in a third of a second — before
+  // the animal has fallen far enough to look at anything. Showing the fall was
+  // showing a crocodile sliding down a texture; not showing it is a floor
+  // opening under you, which is the thing that actually happened.
   drop(dt) {
     const P = G.player;
     P.frozen = true;
-    this.fall += 1250 * dt; P.y += this.fall * dt;
-    P.x = approach(P.x, this.DRAIN, dt * 300);
-    P.vx = 0; P.vy = this.fall;
-    P.angle = lerp(P.angle, 1.15, 1 - Math.exp(-dt * 3.6));
-    P.facing = 1; P.jaw = 0.5;
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.4, false);
-    // brick dust and cover fragments going past upward, because you are not
-    if (chance(dt * 26)) G.fx.add({ type: 'splinter', x: P.x + rand(-18, 18), y: P.y - rand(10, 90), vx: rand(-40, 40), vy: rand(-320, -140), s: 1, w: randi(1, 3), color: choice(['#6a6252', '#3e3a32', '#8a8578']), rot: rand(TAU), vr: rand(-10, 10), life: 1.2 });
-    G.fx.glow && G.fx.glow(P.x, P.y, 14 * P.vis, '#a8e0c8', 0.10);
-    if (this.t > 1.15) this.blackOut();
+    P.vx = 0; P.vy = 0;
+    P.y += 260 * dt;                        // just enough that the cover line moves
+    P.angle = lerp(P.angle, 0.9, 1 - Math.exp(-dt * 8));
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.2, false);
+    if (this.t > 0.34) this.blackOut();
   },
 
   // ---- THE BLACKOUT ----------------------------------------------------
@@ -263,7 +259,7 @@ const Opening = {
     if (this.t > 3.6) {
       this.phase = 'done'; this.on = false; this.splashed = true;
       P.frozen = false; P.invuln = 3;
-      G.banner = { text: 'THE INTAKE', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN. EAT.', t: 4.5, max: 4.5, color: '#9fe0c8' };
+      G.banner = { text: 'THE SEWER', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN. GET OUT.', t: 4.5, max: 4.5, color: '#9fe0c8' };
     }
   },
 
@@ -314,8 +310,8 @@ const Opening = {
     // ---- the shaft closing over, the dark, and the eye opening again -----
     if (this.phase === 'drop') {
       // the light of the access chamber going up and away from you
-      const u = clamp(this.t / 1.15, 0, 1);
-      ctx.fillStyle = 'rgba(3,5,6,' + (u * u * 0.94).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
+      const u = clamp(this.t / 0.3, 0, 1);
+      ctx.fillStyle = 'rgba(3,5,6,' + Math.min(1, u * u * 1.15).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
       return;
     }
     if (this.phase === 'black') {

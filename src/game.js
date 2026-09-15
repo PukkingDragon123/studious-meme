@@ -113,7 +113,7 @@ const ZONE_BOSSES = {
 // the fish-shaped bosses are all the same job with different numbers
 const FISH_BOSS = {
   gnasher:    { kind: 'mutantcat', name: 'THE GNASHER', size: 2.6, cls: 1.2, hp: 900, mass: 700, spd: 150, gibs: 6, depth: 70 },
-  sludgeking: { kind: 'sewereel', name: 'THE SLUDGE KING', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
+  sludgeking: { kind: 'shark', name: 'THE GATEKEEPER', size: 3.6, cls: 1.7, hp: 1900, mass: 1700, spd: 170, gibs: 7, depth: 120 },
   anvil:      { kind: 'hammer', name: 'THE ANVIL', size: 2.2, cls: 1.35, hp: 1600, mass: 1500, spd: 200, gibs: 6, depth: 220 },
   greenwall:  { kind: 'moray', name: 'THE GREEN WALL', size: 3.0, cls: 1.45, hp: 1400, mass: 1200, spd: 140, gibs: 6, depth: 300 },
   lantern:    { kind: 'anglerfish', name: 'THE LANTERN', size: 4.2, cls: 1.9, hp: 2600, mass: 2400, spd: 155, gibs: 8, depth: 760, glow: '#7affda' },
@@ -128,7 +128,7 @@ const BOSS_SPEC = {
   shark:    { phases: 3, hp: 1.5, adds: ['gator'], cue: ['THE WATER GOES QUIET', 'IT SMELLS YOU BLEEDING'] },
   broodmother: { phases: 3, hp: 1.5, adds: ['rat', 'rat', 'bigrat'], cue: ['THE LITTER COMES WITH HER', 'SHE HAS NOWHERE TO RUN'] },
   gnasher:  { phases: 3, hp: 1.4, adds: ['piranha', 'piranha'], cue: ['THE SHOAL TURNS WITH IT', 'IT STOPS PRETENDING TO BE A FISH'] },
-  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE WATER GOES BLACK', 'IT FILLS THE GALLERY', 'THE SYSTEM IS ITS BODY'] },
+  sludgeking: { phases: 4, hp: 1.6, adds: ['sewereel', 'piranha'], cue: ['THE CURRENT TURNS', 'IT FILLS THE STRAIT', 'THE GATE IS ITS BODY'] },
   anvil:    { phases: 3, hp: 1.5, adds: ['barracuda', 'barracuda'], cue: ['IT CIRCLES WIDER', 'IT HAS DECIDED'] },
   greenwall: { phases: 3, hp: 1.5, adds: ['moray'], cue: ['IT COMES OUT OF THE HOLE', 'ALL OF IT COMES OUT'] },
   lantern:  { phases: 4, hp: 1.7, adds: ['anglerfish', 'isopod'], cue: ['THE LIGHT GOES OUT', 'SOMETHING ELSE LIGHTS UP', 'IT WAS NEVER A FISH'] },
@@ -226,7 +226,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -583,6 +583,7 @@ const G = {
     this.stats.bosses++; this.addScore(10000);
     // its stretch is quiet from here on: nothing else moves in
     if (typeof Lairs !== 'undefined') Lairs.clear(e.lairId);
+    if (typeof Arena !== 'undefined') Arena.end(true);
     this.banner = { text: e.name + ' DEFEATED', sub: '+10,000', t: 4, max: 4, color: '#ffd060' };
     this.slowmo(0.2, 1.2); this.zoomPunch(1.15); SFX.roar(3); SFX.levelup(); this.whiteFlash(0.6);
     if (this.boss === e) this.boss = null;
@@ -663,6 +664,9 @@ const G = {
     // just past the edge of the shot, so a shoal crosses it rather than
     // spawning half a screen out and wandering off the other way
     const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(10, 130)), fy = World.floorY(x);
+    // never stock a cliff: a shaft wall or a weir face drops a hundred feet in
+    // thirty, and anything put down at the deep end of it ends up inside rock
+    if (Math.abs(World.floorY(x + 30) - fy) > 150 || Math.abs(World.floorY(x - 30) - fy) > 150) return;
     if (fy < 20) { this.spawnLand(x, D); return; }
     const B = Biome.at(x);
     if (B.indoor && !B.fish.length) return;  // nothing swims in a dry containment cell
@@ -1234,7 +1238,7 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -1326,6 +1330,7 @@ const G = {
     if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
     World.drawDecor(ctx, cam, 0, day);
+    Secrets.draw(ctx, cam);
     if (indoor) Waste.draw(ctx, cam);
     this.fx.drawClouds(ctx, cam);
     // world space
@@ -1361,6 +1366,7 @@ const G = {
     if (this.state === 'egg') this.drawEgg(ctx);
     if (this.morph) Morph.drawWorld(ctx);
     if (this.drop) Drop.drawWorld(ctx);
+    Arena.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
     ctx.imageSmoothingEnabled = false;
@@ -1375,6 +1381,7 @@ const G = {
     World.drawNight(ctx, cam, day);
     World.drawDeepGlow(ctx, cam, day);
     World.drawKaiju(ctx, cam, day);
+    Arena.draw(ctx);
     Cine.draw(ctx);
     UI.drawScreenFx(ctx);
     switch (this.state) {
