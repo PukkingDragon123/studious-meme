@@ -204,6 +204,10 @@ const CROC_LOOKS = {
   abyssal: { back: '#3a2450', mid: '#5c3c7e', belly: '#8fb8b0', dark: '#160c22', eye: '#40ffd0', pupil: '#103030', tooth: '#f4f1e6', mouth: '#4a1040' },
   gator: { back: '#3a4a2a', mid: '#586e38', belly: '#b8b48a', dark: '#1a2212', eye: '#d8c040', pupil: '#111111', tooth: '#f4f1e6', mouth: '#7a1f2b' },
   oldscar: { back: '#2c3520', mid: '#4a5a30', belly: '#a8a080', dark: '#121810', eye: '#ffffff', pupil: '#111111', tooth: '#f4f1e6', mouth: '#6a1020', scars: true, spikes: 1 },
+  // the wild ones in the swamp: paler, warmer, amber-eyed, so a mate reads as
+  // a different animal from the rival that wants to eat you
+  mate: { back: '#4c5a2c', mid: '#7d8c44', belly: '#d2c898', dark: '#232c16', eye: '#ffc85a', pupil: '#2a1a08', tooth: '#f4f1e6', mouth: '#8a2a34' },
+  hatchling: { back: '#2e3c1c', mid: '#6e8a34', belly: '#e0d8a0', dark: '#17200e', eye: '#ffe070', pupil: '#111111', tooth: '#f8f6ee', mouth: '#7a1f2b', bands: true },
 };
 function mixLook(a, b, t) {
   const o = Object.assign({}, a);

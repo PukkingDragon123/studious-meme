@@ -31,38 +31,49 @@ const WORKS_SECTION = [
 // crown, and the bottom two do not have air in them at all.
 // [x, floorY, roofY].
 // ---------------------------------------------------------------------------
+// Nothing. The drop shaft is the last roofed thing in the world: the animal
+// wakes up under an open sky, and there is no second ceiling anywhere in
+// zone one. Kept as an empty table so the roof profile still has a shape.
 const SEWER_SECTION = [
-  // ---- THE SEWER -------------------------------------------------------
-  // One chamber and a way out of it. It used to be seven thousand units of
-  // drains; it is a thousand now, because the point of a sewer is leaving it.
-  [-5880, 300, -300], [-5760, 330, -308], [-5640, 316, -300],
-  [-5520, 150, -294], [-5460, -34, -288], [-5390, -36, -288], [-5330, 150, -294],
-  [-5240, 300, -302], [-5120, 330, -306], [-5000, 300, -298],
-  // ---- THE OUTFALL: four weirs and a hole with a sky behind it ---------
-  [-4900, 240, -292], [-4800, 180, -290], [-4700, 120, -294],
-  [-4620, 60, -300], [-4540, 10, -306], [-4480, -26, -312], [-4440, -34, -316],
 ];
 // Control points: [x, floorY]. Negative floorY is dry land, positive is depth.
 const MAP_PROFILE = [
   ...WORKS_SECTION.map(p => [p[0], p[1]]),
   ...SEWER_SECTION.map(p => [p[0], p[1]]),
+  // ===================== THE FOREST =============================
+  // The shaft lets go into a creek in the bottom of a wooded canyon, and the
+  // first thing the animal has ever seen is a hundred feet of redwood with
+  // light coming down through it. Shallow, clean, cold, and full of things
+  // small enough to eat.
+  [-5880, -40], [-5830, 40], [-5760, 96], [-5680, 74],              // the pool it comes round beside
+  [-5600, 120], [-5520, 88], [-5440, 130], [-5360, 96],
+  [-5280, 30], [-5220, -34], [-5160, -38], [-5100, 36],             // a gravel bar in the middle
+  [-5040, 110], [-4960, 140], [-4880, 112], [-4800, 150],
+  [-4720, 120], [-4640, 40], [-4580, -30], [-4520, -34], [-4460, 44],
+  // ===================== THE SWAMP ==============================
+  // The canyon opens out and the water stops moving. Blackwater under cypress,
+  // deep holes between the knees, and everything in it waiting.
+  [-4380, 150], [-4280, 230], [-4180, 300], [-4080, 260],
+  [-3980, 320], [-3860, 380], [-3740, 340], [-3620, 400],
+  [-3520, 240], [-3450, -28], [-3390, -36], [-3330, 240],           // a hummock you can climb out on
+  [-3240, 380], [-3120, 420], [-3000, 360], [-2900, 300],
+  [-2820, 180], [-2760, -26], [-2700, -34], [-2640, 190],           // another, with a nest on it
+  [-2560, 280], [-2480, 200],
   // ===================== SAN FRANCISCO ==========================
   // Out of the pipe and into a city's water: a concrete creek between two
   // embankments, the wharf where it meets the bay, the bay itself, and the
   // strait at the end of it with the bridge over the top.
   // -- ISLAIS CREEK: an urban river, walled both sides, shallow and filthy
-  [-4400, -30], [-4340, 60], [-4260, 96], [-4160, 84], [-4060, 110],
-  [-3960, 90], [-3860, 120], [-3760, 96], [-3660, 130], [-3560, 104],
-  [-3460, 140], [-3360, 112], [-3260, 150], [-3160, 120],
-  [-3060, 34], [-3000, -30], [-2940, -34], [-2880, 40],            // a slip you can haul out on
-  [-2800, 150],
+  [-2400, 96], [-2320, 130], [-2240, 104], [-2160, 140],
+  [-2080, 34], [-2020, -30], [-1960, -34], [-1900, 44],            // a slip you can haul out on
+  [-1820, 150],
   // -- THE WHARF: timber piles, floating docks, tourist boats
-  [-2700, 220], [-2560, 260], [-2420, 240], [-2280, 280], [-2140, 250],
-  [-2020, 190], [-1940, -28], [-1880, -36], [-1820, 200],          // a landing stage
-  [-1700, 290], [-1560, 330], [-1420, 300],
+  [-1740, 220], [-1660, 262], [-1580, 240], [-1500, 282],
+  [-1440, 190], [-1390, -28], [-1340, -36], [-1290, 200],          // a landing stage
+  [-1220, 290], [-1140, 330], [-1060, 300],
   // -- THE BAY: open, deep, cold
-  [-1280, 420], [-1120, 560], [-960, 660], [-800, 720], [-640, 700],
-  [-480, 760], [-320, 700], [-160, 640],
+  [-980, 420], [-880, 560], [-760, 660], [-640, 720], [-520, 700],
+  [-420, 760], [-320, 700], [-160, 640],
   [-60, 300], [0, -32], [60, -40], [120, 320],                     // a rock out in the bay
   // -- THE GOLDEN GATE: the strait. Deepest water in the zone, and a current
   [240, 560], [380, 780], [520, 940], [660, 1010], [800, 960],
@@ -126,16 +137,11 @@ const OCEAN_CAVES = [
 // a street somewhere over the system, with a cast cover on it and a shaft of
 // rings under it. The ladder in a shaft stops eight feet above the crown,
 // which is exactly why it is no use to anything that cannot reach it.
-const MANHOLES = [
-  [-5700, 0.95], [-5430, 0.8], [-5150, 0.6], [-4880, 0.7],          // over the chamber
-];
+const MANHOLES = [];
 // Flights of steps. Concrete is not cut by weather, it is cast in lifts, so a
 // stair in this world is a real stair: a flat tread and a hard riser, every
 // one the same as the last. [x0, x1, rise].
-const STAIRS = [
-  [-5540, -5310, 26],                    // up onto the staging you wake on
-  [-4900, -4440, 34],                    // the weirs, all the way to the light
-];
+const STAIRS = [];
 function stairAt(x) { for (const [a, b, r] of STAIRS) if (x >= a && x <= b) return r; return 0; }
 // ---------------------------------------------------------------------------
 // Monotone cubic interpolation. Straight lines between control points put a
@@ -187,11 +193,13 @@ const MapData = {
   // whether the fine noise that gives mud its texture is applied at all.
   // Concrete was poured to a line. Nothing under the city wobbles.
   built(x) {
-    // The works end at the mouth of the outfall. Past it is a city, and a city
-    // walls its creek in concrete for a mile before it lets it go.
-    if (x >= -2800) return 0;
-    if (x >= -4400) return clamp((-2800 - x) / 1600, 0, 1) * 0.7;   // the walled creek
-    if (x >= -4440) return 1;
+    // The works end at the bottom of the shaft. Everything from there to the
+    // city is forest and swamp, and nobody poured any of it. The city walls
+    // its own creek in concrete for half a mile before it lets it go.
+    if (x >= -1820) return 0;
+    if (x >= -2400) return clamp((-1820 - x) / 580, 0, 1) * 0.6;    // the walled creek
+    if (x >= -5890) return 0;                                       // forest and swamp
+    if (x >= -5910) return (-5890 - x) / 20;                        // the lip of the shaft
     return 1;
   },
   // ---------------------------------------------------------------------
@@ -314,32 +322,38 @@ const BIOMES = [
     music: 0.9,
   },
   {
-    // One chamber, four shafts of daylight, a brick staging to come round on
-    // and a way out at the east end. That is the whole sewer now.
-    id: 'wake', name: 'THE SEWER', x0: -5900, x1: -4900, indoor: true,
-    sky: ['#0d1518', '#1b262a'], water: ['#4c7d72', '#2a5048', '#10241f'], scum: '#6a8a4a', fog: '#162228',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a5d4e', '#4d4338', '#2f2922'], grass: '#4a5448',
-    roof: -300, dark: 0.2, toxic: 0,
-    plants: [['algae', 2.6], ['weed', 2.2], ['trash', 1.4], ['rock', 1.6], ['sunkbranch', 1], ['shellbed', 0.8]],
-    fish: [['minnow', 5], ['shiner', 4], ['bluegill', 2.4], ['roach', 2.4], ['tilapia', 1.6]],
-    land: [['rat', 2.2]], structures: [], music: 0.5,
+    // THE FOREST. The shaft lets go into a creek in the bottom of a wooded
+    // canyon, and the first thing the animal has ever seen is a hundred feet
+    // of redwood with light coming down through it.
+    // Marked remote: this is the bottom of a canyon in a national forest with no
+    // road to it. A reach marked remote has animals in it and nothing else, and
+    // that is what makes it survivable at 0.4 ft — a ranger who picks you up is
+    // the run over before it has started.
+    id: 'wake', name: 'THE FOREST', x0: -5900, x1: -4400, forest: true, remote: true,
+    sky: ['#4a7396', '#7ea081'], water: ['#3f8a6e', '#245047', '#0c231f'], scum: '#7fa050', fog: '#8fae96',
+    parallax: ['redwood', 'redwood', 'fern'], ground: ['#5e5236', '#453b26', '#2a2418'], grass: '#6fa03c',
+    plants: [['fern', 3], ['moss', 2.4], ['bush', 2], ['sunkbranch', 2], ['rock', 1.8], ['weed', 1.6], ['reed', 1.4], ['log', 1.6], ['root', 1.2], ['flower', 1.2]],
+    fish: [['minnow', 4], ['shiner', 3.4], ['bluegill', 2.6], ['tilapia', 1.6], ['catfish', 1.2]],
+    land: [['rat', 2], ['raccoon', 2], ['opossum', 1.6], ['rabbit', 1.6], ['fox', 0.8]],
+    structures: [], music: 0.35,
   },
   {
-    // Four weirs and a hole with a sky behind it. The last roofed thing in
-    // the zone and the first daylight the animal has ever been under.
-    id: 'interceptor', name: 'THE OUTFALL', x0: -4900, x1: -4400, indoor: true,
-    sky: ['#12202a', '#2e4450'], water: ['#3e7a70', '#20493f', '#0b1d1a'], scum: '#6a8a4a', fog: '#1c2e34',
-    parallax: ['pipe', 'pipe', 'pipe'], ground: ['#6a6254', '#4c463b', '#2e2a23'], grass: '#5a6a42',
-    roof: -300, dark: 0.16, toxic: 0.06,
-    plants: [['algae', 2.2], ['weed', 2.4], ['rock', 1.8], ['trash', 1.2], ['shellbed', 1]],
-    fish: [['tilapia', 3], ['shiner', 3.4], ['bluegill', 2.6], ['minnow', 3], ['walkingcat', 1.6]],
-    land: [['rat', 1.4]], structures: [], music: 0.55,
+    // THE SWAMP. The canyon opens out and the water stops moving. Blackwater
+    // under cypress, deep holes between the knees, and everything in it
+    // waiting. This is where the crocodiles are.
+    id: 'interceptor', name: 'THE SWAMP', x0: -4400, x1: -2400, forest: true, swamp: true,
+    sky: ['#3d6880', '#6a8a6c'], water: ['#356e49', '#1d3f2a', '#081810'], scum: '#86a03e', fog: '#7d9a80',
+    parallax: ['cypress', 'cypress', 'redwood'], ground: ['#5a4a30', '#423424', '#291f14'], grass: '#639438',
+    plants: [['cypress', 2], ['knee', 2.4], ['lily', 2.2], ['duckweed', 2], ['reed', 2.2], ['cattail', 1.8], ['root', 2], ['log', 1.8], ['moss', 1.6], ['weed', 1.6], ['hyacinth', 1.2], ['fern', 1.2]],
+    fish: [['bluegill', 3.2], ['bass', 2.4], ['catfish', 2.6], ['tilapia', 2.2], ['shiner', 2.6], ['flgar', 1.4], ['snakehead', 1.2], ['minnow', 2.4]],
+    land: [['raccoon', 2.4], ['opossum', 1.8], ['rat', 1.8], ['rabbit', 1.4], ['heron', 1.4], ['boar', 0.8]],
+    structures: [], music: 0.5,
   },
   {
     // ISLAIS CREEK. A city's river: two concrete embankments, a bridge every
     // half mile, a shopping trolley in the bed of it and a heron that has made
     // its peace with all of that.
-    id: 'gallery', name: 'ISLAIS CREEK', x0: -4400, x1: -2800, town: true,
+    id: 'gallery', name: 'ISLAIS CREEK', x0: -2400, x1: -1820, town: true,
     sky: ['#6e8ea6', '#c6d4d8'], water: ['#4a7a72', '#2c4e48', '#12241f'], scum: '#7a8a46', fog: '#b0c0c4',
     parallax: ['block', 'tower', 'block'], ground: ['#7a7468', '#55504a', '#33302c'], grass: '#6a7a44',
     toxic: 0.12,
@@ -353,7 +367,7 @@ const BIOMES = [
     // THE WHARF. Timber piles by the thousand, floating docks with sea lions
     // asleep on them, a tourist boat every ten minutes and a crab pot on every
     // fourth piling.
-    id: 'sump', name: 'THE WHARF', x0: -2800, x1: -1400, town: true,
+    id: 'sump', name: 'THE WHARF', x0: -1820, x1: -1000, town: true,
     sky: ['#6898b8', '#d4e0e0'], water: ['#3d7f8a', '#22505a', '#0c2026'], scum: '#6a8a4a', fog: '#bcd0d4',
     parallax: ['tower', 'block', 'shack'], ground: ['#6a6458', '#4a463c', '#2c2a24'], grass: '#5f7444',
     plants: [['kelp', 2.4], ['algae', 2], ['oyster', 2], ['shellbed', 1.8], ['weed', 1.4], ['rock', 1.4], ['trash', 1.2]],
@@ -365,7 +379,7 @@ const BIOMES = [
   {
     // THE BAY. Cold, deep, grey-green, with a rock out in the middle of it and
     // a container ship going over the top of you.
-    id: 'outfall', name: 'THE BAY', x0: -1400, x1: 120,
+    id: 'outfall', name: 'THE BAY', x0: -1000, x1: 120,
     sky: ['#5a92c0', '#cfdfe4'], water: ['#2f7484', '#1a4450', '#071a22'], scum: '#5f7a46', fog: '#aac4cc',
     parallax: ['tower', 'island', 'block'], ground: ['#6a6a62', '#494942', '#2b2b26'], grass: '#5a7040',
     pressure: 0.2,
@@ -531,6 +545,7 @@ const Biome = {
       // These three decide which renderer draws the room, so a blend that drops
       // them makes the last 260 units of a laboratory come out as sewer brick.
       lab: t > 0.5 ? b.lab : a.lab, roman: t > 0.5 ? b.roman : a.roman, pipe: t > 0.5 ? b.pipe : a.pipe, remote: t > 0.5 ? b.remote : a.remote,
+      forest: t > 0.5 ? b.forest : a.forest, swamp: t > 0.5 ? b.swamp : a.swamp,
       cliff: lerp(a.cliff || 0, b.cliff || 0, t),
     };
   },
@@ -588,9 +603,9 @@ const PLANT_RULES = {
   seagrass: { land: false, minD: 120, make: (o, x, y, r) => o.push({ type: 'seagrass', x, y, h: 18 + r() * 40, ph: r() * TAU }) },
   reed: { land: false, minD: 4, maxD: 110, make: (o, x, y, r) => o.push({ type: 'reed', x, y, top: y - 34 - r() * 40, ph: r() * TAU, v: r() < 0.5 ? 0 : 1 }) },
   cattail: { land: false, minD: 4, maxD: 90, make: (o, x, y, r) => o.push({ type: 'cattail', x, y, top: y - 40 - r() * 44, ph: r() * TAU }) },
-  lily: { float: true, land: false, minD: 20, maxD: 300, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'lily', x: x + k * 12, y: 0, v: r() < 0.3 ? 1 : 0, ph: r() * TAU }); } },
+  lily: { float: true, land: false, minD: 20, maxD: 430, make: (o, x, y, r) => { const n = 1 + Math.floor(r() * 3); for (let k = 0; k < n; k++) o.push({ type: 'lily', x: x + k * 12, y: 0, v: r() < 0.3 ? 1 : 0, ph: r() * TAU }); } },
   duckweed: { float: true, land: false, minD: 12, make: (o, x, y, r) => o.push({ type: 'duckweed', x, y: 0, w: 12 + r() * 30, v: Math.floor(r() * 3), ph: r() * TAU }) },
-  hyacinth: { float: true, land: false, minD: 24, maxD: 260, make: (o, x, y, r) => o.push({ type: 'hyacinth', x, y: 0, s: 0.9 + r() * 0.8, bloom: r() < 0.5, ph: r() * TAU }) },
+  hyacinth: { float: true, land: false, minD: 24, make: (o, x, y, r) => o.push({ type: 'hyacinth', x, y: 0, s: 0.9 + r() * 0.8, bloom: r() < 0.5, ph: r() * TAU }) },
   sunkbranch: { land: false, minD: 60, make: (o, x, y, r) => o.push({ type: 'sunkbranch', x, y, s: 0.9 + r() * 0.9, flip: r() < 0.5 }) },
   shellbed: { land: false, minD: 80, make: (o, x, y, r) => o.push({ type: 'shellbed', x, y, n: 3 + Math.floor(r() * 6) }) },
   oyster: { land: false, minD: 10, maxD: 120, make: (o, x, y, r) => o.push({ type: 'oyster', x, y, n: 3 + Math.floor(r() * 5) }) },

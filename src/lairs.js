@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------
 const LAIRS = [
   // ---- the system ------------------------------------------------------
-  { id: 'broodmother', x: -3620, r: 210, warn: 540, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING UNDER THE BRIDGE' },
+  { id: 'broodmother', x: -4020, r: 200, warn: 520, name: 'THE BROODMOTHER', sign: 'nest', tell: 'SOMETHING HAS BEEN BREEDING IN THE DEEP HOLES' },
   { id: 'gnasher', x: -2280, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THERE ARE BONES ON EVERY PILING' },
   { id: 'sludgeking', x: 640, r: 330, warn: 860, name: 'THE GATEKEEPER', sign: 'sludge', tell: 'THE CURRENT IS GOING THE WRONG WAY' },
   // ---- the glades ------------------------------------------------------

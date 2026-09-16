@@ -13,13 +13,13 @@
 // by biting the grate. Nothing tells you they are there.
 // ---------------------------------------------------------------------------
 const SECRETS = [
-  // ---- zone 1: the building, the sewer and San Francisco ---------------
+  // ---- zone 1: the building, the forest, the swamp and San Francisco ---
   { id: 's.pens', x: -6700, y: -1452, name: 'A SEALED PEN', line: 'PEN NINE WAS NEVER ON THE MANIFEST.', gp: 2 },
   { id: 's.plant', x: -6380, y: -1452, name: 'THE PLANT ROOM VOID', line: 'SOMEBODY LIVED DOWN HERE FOR A WHILE.', gp: 2 },
-  { id: 's.sewer', x: -5240, name: 'A BRICKED-UP CONNECTION', line: 'IT GOES SOMEWHERE. IT DOES NOT GO FAR.', gp: 3 },
-  { id: 's.weir', x: -4700, name: 'UNDER THE SECOND WEIR', line: 'FIFTY YEARS OF THINGS THAT WOULD NOT GO OVER.', gp: 3 },
-  { id: 's.creek', x: -3980, name: 'A STORM DRAIN', line: 'THE CITY PUTS ITS RAIN IN HERE AND FORGETS.', gp: 3 },
-  { id: 's.bridge', x: -3260, name: 'THE BRIDGE FOOTING', line: 'A VOID IN THE PIER NOBODY POURED PROPERLY.', gp: 4 },
+  { id: 's.sewer', x: -5240, name: 'A HOLLOW UNDER A ROOT PLATE', line: 'THE TREE CAME DOWN IN 1962 AND TOOK HALF THE BANK WITH IT.', gp: 3 },
+  { id: 's.weir', x: -4700, name: 'A LOG JAM AT THE BEND', line: 'FIFTY YEARS OF THINGS THAT WOULD NOT GO ROUND IT.', gp: 3 },
+  { id: 's.creek', x: -3980, name: 'A GATOR HOLE', line: 'SOMETHING DUG THIS AND SOMETHING IS STILL USING IT.', gp: 3 },
+  { id: 's.bridge', x: -3260, name: 'A SUNK DUGOUT', line: 'SOMEBODY POLED THIS SWAMP LONG BEFORE ANYBODY NAMED IT.', gp: 4 },
   { id: 's.pier', x: -2420, name: 'UNDER THE PIER DECK', line: 'GO UNDER IT. NOBODY EVER GOES UNDER IT.', gp: 4 },
   { id: 's.hull', x: -1700, name: 'A SUNK HULL', line: 'SHE WENT DOWN AT HER MOORING IN 1961.', gp: 4 },
   { id: 's.bay', x: -820, name: 'AN OUTFALL NOBODY LOGGED', line: 'IT IS NOT ON ANY DRAWING IN THE CITY.', gp: 5 },

@@ -22,6 +22,9 @@ const World = {
   },
   // Anywhere with a roof over it is indoors, however low that roof is: a
   // squeeze with the crown a hand above the water is still under the city.
+  // The head of the canyon. Nothing lives west of the rock face, and nothing
+  // is drawn there either: it is the edge of the world.
+  WEST: -5862,
   isIndoor(x) { const r = this.roofY(x); if (r === null) return false; const B = Biome.at(x); return !!B.indoor || r < -20; },
   isLand(x) { return this.floorY(x) < 0; },
   surface(x) { return Water.surface(x); },
@@ -426,6 +429,43 @@ const World = {
         }
         if (kindName === 'pipe') { ctx.fillRect(Math.round(sx - 14), Math.round(hy - 26), 28, 12); ctx.fillRect(Math.round(sx - 3), Math.round(hy - 16), 6, 18); continue; }
         if (kindName === 'sawgrass') { for (let q = 0; q < 9; q++) { const gx = sx - 16 + q * 4; ctx.beginPath(); ctx.moveTo(gx, hy + 2); ctx.lineTo(gx + (q % 2 ? 3 : -3), hy - 12 - ihash(k * 7 + q, L.seed) * 12); ctx.lineWidth = 2; ctx.strokeStyle = L.col; ctx.stroke(); } continue; }
+        if (kindName === 'redwood') {
+          // A redwood is a column. No canopy worth drawing at this distance —
+          // a bare red trunk going up out of the top of the frame, with the
+          // first branches too high to see and a flare at the foot.
+          const th2 = th * 2.6, tw2 = tw * 2.2;
+          ctx.fillRect(Math.round(sx - tw2 / 2), Math.round(hy - th2), Math.round(tw2), Math.round(th2 + 2));
+          ctx.fillStyle = mixColor(L.col, '#000000', 0.35);
+          ctx.fillRect(Math.round(sx + tw2 / 2 - tw2 * 0.3), Math.round(hy - th2), Math.round(tw2 * 0.3), Math.round(th2 + 2));
+          ctx.fillStyle = mixColor(L.col, '#ffffff', 0.12);
+          ctx.fillRect(Math.round(sx - tw2 / 2), Math.round(hy - th2), Math.max(1, Math.round(tw2 * 0.22)), Math.round(th2 + 2));
+          // the flare where it meets the ground, and the fibrous bark on it
+          ctx.fillStyle = L.col;
+          ctx.fillRect(Math.round(sx - tw2 * 0.9), Math.round(hy - 7), Math.round(tw2 * 1.8), 9);
+          ctx.fillStyle = mixColor(L.col, '#000000', 0.3);
+          for (let j = 0; j < 4; j++) ctx.fillRect(Math.round(sx - tw2 / 2 + j * tw2 / 4), Math.round(hy - th2), 1, Math.round(th2));
+          // one branch, a long way up, because the eye needs to know it is a tree
+          if (ihash(k, L.seed + 12) < 0.6) {
+            const by2 = hy - th2 * (0.62 + ihash(k, L.seed + 13) * 0.2), dir = ihash(k, L.seed + 14) < 0.5 ? -1 : 1;
+            ctx.fillStyle = L.col;
+            ctx.fillRect(Math.round(sx + (dir < 0 ? -18 : 0)), Math.round(by2), 18, 2);
+            Leaf.draw(ctx, Leaf.mass(20, 9, L.qc, L.qm, L.ql, k & 7), sx + dir * 20, by2 - 2, 1);
+          }
+          continue;
+        }
+        if (kindName === 'fern') {
+          // the near layer of a forest floor: fronds, no trunks
+          ctx.fillStyle = L.col;
+          for (let j = 0; j < 7; j++) {
+            const a = -Math.PI * 0.86 + j * 0.28, len = 11 + ihash(k * 13 + j, L.seed) * 12;
+            ctx.beginPath(); ctx.moveTo(sx, hy + 1);
+            ctx.quadraticCurveTo(sx + Math.cos(a) * len * 0.6, hy + Math.sin(a) * len * 0.9, sx + Math.cos(a) * len, hy + Math.sin(a) * len * 0.45);
+            ctx.lineWidth = 2; ctx.strokeStyle = L.col; ctx.stroke();
+          }
+          ctx.fillStyle = mixColor(L.col, '#ffffff', 0.14);
+          ctx.fillRect(Math.round(sx - 5), Math.round(hy - 2), 10, 2);
+          continue;
+        }
         const kind = kindName === 'palm' ? 0.7 : kindName === 'mangrove' ? 0.9 : 0.2;
         if (kind < 0.6) { // cypress: trunk + layered canopy
           ctx.fillRect(Math.round(sx), Math.round(hy - th), Math.round(tw), Math.round(th));
@@ -447,10 +487,12 @@ const World = {
         }
       }
     }
-    // fog band on horizon
-    const g = ctx.createLinearGradient(0, hy - 40, 0, hy);
-    g.addColorStop(0, rgba(sc.bot, 0)); g.addColorStop(1, rgba(sc.bot, 0.45 * light));
-    ctx.fillStyle = g; ctx.fillRect(0, hy - 40, W, 40);
+    // fog band on horizon. Under a canopy the forest layer puts its own mist
+    // in, and stacking a hard-edged band on top of it reads as a seam.
+    const fogA = BP.forest ? 0.18 : 0.45;
+    const g = ctx.createLinearGradient(0, hy - 56, 0, hy);
+    g.addColorStop(0, rgba(sc.bot, 0)); g.addColorStop(0.5, rgba(sc.bot, fogA * 0.4 * light)); g.addColorStop(1, rgba(sc.bot, fogA * light));
+    ctx.fillStyle = g; ctx.fillRect(0, hy - 56, W, 56);
     // the canyon closing in, or opening out: fade the rock over the treeline
     if ((BP.cliff || 0) > 0.01) { ctx.globalAlpha = BP.cliff; this.drawCliffs(ctx, cam, day, hy, sc, BP); ctx.globalAlpha = 1; }
   },
@@ -860,9 +902,10 @@ const World = {
         ctx.fillStyle = mixColor(g0, '#e8e0c4', 0.6); ctx.fillRect(Math.round(sx), Math.round(sy + z), Math.round(w - z * 0.5), Math.max(1, Math.round(z * 0.6)));
       }
     }
-    // The headwall, the one piece of the building the river can see. Drawn
-    // after the ground so it stands in front of the cut instead of under it.
-    if (cam.x < -2400 && typeof Facility !== 'undefined') Facility.drawHeadwall(ctx, cam);
+    // The head of the canyon: the rock the creek comes out of, and the mouth
+    // of the shaft the animal came down. Drawn after the ground so it stands
+    // in front of the cut instead of under it.
+    if (typeof Forest !== 'undefined') Forest.head(ctx, cam);
   },
   // concrete shell of the lab and sewer: ceiling, back wall, ribs and lamps
   // The made ground a pipe is buried in. Above the crown and below the invert

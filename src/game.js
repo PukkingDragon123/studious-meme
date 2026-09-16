@@ -23,6 +23,7 @@ const Input = {
       bite: { x: W - 54, y: H - 54, r: 30, label: 'BITE' },
       dash: { x: W - 112, y: H - 34, r: 21, label: 'DASH' },
       brace: { x: W - 100, y: H - 88, r: 21, label: 'BRACE' },
+      court: { x: W / 2, y: H - 52, r: 20, label: 'F' },
       pause: { x: W - 15, y: 15, r: 13, label: 'II' },
       genes: { x: W - 42, y: 19, r: 16, label: 'G' },
       joyMax: W * 0.52,
@@ -46,6 +47,7 @@ const Input = {
         if (this.inPad(P.bite, x, y)) { T.bite = true; T.biteHeld = true; T.biteId = t.identifier; T.holdT = 0.16; }
         else if (this.inPad(P.dash, x, y)) { T.dash = true; T.dashHeld = true; T.dashId = t.identifier; }
         else if (this.inPad(P.brace, x, y)) { T.brace = true; T.braceId = t.identifier; }
+        else if (typeof Breed !== 'undefined' && Breed.prompting() && this.inPad(P.court, x, y)) { T.court = true; T.courtId = t.identifier; }
         else if (this.inPad(P.pause, x, y)) this.pressed.KeyP = true;
         else if (G.state === 'play' && this.inPad(P.genes, x, y)) this.pressed.KeyG = true;
         else if (x < P.joyMax && !T.joy) { T.joy = true; T.jid = t.identifier; T.sx = x; T.sy = y; T.cx = x; T.cy = y; T.jx = 0; T.jy = 0; }
@@ -73,6 +75,7 @@ const Input = {
         if (t.identifier === T.biteId) { T.biteHeld = false; T.biteId = null; }
         if (t.identifier === T.dashId) { T.dashId = null; T.dashHeld = false; }
         if (t.identifier === T.braceId) T.braceId = null;
+        if (t.identifier === T.courtId) { T.court = false; T.courtId = null; }
       }
     };
     canvas.addEventListener('touchend', end); canvas.addEventListener('touchcancel', end);
@@ -226,7 +229,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin(); Forest.reset(); Breed.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -406,9 +409,10 @@ const G = {
   },
   onChunkLoad(ch, rng) {
     if (this.state === 'title' && Math.abs(ch.x0) > 700) return;
+    if (ch.x0 + World.CHUNK < World.WEST) return;    // west of the rock face there is no world
     const P = this.player, D = this.difficulty();
     // human activity: structures cluster where there is water access
-    if (rng() < 0.75 && !Biome.at(ch.x0).remote) { for (let a = 0; a < 3; a++) { const sx = ch.x0 + rng() * World.CHUNK; if (Math.abs(sx - P.x) < 320) continue; if (trySpawnStructure(sx, rng, D)) break; } }
+    if (rng() < 0.75 && !Biome.at(ch.x0).remote) { for (let a = 0; a < 3; a++) { const sx = ch.x0 + rng() * World.CHUNK; if (Math.abs(sx - P.x) < 320 || sx < World.WEST + 24) continue; if (trySpawnStructure(sx, rng, D)) break; } }
     // ---- work going on in the water -------------------------------------
     // Not props: people in the middle of doing something, who will notice you
     // doing something too. Only outdoors, and never right on top of you.
@@ -452,6 +456,7 @@ const G = {
     const passes = B.id === 'wake' ? 9 : 5;
     for (let k = 0; k < passes; k++) {
       const x = ch.x0 + rng() * World.CHUNK; if (Math.abs(x - P.x) < 260) continue;
+      if (x < World.WEST + 24) continue;                // the rock at the head of the canyon
       // same rule as the director: nothing gets stocked on a scarp
       if (Math.abs(World.floorY(x + 30) - World.floorY(x)) > 90) continue;
       const Bx = Biome.at(x);
@@ -648,7 +653,7 @@ const G = {
     const d = this.director, P = this.player, D = this.difficulty();
     d.spawnT -= dt; if (d.spawnT <= 0) { d.spawnT = 0.32; this.populate(D); this.populate(D); }
     d.predT -= dt; if (d.predT <= 0) { d.predT = clamp(21 - D * 2.6, 5, 21) * rand(0.8, 1.25); this.spawnPredator(D); }
-    d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2; Spawn.flock(P.x - dir * (halfW + 140), dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
+    d.flockT -= dt; if (d.flockT <= 0) { d.flockT = rand(9, 20); if (!World.isIndoor(P.x)) { const dir = chance(0.5) ? 1 : -1, halfW = this.W / this.cam.zoom / 2, fx = P.x - dir * (halfW + 140); if (fx > World.WEST + 60) Spawn.flock(fx, dir, choice(['egret', 'ibis', 'heron', 'egret']), randi(2, 6)); } }
     // hard cap
     if (this.ents.length > 220) { let n = 0; for (const e of this.ents) if (e.type === 'gib' && n++ > 40) e.remove = true; }
   },
@@ -666,6 +671,7 @@ const G = {
     // just past the edge of the shot, so a shoal crosses it rather than
     // spawning half a screen out and wandering off the other way
     const side = chance(0.5) ? 1 : -1, x = P.x + side * (halfW + rand(10, 130)), fy = World.floorY(x);
+    if (x < World.WEST + 24) return;         // inside the rock at the head of the canyon
     // never stock a cliff: a shaft wall or a weir face drops a hundred feet in
     // thirty, and anything put down at the deep end of it ends up inside rock
     if (Math.abs(World.floorY(x + 30) - fy) > 90 || Math.abs(World.floorY(x - 30) - fy) > 90) return;
@@ -1240,7 +1246,15 @@ const G = {
     World.ensure(P.x, this.W / this.cam.zoom + 900);
     Water.recenter(this.cam.x); Mud.recenter(this.cam.x);
     Water.update(dt); Mud.update(dt); Foliage.update(dt); Weather.update(dt); Weather.spawn(dt, this.cam);
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
+    // The rock at the head of the canyon is a wall, not a suggestion — but only
+    // in the open. The building and the shaft are west of it and are where the
+    // run starts, so the wall is the sliver between the face and the shaft.
+    const PW = this.player;
+    if (PW.x < World.WEST && PW.x > -5966 && !World.isIndoor(PW.x)) { PW.x = World.WEST; if (PW.vx < 0) PW.vx = 0; }
+    // and anything that wandered off the bank into the shaft is inside the
+    // rock, which is not a place a bird can be seen standing
+    for (const e of this.ents) if (e.x < World.WEST - 20 && e.x > -5966 && e.type !== 'gib' && !e.persistent) e.remove = true;
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Forest.update(dt, this.cam); Breed.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -1325,12 +1339,13 @@ const G = {
     if (this.state === 'stages') { UI.drawStages(ctx); return; }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
-    else { World.drawSky(ctx, cam, day); World.drawParallax(ctx, cam, day); }
+    else { World.drawSky(ctx, cam, day); Forest.back(ctx, cam, day); World.drawParallax(ctx, cam, day); Forest.canopy(ctx, cam, day); }
     World.drawWater(ctx, cam, day);
     World.drawDeepScene(ctx, cam, day);
     World.drawTerrain(ctx, cam);
     if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
+    Forest.deep(ctx, cam, day);
     World.drawDecor(ctx, cam, 0, day);
     Secrets.draw(ctx, cam);
     if (indoor) Waste.draw(ctx, cam);
@@ -1375,9 +1390,11 @@ const G = {
     this.fx.draw(ctx, cam);
     this.fx.drawPops(ctx, cam);
     if (indoor) Waste.drawOver(ctx, cam);
+    Breed.drawWorld(ctx, cam);
     World.drawDecor(ctx, cam, 1, day);
     // the near side of the bore: pipes, chains and rail between you and the animal
     if (indoor && typeof Sewer !== 'undefined') Sewer.foreground(ctx, cam);
+    Forest.front(ctx, cam, day);
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);

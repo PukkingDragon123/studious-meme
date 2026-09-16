@@ -28,11 +28,11 @@ const ARTIFACTS = [
   // ---- ZONE 1: the river ----
   { id: 'lamp', stage: 'wake', name: "THE GANGER'S LAMP", line: 'LEFT ON THE STAGING IN 1974 BY SOMEBODY WHO MEANT TO COME BACK FOR IT.',
     boon: 'YOU SEE IN THE DARK', col: '#ffbe50', glyph: 'lamp2', apply: P => { P.st.nightEyes = true; } },
-  { id: 'bolt', stage: 'interceptor', name: 'A WEIR GATE BOLT', line: 'IT HELD THE LAST GATE SHUT FOR FIFTY YEARS. NOW IT HOLDS YOU TOGETHER.',
+  { id: 'bolt', stage: 'interceptor', name: "A TRAPPER'S BRASS TAG", line: 'HE WORKED THESE HOLES FOR THIRTY YEARS. SOMETHING IN THEM WORKED HIM.',
     boon: '+15% ARMOUR', col: '#9aa2a8', glyph: 'bolt', apply: P => { P.st.armor += 0.15; } },
   { id: 'valve', stage: 'gallery', name: 'A SHOPPING TROLLEY WHEEL', line: 'SOMEBODY PUSHED IT INTO THE CREEK IN 1988. IT HAS BEEN TURNING EVER SINCE.',
     boon: 'FILTH BUILDS HALF AS FAST', col: '#b4c840', glyph: 'valve', apply: P => { P.st.toxRes *= 2; } },
-  { id: 'rebar', stage: 'outfall', name: 'A LENGTH OF REBAR', line: 'WASHED OUT OF A WEIR AND CARRIED SIX MILES, STILL BENT WHERE IT TORE.',
+  { id: 'rebar', stage: 'outfall', name: 'A LENGTH OF REBAR', line: 'WASHED OUT OF A CULVERT AND CARRIED SIX MILES, STILL BENT WHERE IT TORE.',
     boon: 'BITES PIERCE ARMOUR', col: '#a86a3a', glyph: 'rebar', apply: P => { P.st.pierce = true; } },
   { id: 'crown', stage: 'sump', name: 'A SEA LION TAG', line: 'NUMBER 411. SOMEBODY AT THE MARINE CENTER WILL NOTICE IT IS GONE.',
     boon: 'TOXIC BLOOD, IMMUNE TO VENOM', col: '#a8d020', glyph: 'core', apply: P => { P.st.venomRes = 1; P.st.toxRes *= 2; P.st.spiteDmg = (P.st.spiteDmg || 0) + 0.25; } },
@@ -53,7 +53,7 @@ for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
 
 // One standing order per site. `kind` decides which hook counts.
 const MISSIONS = {
-  facility:   { title: 'GET DOWNRIVER', line: 'OPEN THE WEIR', kind: 'puzzle', target: 3 },
+  facility:   { title: 'GET TO THE PACIFIC', line: 'OPEN THE TIDE GATE', kind: 'puzzle', target: 3 },
   mangrove:   { title: 'THIN THE ROOTS', line: 'TAKE 14 FISH', kind: 'fish', target: 14 },
   camp:       { title: 'CLOSE THE CAMP', line: 'WRECK 3 BUILDS', kind: 'wreck', target: 3 },
   cypress:    { title: 'OWN THE DEEP', line: 'KILL 5 PREDATORS', kind: 'threat', target: 5 },
@@ -64,7 +64,7 @@ const MISSIONS = {
   seawall:    { title: 'KAIJU PROTOCOL', line: 'WRECK 8 BOATS OR BUILDS', kind: 'wreck', target: 8 },
   // ---- ZONE 1 ----
   wake:        { title: 'FIND YOUR FEET', line: 'TAKE 5 FISH', kind: 'fish', target: 5 },
-  interceptor: { title: 'GET OUT', line: 'OPEN THE WEIR', kind: 'puzzle', target: 3 },
+  interceptor: { title: 'RAISE A BROOD', line: 'WEAN 3 YOUNG', kind: 'brood', target: 3 },
   gallery:     { title: 'WORK THE CREEK', line: 'TAKE 10 FISH', kind: 'fish', target: 10 },
   sump:        { title: 'CLEAR THE WHARF', line: 'TAKE 6 PEOPLE', kind: 'human', target: 6 },
   outfall:     { title: 'HOLD THE BAY', line: 'KILL 4 PREDATORS', kind: 'threat', target: 4 },
@@ -82,9 +82,9 @@ const MISSIONS = {
 // in your teeth. Nobody is talking to you. You are what they are talking about.
 // ---------------------------------------------------------------------------
 const STORY = {
-  facility: ['SUBJECT 11 IS OUT OF THE TANK AND INSIDE THE BUILDING.', 'IT WENT DOWN THE INTERCEPTOR. THAT COMES OUT IN THE RIVER.',
-    'SOMETHING IS WORKING THE WEIR GATES FROM THE WATER SIDE.',
-    'THE OUTFLOW GATE IS OPEN. IT HAS NOT BEEN OPEN SINCE THE EMPIRE.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
+  facility: ['SUBJECT 11 IS OUT OF THE TANK AND INSIDE THE BUILDING.', 'THE FLOOR PLATE IN THE WEST CORRIDOR HAS GONE.',
+    'THAT SHAFT IS A HUNDRED AND FORTY FEET AND IT LETS OUT IN A CREEK.',
+    'THE CREEK IS IN A NATIONAL FOREST. THERE IS NO FENCE AROUND A FOREST.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
   mangrove: ['THE ROOT LINE IS SHALLOW. IT WILL HAVE TO SURFACE TO CROSS.', 'IT IS NOT CROSSING. IT IS FEEDING.',
     'SIXTY POUNDS OF SNOOK IN ELEVEN MINUTES.', 'THAT RING CAME OFF A DIVER WE NEVER FOUND.'],
   camp: ['THERE ARE PEOPLE AT THAT CAMP. ADVISE THEM.', 'NOBODY IS ANSWERING AT THE CAMP.',
@@ -102,10 +102,10 @@ const STORY = {
   seawall: ['IT IS AT THE HARBOUR WALL. THE CITY IS BEHIND THE HARBOUR WALL.', 'IT IS TAKING THE WALL APART.',
     'THE WALL IS GONE. GET EVERYBODY OUT.', 'THAT CORE IS WHAT WE BUILT IT AROUND. IT HAS COME BACK FOR IT.'],
   // ---- ZONE 1 ----
-  wake: ['IT WENT DOWN THE SHAFT AND IT IS NOT AT THE BOTTOM OF IT.', 'SOMETHING IS MOVING IN THE CHAMBER.',
+  wake: ['IT WENT DOWN THE SHAFT AND IT IS NOT AT THE BOTTOM OF IT.', 'THERE IS A CREEK UNDER THAT OUTFALL AND IT IS IN IT.',
     'IT IS EATING. THAT IS ALL IT IS DOING.'],
-  interceptor: ['THERE IS AN OUTFALL AT THE EAST END AND WE CANNOT SHUT IT.', 'IT IS ON THE WEIRS. THE WEIRS GO UP.',
-    'IF IT MAKES THE MOUTH WE LOSE IT INTO A CITY.'],
+  interceptor: ['THE CREEK OPENS INTO TWO MILES OF BLACKWATER AND WE CANNOT SEE INTO IT.', 'THERE ARE WILD ONES IN THERE AND IT HAS FOUND THEM.',
+    'THERE IS A NEST ON A BANK IN THE SWAMP AND IT IS NOT A WILD ANIMAL\'S.'],
   gallery: ['IT IS IN ISLAIS CREEK. THAT IS A PUBLIC WATERWAY.', 'PEOPLE FISH OFF THAT EMBANKMENT.',
     'WE HAVE LOST IT UNDER THE THIRD STREET BRIDGE.'],
   sump: ['IT IS AT THE WHARF. THERE ARE FOUR THOUSAND PEOPLE AT THE WHARF.', 'CLEAR THE FLOATS. CLEAR ALL OF THEM.',
@@ -194,7 +194,7 @@ const Missions = {
     }
     // drop the relic in reachable water ahead of you, with a beacon on it
     const P = G.player, side = P.facing || 1;
-    // a relic dropped in the sewer has to be allowed to land in the sewer
+    // a relic dropped in the forest has to be allowed to land in the forest
     const roofOk = World.isIndoor(P.x);
     let rx = null;
     for (const d of [220, 340, 460, 160, 620]) {

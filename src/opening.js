@@ -20,9 +20,9 @@ const Opening = {
   // the cover you have to break, the line the handlers own, the head of the
   // interceptor under the building, and the mouth it lets out of
   LIP: -5968, DRAIN: -5950, MOUTH: -2996,
-  // where the game picks you up again: the brick staging in the chamber,
-  // which is the only dry thing in it
-  WAKE: -5425,
+  // where the game picks you up again: a gravel bar in the middle of a creek
+  // in the bottom of a wooded canyon, four miles from the building
+  WAKE: -5190,
   get MANHOLE() { return FACILITY.MANHOLE; },
   get DOCK() { return FACILITY.DOCK; },
   NEED_COVER: 6,
@@ -259,7 +259,7 @@ const Opening = {
     if (this.t > 3.6) {
       this.phase = 'done'; this.on = false; this.splashed = true;
       P.frozen = false; P.invuln = 3;
-      G.banner = { text: 'THE SEWER', sub: 'ALIVE, AND A HUNDRED AND FORTY FEET DOWN. GET OUT.', t: 4.5, max: 4.5, color: '#9fe0c8' };
+      G.banner = { text: 'THE FOREST', sub: 'ALIVE, OUTSIDE, AND NOBODY KNOWS WHERE YOU ARE.', t: 4.5, max: 4.5, color: '#9fe0c8' };
     }
   },
 
@@ -349,7 +349,7 @@ const Opening = {
       const vg = ctx.createRadialGradient(W / 2, H / 2, W * 0.16, W / 2, H / 2, W * 0.62);
       vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(2,6,8,' + (0.7 - open * 0.4).toFixed(2) + ')');
       ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-      if (this.t > 2.2 && Math.floor(G.t * 2) % 2) Font.draw(ctx, 'THE SYSTEM', W / 2, 30, { color: 'rgba(159,224,200,0.8)', align: 'center', outline: '#04100c' });
+      if (this.t > 2.2 && Math.floor(G.t * 2) % 2) Font.draw(ctx, 'SOMEWHERE ELSE', W / 2, 30, { color: 'rgba(159,224,200,0.8)', align: 'center', outline: '#04100c' });
       return;
     }
   },

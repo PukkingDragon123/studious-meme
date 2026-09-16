@@ -1,14 +1,19 @@
 # CHOMPERS
 
 A 2D pixel-art, side-scrolling **eater roguelike**. You are Subject 7: a lab-made crocodile spliced
-with the genes of every animal alive. You break your tank, go down the shaft the building flushes into,
-black out on the way, and come round on a brick staging in a sewer under San Francisco. Get out of the
-sewer, down Islais Creek, past the wharf, into the bay, and under the Golden Gate into the Pacific.
+with the genes of every animal alive. You break your tank, the floor plate lets go under you, and a
+hundred and forty feet of brick shaft goes past in the dark. You black out on the way and come round
+in a **creek in the bottom of a wooded canyon**, under a hundred feet of redwood, with no fence
+anywhere. Work down the creek into two miles of **blackwater swamp**, out of the swamp into Islais
+Creek, past the wharf, into the bay, and under the Golden Gate into the Pacific.
 
 Everything in the water is food or is going to eat you, and which one it is depends on how big you have
 got. Hunger drains the whole time you are not eating. Chain mouthfuls for a multiplier. Every lair is a
 room with fog gates on it, and every stretch of the map has one thing in it that is not on the way to
 anything.
+
+Grow to sub-adult and the swamp stops being only a place to hunt: there are **wild crocodiles** in it,
+and you can court one, nest with it, and raise what hatches.
 
 Eat anything that fits in your jaws. Every meal pays **gene points**, and you spend them whenever you
 like on a hexagonal **gene tree** of six lineages. How you hunt builds affinity, so the lineage that
@@ -166,15 +171,15 @@ are trying to leave.
 | Place | What it is |
 | --- | --- |
 | **Facility B** | six rooms in a line and two ways out of them. Only one of them is yours |
-| **The Sewer** | one chamber, four shafts of daylight, a brick staging to come round on and a way out at the east end. A thousand units, because the point of a sewer is leaving it |
-| **The Outfall** | four weirs and a hole with a sky behind it. The last roofed thing in the zone |
+| **The Forest** | a cold, clean, shallow creek in the bottom of a canyon, a gravel bar in the middle of it, and the mouth of the shaft you came down still running water into the head of it. The drop shaft is the last roofed thing in the world |
+| **The Swamp** | two miles of blackwater under cypress. Deep holes between the knees, hummocks you can haul out on, and the wild ones |
 | **Islais Creek** | a city's river. Concrete both sides, a bridge every half mile, a trolley in the bed of it and a heron that has made its peace with all of that |
 | **The Wharf** | timber piles by the thousand, floating docks with sea lions asleep on them, a tourist boat every ten minutes and a crab pot on every fourth piling |
 | **The Bay** | cold, deep, grey-green, with a rock out in the middle of it and a container ship going over the top of you |
 | **The Golden Gate** | the strait. The deepest water in the zone, a current that runs like a river, and a tower standing in it in international orange |
 
 The water gets colder and bigger the whole way east, and so does what is in it:
-minnows and roach in the sewer, **sea lions and harbour seals** on the wharf
+minnows and bluegill in the creek, **sea lions and harbour seals** on the wharf
 floats, **bull sharks and bonnetheads** in the bay, and everything at once in
 the Gate. Four new man-made things are built for it — a **pier** on a forest of
 creosoted piles with a rail, bollards and a lamp standard; the **floats** with
@@ -243,10 +248,10 @@ moves you a hundred and forty feet down and three quarters of a mile east,
 because the animal did not see that either. Then the eye opens — twice, badly,
 the lids coming in from the top and the bottom of the frame before they stay
 open — and the first thing in it is a shaft of daylight a hundred and forty feet
-up, landing on the brick staging in the middle of the intake with you on it.
+up through a hole in the canopy, landing on the gravel bar you are lying on.
 
-The way out is the far end. Three mechanisms hold the outfall gate, one to each
-lift of the weirs, each a small game you start by biting it: **the sluice
+The way out of the zone is the far end of it. Three mechanisms hold the tide
+gate at the Golden Gate, each a small game you start by biting it: **the sluice
 wheel** turned on a beat, **the gate levers** thrown in the order the lamps
 showed you, **the counterweight** held and let go in the band. A miss costs a
 notch, not your life. Engage all three and the gate opens, and the zone's relic
@@ -293,6 +298,46 @@ axis off the impact. Gore still comes off the prey; nothing comes off the bite.
 is within a screen and a bit, puts shoals in just past the edge of the shot at
 roughly the depth you are swimming at, and doubles school sizes indoors.
 
+## Breeding
+
+Everything else in this game is about eating. This is the other half of what an
+animal is for, and it is the only system where the thing you are trying to keep
+alive is not you. It lives in the forest and the swamp, and it will not start
+until you are a **sub-adult** — a fingerling is not breeding with anything.
+
+**Court.** Wild crocodiles work the blackwater: paler, warmer, amber-eyed, so a
+mate reads as a different animal from the rival that wants to eat you. They
+bellow, and the water over their backs jumps when they do. Get inside a body
+length of one and a ring comes up on it — **hold F** and you call back. Hold it
+for three seconds and you are paired. Let go, or get pulled away, and the call
+falls off.
+
+**Pair.** A paired crocodile keeps station off your flank and goes for whatever
+comes at you. It bites for twenty-six a go and it does not miss much. Having a
+second set of jaws in the water changes how the swamp reads. Bite it yourself
+and it will not follow you any more.
+
+**Nest.** Four banks in the zone are worth nesting on, authored into the map as
+the gravel bar and the hummocks. Haul out on one with a mate and **hold F** to
+pile the mound up. Five eggs go in it.
+
+**Incubate.** And now the swamp knows there is a nest on that bank. Raccoons,
+opossums and boar come up the mud; herons stand off in the shallows and wait
+for you to leave; rival bulls come up the channel. Anything that reaches the
+mound takes an egg every two and a half seconds and the mound jumps when it
+does. You and your mate are the whole defence, and the waves come faster the
+longer it goes on. Seventy-eight seconds. Lose all five and the clutch is gone,
+and there are other banks.
+
+**Brood.** They hatch and they follow you in a line, each one behind the one in
+front, and they are made of paper. They eat what you leave: gibs and carcasses
+off your own kills. Five feeds and one is **weaned** — that is a gene point, two
+and a half thousand score, and a mark on the run. Anything that gets one is not.
+
+The HUD carries it under the hunger bar: **EGGS** with the incubation running,
+**BROOD** with the count of what is still alive, **RAISED** afterwards. The
+swamp's standing order is three of them.
+
 ## The fog gates
 
 A boss that turns up in open water is an encounter you can swim away from,
@@ -311,8 +356,8 @@ band. Die and it lifts anyway, and the thing is still in there.
 
 Eleven of them, one to each stretch of the route, authored and always in the
 same place: a sealed pen in the habitat hall, the void under the plant room, a
-bricked-up connection in the sewer, the space under the second weir, a storm
-drain in the creek, a hollow in a bridge footing, the underside of the pier
+hollow under a fallen tree's root plate, a log jam at a bend in the creek, a
+gator hole dug in the swamp, a sunk dugout canoe, the underside of the pier
 deck, a hull that went down at her mooring in 1961, an outfall that is not on
 any drawing in the city, the bottom of the rock in the bay, and the caisson
 under the bridge tower.
@@ -322,21 +367,28 @@ open it by biting the grate three or four times. Inside is gene points, a full
 heal, and a lot of score. Nothing tells you they are there and nothing marks
 them on the plan.
 
-## The sewer is a tutorial with a roof on it
+## The forest is a tutorial with trees on it
 
 The first zone used to net a 0.3 ft hatchling inside a minute. It is held down
-hard now, and the sewer chamber is held down harder: **nothing with teeth
-spawns there at all** — the predator director returns before it picks — the
-difficulty curve is clamped to a fifth of its value for the whole chamber and
-to two thirds for the rest of the zone, and the chunk stocker makes nine passes
-instead of five, so there is something to eat within a body length of wherever
-you come round. The standing order is five fish. Nothing in the chamber is
-bigger than a rat.
+hard now, and the creek is held down harder: **nothing with teeth spawns there
+at all** — the predator director returns before it picks — the difficulty curve
+is clamped to a fifth of its value for the whole reach and to two thirds for
+the rest of the zone, and the chunk stocker makes nine passes instead of five,
+so there is something to eat within a body length of wherever you come round.
+The standing order is five fish. Nothing in the creek is bigger than a rat.
 
-## What they poured down here
+The west end of it is the edge of the world and is built like one: a wet rock
+face in beds and blocks with a fracture running the height of it, ledges with
+ferns growing out of them, and the mouth of the shaft set into it — a concrete
+collar, a brick bore, the grating that gave way hanging off one hinge, and the
+water still coming out of it and falling into the pool. Nothing spawns west of
+that face and nothing walks into it.
 
-The system is not just dark water. **Acid** pools off a plating line eat you
-where you sit. **Sludge** fills your blood with filth and holds onto you.
+## What the city puts in its water
+
+Downstream of the swamp the water stops being clean. **Acid** pools off a
+plating line eat you where you sit. **Sludge** fills your blood with filth and
+holds onto you.
 What you see of a pool is what comes off it: a bed of vapour breathing over
 the floor, puffs lifting and thinning, a scum line where it meets the water.
 And the **drums** — still leaking, glowing green through the smoke — do neither:
@@ -387,7 +439,7 @@ yours. Snacks keep you alive. They do not build an animal.
 Every release site has one big thing placed by hand rather than left to the
 chunk spawner, and a short list of authored props around it — a dock and two
 crab traps and a boat ramp at the fish camp, the gauging station and its stilling
-well on the weirs, channel markers out in the bay. Nothing is placed twice on
+well on the creek, channel markers out in the bay. Nothing is placed twice on
 the same few feet of bank — something you can see coming, orient by, hide under and remember
 the place by afterwards. The biggest is **THE CAUSEWAY**: four lanes on concrete
 piers with its middle span in the water, lamp standards still on the parapet,
@@ -623,12 +675,13 @@ the vault on the globe screen and apply to every run afterwards.
 
 | Site | Order | Relic | What it does |
 | --- | --- | --- | --- |
-| Facility B | open the weir | Subject Tag | start every run with 2 gene points |
-| The Wake | take 5 fish | The Ganger's Lamp | you see in the dark |
-| The Main Interceptor | take 9 fish | A Ring Segment Bolt | +15% armour |
-| The Flooded Gallery | kill 3 predators | The Penstock Wheel | filth builds half as fast |
-| The Acid Sump | dive to 900m | The Sludge Crown | toxic blood, immune to venom |
-| The Outfall | open the weir | A Length of Rebar | bites pierce armour |
+| Facility B | open the tide gate | Subject Tag | start every run with 2 gene points |
+| The Forest | take 5 fish | The Ganger's Lamp | you see in the dark |
+| The Swamp | wean 3 young | A Trapper's Brass Tag | +15% armour |
+| Islais Creek | take 10 fish | A Shopping Trolley Wheel | filth builds half as fast |
+| The Wharf | take 6 people | A Sea Lion Tag | toxic blood, immune to venom |
+| The Bay | kill 4 predators | A Length of Rebar | bites pierce armour |
+| The Golden Gate | kill a boss | A Bridge Rivet | +12% swim speed in current |
 | Mangrove Tangle | take 14 fish | Drowned Man's Ring | +8% bite |
 | Gator Joe's Camp | wreck 3 builds | Gator Joe's Skull | +10% max health |
 | Cypress Swamp | kill 5 predators | Blackwater Knee | +2 strain tolerance |

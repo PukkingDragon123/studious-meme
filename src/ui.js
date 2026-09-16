@@ -86,6 +86,7 @@ const UI = {
       hy2 += 13;
     }
     this.hazBottom = hy2;               // the mission bar starts below whatever is lit
+    if (typeof Breed !== 'undefined') Breed.drawHud(ctx);   // and the brood under that
     // size / tier
     const tier = TIERS[P.tier], next = TIERS[P.tier + 1];
     Font.draw(ctx, P.lengthFt.toFixed(1), W / 2 - 12, 6, { color: '#eaf2dc', align: 'right', scale: 2, outline: '#0a1a08' });
@@ -2036,6 +2037,7 @@ const UI = {
       'BITE MEDIUM PREY TO LATCH ON, THEN BITE ON THE GOLD TO TEAR IT APART.', 'BRACE JUST BEFORE A HIT LANDS TO PARRY IT AND COUNTER.',
       'EVERY GENE CARRIES A COST. TOO MANY AND YOUR BODY REJECTS THEM.', 'BOSSES BREAK INTO PHASES. STAGGER ONE AND BITE TO EXECUTE IT.',
       'EACH SITE HAS ONE ORDER. FINISH IT AND A RELIC SURFACES. RELICS ARE FOREVER.', 'HUNGER DRAINS. ALWAYS BE EATING.',
+      'GROW TO SUB-ADULT AND THE SWAMP HAS WILD CROCODILES IN IT. HOLD F TO CALL ONE.', 'HAUL OUT ON A BANK WITH A MATE AND HOLD F TO NEST. FEED WHAT HATCHES.',
     ];
     lines.forEach((l, i) => Font.draw(ctx, l, W / 2, y + i * 11, { color: i % 2 ? '#c8d8c0' : '#e8f0e0', align: 'center' }));
   },

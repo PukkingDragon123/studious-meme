@@ -132,7 +132,7 @@ const Puzzles = {
       // exactly where it was drawn: these are bolted to a weir, not scattered
       const e = new Mechanism(m.x, m.kind); G.add(e); this.mechs.push(e);
     }
-    const g = new Structure(CATACOMB_GATE, 'sluice'); g.puzzleGate = true; g.name = 'THE OUTFALL GATE'; G.add(g); this.gate = g;
+    const g = new Structure(CATACOMB_GATE, 'sluice'); g.puzzleGate = true; g.name = 'THE TIDE GATE'; G.add(g); this.gate = g;
   },
 
   // ---- the games ----------------------------------------------------------
@@ -160,8 +160,8 @@ const Puzzles = {
       Missions.bump('puzzle');
       // somewhere in the walls, something old turns over
       G.shake(4); SFX.clank && SFX.clank(0);
-      if (this.solved >= CATACOMB_MECHS.length) { this.exitOpen = true; G.banner = { text: 'THE OUTFALL IS OPEN', sub: 'EAST. UP. GO.', t: 4, max: 4, color: '#8ce8a0' }; }
-      else G.banner = { text: (CATACOMB_MECHS.length - this.solved) + ' TO GO', sub: 'THE OUTFALL IS STILL SHUT', t: 3, max: 3, color: '#c8a050' };
+      if (this.solved >= CATACOMB_MECHS.length) { this.exitOpen = true; G.banner = { text: 'THE TIDE GATE IS OPEN', sub: 'WEST. OUT. GO.', t: 4, max: 4, color: '#8ce8a0' }; }
+      else G.banner = { text: (CATACOMB_MECHS.length - this.solved) + ' TO GO', sub: 'THE TIDE GATE IS STILL SHUT', t: 3, max: 3, color: '#c8a050' };
     } else {
       G.banner = { text: 'IT SLIPPED', sub: 'BITE IT AGAIN', t: 2.2, max: 2.2, color: '#ff8c40' };
       SFX.hurt && SFX.hurt();

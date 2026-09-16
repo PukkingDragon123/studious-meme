@@ -514,7 +514,7 @@ class Player {
   doBiteHit() {
     const [sx, sy] = this.snout, R = this.biteRange, dx = Math.cos(this.angle), dy = Math.sin(this.angle);
     const targets = [];
-    for (const e of G.ents) if (!e.dead && !e.remove && e.type !== 'proj' && e.hitTest(sx, sy, R)) targets.push(e);
+    for (const e of G.ents) if (!e.dead && !e.remove && e.type !== 'proj' && !e.mine && e.hitTest(sx, sy, R)) targets.push(e);
     targets.sort((a, b) => dist(sx, sy, a.x, a.y) - dist(sx, sy, b.x, b.y));
     let hit = false, chomped = false;
     for (const e of targets) {

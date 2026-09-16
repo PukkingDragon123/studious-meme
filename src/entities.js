@@ -806,7 +806,12 @@ class Gator extends Entity {
       case 'flee': { const dx = this.x - P.x, dy = this.y - P.y, d = Math.hypot(dx, dy) || 1; this.swimToward(this.x + dx / d * 300, clamp(this.y + dy / d * 60, 10, World.floorY(this.x) - 20), maxSp * 1.1, 3, dt); if (chance(dt * 4)) G.fx.blood(this.x, this.y, 1, 0, 0, 10, this.bloodColors); break; }
     }
     if (this.state !== 'grab') { this.roll = lerp(this.roll, Math.round(this.roll / TAU) * TAU, 0.2); }
-    // physics
+    this.physics(dt, maxSp, dP);
+  }
+  // A crocodile's body: buoyancy, the ground, which way it is pointing, the
+  // chain and the jaw. Split out from the AI above because the wild ones you
+  // breed with want all of this and none of the hunting.
+  physics(dt, maxSp, dP = 9999) {
     const under = this.inWater;
     if (under) { this.drag(dt, 1.1); if (this.wasAir) { this.wasAir = false; G.fx.splash(this.x, Math.sqrt(this.vis), this.vx); } }
     else { this.vy += 700 * dt; this.wasAir = true; }
@@ -1303,13 +1308,25 @@ const Spawn = {
     // every member is clamped to its own column: a shoal scattered round a
     // leader standing next to a scarp puts half of itself inside the rock
     const put = (fx2, fy2, lead) => {
-      const fl = World.floorY(fx2), rf = World.roofY(fx2);
+      const fl = World.floorY(fx2), rf = World.roofY(fx2), su = World.surface(fx2);
       let yy = Math.min(fy2, fl - 8);
       if (rf !== null) yy = Math.max(yy, rf + 8);
+      // and never above the water: a column with three feet of creek in it is
+      // not somewhere a shoal goes, it is somewhere a shoal is left on the mud
+      yy = Math.max(yy, su + 6);
       if (yy >= fl - 2) return null;
       const f = new Fish(fx2, yy, kind, lead); G.add(f); return f;
     };
-    const leader = put(x, y, undefined) || (() => { const f = new Fish(x, y, kind); G.add(f); return f; })();
+    // If the column the shoal was aimed at is too shallow to hold it, go and
+    // find one that is rather than dropping the leader in the air.
+    let leader = put(x, y, undefined);
+    if (!leader) {
+      const wx = World.findX(x, xx => World.floorY(xx) > World.surface(xx) + 30, 700, 24);
+      if (wx === null) return null;
+      leader = put(wx, Math.min(y, World.floorY(wx) - 12), undefined);
+      if (!leader) return null;
+      x = wx;
+    }
     for (let i = 1; i < n; i++) put(x + rand(-44, 44), y + rand(-26, 26), leader);
     return leader; },
   flock(x, dir, kind, n) { for (let i = 0; i < n; i++) { const b = new Bird(x - dir * i * 26 + rand(-8, 8), -rand(80, 170) + i * 4, kind, 'fly', dir); b.vx = dir * BIRDS[kind].speed; G.add(b); } },
