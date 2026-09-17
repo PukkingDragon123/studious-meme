@@ -229,7 +229,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin(); Forest.reset(); Breed.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin(); Forest.reset(); Glades.reset(); Breed.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -552,6 +552,12 @@ const G = {
     // harder: nothing hunts you on the bench you woke up on.
     const B = Biome.at(P.x);
     if (B.id === 'wake' || B.lab) d = Math.min(d, 0.35);
+    // The animal comes down out of the aircraft into the park's basin at the
+    // length of a hand. The basin and the two miles of sheet water either side
+    // of it are held down the same way level one of zone one is: something
+    // that eats you inside thirty seconds is not a difficulty curve.
+    else if (B.park) d = Math.min(d, 0.35);
+    else if (P.x > 2200 && P.x < 5200) d = Math.min(d * 0.55, 1.2);
     else if (P.x < 1100) d = Math.min(d * 0.62, 2.4);
     return d;
   },
@@ -1254,7 +1260,7 @@ const G = {
     // and anything that wandered off the bank into the shaft is inside the
     // rock, which is not a place a bird can be seen standing
     for (const e of this.ents) if (e.x < World.WEST - 20 && e.x > -5966 && e.type !== 'gib' && !e.persistent) e.remove = true;
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Forest.update(dt, this.cam); Breed.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Forest.update(dt, this.cam); Glades.update(dt, this.cam); Park.update(dt); Breed.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -1275,9 +1281,10 @@ const G = {
     const tz = clamp(1.35 / Math.pow(P.vis, 0.95), 0.22, 2.9) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
     // the trolley ride is framed on the tank and the two pushing it; the ride
     // down the pipe wants a little more of the pipe than that
-    const tz2 = Opening.on && Opening.phase === 'carry' ? clamp(tz, 1.6, 2.2)
-      : Opening.on && Opening.phase === 'drop' ? clamp(tz * 0.62, 1.1, 1.7)
-      : Opening.on && (Opening.phase === 'black' || Opening.phase === 'wake') ? clamp(tz * 1.05, 1.9, 3.0) : tz;
+    const tz2 = Opening.on && (Opening.phase === 'flight' || Opening.phase === 'caught') ? clamp(tz, 1.9, 2.6)
+      : Opening.on && Opening.phase === 'loose' ? clamp(tz, 1.5, 2.1)
+      : Opening.on && Opening.phase === 'fall' ? clamp(tz * 0.5, 0.75, 1.15)
+      : Opening.on && Opening.phase === 'splash' ? clamp(tz * 0.8, 1.0, 1.8) : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole
@@ -1337,15 +1344,24 @@ const G = {
     if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); return; }
+    // The airlift is a set, not a stretch of map: while the animal is in the
+    // aircraft there is no world under the camera to draw.
+    if (typeof Opening !== 'undefined' && Opening.cabin()) {
+      Opening.drawCabin(ctx);
+      Opening.draw(ctx);
+      UI.drawWipe(ctx);
+      return;
+    }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
-    else { World.drawSky(ctx, cam, day); Forest.back(ctx, cam, day); World.drawParallax(ctx, cam, day); Forest.canopy(ctx, cam, day); }
+    else { World.drawSky(ctx, cam, day); Forest.back(ctx, cam, day); World.drawParallax(ctx, cam, day); Glades.back(ctx, cam, day); Forest.canopy(ctx, cam, day); }
     World.drawWater(ctx, cam, day);
     World.drawDeepScene(ctx, cam, day);
     World.drawTerrain(ctx, cam);
     if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
     Forest.deep(ctx, cam, day);
+    Glades.deep(ctx, cam, day);
     World.drawDecor(ctx, cam, 0, day);
     Secrets.draw(ctx, cam);
     if (indoor) Waste.draw(ctx, cam);
@@ -1383,6 +1399,7 @@ const G = {
     if (this.state === 'egg') this.drawEgg(ctx);
     if (this.morph) Morph.drawWorld(ctx);
     if (this.drop) Drop.drawWorld(ctx);
+    if (typeof Opening !== 'undefined') Opening.drawWorld(ctx, cam);
     Arena.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
@@ -1395,6 +1412,7 @@ const G = {
     // the near side of the bore: pipes, chains and rail between you and the animal
     if (indoor && typeof Sewer !== 'undefined') Sewer.foreground(ctx, cam);
     Forest.front(ctx, cam, day);
+    Glades.front(ctx, cam, day);
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);

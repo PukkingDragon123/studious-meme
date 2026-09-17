@@ -79,25 +79,46 @@ const MAP_PROFILE = [
   [240, 560], [380, 780], [520, 940], [660, 1010], [800, 960],
   [940, 840], [1040, 620],
   [1150, 200], [1260, -30], [1330, 40], [1400, 96], [1460, 74],
-  // mangrove tangle: shallow braided water with root islands
-  [1520, 60], [1600, -18], [1660, -26], [1730, 54], [1840, 86], [1950, 70], [2060, -20], [2120, -30],
-  [2200, 62], [2320, 104], [2450, 92], [2560, 40], [2660, -30], [2730, -48], [2800, -40],
-  // fish camp: a town bank on the left, a working channel on the right
-  [2880, -52], [2990, -58], [3100, -50], [3180, 30], [3280, 150], [3420, 210], [3560, 205], [3700, 160],
-  [3820, 60], [3900, -40], [3990, -56], [4090, -48], [4180, 40],
-  // cypress swamp: dark, deep pockets between wooded hummocks
-  [4300, 190], [4420, 250], [4540, 210], [4640, 60], [4720, -40], [4790, -52], [4870, 30],
-  [4980, 230], [5120, 300], [5260, 260], [5380, 120], [5470, -30], [5550, -44], [5640, 60],
-  [5760, 240], [5880, 210], [5960, 90], [6040, -20],
-  // sawgrass prairie: broad shallow sheet flow, low islands
-  [6140, 40], [6260, 66], [6380, 52], [6480, -16], [6540, -24], [6620, 46], [6760, 72], [6900, 58],
-  [7020, -18], [7080, -26], [7160, 44], [7300, 70], [7440, 84], [7560, 60],
-  // deep river: a fast cut channel with undercut banks
-  [7680, 210], [7820, 420], [7980, 520], [8160, 560], [8340, 540], [8520, 470], [8680, 380],
-  [8820, 260], [8940, 130], [9040, -30], [9120, -60], [9220, -50], [9320, 60],
-  // campground: gentle beach shelving into a bay
-  [9440, 90], [9560, 60], [9660, -34], [9760, -58], [9880, -60], [9990, -40], [10090, 40],
-  [10200, 120], [10340, 160], [10480, 140], [10600, 80], [10700, -20], [10780, -44], [10880, -30],
+  // ===================== THE EVERGLADES =========================
+  // The River of Grass is a sheet, not a valley. A hundred miles of water a
+  // foot deep moving half a mile a day over flat limestone, with three things
+  // cut into it: gator holes, which are the only deep water in a drought and
+  // therefore the only water with anything in it; tree islands, a few feet of
+  // ground standing proud of the sheet; and the canals, which a man drew with
+  // a dragline and which are the deepest water for forty miles.
+  //
+  // So: flat. Depth 30-70 nearly everywhere, and every departure from that is
+  // a thing you can point at.
+  // -- MANGROVE TANGLE: brackish, braided, root islands out of the sheet
+  [1520, 46], [1600, -14], [1660, -20], [1730, 44], [1840, 58], [1950, 50], [2060, -16], [2120, -22],
+  [2200, 48], [2320, 62], [2400, 210], [2460, 240], [2520, 190],           // a mangrove-lined hole
+  // -- EVERGLADES HOLIDAY PARK. A levee with twenty-nine acres on it, the
+  // basin the airboats work out of in front, and the L-67A canal behind the
+  // lot: forty feet of dead-straight dredged water, and the deepest thing for
+  // sixty miles in any direction.
+  [2560, 44], [2610, -28], [2700, -58], [2820, -64], [2960, -60],          // the approach and the car park
+  [3060, -66], [3160, -64], [3260, -58], [3360, -62], [3440, -54],         // the building and the gator pit
+  [3520, -18], [3562, 30],                                                 // the boardwalk goes off the end of it
+  [3620, 56], [3700, 66], [3780, 60], [3860, 50],                          // the basin the docks stand in
+  [3920, 150], [3980, 340], [4060, 450], [4160, 470], [4260, 440],         // THE CANAL
+  [4360, 270], [4440, 80], [4520, 46],                                     // and the spoil bank on the far side
+  // -- CYPRESS: domes standing in the sheet, with a hole under each one
+  [4600, 56], [4640, 44], [4660, 240], [4680, 320], [4700, 250],
+  [4760, 50], [4800, -26], [4850, -34], [4900, 48],                        // a cypress head you can haul out on
+  [4980, 62], [5080, 46], [5180, 260], [5260, 340], [5340, 270],           // and another hole
+  [5420, 52], [5500, 40], [5580, -20], [5640, -28], [5720, 46],
+  [5800, 58], [5900, 44], [6000, 52], [6060, 40],
+  // -- SAWGRASS PRAIRIE: the flattest water in the world, and grass over it
+  [6140, 44], [6260, 52], [6380, 40], [6480, 48], [6540, 44], [6620, 50],
+  [6760, 46], [6900, 54], [6980, 230], [7040, 300], [7100, 240],           // one hole in the middle of it
+  [7160, 44], [7300, 50], [7380, -18], [7440, -26], [7500, 44],            // a hardwood hammock
+  [7560, 52],
+  // -- THE DEEP CUT: the one real channel, dredged, with undercut banks
+  [7680, 180], [7820, 380], [7980, 470], [8160, 500], [8340, 480], [8520, 420], [8680, 340],
+  [8820, 230], [8940, 120], [9040, -24], [9120, -44], [9220, -36], [9320, 52],
+  // -- PARADISE CAMPGROUND: a shelving beach and a shallow bay off it
+  [9440, 60], [9560, 48], [9660, -28], [9760, -48], [9880, -50], [9990, -34], [10090, 44],
+  [10200, 70], [10340, 90], [10480, 80], [10600, 56], [10700, -18], [10780, -38], [10880, -26],
   // open bay: wide deep water, the far shore is a rumour
   [11000, 140], [11180, 330], [11380, 520], [11600, 660], [11840, 720], [12080, 700], [12320, 640],
   [12560, 600], [12800, 640], [13040, 700], [13300, 740], [13560, 700], [13800, 660],
@@ -402,47 +423,54 @@ const BIOMES = [
     music: 0.8,
   },
   {
-    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1260, x1: 2800,
+    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1260, x1: 2540, glades: true,
     sky: ['#4d8fd0', '#cfe6f2'], water: ['#3a9a86', '#1e5c50', '#08201d'], scum: '#6a8a4a', fog: '#bfe0e6',
     parallax: ['mangrove', 'palm', 'mangrove'], ground: ['#5a4a34', '#463726', '#32281a'], grass: '#4f8a3a',
-    plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1], ['duckweed', 1], ['palm', 0.6], ['fern', 0.8]],
+    plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1.2], ['duckweed', 1.2], ['palm', 0.6], ['fern', 0.8], ['tallgrass', 0.9], ['periphyton', 1.2]],
     fish: [['snapper', 3], ['sheepshead', 2], ['mullet', 3], ['snook', 2], ['redfish', 1.6], ['ladyfish', 1.4], ['minnow', 2]],
     land: [['raccoon', 3], ['iguana', 2], ['rabbit', 1.5], ['fox', 1]],
     structures: [['crabtrap', 2], ['buoy', 1], ['dock', 0.8], ['boathouse', 0.8]],
     music: 0.4,
   },
   {
-    id: 'camp', name: 'GATOR JOE’S FISH CAMP', x0: 2800, x1: 4200,
-    sky: ['#4f9fe0', '#e8dcc0'], water: ['#3a8a80', '#20564e', '#0a1e1c'], scum: '#7a8a4a', fog: '#d8e0d0',
-    parallax: ['shack', 'palm', 'oak'], ground: ['#6a5a3a', '#4a3e28', '#332a1c'], grass: '#6a9a3a',
-    plants: [['palm', 1.4], ['bush', 1.4], ['flower', 1], ['crate', 1.2], ['reed', 0.8], ['lily', 0.6], ['post', 1.2]],
-    fish: [['bluegill', 3], ['bass', 2.5], ['catfish', 2], ['mullet', 2], ['tilapia', 2], ['flgar', 1.4]],
-    land: [['dog', 2], ['raccoon', 2], ['rabbit', 1]],
-    structures: [['shop', 2.4], ['dock', 2.4], ['stilthouse', 1.6], ['boatramp', 1.4], ['sign', 1], ['boathouse', 2], ['trailer', 1.8], ['watertower', 1], ['billboard', 0.8]],
+    // EVERGLADES HOLIDAY PARK. Twenty-nine acres on the levee at the end of
+    // Griffin Road, with the L-67A canal behind it: a car park, a main
+    // building with a concourse through it, a gift shop and a cafe, the gator
+    // pit with stadium seating and a louvered roof over it, four airboat
+    // docks, a fishing dock and two public ramps. Real place, built to plan.
+    id: 'camp', name: 'EVERGLADES HOLIDAY PARK', x0: 2540, x1: 4560, park: true, glades: true,
+    sky: ['#4f9fe0', '#e8dcc0'], water: ['#4a9a7e', '#27604e', '#0c221c'], scum: '#7a8a4a', fog: '#d8e0d0',
+    parallax: ['sawgrass', 'palm', 'hammock'], ground: ['#7a6a44', '#56492e', '#3a3020'], grass: '#7aa845',
+    // Nothing grows on the levee: it is a car park. The planting is in the
+    // water either side of it.
+    plants: [['sawgrass', 0.5], ['tallgrass', 1.4], ['reed', 1.4], ['lily', 1.4], ['duckweed', 1.4], ['post', 1], ['periphyton', 1.4]],
+    fish: [['bluegill', 3], ['bass', 2.5], ['catfish', 2], ['mullet', 2], ['tilapia', 2], ['flgar', 1.6], ['sunfish', 2], ['minnow', 2.4], ['peacock', 1.2]],
+    land: [['dog', 1.6], ['raccoon', 2], ['rabbit', 1], ['iguana', 1.6], ['armadillo', 1.2]],
+    structures: [['sign', 1], ['billboard', 0.8], ['buoy', 0.8]],
     town: true, music: 0.5,
   },
   {
-    id: 'cypress', name: 'CYPRESS SWAMP', x0: 4200, x1: 6100,
+    id: 'cypress', name: 'CYPRESS SWAMP', x0: 4560, x1: 6100, glades: true,
     sky: ['#3a7ab0', '#a8c0b8'], water: ['#2f6a58', '#173f36', '#050f0e'], scum: '#4a6a3a', fog: '#9ab0a8',
     parallax: ['cypress', 'cypress', 'oak'], ground: ['#3f3424', '#2e2618', '#1e1810'], grass: '#3f6a22',
-    plants: [['cypress', 2.6], ['knee', 2], ['moss', 1.6], ['fern', 1.4], ['vine', 1.2], ['weed', 1.4], ['lily', 1.2], ['mushroom', 0.8], ['log', 1]],
-    fish: [['bowfin', 2.4], ['flgar', 2.2], ['gar', 1.6], ['catfish', 2], ['bluegill', 2], ['eel', 1.4]],
+    plants: [['cypress', 2.6], ['knee', 2], ['moss', 1.6], ['fern', 1.4], ['vine', 1.2], ['weed', 1.4], ['lily', 1.2], ['mushroom', 0.8], ['log', 1], ['tallgrass', 1.1], ['sawgrass', 1.2], ['periphyton', 1.6]],
+    fish: [['bowfin', 2.4], ['flgar', 2.2], ['gar', 1.6], ['catfish', 2], ['bluegill', 2], ['eel', 1.4], ['sunfish', 2], ['minnow', 2.2], ['tilapia', 1.6], ['peacock', 1.2]],
     land: [['panther', 1.2], ['bear', 0.9], ['boar', 1.6], ['deer', 2], ['opossum', 1.4], ['bobcat', 1.2]],
     structures: [['tower', 1], ['sign', 0.6], ['trailer', 0.8], ['billboard', 0.7]],
     dark: 0.18, music: 0.8,
   },
   {
-    id: 'prairie', name: 'SAWGRASS PRAIRIE', x0: 6100, x1: 7600,
+    id: 'prairie', name: 'SAWGRASS PRAIRIE', x0: 6100, x1: 7600, glades: true,
     sky: ['#5aaee8', '#f0e4c0'], water: ['#4aa88e', '#2a6a58', '#123028'], scum: '#8a9a4a', fog: '#e0e8c8',
     parallax: ['sawgrass', 'palm', 'hammock'], ground: ['#6a6a3a', '#4e4e28', '#35351c'], grass: '#8aae3f',
-    plants: [['sawgrass', 3.2], ['cattail', 2.4], ['lily', 1.6], ['duckweed', 1.4], ['hyacinth', 1.2], ['flower', 1.2], ['reed', 1.4]],
-    fish: [['minnow', 3], ['sunfish', 2.6], ['bluegill', 2.4], ['mullet', 2], ['peacock', 1.6], ['tilapia', 2]],
-    land: [['deer', 2.4], ['doe', 2], ['rabbit', 2], ['coyote', 1.4], ['armadillo', 1.6]],
+    plants: [['tallgrass', 1.7], ['sawgrass', 2.2], ['cattail', 2.4], ['lily', 1.8], ['duckweed', 1.6], ['hyacinth', 1.4], ['flower', 1.2], ['reed', 1.6], ['periphyton', 2.4]],
+    fish: [['minnow', 3], ['sunfish', 2.6], ['bluegill', 2.4], ['mullet', 2], ['peacock', 1.6], ['tilapia', 2], ['bass', 1.8], ['flgar', 1.6], ['bowfin', 1.2]],
+    land: [['deer', 2.4], ['doe', 2], ['rabbit', 2], ['coyote', 1.4], ['armadillo', 1.6], ['opossum', 1.4], ['boar', 1.2], ['bobcat', 0.8]],
     structures: [['buoy', 0.8], ['tower', 0.8]],
     music: 0.4,
   },
   {
-    id: 'river', name: 'THE DEEP CUT', x0: 7600, x1: 9400,
+    id: 'river', name: 'THE DEEP CUT', x0: 7600, x1: 9400, glades: true,
     sky: ['#3a86c8', '#c8dce8'], water: ['#2a7a86', '#154a56', '#04161c'], scum: '#5a7a5a', fog: '#b0c8d0',
     parallax: ['cypress', 'oak', 'bluff'], ground: ['#4a4438', '#363126', '#221f18'], grass: '#4a7a30',
     plants: [['weed', 2], ['algae', 2], ['sunkbranch', 1.6], ['shellbed', 1.4], ['root', 1.2], ['rock', 1.4], ['bush', 0.8]],
@@ -546,6 +574,7 @@ const Biome = {
       // them makes the last 260 units of a laboratory come out as sewer brick.
       lab: t > 0.5 ? b.lab : a.lab, roman: t > 0.5 ? b.roman : a.roman, pipe: t > 0.5 ? b.pipe : a.pipe, remote: t > 0.5 ? b.remote : a.remote,
       forest: t > 0.5 ? b.forest : a.forest, swamp: t > 0.5 ? b.swamp : a.swamp,
+      glades: t > 0.5 ? b.glades : a.glades, park: t > 0.5 ? b.park : a.park,
       cliff: lerp(a.cliff || 0, b.cliff || 0, t),
     };
   },
@@ -553,6 +582,10 @@ const Biome = {
   decorAt(x, rng, out) {
     const B = this.at(x), fy = MapData.floorY(x), land = fy < 0, depth = fy;
     if (B.lab) return;        // the lab is laid out, not scattered: see authored()
+    // The park's levee is twenty-nine acres of asphalt, walkway and building.
+    // Nothing self-seeds through a car park, and a palm coming up through the
+    // gator pit is the thing that made it look procedural.
+    if (typeof PARK !== 'undefined' && land && x > PARK.X0 - 40 && x < PARK.BOARD1 + 20) return;
     const table = B.plants.filter(([k]) => {
       const w = PLANT_RULES[k]; if (!w) return false;
       // Nothing floats on a sewer, and nothing grows on brick you cannot see.
@@ -641,6 +674,16 @@ const PLANT_RULES = {
   fern: { land: true, make: (o, x, y, r) => o.push({ type: 'fern', x, y, s: 0.9 + r() * 0.8, ph: r() * TAU }) },
   bush: { land: true, make: (o, x, y, r) => o.push({ type: 'bush', x, y, s: 0.9 + r() * 0.9, v: Math.floor(r() * 3) }) },
   sawgrass: { land: true, make: (o, x, y, r) => o.push({ type: 'sawgrass', x, y, s: 0.9 + r() * 0.8, ph: r() * TAU, fly: r() < 0.3 }) },
+  // The thing the River of Grass is named after, standing in the water rather
+  // than on a bank: six feet of it, thick enough that an animal lying in it is
+  // an animal nothing on the bank can see.
+  tallgrass: { land: false, minD: 10, maxD: 130, make: (o, x, y, r) => {
+    const n = 1 + Math.floor(r() * 3);
+    for (let k = 0; k < n; k++) o.push({ type: 'tallgrass', x: x + k * 11 + r() * 7, y, s: 0.9 + r() * 1.0, ph: r() * TAU, h: 26 + r() * 46, blades: 4 + Math.floor(r() * 4) });
+  } },
+  // periphyton: the mat of algae that grows on everything out here and is the
+  // bottom of the whole food chain
+  periphyton: { land: false, minD: 8, maxD: 200, make: (o, x, y, r) => o.push({ type: 'periphyton', x, y, w: 16 + r() * 34, s: 0.7 + r() * 0.6, ph: r() * TAU }) },
   flower: { land: true, make: (o, x, y, r) => o.push({ type: 'flower', x, y, c: Math.floor(r() * 4), n: 1 + Math.floor(r() * 3) }) },
   mushroom: { land: true, make: (o, x, y, r) => o.push({ type: 'mushroom', x, y, n: 2 + Math.floor(r() * 3), c: Math.floor(r() * 2) }) },
   crate: { land: true, make: (o, x, y, r) => o.push({ type: 'crate', x, y, v: Math.floor(r() * 3) }) },

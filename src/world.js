@@ -362,6 +362,16 @@ const World = {
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
     if (BP.open) { this.drawOceanHorizon(ctx, cam, day); return; }
     if ((BP.cliff || 0) > 0.985) { this.drawCliffs(ctx, cam, day, hy, sc, BP); return; }
+    // The Everglades has no ridge and no trees on the skyline: the glades
+    // renderer puts a dead-flat grass horizon there instead, and a hill drawn
+    // under it is a hill in the flattest place on the continent.
+    if (BP.glades) {
+      const g2 = ctx.createLinearGradient(0, hy - 40, 0, hy);
+      g2.addColorStop(0, rgba(sc.bot, 0)); g2.addColorStop(1, rgba(sc.bot, 0.3 * light));
+      ctx.fillStyle = g2; ctx.fillRect(0, hy - 40, W, 40);
+      if ((BP.cliff || 0) > 0.01) { ctx.globalAlpha = BP.cliff; this.drawCliffs(ctx, cam, day, hy, sc, BP); ctx.globalAlpha = 1; }
+      return;
+    }
     // furthest ridge: bare hills, no trees, barely separated from the sky
     {
       const col = mixColor(sc.bot, '#3c5a48', 0.26), ox = cam.x * 0.05;
@@ -906,6 +916,8 @@ const World = {
     // of the shaft the animal came down. Drawn after the ground so it stands
     // in front of the cut instead of under it.
     if (typeof Forest !== 'undefined') Forest.head(ctx, cam);
+    // and the one built thing in sixty miles of grass
+    if (typeof Park !== 'undefined') Park.draw(ctx, cam);
   },
   // concrete shell of the lab and sewer: ceiling, back wall, ribs and lamps
   // The made ground a pipe is buried in. Above the crown and below the invert
@@ -1879,6 +1891,54 @@ const World = {
             const fx = sx + Math.sin(t * 0.9 + d.ph) * 14 * z, fy = sy - (14 + Math.sin(t * 1.7 + d.ph * 2) * 8) * z;
             const pulse = 0.5 + 0.5 * Math.sin(t * 3 + d.ph * 5);
             if (pulse > 0.35) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = night * pulse; ctx.fillStyle = '#e8ff60'; ctx.fillRect(Math.round(fx), Math.round(fy), 1, 1); ctx.globalAlpha = night * pulse * 0.3; ctx.fillRect(Math.round(fx) - 1, Math.round(fy) - 1, 3, 3); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+          }
+          break; }
+        // TALL GRASS. Sawgrass standing in the water rather than on a bank, and
+        // the only thing out here that hides an animal: blades from the bed up
+        // through the surface, cut by the waterline, bending away from you as
+        // you go through them.
+        case 'tallgrass': if (layer !== 1) break; {
+          const surf = World.surface(d.x), [, wy] = cam.toScreen(0, surf);
+          const H0 = d.h * d.s * z;
+          const lean = (Math.sin(t * 0.9 + d.ph) * 1.6 + (d.bend || 0) * 5) * z;
+          const nb = d.blades || 6;
+          for (let b = 0; b < nb; b++) {
+            const u = b / (nb - 1) - 0.5;
+            const bx = sx + u * 9 * z * d.s;
+            const hgt = H0 * (0.62 + 0.38 * Math.cos(u * 2.4));
+            const tipx = bx + lean + u * 11 * z * d.s;
+            const ty = sy - hgt;
+            // under the water it is darker and greener; over it, bleached
+            const deep = sy - Math.max(0, sy - wy) * 0.0;
+            blade(bx, sy + 1, tipx, ty, bx + lean * 0.35 + u * 5 * z, sy - hgt * 0.55, (1.5 + d.s * 0.5) * z,
+              '#2c4a1c', '#4f7a2a', '#7fa640');
+            // the part in the air catches the sun
+            if (ty < wy) {
+              ctx.globalAlpha = 0.85;
+              blade(bx + lean * 0.2, Math.min(sy, wy), tipx, ty, bx + lean * 0.4 + u * 6 * z, ty + (wy - ty) * 0.5, (1.2 + d.s * 0.4) * z,
+                '#6f8a3a', '#9ab24c', '#cbd884');
+              ctx.globalAlpha = 1;
+            }
+            // seed heads on a few of them
+            if (((b * 7 + Math.round(d.x)) % 5) === 0) {
+              ctx.fillStyle = '#c0a858';
+              ctx.fillRect(Math.round(tipx - z), Math.round(ty - 3 * z), Math.max(1, Math.round(2.4 * z)), Math.max(1, Math.round(4 * z)));
+            }
+          }
+          break; }
+        // PERIPHYTON. The algal mat the whole place runs on: a pale crust on
+        // the bed with bubbles of oxygen trapped under it.
+        case 'periphyton': if (layer !== 0) break; {
+          const w = d.w * d.s * z, h = 3.4 * d.s * z;
+          ctx.fillStyle = 'rgba(158,170,116,0.55)';
+          ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
+          ctx.fillStyle = 'rgba(196,204,150,0.5)';
+          ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.max(1, Math.round(w)), Math.max(1, Math.round(h * 0.4)));
+          for (let i = 0; i < 5; i++) {
+            const bx = sx - w / 2 + ((i * 37 + Math.round(d.x)) % Math.max(1, w));
+            const r = (1 + ((i * 13 + Math.round(d.x)) % 3)) * z * 0.6;
+            ctx.fillStyle = 'rgba(226,240,220,' + (0.3 + 0.2 * Math.sin(t * 1.4 + d.ph + i)).toFixed(2) + ')';
+            ctx.fillRect(Math.round(bx), Math.round(sy - h - r), Math.max(1, Math.round(r)), Math.max(1, Math.round(r)));
           }
           break; }
         case 'palmetto': if (layer !== 1) break; {

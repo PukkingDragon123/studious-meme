@@ -17,7 +17,7 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
   // ---- ZONE 1: OUT OF THE BUILDING, INTO THE TREES, DOWN TO THE SEA.
-  { id: 'facility', zone: 'river', lat: 0.14, lon: 2.68, name: 'FACILITY B', sub: 'TRANSFER ORDER 11. GET OUT OF THE BUILDING.', x: -7480, size: 0.22, diff: 0, intro: true },
+  { id: 'facility', zone: 'glades', lat: -0.24, lon: 0.42, name: 'AIRLIFT 11', sub: 'THEY ARE FLYING YOU TO A RESERVE. DO NOT ARRIVE.', x: 3700, size: 0.22, diff: 0, intro: true },
   { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE FOREST', sub: 'A CREEK IN THE BOTTOM OF A CANYON AND A HUNDRED FEET OF REDWOOD OVER IT.', x: -5400, size: 0.3, diff: 0.2, need: { deep: 700 } },
   { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE SWAMP', sub: 'BLACKWATER UNDER CYPRESS. THIS IS WHERE THE OTHERS ARE.', x: -3700, size: 0.5, diff: 0.6, need: { deep: 1400 } },
   { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'ISLAIS CREEK', sub: 'THE FOREST RUNS OUT AND A CITY STARTS. CONCRETE BOTH SIDES.', x: -2100, size: 0.8, diff: 1.2, need: { deep: 2400 } },
@@ -26,7 +26,7 @@ const STAGES = [
   { id: 'gate', survey: true, zone: 'river', lat: 0.34, lon: 3.58, name: 'THE GOLDEN GATE', sub: 'THE STRAIT. A CURRENT LIKE A RIVER AND TWO TOWERS STANDING IN IT.', x: 600, size: 2.6, diff: 3.0, need: { deep: 6600 } },
   // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
   { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
-  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },
+  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: 'EVERGLADES HOLIDAY PARK', sub: 'AIRBOATS, A GATOR SHOW AND FOUR HUNDRED PEOPLE', x: 3700, size: 0.85, diff: 1.0, need: { reach: 1800 } },
   { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 1.25, diff: 1.5, need: { reach: 3000 } },
   { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 1.7, diff: 2.0, need: { reach: 4200 } },
   { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 2.3, diff: 2.5, need: { reach: 5400 } },

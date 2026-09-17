@@ -3078,25 +3078,46 @@ const MAP_PROFILE = [
   [240, 560], [380, 780], [520, 940], [660, 1010], [800, 960],
   [940, 840], [1040, 620],
   [1150, 200], [1260, -30], [1330, 40], [1400, 96], [1460, 74],
-  // mangrove tangle: shallow braided water with root islands
-  [1520, 60], [1600, -18], [1660, -26], [1730, 54], [1840, 86], [1950, 70], [2060, -20], [2120, -30],
-  [2200, 62], [2320, 104], [2450, 92], [2560, 40], [2660, -30], [2730, -48], [2800, -40],
-  // fish camp: a town bank on the left, a working channel on the right
-  [2880, -52], [2990, -58], [3100, -50], [3180, 30], [3280, 150], [3420, 210], [3560, 205], [3700, 160],
-  [3820, 60], [3900, -40], [3990, -56], [4090, -48], [4180, 40],
-  // cypress swamp: dark, deep pockets between wooded hummocks
-  [4300, 190], [4420, 250], [4540, 210], [4640, 60], [4720, -40], [4790, -52], [4870, 30],
-  [4980, 230], [5120, 300], [5260, 260], [5380, 120], [5470, -30], [5550, -44], [5640, 60],
-  [5760, 240], [5880, 210], [5960, 90], [6040, -20],
-  // sawgrass prairie: broad shallow sheet flow, low islands
-  [6140, 40], [6260, 66], [6380, 52], [6480, -16], [6540, -24], [6620, 46], [6760, 72], [6900, 58],
-  [7020, -18], [7080, -26], [7160, 44], [7300, 70], [7440, 84], [7560, 60],
-  // deep river: a fast cut channel with undercut banks
-  [7680, 210], [7820, 420], [7980, 520], [8160, 560], [8340, 540], [8520, 470], [8680, 380],
-  [8820, 260], [8940, 130], [9040, -30], [9120, -60], [9220, -50], [9320, 60],
-  // campground: gentle beach shelving into a bay
-  [9440, 90], [9560, 60], [9660, -34], [9760, -58], [9880, -60], [9990, -40], [10090, 40],
-  [10200, 120], [10340, 160], [10480, 140], [10600, 80], [10700, -20], [10780, -44], [10880, -30],
+  // ===================== THE EVERGLADES =========================
+  // The River of Grass is a sheet, not a valley. A hundred miles of water a
+  // foot deep moving half a mile a day over flat limestone, with three things
+  // cut into it: gator holes, which are the only deep water in a drought and
+  // therefore the only water with anything in it; tree islands, a few feet of
+  // ground standing proud of the sheet; and the canals, which a man drew with
+  // a dragline and which are the deepest water for forty miles.
+  //
+  // So: flat. Depth 30-70 nearly everywhere, and every departure from that is
+  // a thing you can point at.
+  // -- MANGROVE TANGLE: brackish, braided, root islands out of the sheet
+  [1520, 46], [1600, -14], [1660, -20], [1730, 44], [1840, 58], [1950, 50], [2060, -16], [2120, -22],
+  [2200, 48], [2320, 62], [2400, 210], [2460, 240], [2520, 190],           // a mangrove-lined hole
+  // -- EVERGLADES HOLIDAY PARK. A levee with twenty-nine acres on it, the
+  // basin the airboats work out of in front, and the L-67A canal behind the
+  // lot: forty feet of dead-straight dredged water, and the deepest thing for
+  // sixty miles in any direction.
+  [2560, 44], [2610, -28], [2700, -58], [2820, -64], [2960, -60],          // the approach and the car park
+  [3060, -66], [3160, -64], [3260, -58], [3360, -62], [3440, -54],         // the building and the gator pit
+  [3520, -18], [3562, 30],                                                 // the boardwalk goes off the end of it
+  [3620, 56], [3700, 66], [3780, 60], [3860, 50],                          // the basin the docks stand in
+  [3920, 150], [3980, 340], [4060, 450], [4160, 470], [4260, 440],         // THE CANAL
+  [4360, 270], [4440, 80], [4520, 46],                                     // and the spoil bank on the far side
+  // -- CYPRESS: domes standing in the sheet, with a hole under each one
+  [4600, 56], [4640, 44], [4660, 240], [4680, 320], [4700, 250],
+  [4760, 50], [4800, -26], [4850, -34], [4900, 48],                        // a cypress head you can haul out on
+  [4980, 62], [5080, 46], [5180, 260], [5260, 340], [5340, 270],           // and another hole
+  [5420, 52], [5500, 40], [5580, -20], [5640, -28], [5720, 46],
+  [5800, 58], [5900, 44], [6000, 52], [6060, 40],
+  // -- SAWGRASS PRAIRIE: the flattest water in the world, and grass over it
+  [6140, 44], [6260, 52], [6380, 40], [6480, 48], [6540, 44], [6620, 50],
+  [6760, 46], [6900, 54], [6980, 230], [7040, 300], [7100, 240],           // one hole in the middle of it
+  [7160, 44], [7300, 50], [7380, -18], [7440, -26], [7500, 44],            // a hardwood hammock
+  [7560, 52],
+  // -- THE DEEP CUT: the one real channel, dredged, with undercut banks
+  [7680, 180], [7820, 380], [7980, 470], [8160, 500], [8340, 480], [8520, 420], [8680, 340],
+  [8820, 230], [8940, 120], [9040, -24], [9120, -44], [9220, -36], [9320, 52],
+  // -- PARADISE CAMPGROUND: a shelving beach and a shallow bay off it
+  [9440, 60], [9560, 48], [9660, -28], [9760, -48], [9880, -50], [9990, -34], [10090, 44],
+  [10200, 70], [10340, 90], [10480, 80], [10600, 56], [10700, -18], [10780, -38], [10880, -26],
   // open bay: wide deep water, the far shore is a rumour
   [11000, 140], [11180, 330], [11380, 520], [11600, 660], [11840, 720], [12080, 700], [12320, 640],
   [12560, 600], [12800, 640], [13040, 700], [13300, 740], [13560, 700], [13800, 660],
@@ -3401,47 +3422,54 @@ const BIOMES = [
     music: 0.8,
   },
   {
-    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1260, x1: 2800,
+    id: 'mangrove', name: 'MANGROVE TANGLE', x0: 1260, x1: 2540, glades: true,
     sky: ['#4d8fd0', '#cfe6f2'], water: ['#3a9a86', '#1e5c50', '#08201d'], scum: '#6a8a4a', fog: '#bfe0e6',
     parallax: ['mangrove', 'palm', 'mangrove'], ground: ['#5a4a34', '#463726', '#32281a'], grass: '#4f8a3a',
-    plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1], ['duckweed', 1], ['palm', 0.6], ['fern', 0.8]],
+    plants: [['mangrove', 2.4], ['root', 2], ['weed', 1.4], ['oyster', 1.2], ['reed', 1.2], ['duckweed', 1.2], ['palm', 0.6], ['fern', 0.8], ['tallgrass', 0.9], ['periphyton', 1.2]],
     fish: [['snapper', 3], ['sheepshead', 2], ['mullet', 3], ['snook', 2], ['redfish', 1.6], ['ladyfish', 1.4], ['minnow', 2]],
     land: [['raccoon', 3], ['iguana', 2], ['rabbit', 1.5], ['fox', 1]],
     structures: [['crabtrap', 2], ['buoy', 1], ['dock', 0.8], ['boathouse', 0.8]],
     music: 0.4,
   },
   {
-    id: 'camp', name: 'GATOR JOE’S FISH CAMP', x0: 2800, x1: 4200,
-    sky: ['#4f9fe0', '#e8dcc0'], water: ['#3a8a80', '#20564e', '#0a1e1c'], scum: '#7a8a4a', fog: '#d8e0d0',
-    parallax: ['shack', 'palm', 'oak'], ground: ['#6a5a3a', '#4a3e28', '#332a1c'], grass: '#6a9a3a',
-    plants: [['palm', 1.4], ['bush', 1.4], ['flower', 1], ['crate', 1.2], ['reed', 0.8], ['lily', 0.6], ['post', 1.2]],
-    fish: [['bluegill', 3], ['bass', 2.5], ['catfish', 2], ['mullet', 2], ['tilapia', 2], ['flgar', 1.4]],
-    land: [['dog', 2], ['raccoon', 2], ['rabbit', 1]],
-    structures: [['shop', 2.4], ['dock', 2.4], ['stilthouse', 1.6], ['boatramp', 1.4], ['sign', 1], ['boathouse', 2], ['trailer', 1.8], ['watertower', 1], ['billboard', 0.8]],
+    // EVERGLADES HOLIDAY PARK. Twenty-nine acres on the levee at the end of
+    // Griffin Road, with the L-67A canal behind it: a car park, a main
+    // building with a concourse through it, a gift shop and a cafe, the gator
+    // pit with stadium seating and a louvered roof over it, four airboat
+    // docks, a fishing dock and two public ramps. Real place, built to plan.
+    id: 'camp', name: 'EVERGLADES HOLIDAY PARK', x0: 2540, x1: 4560, park: true, glades: true,
+    sky: ['#4f9fe0', '#e8dcc0'], water: ['#4a9a7e', '#27604e', '#0c221c'], scum: '#7a8a4a', fog: '#d8e0d0',
+    parallax: ['sawgrass', 'palm', 'hammock'], ground: ['#7a6a44', '#56492e', '#3a3020'], grass: '#7aa845',
+    // Nothing grows on the levee: it is a car park. The planting is in the
+    // water either side of it.
+    plants: [['sawgrass', 0.5], ['tallgrass', 1.4], ['reed', 1.4], ['lily', 1.4], ['duckweed', 1.4], ['post', 1], ['periphyton', 1.4]],
+    fish: [['bluegill', 3], ['bass', 2.5], ['catfish', 2], ['mullet', 2], ['tilapia', 2], ['flgar', 1.6], ['sunfish', 2], ['minnow', 2.4], ['peacock', 1.2]],
+    land: [['dog', 1.6], ['raccoon', 2], ['rabbit', 1], ['iguana', 1.6], ['armadillo', 1.2]],
+    structures: [['sign', 1], ['billboard', 0.8], ['buoy', 0.8]],
     town: true, music: 0.5,
   },
   {
-    id: 'cypress', name: 'CYPRESS SWAMP', x0: 4200, x1: 6100,
+    id: 'cypress', name: 'CYPRESS SWAMP', x0: 4560, x1: 6100, glades: true,
     sky: ['#3a7ab0', '#a8c0b8'], water: ['#2f6a58', '#173f36', '#050f0e'], scum: '#4a6a3a', fog: '#9ab0a8',
     parallax: ['cypress', 'cypress', 'oak'], ground: ['#3f3424', '#2e2618', '#1e1810'], grass: '#3f6a22',
-    plants: [['cypress', 2.6], ['knee', 2], ['moss', 1.6], ['fern', 1.4], ['vine', 1.2], ['weed', 1.4], ['lily', 1.2], ['mushroom', 0.8], ['log', 1]],
-    fish: [['bowfin', 2.4], ['flgar', 2.2], ['gar', 1.6], ['catfish', 2], ['bluegill', 2], ['eel', 1.4]],
+    plants: [['cypress', 2.6], ['knee', 2], ['moss', 1.6], ['fern', 1.4], ['vine', 1.2], ['weed', 1.4], ['lily', 1.2], ['mushroom', 0.8], ['log', 1], ['tallgrass', 1.1], ['sawgrass', 1.2], ['periphyton', 1.6]],
+    fish: [['bowfin', 2.4], ['flgar', 2.2], ['gar', 1.6], ['catfish', 2], ['bluegill', 2], ['eel', 1.4], ['sunfish', 2], ['minnow', 2.2], ['tilapia', 1.6], ['peacock', 1.2]],
     land: [['panther', 1.2], ['bear', 0.9], ['boar', 1.6], ['deer', 2], ['opossum', 1.4], ['bobcat', 1.2]],
     structures: [['tower', 1], ['sign', 0.6], ['trailer', 0.8], ['billboard', 0.7]],
     dark: 0.18, music: 0.8,
   },
   {
-    id: 'prairie', name: 'SAWGRASS PRAIRIE', x0: 6100, x1: 7600,
+    id: 'prairie', name: 'SAWGRASS PRAIRIE', x0: 6100, x1: 7600, glades: true,
     sky: ['#5aaee8', '#f0e4c0'], water: ['#4aa88e', '#2a6a58', '#123028'], scum: '#8a9a4a', fog: '#e0e8c8',
     parallax: ['sawgrass', 'palm', 'hammock'], ground: ['#6a6a3a', '#4e4e28', '#35351c'], grass: '#8aae3f',
-    plants: [['sawgrass', 3.2], ['cattail', 2.4], ['lily', 1.6], ['duckweed', 1.4], ['hyacinth', 1.2], ['flower', 1.2], ['reed', 1.4]],
-    fish: [['minnow', 3], ['sunfish', 2.6], ['bluegill', 2.4], ['mullet', 2], ['peacock', 1.6], ['tilapia', 2]],
-    land: [['deer', 2.4], ['doe', 2], ['rabbit', 2], ['coyote', 1.4], ['armadillo', 1.6]],
+    plants: [['tallgrass', 1.7], ['sawgrass', 2.2], ['cattail', 2.4], ['lily', 1.8], ['duckweed', 1.6], ['hyacinth', 1.4], ['flower', 1.2], ['reed', 1.6], ['periphyton', 2.4]],
+    fish: [['minnow', 3], ['sunfish', 2.6], ['bluegill', 2.4], ['mullet', 2], ['peacock', 1.6], ['tilapia', 2], ['bass', 1.8], ['flgar', 1.6], ['bowfin', 1.2]],
+    land: [['deer', 2.4], ['doe', 2], ['rabbit', 2], ['coyote', 1.4], ['armadillo', 1.6], ['opossum', 1.4], ['boar', 1.2], ['bobcat', 0.8]],
     structures: [['buoy', 0.8], ['tower', 0.8]],
     music: 0.4,
   },
   {
-    id: 'river', name: 'THE DEEP CUT', x0: 7600, x1: 9400,
+    id: 'river', name: 'THE DEEP CUT', x0: 7600, x1: 9400, glades: true,
     sky: ['#3a86c8', '#c8dce8'], water: ['#2a7a86', '#154a56', '#04161c'], scum: '#5a7a5a', fog: '#b0c8d0',
     parallax: ['cypress', 'oak', 'bluff'], ground: ['#4a4438', '#363126', '#221f18'], grass: '#4a7a30',
     plants: [['weed', 2], ['algae', 2], ['sunkbranch', 1.6], ['shellbed', 1.4], ['root', 1.2], ['rock', 1.4], ['bush', 0.8]],
@@ -3545,6 +3573,7 @@ const Biome = {
       // them makes the last 260 units of a laboratory come out as sewer brick.
       lab: t > 0.5 ? b.lab : a.lab, roman: t > 0.5 ? b.roman : a.roman, pipe: t > 0.5 ? b.pipe : a.pipe, remote: t > 0.5 ? b.remote : a.remote,
       forest: t > 0.5 ? b.forest : a.forest, swamp: t > 0.5 ? b.swamp : a.swamp,
+      glades: t > 0.5 ? b.glades : a.glades, park: t > 0.5 ? b.park : a.park,
       cliff: lerp(a.cliff || 0, b.cliff || 0, t),
     };
   },
@@ -3552,6 +3581,10 @@ const Biome = {
   decorAt(x, rng, out) {
     const B = this.at(x), fy = MapData.floorY(x), land = fy < 0, depth = fy;
     if (B.lab) return;        // the lab is laid out, not scattered: see authored()
+    // The park's levee is twenty-nine acres of asphalt, walkway and building.
+    // Nothing self-seeds through a car park, and a palm coming up through the
+    // gator pit is the thing that made it look procedural.
+    if (typeof PARK !== 'undefined' && land && x > PARK.X0 - 40 && x < PARK.BOARD1 + 20) return;
     const table = B.plants.filter(([k]) => {
       const w = PLANT_RULES[k]; if (!w) return false;
       // Nothing floats on a sewer, and nothing grows on brick you cannot see.
@@ -3640,6 +3673,16 @@ const PLANT_RULES = {
   fern: { land: true, make: (o, x, y, r) => o.push({ type: 'fern', x, y, s: 0.9 + r() * 0.8, ph: r() * TAU }) },
   bush: { land: true, make: (o, x, y, r) => o.push({ type: 'bush', x, y, s: 0.9 + r() * 0.9, v: Math.floor(r() * 3) }) },
   sawgrass: { land: true, make: (o, x, y, r) => o.push({ type: 'sawgrass', x, y, s: 0.9 + r() * 0.8, ph: r() * TAU, fly: r() < 0.3 }) },
+  // The thing the River of Grass is named after, standing in the water rather
+  // than on a bank: six feet of it, thick enough that an animal lying in it is
+  // an animal nothing on the bank can see.
+  tallgrass: { land: false, minD: 10, maxD: 130, make: (o, x, y, r) => {
+    const n = 1 + Math.floor(r() * 3);
+    for (let k = 0; k < n; k++) o.push({ type: 'tallgrass', x: x + k * 11 + r() * 7, y, s: 0.9 + r() * 1.0, ph: r() * TAU, h: 26 + r() * 46, blades: 4 + Math.floor(r() * 4) });
+  } },
+  // periphyton: the mat of algae that grows on everything out here and is the
+  // bottom of the whole food chain
+  periphyton: { land: false, minD: 8, maxD: 200, make: (o, x, y, r) => o.push({ type: 'periphyton', x, y, w: 16 + r() * 34, s: 0.7 + r() * 0.6, ph: r() * TAU }) },
   flower: { land: true, make: (o, x, y, r) => o.push({ type: 'flower', x, y, c: Math.floor(r() * 4), n: 1 + Math.floor(r() * 3) }) },
   mushroom: { land: true, make: (o, x, y, r) => o.push({ type: 'mushroom', x, y, n: 2 + Math.floor(r() * 3), c: Math.floor(r() * 2) }) },
   crate: { land: true, make: (o, x, y, r) => o.push({ type: 'crate', x, y, v: Math.floor(r() * 3) }) },
@@ -3789,7 +3832,7 @@ const Foliage = {
       const k = FOLIAGE_KIND[d.type]; if (!k || !k.water) continue;
       const top = k.top(d);
       if (y < Math.min(top, d.y) - 10 || y > Math.max(top, d.y) + 10) continue;
-      c += 0.22 * clamp(1 - Math.abs(d.x - x) / 40, 0, 1);
+      c += 0.22 * (k.cover || 1) * clamp(1 - Math.abs(d.x - x) / 40, 0, 1);
       if (c >= 1) break;
     }
     return clamp(c, 0, 1);
@@ -3829,7 +3872,9 @@ const Foliage = {
 };
 const FOLIAGE_KIND = {
   weed: { top: d => d.y - d.h, water: true }, algae: { top: d => d.y - d.h, water: true }, reed: { top: d => d.top }, cattail: { top: d => d.top },
-  sawgrass: { top: d => d.y - 12 * d.s }, seagrass: { top: d => d.y - d.h, water: true }, mushroom: { top: d => d.y - 6 }, palmetto: { top: d => d.y - 16 * d.s }, fern: { top: d => d.y - 13 * d.s }, bush: { top: d => d.y - 12 * d.s },
+  sawgrass: { top: d => d.y - 12 * d.s },
+  // the only real cover in the glades: standing grass you can lie down in
+  tallgrass: { top: d => d.y - d.h * d.s, water: true, cover: 1.25 }, periphyton: { top: d => d.y - 3 }, seagrass: { top: d => d.y - d.h, water: true }, mushroom: { top: d => d.y - 6 }, palmetto: { top: d => d.y - 16 * d.s }, fern: { top: d => d.y - 13 * d.s }, bush: { top: d => d.y - 12 * d.s },
   hyacinth: { top: d => -10, water: true }, duckweed: { top: d => -3, water: true }, lily: { top: d => -3, water: true },
   cypress: { top: d => d.y - d.h, tree: true, leaf: '#3a6a30' }, oak: { top: d => d.y - d.h, tree: true, leaf: '#4a7a3a' }, palm: { top: d => d.y - d.h, tree: true, leaf: '#5a8a3a' },
   mangrove: { top: d => d.y - 30 * d.s, tree: true, leaf: '#3f7a3a' }, vine: { top: d => d.y - d.h }, flower: { top: d => d.y - 10 },
@@ -6292,6 +6337,16 @@ const World = {
     const BP = Biome.mixPal(cam.x), kinds = BP.parallax;
     if (BP.open) { this.drawOceanHorizon(ctx, cam, day); return; }
     if ((BP.cliff || 0) > 0.985) { this.drawCliffs(ctx, cam, day, hy, sc, BP); return; }
+    // The Everglades has no ridge and no trees on the skyline: the glades
+    // renderer puts a dead-flat grass horizon there instead, and a hill drawn
+    // under it is a hill in the flattest place on the continent.
+    if (BP.glades) {
+      const g2 = ctx.createLinearGradient(0, hy - 40, 0, hy);
+      g2.addColorStop(0, rgba(sc.bot, 0)); g2.addColorStop(1, rgba(sc.bot, 0.3 * light));
+      ctx.fillStyle = g2; ctx.fillRect(0, hy - 40, W, 40);
+      if ((BP.cliff || 0) > 0.01) { ctx.globalAlpha = BP.cliff; this.drawCliffs(ctx, cam, day, hy, sc, BP); ctx.globalAlpha = 1; }
+      return;
+    }
     // furthest ridge: bare hills, no trees, barely separated from the sky
     {
       const col = mixColor(sc.bot, '#3c5a48', 0.26), ox = cam.x * 0.05;
@@ -6836,6 +6891,8 @@ const World = {
     // of the shaft the animal came down. Drawn after the ground so it stands
     // in front of the cut instead of under it.
     if (typeof Forest !== 'undefined') Forest.head(ctx, cam);
+    // and the one built thing in sixty miles of grass
+    if (typeof Park !== 'undefined') Park.draw(ctx, cam);
   },
   // concrete shell of the lab and sewer: ceiling, back wall, ribs and lamps
   // The made ground a pipe is buried in. Above the crown and below the invert
@@ -7809,6 +7866,54 @@ const World = {
             const fx = sx + Math.sin(t * 0.9 + d.ph) * 14 * z, fy = sy - (14 + Math.sin(t * 1.7 + d.ph * 2) * 8) * z;
             const pulse = 0.5 + 0.5 * Math.sin(t * 3 + d.ph * 5);
             if (pulse > 0.35) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = night * pulse; ctx.fillStyle = '#e8ff60'; ctx.fillRect(Math.round(fx), Math.round(fy), 1, 1); ctx.globalAlpha = night * pulse * 0.3; ctx.fillRect(Math.round(fx) - 1, Math.round(fy) - 1, 3, 3); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+          }
+          break; }
+        // TALL GRASS. Sawgrass standing in the water rather than on a bank, and
+        // the only thing out here that hides an animal: blades from the bed up
+        // through the surface, cut by the waterline, bending away from you as
+        // you go through them.
+        case 'tallgrass': if (layer !== 1) break; {
+          const surf = World.surface(d.x), [, wy] = cam.toScreen(0, surf);
+          const H0 = d.h * d.s * z;
+          const lean = (Math.sin(t * 0.9 + d.ph) * 1.6 + (d.bend || 0) * 5) * z;
+          const nb = d.blades || 6;
+          for (let b = 0; b < nb; b++) {
+            const u = b / (nb - 1) - 0.5;
+            const bx = sx + u * 9 * z * d.s;
+            const hgt = H0 * (0.62 + 0.38 * Math.cos(u * 2.4));
+            const tipx = bx + lean + u * 11 * z * d.s;
+            const ty = sy - hgt;
+            // under the water it is darker and greener; over it, bleached
+            const deep = sy - Math.max(0, sy - wy) * 0.0;
+            blade(bx, sy + 1, tipx, ty, bx + lean * 0.35 + u * 5 * z, sy - hgt * 0.55, (1.5 + d.s * 0.5) * z,
+              '#2c4a1c', '#4f7a2a', '#7fa640');
+            // the part in the air catches the sun
+            if (ty < wy) {
+              ctx.globalAlpha = 0.85;
+              blade(bx + lean * 0.2, Math.min(sy, wy), tipx, ty, bx + lean * 0.4 + u * 6 * z, ty + (wy - ty) * 0.5, (1.2 + d.s * 0.4) * z,
+                '#6f8a3a', '#9ab24c', '#cbd884');
+              ctx.globalAlpha = 1;
+            }
+            // seed heads on a few of them
+            if (((b * 7 + Math.round(d.x)) % 5) === 0) {
+              ctx.fillStyle = '#c0a858';
+              ctx.fillRect(Math.round(tipx - z), Math.round(ty - 3 * z), Math.max(1, Math.round(2.4 * z)), Math.max(1, Math.round(4 * z)));
+            }
+          }
+          break; }
+        // PERIPHYTON. The algal mat the whole place runs on: a pale crust on
+        // the bed with bubbles of oxygen trapped under it.
+        case 'periphyton': if (layer !== 0) break; {
+          const w = d.w * d.s * z, h = 3.4 * d.s * z;
+          ctx.fillStyle = 'rgba(158,170,116,0.55)';
+          ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
+          ctx.fillStyle = 'rgba(196,204,150,0.5)';
+          ctx.fillRect(Math.round(sx - w / 2), Math.round(sy - h), Math.max(1, Math.round(w)), Math.max(1, Math.round(h * 0.4)));
+          for (let i = 0; i < 5; i++) {
+            const bx = sx - w / 2 + ((i * 37 + Math.round(d.x)) % Math.max(1, w));
+            const r = (1 + ((i * 13 + Math.round(d.x)) % 3)) * z * 0.6;
+            ctx.fillStyle = 'rgba(226,240,220,' + (0.3 + 0.2 * Math.sin(t * 1.4 + d.ph + i)).toFixed(2) + ')';
+            ctx.fillRect(Math.round(bx), Math.round(sy - h - r), Math.max(1, Math.round(r)), Math.max(1, Math.round(r)));
           }
           break; }
         case 'palmetto': if (layer !== 1) break; {
@@ -9123,7 +9228,7 @@ for (const z of ZONES) ZONE_BY_ID[z.id] = z;
 
 const STAGES = [
   // ---- ZONE 1: OUT OF THE BUILDING, INTO THE TREES, DOWN TO THE SEA.
-  { id: 'facility', zone: 'river', lat: 0.14, lon: 2.68, name: 'FACILITY B', sub: 'TRANSFER ORDER 11. GET OUT OF THE BUILDING.', x: -7480, size: 0.22, diff: 0, intro: true },
+  { id: 'facility', zone: 'glades', lat: -0.24, lon: 0.42, name: 'AIRLIFT 11', sub: 'THEY ARE FLYING YOU TO A RESERVE. DO NOT ARRIVE.', x: 3700, size: 0.22, diff: 0, intro: true },
   { id: 'wake', zone: 'river', lat: 0.30, lon: 2.86, name: 'THE FOREST', sub: 'A CREEK IN THE BOTTOM OF A CANYON AND A HUNDRED FEET OF REDWOOD OVER IT.', x: -5400, size: 0.3, diff: 0.2, need: { deep: 700 } },
   { id: 'interceptor', zone: 'river', lat: -0.02, lon: 3.06, name: 'THE SWAMP', sub: 'BLACKWATER UNDER CYPRESS. THIS IS WHERE THE OTHERS ARE.', x: -3700, size: 0.5, diff: 0.6, need: { deep: 1400 } },
   { id: 'gallery', zone: 'river', lat: 0.42, lon: 3.30, name: 'ISLAIS CREEK', sub: 'THE FOREST RUNS OUT AND A CITY STARTS. CONCRETE BOTH SIDES.', x: -2100, size: 0.8, diff: 1.2, need: { deep: 2400 } },
@@ -9132,7 +9237,7 @@ const STAGES = [
   { id: 'gate', survey: true, zone: 'river', lat: 0.34, lon: 3.58, name: 'THE GOLDEN GATE', sub: 'THE STRAIT. A CURRENT LIKE A RIVER AND TWO TOWERS STANDING IN IT.', x: 600, size: 2.6, diff: 3.0, need: { deep: 6600 } },
   // ---- ZONE 2: THE EVERGLADES. Past the grate, under the sky.
   { id: 'mangrove', zone: 'glades', lat: -0.52, lon: 0.66, name: 'MANGROVE TANGLE', sub: 'ROOTS, OYSTERS, SNOOK', x: 1650, size: 0.55, diff: 0.5, need: { reach: 600 } },
-  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: "GATOR JOE'S CAMP", sub: 'THE FISH CAMP STILL HAS PEOPLE IN IT', x: 3400, size: 0.85, diff: 1.0, need: { reach: 1800 } },
+  { id: 'camp', zone: 'glades', lat: -0.12, lon: 0.18, name: 'EVERGLADES HOLIDAY PARK', sub: 'AIRBOATS, A GATOR SHOW AND FOUR HUNDRED PEOPLE', x: 3700, size: 0.85, diff: 1.0, need: { reach: 1800 } },
   { id: 'cypress', zone: 'glades', lat: 0.16, lon: 0.52, name: 'CYPRESS SWAMP', sub: 'DEEP TANNIC WATER UNDER THE KNEES', x: 5100, size: 1.25, diff: 1.5, need: { reach: 3000 } },
   { id: 'prairie', zone: 'glades', lat: -0.38, lon: 1.02, name: 'SAWGRASS PRAIRIE', sub: 'SHALLOW, OPEN, NOWHERE TO HIDE', x: 6800, size: 1.7, diff: 2.0, need: { reach: 4200 } },
   { id: 'river', zone: 'glades', lat: 0.44, lon: 0.92, name: 'THE DEEP CUT', sub: 'THE CHANNEL RUNS COLD AND DEEP', x: 8400, size: 2.3, diff: 2.5, need: { reach: 5400 } },
@@ -11869,7 +11974,7 @@ const ARTIFACTS = [
     boon: 'START EVERY RUN WITH 2 GENE POINTS', col: '#9ad8c0', glyph: 'tag', apply: P => { P.genePoints += 2; } },
   { id: 'oyster', stage: 'mangrove', name: "DROWNED MAN'S RING", line: 'PRISED OUT OF AN OYSTER BED WITH A FINGER STILL IN IT.',
     boon: '+8% BITE', col: '#d8c8a0', glyph: 'ring', apply: P => { P.st.bite *= 1.08; } },
-  { id: 'skull', stage: 'camp', name: "GATOR JOE'S SKULL", line: 'HE NAMED THE CAMP AFTER HIMSELF. YOU KEPT THE REST.',
+  { id: 'skull', stage: 'camp', name: 'AN AIRBOAT PROP BLADE', line: 'IT CAME OFF AT TWO THOUSAND REVOLUTIONS AND WENT THROUGH THE CAGE.',
     boon: '+10% MAX HEALTH', col: '#e4dcc4', glyph: 'skull', apply: P => { P.st.hpMul *= 1.10; } },
   { id: 'knee', stage: 'cypress', name: 'BLACKWATER KNEE', line: 'A CYPRESS KNEE THAT GREW AROUND SOMETHING METAL.',
     boon: '+2 STRAIN TOLERANCE', col: '#8a6a44', glyph: 'knee', apply: P => { P.strainBonus = (P.strainBonus || 0) + 2; } },
@@ -11911,9 +12016,9 @@ for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
 
 // One standing order per site. `kind` decides which hook counts.
 const MISSIONS = {
-  facility:   { title: 'GET TO THE PACIFIC', line: 'OPEN THE TIDE GATE', kind: 'puzzle', target: 3 },
+  facility:   { title: 'DISAPPEAR', line: 'PUT 2500M BETWEEN YOU AND THE PARK', kind: 'travel', target: 2500 },
   mangrove:   { title: 'THIN THE ROOTS', line: 'TAKE 14 FISH', kind: 'fish', target: 14 },
-  camp:       { title: 'CLOSE THE CAMP', line: 'WRECK 3 BUILDS', kind: 'wreck', target: 3 },
+  camp:       { title: 'CLOSE THE PARK', line: 'TAKE 8 PEOPLE', kind: 'human', target: 8 },
   cypress:    { title: 'OWN THE DEEP', line: 'KILL 5 PREDATORS', kind: 'threat', target: 5 },
   prairie:    { title: 'CROSS THE OPEN', line: 'CROSS THE OPEN', kind: 'travel', target: 1600, unit: 'M' },
   river:      { title: 'RUN THE CHANNEL', line: 'KILL A BOSS', kind: 'boss', target: 1 },
@@ -11940,13 +12045,13 @@ const MISSIONS = {
 // in your teeth. Nobody is talking to you. You are what they are talking about.
 // ---------------------------------------------------------------------------
 const STORY = {
-  facility: ['SUBJECT 11 IS OUT OF THE TANK AND INSIDE THE BUILDING.', 'THE FLOOR PLATE IN THE WEST CORRIDOR HAS GONE.',
-    'THAT SHAFT IS A HUNDRED AND FORTY FEET AND IT LETS OUT IN A CREEK.',
-    'THE CREEK IS IN A NATIONAL FOREST. THERE IS NO FENCE AROUND A FOREST.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
+  facility: ['AIRLIFT 11 REPORTS THE CRATE IS OPEN. THEY ARE STILL IN THE AIR.', 'IT WENT OUT OF THE DOOR. THAT IS FOUR HUNDRED FEET.',
+    'IT WENT INTO THE WATER NORTH OF THE PARK AND IT DID NOT COME BACK UP WHERE IT WENT IN.',
+    'THAT IS SIXTY MILES OF SAWGRASS AND NOBODY HAS A FENCE AROUND IT.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
   mangrove: ['THE ROOT LINE IS SHALLOW. IT WILL HAVE TO SURFACE TO CROSS.', 'IT IS NOT CROSSING. IT IS FEEDING.',
     'SIXTY POUNDS OF SNOOK IN ELEVEN MINUTES.', 'THAT RING CAME OFF A DIVER WE NEVER FOUND.'],
-  camp: ['THERE ARE PEOPLE AT THAT CAMP. ADVISE THEM.', 'NOBODY IS ANSWERING AT THE CAMP.',
-    'THE CAMP IS IN THE WATER.', 'JOE BUILT THAT PLACE WITH HIS HANDS. YOU HAVE HIS HEAD.'],
+  camp: ['IT IS AT THE HOLIDAY PARK. THERE ARE FOUR HUNDRED PEOPLE ON THOSE DOCKS.', 'CLEAR THE BOARDS. CLEAR THE PIT AS WELL.',
+    'THE TWO O CLOCK SHOW IS NOT GOING AHEAD.', 'THAT BLADE WENT THROUGH THE CAGE AND THROUGH THE MAN BEHIND IT.'],
   cypress: ['TANNIC WATER. WE LOSE THE TRANSPONDER UNDER THE KNEES.', 'SOMETHING ELSE IS HUNTING IN THERE WITH IT.',
     'WHATEVER WAS HUNTING IT IS NOT ANY MORE.', 'THE KNEE GREW AROUND A SURVEY STAKE. NOBODY SURVEYED THAT FAR IN.'],
   prairie: ['SHEET FLOW. NO COVER FOR MILES. IT WILL TURN BACK.', 'IT IS NOT TURNING BACK.',
@@ -14550,9 +14655,9 @@ const LAIRS = [
   { id: 'gnasher', x: -2280, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THERE ARE BONES ON EVERY PILING' },
   { id: 'sludgeking', x: 640, r: 330, warn: 860, name: 'THE GATEKEEPER', sign: 'sludge', tell: 'THE CURRENT IS GOING THE WRONG WAY' },
   // ---- the glades ------------------------------------------------------
-  { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
-  { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
-  { id: 'warboat', x: 9300, r: 320, warn: 800, name: 'THE POACHER WARBOAT', sign: 'traps', tell: 'TRAPLINES. SOMEBODY WORKS THIS WATER' },
+  { id: 'oldscar', x: 6250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'EVERY HOLE ON THIS PRAIRIE IS EMPTY' },
+  { id: 'python', x: 8300, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
+  { id: 'warboat', x: 10600, r: 320, warn: 800, name: 'THE POACHER WARBOAT', sign: 'traps', tell: 'TRAPLINES. SOMEBODY WORKS THIS WATER' },
   { id: 'skunkape', x: 14250, r: 340, warn: 900, name: 'THE SKUNK APE', sign: 'prints', tell: 'PRINTS IN THE MUD, AND THEY ARE NOT YOURS' },
   // ---- the ocean -------------------------------------------------------
   { id: 'anvil', x: 21800, r: 320, warn: 800, name: 'THE ANVIL', sign: 'bones', tell: 'EVERY FISH HERE IS SWIMMING THE OTHER WAY' },
@@ -15440,6 +15545,843 @@ const Forest = {
   },
 };
 
+/* ===== src/glades.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// THE RIVER OF GRASS.
+//
+// The Everglades is the flattest landscape on the continent. There is no ridge
+// on the horizon, there is no valley, there is nothing to put behind anything
+// else: it is sixty miles of grass standing in a foot of water, and the only
+// vertical objects in it are the tree islands, which are eight feet high and
+// look like mountains because nothing else is.
+//
+// So the background is not a hill. It is:
+//   BACK    a dead-flat grass horizon, tree islands and cypress domes sitting
+//           on it, a wall of heat over the lot
+//   DEEP    what the water is full of: marl in suspension, periphyton drifting
+//           off the bed, light coming through the grass, solution holes
+//   FRONT   the grass you are actually in, across the bottom of the frame,
+//           with dragonflies over it and a heron's legs in it
+// ---------------------------------------------------------------------------
+const Glades = {
+  flies: [], motes: [], birds: [], t: 0,
+
+  on(x) { const B = Biome.at(x); return !!B.glades; },
+  park(x) { const B = Biome.at(x); return !!B.park; },
+
+  reset() { this.flies.length = 0; this.motes.length = 0; this.birds.length = 0; },
+
+  update(dt, cam) {
+    this.t += dt;
+    if (!this.on(cam.x)) { if (this.flies.length) this.reset(); return; }
+    const halfW = G.W / cam.zoom / 2 + 90;
+    const surf = World.surface(cam.x);
+    const light = World.light(G.day);
+    // ---- dragonflies: the thing that is always over the grass -------------
+    const want = light > 0.3 ? 9 : 2;
+    while (this.flies.length < want) {
+      this.flies.push({ x: cam.x + rand(-halfW, halfW), y: surf - rand(6, 54), ph: rand(TAU), sp: rand(1.2, 3),
+        tx: 0, ty: 0, rest: 0, c: chance(0.5) ? '#4aa8d8' : '#c04a3a' });
+    }
+    while (this.flies.length > want) this.flies.pop();
+    for (const F of this.flies) {
+      F.ph += dt * F.sp;
+      F.rest -= dt;
+      if (F.rest <= 0) { F.rest = rand(0.5, 2.2); F.tx = cam.x + rand(-halfW, halfW); F.ty = surf - rand(4, 60); }
+      F.x += (F.tx - F.x) * Math.min(1, dt * 1.6) + Math.sin(F.ph * 3) * 14 * dt;
+      F.y += (F.ty - F.y) * Math.min(1, dt * 1.6);
+      if (Math.abs(F.x - cam.x) > halfW + 100) F.x = cam.x + Math.sign(cam.x - F.x) * halfW;
+    }
+    // ---- marl and periphyton hanging in the water -------------------------
+    const fl = World.floorY(cam.x);
+    while (this.motes.length < 34) this.motes.push({ x: cam.x + rand(-halfW, halfW), y: rand(surf + 4, Math.max(surf + 10, fl - 4)), ph: rand(TAU), sp: rand(0.2, 0.8), s: rand(0.6, 1.5) });
+    for (let i = this.motes.length - 1; i >= 0; i--) {
+      const M = this.motes[i];
+      M.ph += dt * M.sp;
+      M.x += Math.sin(M.ph) * 4 * dt; M.y += Math.cos(M.ph * 0.7) * 3 * dt;
+      if (Math.abs(M.x - cam.x) > halfW + 90) this.motes.splice(i, 1);
+    }
+    // ---- wading birds out in the grass ------------------------------------
+    const wantB = light > 0.25 ? 3 : 0;
+    while (this.birds.length < wantB) this.birds.push({ x: cam.x + rand(-halfW * 1.4, halfW * 1.4), ph: rand(TAU), sp: rand(0.2, 0.6), k: choice(['egret', 'heron', 'ibis', 'stork']), step: 0 });
+    while (this.birds.length > wantB) this.birds.pop();
+    for (const B of this.birds) {
+      B.ph += dt * B.sp;
+      B.step += dt * 0.5;
+      if (Math.abs(B.x - cam.x) > halfW * 1.6) B.x = cam.x + Math.sign(cam.x - B.x) * halfW * 1.5;
+    }
+  },
+
+  // ---- BACK: a horizon with nothing on it -------------------------------
+  back(ctx, cam, day) {
+    if (!this.on(cam.x)) return;
+    const W = G.W, H = G.H, z = cam.zoom, hy = cam.toScreen(0, 0)[1];
+    if (hy < -60) return;
+    const light = World.light(day), night = 1 - light;
+    const B = Biome.mixPal(cam.x);
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const dim = (c) => mixColor(c, '#131e22', night * 0.55);
+
+    // ---- the far grass: one flat band, because the land is flat -----------
+    // Three layers of it, each a shade darker and a few pixels taller, and
+    // none of them with a hill in it.
+    const bands = [
+      { f: 0.07, h: 5, col: dim(mixColor(B.sky[1], '#9aae6a', 0.52)) },
+      { f: 0.13, h: 8, col: dim(mixColor(B.sky[1], '#7d9450', 0.68)) },
+      { f: 0.22, h: 12, col: dim(mixColor(B.sky[1], '#5f7a38', 0.82)) },
+      { f: 0.36, h: 17, col: dim(mixColor(B.sky[1], '#445c26', 0.92)) },
+    ];
+    for (const L of bands) {
+      const ox = cam.x * L.f;
+      ctx.fillStyle = L.col;
+      ctx.beginPath(); ctx.moveTo(0, hy + 3);
+      for (let sx = 0; sx <= W; sx += 3) {
+        const wx = ox + sx;
+        // a grass line is not a hill line: it is flat with a tuft in it
+        const n = (vnoise(wx * 0.05, 11) - 0.5) * 2.2 + (vnoise(wx * 0.012, 5) - 0.5) * 3.4;
+        ctx.lineTo(sx, hy - L.h - n);
+      }
+      ctx.lineTo(W, hy + 3); ctx.closePath(); ctx.fill();
+      // the blades that break the top of it
+      ctx.fillStyle = mixColor(L.col, '#ffffff', 0.1);
+      for (let sx = 0; sx < W; sx += 2) {
+        const wx = ox + sx;
+        if (ihash(Math.round(wx), 31) > 0.72) {
+          const n = (vnoise(wx * 0.05, 11) - 0.5) * 2.2 + (vnoise(wx * 0.012, 5) - 0.5) * 3.4;
+          ctx.fillRect(sx, Math.round(hy - L.h - n - 2 - ihash(Math.round(wx), 32) * 4), 1, 4);
+        }
+      }
+    }
+
+    // ---- tree islands and cypress domes sitting on it ---------------------
+    // A hammock is a teardrop of hardwood eight feet high. A dome is a ring of
+    // cypress that gets taller toward the middle because the hole under it is
+    // deeper there. They are the only things out here with a top edge.
+    for (const [f, seed, scale, dens] of [[0.13, 21, 0.62, 520], [0.24, 33, 0.85, 400], [0.4, 47, 1.15, 330]]) {
+      const ox = cam.x * f;
+      const col = dim(mixColor(B.sky[1], '#2c4423', 0.7 + f * 0.3));
+      const lit = mixColor(col, '#b8d08a', 0.16);
+      for (let k = Math.floor(ox / dens) - 1; k <= Math.floor((ox + W) / dens) + 1; k++) {
+        const r = ihash(k, seed);
+        if (r > 0.82) continue;
+        const sx = k * dens + ihash(k, seed + 1) * dens - ox;
+        if (sx < -160 || sx > W + 160) continue;
+        const dome = ihash(k, seed + 2) > 0.45;
+        const wdt = (60 + ihash(k, seed + 3) * 110) * scale;
+        const hgt = (14 + ihash(k, seed + 4) * 20) * scale;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(sx - wdt / 2, hy + 2);
+        if (dome) {
+          // a dome: tallest in the middle, ragged with individual crowns
+          for (let q = 0; q <= 14; q++) {
+            const u = q / 14;
+            const prof = Math.sin(u * Math.PI);
+            const jag = (ihash(k * 17 + q, seed + 5) - 0.5) * 5 * scale;
+            ctx.lineTo(sx - wdt / 2 + u * wdt, hy - hgt * (0.28 + prof * 0.85) + jag);
+          }
+        } else {
+          // a hammock: a flat-topped teardrop, taller at the upstream end
+          for (let q = 0; q <= 12; q++) {
+            const u = q / 12;
+            const prof = Math.pow(Math.sin(u * Math.PI), 0.45);
+            const jag = (ihash(k * 13 + q, seed + 6) - 0.5) * 3.4 * scale;
+            ctx.lineTo(sx - wdt / 2 + u * wdt, hy - hgt * (0.3 + prof * 0.7) + jag);
+          }
+        }
+        ctx.lineTo(sx + wdt / 2, hy + 2); ctx.closePath(); ctx.fill();
+        // the sunlit side of it
+        ctx.fillStyle = lit;
+        for (let q = 0; q < 7; q++) {
+          const u = 0.12 + q / 9;
+          const prof = dome ? Math.sin(u * Math.PI) : Math.pow(Math.sin(u * Math.PI), 0.45);
+          ctx.fillRect(Math.round(sx - wdt / 2 + u * wdt), Math.round(hy - hgt * (0.3 + prof * (dome ? 0.85 : 0.7))), Math.max(1, Math.round(wdt * 0.06)), 2);
+        }
+        // a dead cypress standing out of the middle of it, bare and white
+        if (dome && ihash(k, seed + 7) > 0.55) {
+          const tx = sx + (ihash(k, seed + 8) - 0.5) * wdt * 0.4;
+          const th = hgt * (1.5 + ihash(k, seed + 9) * 0.7);
+          ctx.fillStyle = dim('#8f9482');
+          ctx.fillRect(Math.round(tx), Math.round(hy - th), Math.max(1, Math.round(1.6 * scale)), Math.round(th));
+          for (let b = 0; b < 3; b++) {
+            const by = hy - th * (0.55 + b * 0.16), d2 = b % 2 ? 1 : -1;
+            ctx.fillRect(Math.round(tx + (d2 < 0 ? -7 * scale : 0)), Math.round(by), Math.max(1, Math.round(7 * scale)), 1);
+          }
+          // and something sitting in the top of it
+          if (ihash(k, seed + 10) > 0.6) ctx.fillRect(Math.round(tx - 1), Math.round(hy - th - 3), 3, 3, dim('#4a4a44'));
+        }
+      }
+    }
+
+    // ---- the heat: a wall of it, because it is always ninety out here -----
+    if (light > 0.4) {
+      const hg = ctx.createLinearGradient(0, hy - 34, 0, hy + 4);
+      hg.addColorStop(0, rgba(B.fog, 0));
+      hg.addColorStop(0.7, rgba(B.fog, 0.30 * light));
+      hg.addColorStop(1, rgba(B.fog, 0.48 * light));
+      ctx.fillStyle = hg; ctx.fillRect(0, hy - 34, W, 38);
+      // and the shimmer in it: the horizon wobbling a pixel at a time
+      ctx.globalAlpha = 0.2 * light;
+      for (let sx = 0; sx < W; sx += 2) {
+        const o = Math.round(Math.sin(this.t * 2.2 + sx * 0.09) * 1.4);
+        ctx.fillStyle = B.fog;
+        ctx.fillRect(sx, Math.round(hy - 6 + o), 2, 2);
+      }
+      ctx.globalAlpha = 1;
+    }
+    // ---- wading birds, standing in it ------------------------------------
+    for (const b of this.birds) {
+      const [sx] = cam.toScreen(b.x, 0);
+      if (sx < -30 || sx > W + 30) continue;
+      this.wader(ctx, sx, hy, z * 0.8, b, dim);
+    }
+  },
+
+  // a heron, drawn small and still, because that is what they do
+  wader(ctx, sx, hy, s, b, dim) {
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const body = b.k === 'heron' ? '#7d8e96' : b.k === 'ibis' ? '#d8d0c4' : b.k === 'stork' ? '#e4e0d4' : '#eef0ea';
+    const dark = b.k === 'heron' ? '#4a5a62' : '#8a8478';
+    const leg = b.k === 'ibis' ? '#b05a40' : '#3a4038';
+    const H0 = 20 * s;
+    const kn = Math.sin(b.step * 2) * 1.4 * s;
+    // legs in the water
+    px(sx - 1.6 * s, hy - H0 * 0.42, 1.4 * s, H0 * 0.42, dim(leg));
+    px(sx + 1.6 * s, hy - H0 * 0.42 + kn, 1.4 * s, H0 * 0.42 - kn, dim(leg));
+    // body
+    px(sx - 4 * s, hy - H0 * 0.72, 9 * s, H0 * 0.3, dim(body));
+    px(sx - 4 * s, hy - H0 * 0.72, 9 * s, 1.6 * s, dim(mixColor(body, '#ffffff', 0.25)));
+    px(sx + 3 * s, hy - H0 * 0.6, 4 * s, 3 * s, dim(dark));                     // folded wing tip
+    // neck: an S when it is hunting, straight up when it is not
+    const hunt = Math.sin(b.ph) > 0.2;
+    if (hunt) {
+      px(sx + 2 * s, hy - H0 * 0.86, 1.6 * s, H0 * 0.16, dim(body));
+      px(sx + 3 * s, hy - H0 * 0.92, 4 * s, 1.6 * s, dim(body));
+      px(sx + 6 * s, hy - H0 * 0.9, 5 * s, 1.4 * s, dim(b.k === 'stork' ? '#3a3a34' : '#d8c048'));   // the bill, level
+    } else {
+      px(sx + 1.6 * s, hy - H0 * 1.06, 1.6 * s, H0 * 0.36, dim(body));
+      px(sx + 1.6 * s, hy - H0 * 1.12, 3.4 * s, 3 * s, dim(body));
+      px(sx + 4.6 * s, hy - H0 * 1.1, 5 * s, 1.4 * s, dim(b.k === 'stork' ? '#3a3a34' : '#d8c048'));
+      px(sx + 3.4 * s, hy - H0 * 1.11, 1.2 * s, 1.2 * s, '#161a18');
+    }
+    // its reflection, which is most of what you see of a bird out here
+    ctx.globalAlpha = 0.22;
+    px(sx - 4 * s, hy + 1, 9 * s, H0 * 0.26, dim(body));
+    ctx.globalAlpha = 1;
+  },
+
+  // ---- DEEP: what a foot of blackwater over marl actually looks like -----
+  deep(ctx, cam, day) {
+    if (!this.on(cam.x)) return;
+    const W = G.W, H = G.H, z = cam.zoom, hy = cam.toScreen(0, 0)[1];
+    if (hy > H) return;
+    const light = World.light(day);
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const top = Math.max(hy, -10);
+    // ---- light coming down through the grass ------------------------------
+    if (light > 0.25) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const cell = 64, ox = cam.x * 0.95;
+      for (let k = Math.floor((ox - W / z) / cell) - 1; k <= Math.ceil((ox + W / z) / cell) + 1; k++) {
+        if (ihash(k, 610) > 0.5) continue;
+        const sx = (k * cell + ihash(k, 611) * 40 - ox) * z + W / 2;
+        const len = (70 + ihash(k, 612) * 130) * z;
+        const a = (0.05 + 0.02 * Math.sin(this.t * 0.7 + k)) * light;
+        const g = ctx.createLinearGradient(0, hy, 0, hy + len);
+        g.addColorStop(0, 'rgba(214,236,196,' + a.toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(180,214,160,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(sx - 5 * z, hy); ctx.lineTo(sx + 5 * z, hy);
+        ctx.lineTo(sx + 16 * z, hy + len); ctx.lineTo(sx - 16 * z, hy + len);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+    // ---- solution holes in the limestone bed ------------------------------
+    const cell2 = 260, ox2 = cam.x;
+    for (let k = Math.floor((ox2 - W / z) / cell2) - 1; k <= Math.ceil((ox2 + W / z) / cell2) + 1; k++) {
+      if (ihash(k, 620) > 0.5) continue;
+      const wx = k * cell2 + ihash(k, 621) * 180;
+      const fl = World.floorY(wx);
+      if (fl < 24) continue;
+      const [sx, sy] = cam.toScreen(wx, fl);
+      if (sx < -80 * z || sx > W + 80 * z) continue;
+      const r = (14 + ihash(k, 622) * 26) * z;
+      ctx.fillStyle = 'rgba(10,20,18,0.5)';
+      ctx.beginPath(); ctx.ellipse(sx, sy - 1, r, r * 0.34, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(150,158,120,0.4)';
+      ctx.beginPath(); ctx.ellipse(sx, sy - r * 0.16, r, r * 0.3, 0, Math.PI, TAU); ctx.fill();
+      // and the pale rock lip round it
+      px(sx - r, sy - 2 * z, r * 2, 2 * z, 'rgba(178,184,148,0.28)');
+    }
+    // ---- sunken logs and the stems of the grass ---------------------------
+    const cell3 = 190, ox3 = cam.x;
+    for (let k = Math.floor((ox3 - W / z) / cell3) - 1; k <= Math.ceil((ox3 + W / z) / cell3) + 1; k++) {
+      const r = ihash(k, 630);
+      if (r > 0.42) continue;
+      const wx = k * cell3 + ihash(k, 631) * 140;
+      const fl = World.floorY(wx);
+      if (fl < 18) continue;
+      const [sx, sy] = cam.toScreen(wx, fl - 3 - ihash(k, 632) * 6);
+      if (sx < -110 * z || sx > W + 110 * z) continue;
+      const L = (40 + r * 120) * z, th = (4 + r * 7) * z, ang = (ihash(k, 633) - 0.5) * 0.34;
+      ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
+      px(-L / 2, -th / 2, L, th, '#2f2419');
+      px(-L / 2, -th / 2, L, th * 0.32, '#41321f');
+      px(-L / 2, th * 0.18, L, th * 0.32, '#1c1610');
+      for (let j = 0; j < 7; j++) if (ihash(k * 9 + j, 634) > 0.45) px(-L / 2 + j * L / 7, -th / 2 - 1.4 * z, L / 8, 2.4 * z, 'rgba(150,160,110,0.45)');
+      ctx.restore();
+    }
+    // ---- marl in suspension -----------------------------------------------
+    ctx.globalAlpha = 0.45;
+    for (const M of this.motes) {
+      const [sx, sy] = cam.toScreen(M.x, M.y);
+      if (sy < top || sx < -4 || sx > W + 4) continue;
+      px(sx, sy, M.s * z, M.s * z, Math.sin(M.ph) > 0 ? '#cfd8ae' : '#9aa87e');
+    }
+    ctx.globalAlpha = 1;
+  },
+
+  // ---- FRONT: the grass you are in --------------------------------------
+  front(ctx, cam, day) {
+    if (!this.on(cam.x)) return;
+    const W = G.W, H = G.H, z = cam.zoom, hy = cam.toScreen(0, 0)[1];
+    const light = World.light(day);
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    // ---- a stand of grass right in front of the camera --------------------
+    // Drawn at more than one parallax so going through it reads as going
+    // through something, not past a wallpaper.
+    const P = G.player;
+    for (const [PAR, cell, scale, col0, col1, alpha] of [
+      [1.14, 150, 1.0, '#22371a', '#3c5a24', 0.92],
+      [1.36, 210, 1.5, '#16260f', '#26401a', 1.0],
+    ]) {
+      const ox = cam.x * PAR;
+      const k0 = Math.floor((ox - W / z) / cell) - 1, k1 = Math.ceil((ox + W / z) / cell) + 1;
+      for (let k = k0; k <= k1; k++) {
+        const r = ihash(k, 700);
+        if (r > 0.44) continue;
+        const sx = (k * cell + r * cell * 1.4 - ox) * z + W / 2;
+        if (sx < -90 * z || sx > W + 90 * z) continue;
+        const base = hy + (10 + ihash(k, 701) * 26) * z;
+        const nb = 7 + Math.floor(ihash(k, 702) * 6);
+        ctx.globalAlpha = alpha;
+        for (let b = 0; b < nb; b++) {
+          const u = b / (nb - 1) - 0.5;
+          const bx = sx + u * 34 * z * scale;
+          const hgt = (52 + ihash(k * 13 + b, 703) * 54) * z * scale;
+          const sway = Math.sin(this.t * 0.8 + k + b * 0.5) * 4 * z;
+          // pushed aside where the animal is going through it
+          const near = P ? clamp(1 - Math.abs(cam.toScreen(P.x, 0)[0] - bx) / (70 * z), 0, 1) : 0;
+          const push = near * sign(P ? P.vx : 1) * 9 * z * Math.min(1, Math.abs(P ? P.vx : 0) / 120);
+          const tipx = bx + sway + u * 16 * z * scale + push;
+          ctx.strokeStyle = b % 2 ? col0 : col1;
+          ctx.lineWidth = Math.max(1, (1.8 + scale) * z);
+          ctx.beginPath(); ctx.moveTo(bx, base);
+          ctx.quadraticCurveTo(bx + sway * 0.4 + push * 0.3, base - hgt * 0.55, tipx, base - hgt);
+          ctx.stroke();
+          if (((b * 5 + k) % 4) === 0) px(tipx - z, base - hgt - 4 * z, 2.4 * z, 5 * z, '#a08c4a');
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+    // ---- dragonflies ------------------------------------------------------
+    for (const F of this.flies) {
+      const [sx, sy] = cam.toScreen(F.x, F.y);
+      if (sx < -8 || sx > W + 8) continue;
+      const s = Math.max(1, z);
+      const wingUp = Math.sin(this.t * 40 + F.ph) > 0;
+      px(sx - 4 * s, sy, 9 * s, 1.2 * s, F.c);                       // the body
+      px(sx + 4 * s, sy - 0.5 * s, 2 * s, 2 * s, '#1a2226');         // the head
+      ctx.globalAlpha = 0.55;
+      px(sx - 1 * s, sy + (wingUp ? -3 : 1) * s, 7 * s, 1 * s, '#dff0f8');
+      px(sx - 3 * s, sy + (wingUp ? -2 : 2) * s, 6 * s, 1 * s, '#cfe4ee');
+      ctx.globalAlpha = 1;
+    }
+    // ---- and the light lying on everything --------------------------------
+    if (light > 0.5) {
+      ctx.globalAlpha = (light - 0.5) * 0.1;
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#fff2c0'); g.addColorStop(0.5, 'rgba(255,242,192,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+  },
+};
+
+/* ===== src/park.js ===== */
+'use strict';
+// ---------------------------------------------------------------------------
+// EVERGLADES HOLIDAY PARK.
+//
+// A real place: twenty-nine acres on the levee at the end of Griffin Road,
+// west of Fort Lauderdale, with the L-67A canal running dead straight behind
+// it. It is the last thing before sixty miles of nothing, and everything about
+// it is built for coaches turning up at ten and leaving at two.
+//
+// Laid out the way it is laid out, west to east:
+//
+//   THE SIGN      off the highway, on two poles, with a gator on it
+//   PARKING       painted bays, a coach, pickups with trailers
+//   MAIN BUILDING ticket windows, gift shop, cafe, and the grand concourse
+//                 running straight through the middle of it to the water
+//   THE GATOR PIT stadium seating round a sand ring, under a louvered roof
+//                 that they can crank shut when the sun comes round
+//   THE DOCKS     four airboat berths off a timber concourse, a photo stand,
+//                 a fishing dock and two public ramps
+//   THE CANAL     forty feet of dead-straight dredged water behind the lot
+//
+// It is drawn in world space, after the ground, so it stands on the levee
+// rather than under it.
+// ---------------------------------------------------------------------------
+const PARK = {
+  X0: 2600, X1: 3900,
+  SIGN: 2660,
+  LOT0: 2730, LOT1: 2960,
+  BLD0: 2985, BLD1: 3210,
+  PIT: 3360,
+  BOARD0: 3470, BOARD1: 3540,
+  DOCK0: 3555, DOCK1: 3880,
+};
+// Everything in the park is drawn relative to the world scale, and the world
+// scale is set by the sawgrass: six feet of grass is thirty units, so a
+// twenty-five foot building is a hundred and twenty. PS is that multiplier.
+const PS = 2.4;
+
+const Park = {
+  t: 0,
+  on(x) { return x > PARK.X0 - 420 && x < PARK.X1 + 420; },
+
+  update(dt) { this.t += dt; },
+
+  // ---- helpers ----------------------------------------------------------
+  draw(ctx, cam) {
+    if (!this.on(cam.x)) return;
+    const W = G.W, H = G.H, z = cam.zoom, T = this.t;
+    const light = World.light(G.day), night = 1 - light;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    // world → screen, and world size → screen size
+    const S = (wx, wy) => cam.toScreen(wx, wy);
+    const dim = (c) => mixColor(c, '#101c22', night * 0.5);
+    const lamp = (c) => mixColor(c, '#ffd88a', night * 0.35);
+    const G0 = (wx) => S(0, World.floorY(wx))[1];        // ground at a world x
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
+    this.lot(ctx, S, z, px, dim, lamp, night);
+    this.building(ctx, S, z, px, dim, lamp, night, T);
+    this.pit(ctx, S, z, px, dim, lamp, night, T);
+    this.docks(ctx, S, z, px, dim, lamp, night, T);
+    this.sign(ctx, S, z, px, dim, lamp, night, T);
+
+    ctx.restore();
+  },
+
+  // ---- the car park -----------------------------------------------------
+  lot(ctx, S, z, px, dim, lamp, night) {
+    const Z = z * PS;
+    const gy = S(0, World.floorY(PARK.LOT0))[1];
+    const [x0] = S(PARK.LOT0, 0), [x1] = S(PARK.LOT1, 0);
+    if (x1 < -200 || x0 > G.W + 200) return;
+    // the asphalt, and the bays painted on it
+    px(x0, gy - 2 * Z, x1 - x0, 3 * Z, dim('#3c3c3a'));
+    px(x0, gy + 1 * Z, x1 - x0, 26 * Z, dim('#333331'));
+    for (let i = 0; i <= 9; i++) {
+      const [bx] = S(PARK.LOT0 + i * (PARK.LOT1 - PARK.LOT0) / 9, 0);
+      px(bx, gy - 1.6 * Z, 1.4 * Z, 9 * Z, dim('#b8b49a'));
+    }
+    px(x0, gy - 11 * Z, x1 - x0, 1.6 * Z, dim('#8e8a72'));    // the kerb at the back
+    // a coach, two pickups and a truck with a boat trailer
+    this.coach(ctx, S, z, px, dim, PARK.LOT0 + 12, gy);
+    this.pickup(ctx, S, z, px, dim, PARK.LOT0 + 48, gy, '#8a3830');
+    this.pickup(ctx, S, z, px, dim, PARK.LOT0 + 66, gy, '#2c5a80');
+    // and the light poles over it
+    for (const ox of [16, 62]) {
+      const [lx] = S(PARK.LOT0 + ox, 0);
+      px(lx, gy - 44 * Z, 2.6 * Z, 44 * Z, dim('#5a5e58'));
+      px(lx - 6 * Z, gy - 46 * Z, 15 * Z, 3 * Z, dim('#6e7268'));
+      if (night > 0.35) {
+        const g = ctx.createRadialGradient(lx + 1 * Z, gy - 44 * Z, 2, lx + 1 * Z, gy - 44 * Z, 60 * Z);
+        g.addColorStop(0, 'rgba(255,224,150,' + (0.22 * night).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,224,150,0)');
+        ctx.fillStyle = g; ctx.fillRect(lx - 60 * Z, gy - 100 * Z, 120 * Z, 110 * Z);
+        px(lx - 5 * Z, gy - 45 * Z, 13 * Z, 2 * Z, '#ffe8a8');
+      }
+    }
+  },
+
+  coach(ctx, S, z, px, dim, wx, gy) {
+    const Z = z * PS;
+    const [x] = S(wx, 0);
+    const w = 62 * Z, h = 22 * Z, y = gy - h - 3 * Z;
+    px(x, y, w, h, dim('#e4e6e2'));
+    px(x, y, w, 4 * Z, dim('#f4f6f2'));
+    px(x, y + h - 5 * Z, w, 5 * Z, dim('#2e4a70'));          // the stripe along the skirt
+    px(x, y + 6 * Z, w, 8 * Z, dim('#2a3a44'));              // the glass
+    for (let i = 0; i < 9; i++) px(x + 3 * Z + i * 6.6 * Z, y + 6 * Z, 1.4 * Z, 8 * Z, dim('#e4e6e2'));
+    px(x + w - 9 * Z, y + 4 * Z, 8 * Z, 11 * Z, dim('#38505c'));  // the windscreen
+    px(x + 5 * Z, gy - 3 * Z, 8 * Z, 4 * Z, '#14181a');      // wheels
+    px(x + w - 16 * Z, gy - 3 * Z, 8 * Z, 4 * Z, '#14181a');
+    px(x + 4 * Z, y + 1.4 * Z, 22 * Z, 3 * Z, dim('#c8cc4a'));    // the destination blind
+  },
+
+  pickup(ctx, S, z, px, dim, wx, gy, col) {
+    const Z = z * PS;
+    const [x] = S(wx, 0);
+    const w = 30 * Z, h = 11 * Z, y = gy - h - 3 * Z;
+    px(x, y + 3 * Z, w, h - 3 * Z, dim(col));
+    px(x + 4 * Z, y - 5 * Z, 13 * Z, 9 * Z, dim(col));       // the cab
+    px(x + 5 * Z, y - 4 * Z, 11 * Z, 5 * Z, dim('#4a6a78'));
+    px(x, y + 3 * Z, w, 1.6 * Z, dim(mixColor(col, '#ffffff', 0.3)));
+    px(x + 3 * Z, gy - 3 * Z, 6 * Z, 4 * Z, '#14181a');
+    px(x + w - 9 * Z, gy - 3 * Z, 6 * Z, 4 * Z, '#14181a');
+  },
+
+  // ---- the main building ------------------------------------------------
+  building(ctx, S, z, px, dim, lamp, night, T) {
+    const Z = z * PS;
+    const gy = S(0, World.floorY(PARK.BLD0))[1];
+    const [x0] = S(PARK.BLD0, 0), [x1] = S(PARK.BLD1, 0);
+    if (x1 < -260 || x0 > G.W + 260) return;
+    const w = x1 - x0, h = 56 * Z, y0 = gy - h;
+    // ---- the slab and the walls -------------------------------------------
+    px(x0 - 4 * Z, gy - 3 * Z, w + 8 * Z, 5 * Z, dim('#b0a894'));
+    px(x0, y0, w, h, dim('#dcd2bc'));                        // stucco
+    px(x0, y0, w, 3 * Z, dim('#efe6d2'));
+    px(x0, y0 + h - 6 * Z, w, 6 * Z, dim('#9e9madb'.slice(0, 7)));
+    px(x0, y0 + h - 6 * Z, w, 6 * Z, dim('#9a917c'));
+    // a hip roof in green standing seam
+    ctx.fillStyle = dim('#2f5a3e');
+    ctx.beginPath();
+    ctx.moveTo(x0 - 8 * Z, y0);
+    ctx.lineTo(x0 + 14 * Z, y0 - 16 * Z);
+    ctx.lineTo(x1 - 14 * Z, y0 - 16 * Z);
+    ctx.lineTo(x1 + 8 * Z, y0);
+    ctx.closePath(); ctx.fill();
+    px(x0 + 14 * Z, y0 - 17 * Z, w - 28 * Z, 2.4 * Z, dim('#3f7350'));
+    for (let i = 0; i < 16; i++) {
+      const u = i / 16;
+      const rx = x0 - 8 * Z + u * (w + 16 * Z);
+      const ry = y0 - 16 * Z * Math.min(1, Math.min(u, 1 - u) * (w / (22 * Z)));
+      px(rx, ry, 1.2 * Z, y0 - ry, 'rgba(18,40,26,0.35)');
+    }
+    // ---- the concourse: a gap straight through the middle to the water ----
+    const cx0 = x0 + w * 0.42, cw = w * 0.16;
+    px(cx0, y0 + 6 * Z, cw, h - 6 * Z, dim('#2a3230'));
+    px(cx0, y0 + 6 * Z, cw, 3 * Z, dim('#1a2220'));
+    // daylight at the far end of it
+    const cg = ctx.createLinearGradient(cx0, 0, cx0 + cw, 0);
+    cg.addColorStop(0, 'rgba(180,210,180,0)'); cg.addColorStop(0.5, 'rgba(198,222,190,0.35)'); cg.addColorStop(1, 'rgba(180,210,180,0)');
+    ctx.fillStyle = cg; ctx.fillRect(Math.round(cx0), Math.round(y0 + 10 * Z), Math.round(cw), Math.round(h - 16 * Z));
+    // people going through it
+    for (let i = 0; i < 3; i++) {
+      const u = ((T * 0.1 + i * 0.37) % 1);
+      const hx = cx0 + 3 * Z + u * (cw - 8 * Z);
+      const hh = 13 * Z;
+      px(hx, gy - hh, 3.4 * Z, hh, dim(choice0(i, ['#3a4a6a', '#6a3a3a', '#4a5a3a'])));
+      px(hx, gy - hh - 3 * Z, 3.4 * Z, 3.4 * Z, dim('#c8a084'));
+    }
+    // ---- ticket windows, left of the concourse ----------------------------
+    for (let i = 0; i < 3; i++) {
+      const wx0 = x0 + 8 * Z + i * 13 * Z;
+      px(wx0, y0 + 20 * Z, 10 * Z, 14 * Z, dim('#2a3a40'));
+      px(wx0, y0 + 20 * Z, 10 * Z, 2 * Z, dim('#7e8a86'));
+      px(wx0 + 1 * Z, y0 + 23 * Z, 8 * Z, 8 * Z, lamp(dim('#6a8a94')));
+      px(wx0, y0 + 34 * Z, 10 * Z, 2.4 * Z, dim('#b8ae96'));       // the sill
+    }
+    px(x0 + 6 * Z, y0 + 12 * Z, 42 * Z, 6 * Z, dim('#2b5f8a'));
+    Font.draw(ctx, 'TICKETS', Math.round(x0 + 9 * Z), Math.round(y0 + 13 * Z), { color: '#e8f0f4' });
+    // ---- gift shop, right of the concourse --------------------------------
+    const sx0 = cx0 + cw + 5 * Z;
+    px(sx0, y0 + 16 * Z, x1 - sx0 - 6 * Z, 22 * Z, dim('#2e4046'));
+    px(sx0, y0 + 16 * Z, x1 - sx0 - 6 * Z, 2 * Z, dim('#8a968e'));
+    // shopfront glass with plush gators and shirts behind it
+    for (let i = 0; i < 4; i++) {
+      const gx = sx0 + 2 * Z + i * ((x1 - sx0 - 10 * Z) / 4);
+      px(gx, y0 + 18 * Z, (x1 - sx0 - 12 * Z) / 4, 18 * Z, lamp(dim('#7ea8b4')));
+      px(gx + 2 * Z, y0 + 30 * Z, 5 * Z, 5 * Z, dim(choice0(i, ['#3f8a3a', '#c8a030', '#b03848', '#3a6ab0'])));
+      px(gx + 2 * Z, y0 + 22 * Z, 6 * Z, 2.4 * Z, dim('#e8e0c8'));
+    }
+    px(sx0, y0 + 8 * Z, x1 - sx0 - 6 * Z, 7 * Z, dim('#1d5b3a'));
+    Font.draw(ctx, 'GIFT SHOP', Math.round(sx0 + 3 * Z), Math.round(y0 + 9.5 * Z), { color: '#e8f0e0' });
+    // an awning over the shopfront
+    px(sx0 - 2 * Z, y0 + 15 * Z, x1 - sx0 - 2 * Z, 3 * Z, dim('#1d5b3a'));
+    for (let i = 0; i < 7; i++) px(sx0 + i * ((x1 - sx0) / 7), y0 + 15 * Z, ((x1 - sx0) / 14), 3 * Z, dim('#e8e0c8'));
+    // ---- the cafe, on the near corner, with tables out in front -----------
+    px(x0 + 6 * Z, y0 + 38 * Z, 34 * Z, 7 * Z, dim('#8a3428'));
+    Font.draw(ctx, 'CAFE', Math.round(x0 + 9 * Z), Math.round(y0 + 39.5 * Z), { color: '#f4e8d0' });
+    for (let i = 0; i < 2; i++) {
+      const tx = x0 + 14 * Z + i * 24 * Z;
+      px(tx, gy - 12 * Z, 16 * Z, 2.4 * Z, dim('#c8c0a8'));      // the table
+      px(tx + 7 * Z, gy - 10 * Z, 2 * Z, 10 * Z, dim('#8a8474'));
+      // a parasol over it
+      px(tx + 7 * Z, gy - 30 * Z, 2 * Z, 18 * Z, dim('#8a8474'));
+      ctx.fillStyle = dim(i ? '#2b6f4a' : '#b04a30');
+      ctx.beginPath(); ctx.moveTo(tx - 6 * Z, gy - 28 * Z); ctx.lineTo(tx + 8 * Z, gy - 36 * Z); ctx.lineTo(tx + 22 * Z, gy - 28 * Z); ctx.closePath(); ctx.fill();
+    }
+    // ---- the flagpole and a vending machine -------------------------------
+    const [fx] = S(PARK.BLD0 - 10, 0);
+    px(fx, gy - 62 * Z, 2 * Z, 62 * Z, dim('#b0b4ac'));
+    const fl = Math.sin(T * 2.4) * 2 * Z;
+    px(fx + 2 * Z, gy - 60 * Z, 20 * Z, 12 * Z, dim('#b03038'));
+    px(fx + 2 * Z, gy - 60 * Z + fl, 20 * Z, 4 * Z, dim('#e8e8e0'));
+    px(fx + 2 * Z, gy - 52 * Z - fl, 20 * Z, 4 * Z, dim('#2b4f9a'));
+  },
+
+  // ---- the gator pit ----------------------------------------------------
+  pit(ctx, S, z, px, dim, lamp, night, T) {
+    const Z = z * PS;
+    const gy = S(0, World.floorY(PARK.PIT))[1];
+    const [cx] = S(PARK.PIT, 0);
+    if (cx < -320 || cx > G.W + 320) return;
+    const R = 34 * Z;                                         // half the pit
+    // ---- the sand ring ----------------------------------------------------
+    px(cx - R, gy - 4 * Z, R * 2, 8 * Z, dim('#c8b284'));
+    px(cx - R, gy - 4 * Z, R * 2, 2 * Z, dim('#e0cc9e'));
+    // a shallow pool in the middle of it, which is where the gators are
+    px(cx - 22 * Z, gy - 3 * Z, 44 * Z, 6 * Z, dim('#2f6a58'));
+    px(cx - 22 * Z, gy - 3 * Z, 44 * Z, 1.6 * Z, dim('#63a48a'));
+    // ---- the wall round it ------------------------------------------------
+    for (const sgn of [-1, 1]) {
+      const wx = cx + sgn * R;
+      px(wx - (sgn < 0 ? 0 : 5 * Z), gy - 20 * Z, 5 * Z, 22 * Z, dim('#cfc6ae'));
+      px(wx - (sgn < 0 ? 0 : 5 * Z), gy - 20 * Z, 5 * Z, 2 * Z, dim('#e8e0c8'));
+    }
+    // ---- stadium seating, both sides, stepping up and back ----------------
+    for (const sgn of [-1, 1]) {
+      for (let r = 0; r < 5; r++) {
+        const rx = cx + sgn * (R + 2 * Z + r * 13 * Z);
+        const ry = gy - 20 * Z - r * 10 * Z;
+        const rw = 13 * Z;
+        px(sgn < 0 ? rx - rw : rx, ry, rw, 10 * Z, dim('#9aa29a'));
+        px(sgn < 0 ? rx - rw : rx, ry, rw, 2.4 * Z, dim('#b6bcb2'));
+        // the bench on the step, and the people on it
+        px(sgn < 0 ? rx - rw + 1 * Z : rx + 1 * Z, ry - 4 * Z, rw - 2 * Z, 4 * Z, dim('#5a6a60'));
+        for (let i = 0; i < 2; i++) {
+          if (ihash(r * 7 + i + (sgn > 0 ? 40 : 0), 88) > 0.42) continue;
+          const hx = (sgn < 0 ? rx - rw + 2 * Z : rx + 2 * Z) + i * 6 * Z;
+          px(hx, ry - 13 * Z, 4 * Z, 9 * Z, dim(choice0(r * 3 + i, ['#3a4a6a', '#6a3a3a', '#4a5a3a', '#6a5a2a', '#5a3a6a'])));
+          px(hx + 0.5 * Z, ry - 17 * Z, 3.4 * Z, 4 * Z, dim(choice0(r + i, ['#c8a084', '#8e6244', '#e0bc9a'])));
+        }
+      }
+    }
+    // ---- the louvered roof over the lot -----------------------------------
+    const roofY = gy - 76 * Z;
+    for (const sgn of [-1, 1]) {
+      px(cx + sgn * (R + 62 * Z), roofY, 5 * Z, gy - roofY - 6 * Z, dim('#6e766e'));
+    }
+    px(cx - R - 66 * Z, roofY - 5 * Z, (R + 66 * Z) * 2, 5 * Z, dim('#5e665e'));
+    // the louvre blades, half open, throwing stripes on everything under them
+    const nl = 13;
+    for (let i = 0; i < nl; i++) {
+      const lx = cx - R - 64 * Z + i * ((R + 64 * Z) * 2 / nl);
+      const tilt = 0.46;
+      ctx.save();
+      ctx.translate(lx + ((R + 64 * Z) / nl), roofY - 1 * Z);
+      ctx.rotate(tilt);
+      px(-((R + 64 * Z) / nl), -1.6 * Z, ((R + 64 * Z) * 2 / nl) * 0.92, 3.2 * Z, dim('#8e968e'));
+      px(-((R + 64 * Z) / nl), -1.6 * Z, ((R + 64 * Z) * 2 / nl) * 0.92, 1.2 * Z, dim('#aeb6ae'));
+      ctx.restore();
+    }
+    // the light that gets through them, on the ground under the roof only
+    ctx.save();
+    ctx.beginPath(); ctx.rect(cx - R - 70 * Z, gy - 26 * Z, (R + 70 * Z) * 2, 28 * Z); ctx.clip();
+    ctx.globalAlpha = 0.16 * World.light(G.day);
+    for (let i = 0; i < nl; i++) {
+      const lx = cx - R - 64 * Z + i * ((R + 64 * Z) * 2 / nl) + 5 * Z;
+      px(lx, gy - 26 * Z, 6 * Z, 28 * Z, '#fff0c0');
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    // ---- the show: a handler, a microphone and something with teeth -------
+    const showU = (T * 0.22) % 1;
+    const hx2 = cx + Math.sin(showU * TAU) * 22 * Z;
+    px(hx2, gy - 22 * Z, 5 * Z, 18 * Z, dim('#2e3a2c'));              // the handler
+    px(hx2 - 1 * Z, gy - 27 * Z, 7 * Z, 5 * Z, dim('#c8a084'));
+    px(hx2 - 2 * Z, gy - 30 * Z, 9 * Z, 3.4 * Z, dim('#3a3a30'));     // the hat
+    px(hx2 + 5 * Z, gy - 22 * Z, 8 * Z, 2 * Z, dim('#2e3a2c'));       // an arm out
+    // and the animal he is standing over
+    const ax = cx + Math.sin(showU * TAU + 1.2) * 16 * Z;
+    px(ax - 18 * Z, gy - 5 * Z, 36 * Z, 5 * Z, dim('#38492a'));
+    px(ax - 18 * Z, gy - 5 * Z, 36 * Z, 1.6 * Z, dim('#4f6538'));
+    px(ax + 16 * Z, gy - 7 * Z, 12 * Z, 4 * Z, dim('#38492a'));       // the head
+    px(ax + 26 * Z, gy - 6 * Z, 3 * Z, 1.4 * Z, '#e8e4d0');           // teeth
+    px(ax - 30 * Z, gy - 3.4 * Z, 14 * Z, 2.4 * Z, dim('#38492a'));   // the tail
+    // ---- the sign over the pit --------------------------------------------
+    px(cx - 44 * Z, roofY - 18 * Z, 88 * Z, 13 * Z, dim('#1d4f2e'));
+    px(cx - 44 * Z, roofY - 18 * Z, 88 * Z, 2 * Z, dim('#2f7546'));
+    Font.draw(ctx, 'GATOR SHOW', Math.round(cx), Math.round(roofY - 15 * Z), { color: '#f0e8c0', align: 'center' });
+  },
+
+  // ---- the docks --------------------------------------------------------
+  docks(ctx, S, z, px, dim, lamp, night, T) {
+    const Z = z * PS;
+    const [x0] = S(PARK.DOCK0, 0), [x1] = S(PARK.DOCK1, 0);
+    if (x1 < -260 || x0 > G.W + 260) return;
+    const surf = S(0, World.surface(PARK.DOCK0 + 40))[1];
+    const deckY = surf - 16 * Z;
+    // ---- the boardwalk down from the concourse ----------------------------
+    const [bw0] = S(PARK.BOARD0, 0), [bw1] = S(PARK.BOARD1, 0);
+    const bgy = S(0, World.floorY(PARK.BOARD0))[1];
+    ctx.fillStyle = dim('#8a7048');
+    ctx.beginPath();
+    ctx.moveTo(bw0, bgy - 4 * Z); ctx.lineTo(bw1, deckY); ctx.lineTo(bw1, deckY + 5 * Z); ctx.lineTo(bw0, bgy + 1 * Z);
+    ctx.closePath(); ctx.fill();
+    // ---- the timber concourse over the water ------------------------------
+    px(x0, deckY, x1 - x0, 5 * Z, dim('#9a7c50'));
+    px(x0, deckY, x1 - x0, 1.6 * Z, dim('#bb9964'));
+    px(x0, deckY + 5 * Z, x1 - x0, 2 * Z, dim('#5e4a2c'));
+    for (let wx = PARK.DOCK0; wx < PARK.DOCK1; wx += 7) {
+      const [sx] = S(wx, 0);
+      px(sx, deckY, 1 * Z, 5 * Z, 'rgba(60,44,24,0.35)');
+    }
+    // piles down into the water
+    for (let wx = PARK.DOCK0 + 4; wx < PARK.DOCK1; wx += 22) {
+      const [sx] = S(wx, 0);
+      const fl = S(0, World.floorY(wx))[1];
+      px(sx, deckY + 4 * Z, 4 * Z, fl - deckY - 2 * Z, dim('#6a5436'));
+      px(sx, deckY + 4 * Z, 1.4 * Z, fl - deckY - 2 * Z, dim('#876c48'));
+      // a tyre fender and the weed on the waterline
+      px(sx - 1 * Z, surf - 3 * Z, 6 * Z, 5 * Z, dim('#26282a'));
+      px(sx, surf + 2 * Z, 4 * Z, 4 * Z, 'rgba(60,96,48,0.55)');
+    }
+    // the rail along the back of it
+    for (let wx = PARK.DOCK0; wx < PARK.DOCK1; wx += 16) {
+      const [sx] = S(wx, 0);
+      px(sx, deckY - 14 * Z, 2 * Z, 14 * Z, dim('#8a7048'));
+    }
+    px(x0, deckY - 14 * Z, x1 - x0, 2 * Z, dim('#a8885a'));
+    px(x0, deckY - 8 * Z, x1 - x0, 1.6 * Z, dim('#93764c'));
+    // ---- four airboats in their berths ------------------------------------
+    for (let i = 0; i < 4; i++) {
+      const wx = PARK.DOCK0 + 26 + i * 42;
+      this.airboat(ctx, S, z, px, dim, wx, surf, T, i);
+    }
+    // ---- the photo stand at the head of the dock --------------------------
+    {
+      const [sx] = S(PARK.DOCK0 + 10, 0);
+      px(sx, deckY - 30 * Z, 24 * Z, 16 * Z, dim('#2b5f8a'));
+      px(sx, deckY - 30 * Z, 24 * Z, 2 * Z, dim('#3f7cae'));
+      Font.draw(ctx, 'PHOTO', Math.round(sx + 2 * Z), Math.round(deckY - 26 * Z), { color: '#e8f0f4' });
+      px(sx + 4 * Z, deckY - 14 * Z, 3 * Z, 14 * Z, dim('#4a4e48'));
+      px(sx + 16 * Z, deckY - 14 * Z, 3 * Z, 14 * Z, dim('#4a4e48'));
+    }
+    // ---- people on the boards, in a queue ---------------------------------
+    for (let i = 0; i < 9; i++) {
+      const wx = PARK.DOCK0 + 30 + i * 17 + Math.sin(T * 0.4 + i) * 2;
+      const [sx] = S(wx, 0);
+      if (sx < -20 || sx > G.W + 20) continue;
+      const hh = (12 + (i % 3)) * Z;
+      const sway = Math.sin(T * 1.2 + i * 1.7) * 0.8 * Z;
+      px(sx + sway, deckY - hh, 4 * Z, hh, dim(choice0(i, ['#3a4a6a', '#6a3a3a', '#4a5a3a', '#6a5a2a', '#5a3a6a', '#2a5a5a'])));
+      px(sx + sway, deckY - hh - 4 * Z, 4 * Z, 4 * Z, dim(choice0(i * 3, ['#c8a084', '#8e6244', '#e0bc9a'])));
+      if (i % 3 === 0) px(sx + sway - 1 * Z, deckY - hh - 6 * Z, 6 * Z, 2.4 * Z, dim(choice0(i, ['#b03838', '#2b5f8a', '#c8a030'])));  // a hat
+      // a life jacket on some of them
+      if (i % 4 === 1) px(sx + sway, deckY - hh + 2 * Z, 4 * Z, 5 * Z, dim('#e07a20'));
+    }
+    // ---- the fishing dock and the two ramps, at the far end ---------------
+    {
+      const [rx] = S(PARK.DOCK1 - 34, 0);
+      const fl = S(0, World.floorY(PARK.DOCK1 - 34))[1];
+      // a concrete ramp going down into the basin
+      ctx.fillStyle = dim('#b4b0a0');
+      ctx.beginPath();
+      ctx.moveTo(rx, deckY + 4 * Z); ctx.lineTo(rx + 40 * Z, fl); ctx.lineTo(rx + 40 * Z, fl + 4 * Z); ctx.lineTo(rx, deckY + 9 * Z);
+      ctx.closePath(); ctx.fill();
+      for (let i = 0; i < 8; i++) {
+        const u = i / 8;
+        px(rx + u * 40 * Z, deckY + 4 * Z + u * (fl - deckY - 4 * Z), 1.4 * Z, 5 * Z, 'rgba(90,88,78,0.4)');
+      }
+    }
+  },
+
+  // an airboat: a flat aluminium hull, a cage, a huge prop and a bench of
+  // seats on a stand above it
+  airboat(ctx, S, z, px, dim, wx, surf, T, i) {
+    const Z = z * PS;
+    const [x] = S(wx, 0);
+    if (x < -120 * Z || x > G.W + 120 * Z) return;
+    const bob = Math.sin(T * 1.3 + i * 1.7) * 1.4 * Z;
+    const y = surf + bob;
+    const w = 46 * Z;
+    // the hull: flat-bottomed, with a rubbing strake
+    px(x - w / 2, y - 7 * Z, w, 8 * Z, dim('#b8bec0'));
+    px(x - w / 2, y - 7 * Z, w, 2 * Z, dim('#d8dee0'));
+    px(x - w / 2, y - 1 * Z, w, 2 * Z, dim('#7c8284'));
+    px(x - w / 2 - 3 * Z, y - 6 * Z, 4 * Z, 6 * Z, dim('#a8aeb0'));     // the bow, blunt
+    // the bench seats, stepped up toward the back
+    for (let r = 0; r < 3; r++) {
+      const sx = x - w / 2 + 5 * Z + r * 11 * Z;
+      px(sx, y - 12 * Z - r * 3 * Z, 10 * Z, 4 * Z, dim('#3a4a44'));
+      px(sx, y - 8 * Z - r * 3 * Z, 2 * Z, 4 * Z, dim('#2c3a36'));
+      // a couple of passengers with ear defenders on
+      if (ihash(i * 7 + r, 96) > 0.45) {
+        px(sx + 2 * Z, y - 22 * Z - r * 3 * Z, 4 * Z, 10 * Z, dim(choice0(i + r, ['#3a4a6a', '#6a3a3a', '#4a5a3a'])));
+        px(sx + 2 * Z, y - 26 * Z - r * 3 * Z, 4 * Z, 4 * Z, dim('#c8a084'));
+        px(sx + 1 * Z, y - 26 * Z - r * 3 * Z, 6 * Z, 1.6 * Z, dim('#2a2e30'));
+      }
+    }
+    // the driver's chair, up on a post at the back
+    px(x + w / 2 - 14 * Z, y - 30 * Z, 3 * Z, 22 * Z, dim('#7c8284'));
+    px(x + w / 2 - 18 * Z, y - 34 * Z, 11 * Z, 5 * Z, dim('#3a4a44'));
+    px(x + w / 2 - 16 * Z, y - 44 * Z, 5 * Z, 11 * Z, dim('#2e4a34'));
+    px(x + w / 2 - 16 * Z, y - 48 * Z, 5 * Z, 4 * Z, dim('#c8a084'));
+    // the cage and the prop
+    const px0 = x + w / 2 - 4 * Z;
+    px(px0, y - 40 * Z, 3 * Z, 34 * Z, dim('#6a7072'));
+    ctx.strokeStyle = dim('#6a7072'); ctx.lineWidth = Math.max(1, 1.6 * Z);
+    ctx.beginPath(); ctx.arc(px0 + 2 * Z, y - 24 * Z, 18 * Z, -Math.PI * 0.55, Math.PI * 0.55); ctx.stroke();
+    ctx.beginPath(); ctx.arc(px0 + 2 * Z, y - 24 * Z, 12 * Z, -Math.PI * 0.55, Math.PI * 0.55); ctx.stroke();
+    for (let k = -2; k <= 2; k++) {
+      ctx.beginPath();
+      ctx.moveTo(px0 + 2 * Z, y - 24 * Z);
+      ctx.lineTo(px0 + 2 * Z + Math.cos(k * 0.5) * 18 * Z, y - 24 * Z + Math.sin(k * 0.5) * 18 * Z);
+      ctx.stroke();
+    }
+    // the blade, stopped, because it is tied up
+    px(px0, y - 40 * Z, 2.4 * Z, 32 * Z, dim('#4a5052'));
+    // and the rudders behind it
+    for (const oy of [-8, 0, 8]) px(px0 + 6 * Z, y - 24 * Z + oy * Z - 6 * Z, 2 * Z, 12 * Z, dim('#8a9092'));
+    // a light spray ring where it sits in the water
+    px(x - w / 2 - 4 * Z, y + 0.5 * Z, w + 8 * Z, 1.6 * Z, 'rgba(226,244,240,0.35)');
+  },
+
+  // ---- the roadside sign ------------------------------------------------
+  sign(ctx, S, z, px, dim, lamp, night, T) {
+    const Z = z * PS;
+    const gy = S(0, World.floorY(PARK.SIGN))[1];
+    const [x] = S(PARK.SIGN, 0);
+    if (x < -160 || x > G.W + 160) return;
+    const w = 78 * Z, h = 40 * Z, y = gy - 92 * Z;
+    // two poles
+    px(x - w / 2 + 8 * Z, y + h, 5 * Z, gy - y - h, dim('#5a5e58'));
+    px(x + w / 2 - 13 * Z, y + h, 5 * Z, gy - y - h, dim('#5a5e58'));
+    // the board
+    px(x - w / 2, y, w, h, dim('#1d5b3a'));
+    px(x - w / 2, y, w, 3 * Z, dim('#2f8455'));
+    px(x - w / 2, y + h - 3 * Z, w, 3 * Z, dim('#123a26'));
+    px(x - w / 2 + 2 * Z, y + 2 * Z, w - 4 * Z, h - 4 * Z, 'rgba(0,0,0,0)');
+    ctx.strokeStyle = dim('#e8d88a'); ctx.lineWidth = Math.max(1, 1.4 * Z);
+    ctx.strokeRect(Math.round(x - w / 2 + 3 * Z), Math.round(y + 3 * Z), Math.round(w - 6 * Z), Math.round(h - 6 * Z));
+    Font.draw(ctx, 'EVERGLADES', Math.round(x), Math.round(y + 8 * Z), { color: '#f0e8c0', align: 'center' });
+    Font.draw(ctx, 'HOLIDAY PARK', Math.round(x), Math.round(y + 17 * Z), { color: '#f0e8c0', align: 'center' });
+    Font.draw(ctx, 'AIRBOAT TOURS', Math.round(x), Math.round(y + 29 * Z), { color: '#e8c060', align: 'center' });
+    // a gator along the bottom of it
+    px(x - w / 2 + 6 * Z, y + h - 9 * Z, 30 * Z, 3.4 * Z, dim('#7aa845'));
+    px(x - w / 2 + 34 * Z, y + h - 10 * Z, 9 * Z, 3 * Z, dim('#7aa845'));
+    // and the lamps on it after dark
+    if (night > 0.3) {
+      const g = ctx.createRadialGradient(x, y + h / 2, 4, x, y + h / 2, 70 * Z);
+      g.addColorStop(0, 'rgba(255,232,170,' + (0.16 * night).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,232,170,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - 70 * Z, y - 30 * Z, 140 * Z, 120 * Z);
+    }
+  },
+};
+// deterministic pick so a shirt colour does not change every frame
+function choice0(i, arr) { return arr[((i % arr.length) + arr.length) % arr.length]; }
+
 /* ===== src/breed.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
@@ -16315,7 +17257,9 @@ const Puzzles = {
   reset() { this.mechs = []; this.gate = null; this.qte = null; this.solved = 0; this.exitOpen = false; this.stage = null; },
   begin(stage) {
     this.reset();
-    if (!stage || !stage.intro) return;
+    // The tide gate is a zone-one thing, at the Golden Gate. The run does not
+    // start in zone one any more, so it arms for a zone-one release only.
+    if (!stage || stage.zone !== 'river') return;
     this.stage = stage;
     for (const m of CATACOMB_MECHS) {
       // exactly where it was drawn: these are bolted to a weir, not scattered
@@ -16724,356 +17668,819 @@ const Abilities = {
 /* ===== src/opening.js ===== */
 'use strict';
 // ---------------------------------------------------------------------------
-// THE TRANSFER.
+// THE AIRLIFT.
 //
-// No cutscene. The opening is the game: a corridor in Facility B a hundred and
-// forty feet above the old relief works, a transport tank on a trolley, two
-// people pushing it east toward another building, and you inside it. It is all
-// real — the corridor is map, the trolley is a structure, the people are
-// people, and the camera is the game's camera — which is why you can break it.
+// Nobody is pushing you anywhere any more. Facility B signed you over and a
+// twin-engine machine came for you: a steel transport crate lashed to the
+// cabin floor of a helicopter, two handlers on the bench in flight helmets,
+// the side door open because it is ninety degrees at four hundred feet, and
+// forty minutes of the River of Grass going past underneath it.
 //
-// Mash bite and the glass cracks, then goes. The two of them run. You are on a
-// tiled floor with a floor drain at the end of it and the cover off the drain,
-// and under the cover is the interceptor: a lined pipe that gives up its
-// hundred and forty feet in six steps and puts what it is given into the
-// river, through a headwall in the side of a gorge. The ride down takes about twenty seconds. It is drawn
-// with the same world, the same physics and the same camera as everything
-// else, because it is the same world.
+// They are taking you to a crocodile reserve in the Everglades. You are not
+// going to a crocodile reserve in the Everglades.
+//
+// It is all real. The crate is a thing you break. The door is a hole in the
+// side of the aircraft that you walk out of. The fall is the game's own
+// physics with the game's own camera on it, four hundred feet of it, and the
+// water at the bottom is the water you spend the rest of the run in.
+//
+//   FLIGHT   the crate, and mashing bite until the welds give
+//   LOOSE    on the cabin floor with two people trying to get hold of you
+//   FALL     out the door, and nothing under you for four hundred feet
+//   SPLASH   the Everglades
+//
+// There is a way to lose it. Stay in the cabin and the reserve comes up, the
+// skids touch, and the transfer order gets completed after all.
 // ---------------------------------------------------------------------------
 const Opening = {
-  // the cover you have to break, the line the handlers own, the head of the
-  // interceptor under the building, and the mouth it lets out of
-  LIP: -5968, DRAIN: -5950, MOUTH: -2996,
-  // where the game picks you up again: a gravel bar in the middle of a creek
-  // in the bottom of a wooded canyon, four miles from the building
-  WAKE: -5190,
+  // Where the cabin sits while it is being drawn. The world is not rendered
+  // during the cabin phases, so this only has to be air over the glades.
+  CAB_X: 3700, CAB_Y: -2260,
+  // where you go out of the door, and where the water is when you get there
+  WAKE: 3700,
+  // Kept so the laboratory's floor plate still knows it is intact: the manhole
+  // in Facility B is a thing you look at now, not a thing you go down.
+  coverBroken: false, coverHits: 0, coverT: 0,
   get MANHOLE() { return FACILITY.MANHOLE; },
   get DOCK() { return FACILITY.DOCK; },
-  NEED_COVER: 6,
-  on: false, cart: null, crew: [], phase: null, t: 0, taps: 0, need: 7, prompt: 0, fell: false, splashed: false, stage: null,
-  slideV: 0, air: 0, rideT: 0, hintT: 0, fall: 0, caughtX: 0, coverT: 0, coverHits: 0, coverBroken: false, caughtT: 0, nagged: false,
 
-  reset() { this.on = false; this.cart = null; this.crew = []; this.phase = null; this.t = 0; this.taps = 0; this.prompt = 0; this.fell = false; this.splashed = false; this.stage = null; this.slideV = 0; this.air = 0; this.rideT = 0; this.hintT = 0; this.fall = 0; this.coverT = 0; this.coverHits = 0; this.coverBroken = false; this.caughtT = 0; this.nagged = false; },
+  // The set has its own camera. The world camera is clamped to the waterline
+  // and a cabin four hundred feet up is nowhere near it.
+  cx: 0, cy: 0, cz: 2.5,
+  on: false, phase: null, t: 0, taps: 0, need: 8, crate: 1, crew: [], stage: null,
+  flightT: 0, LAND_AT: 42, doorT: 0, fallT: 0, splashed: false, fell: false,
+  wind: 0, shakeT: 0, hintT: 0, nagged: false, caughtT: 0, heli: null, jumped: false,
+
+  reset() {
+    this.on = false; this.phase = null; this.t = 0; this.taps = 0; this.crate = 1; this.crew = [];
+    this.stage = null; this.flightT = 0; this.doorT = 0; this.fallT = 0; this.splashed = false;
+    this.fell = false; this.wind = 0; this.shakeT = 0; this.hintT = 0; this.nagged = false;
+    this.caughtT = 0; this.heli = null; this.jumped = false; this.cx = 0; this.cy = 0; this.cz = 2.5;
+    this.coverBroken = false; this.coverHits = 0; this.coverT = 0;
+  },
 
   begin(stage) {
     this.reset();
     const P = G.player;
-    this.on = true; this.stage = stage; this.phase = 'carry';
-    const x0 = stage.x;
-    const fy = World.floorY(x0);
-    // the trolley and the tank on it
-    const cart = new Structure(x0, 'transport'); cart.y = fy; cart.vx = 0; G.add(cart); this.cart = cart;
-    // the two pushing it, behind it, hands on the bar
-    for (const [ox, kind] of [[-46, 'worker'], [-72, 'worker']]) {
-      const w = new LandAnimal(x0 + ox, kind); w.pushing = cart; w.pushOff = ox; w.facing = 1; w.state = 'idle'; w.stateT = 999; w.watching = false;
-      w.y = fy - w.groundOff; G.add(w); this.crew.push(w);
-    }
-    // you: frozen, in the water in the tank
-    P.frozen = true; P.hidden = false; P.inTank = cart; P.invuln = 60;
-    P.x = cart.x; P.y = fy - 40; P.angle = 0; P.facing = 1; P.chain.reset(P.x, P.y, 0);
-    G.cam.x = cart.x; G.cam.y = fy - 40; G.cam.zoomRaw = 2.2; G.cam.zoom = 2.2;
-    G.banner = { text: 'FACILITY B', sub: 'TRANSFER ORDER 11', t: 3.2, max: 3.2, color: '#7fd8c0' };
+    this.on = true; this.stage = stage; this.phase = 'flight';
+    P.frozen = true; P.hidden = false; P.invuln = 999;
+    P.x = this.CAB_X; P.y = this.CAB_Y; P.angle = 0; P.facing = 1;
+    P.vx = 0; P.vy = 0;
+    P.chain.reset(P.x, P.y, 0);
+    const g0 = this.geo();
+    this.cx = g0.crate + 10; this.cy = g0.floor - 30; this.cz = 2.5;
+    // the world under the aircraft has to exist before you land in it
+    World.ensure(this.WAKE, 2600); Water.init(this.WAKE); Mud.init(this.WAKE);
+    G.banner = { text: 'AIRLIFT 11', sub: 'TO THE EVERGLADES RESERVE', t: 3.4, max: 3.4, color: '#7fd8c0' };
     SFX.peep && SFX.peep();
   },
 
-  // the disposal for every other sewer site: no corridor, no interceptor — a
-  // hatch in the crown of the vault opens over the water and you come out of it
+  // the disposal for every other site: you go in over the side of a boat
   hatch(stage) {
     const P = G.player, x = stage.x;
-    const r = World.roofY(x);
-    P.y = (r === null ? -80 : r + 14 * P.vis); P.vy = 40; P.vx = 0; P.chain.reset(P.x, P.y, 0);
+    P.y = World.surface(x) - 90; P.vy = 40; P.vx = 0; P.chain.reset(P.x, P.y, 0);
     P.invuln = 2; G.cam.y = P.y + 40;
     for (let i = 0; i < 24; i++) G.fx.add({ type: 'drop', x: x + rand(-16, 16), y: P.y, vx: rand(-40, 40), vy: rand(20, 120), s: 1, color: '#8ce8a0', life: 1.2 });
-    G.shake(6); SFX.clank && SFX.clank(0);
-    G.banner = { text: 'DISPOSAL HATCH', sub: 'IN THE SYSTEM. THERE IS NO DOOR ON THE OTHER END.', t: 4, max: 4, color: '#8ab820' };
+    G.shake(6); SFX.splash && SFX.splash(1.2);
+    G.banner = { text: 'OVER THE SIDE', sub: 'NOBODY IS COMING BACK FOR YOU', t: 4, max: 4, color: '#8ab820' };
   },
 
-  // true while the animal is being carried, dropped or ridden down: the HUD,
-  // the alarm and the wildlife all stand off for the length of it
-  scripted() { return this.on && this.phase !== 'loose'; },
+  // true while the animal is in the aircraft or in the air: the HUD, the
+  // alarm and the wildlife all stand off for the length of it
+  scripted() { return this.on && this.phase !== 'fall'; },
+  // true while the cabin set is what you are looking at instead of the world
+  cabin() { return this.on && (this.phase === 'flight' || this.phase === 'loose' || this.phase === 'caught'); },
+
+  // ---- the crate the animal is in ---------------------------------------
+  // World-space geometry for the set, all of it hung off CAB_X/CAB_Y so the
+  // camera behaves exactly as it does everywhere else.
+  geo() {
+    const x = this.CAB_X, y = this.CAB_Y;
+    return {
+      floor: y + 22,          // the cabin floor
+      roof: y - 86,           // the cabin roof
+      fwd: x - 150,           // the pilots' bulkhead, forward
+      aft: x + 198,           // the aft bulkhead
+      door0: x + 60,          // the open side door
+      door1: x + 150,
+      crate: x,               // where the crate is lashed down
+    };
+  },
 
   update(dt) {
     if (!this.on) return;
-    const P = G.player, c = this.cart;
     this.t += dt;
-    if (this.phase === 'carry') this.carry(dt);
-    else if (this.phase === 'loose') this.loose(dt);
-    else if (this.phase === 'drop') this.drop(dt);
-    else if (this.phase === 'black') this.black(dt);
-    else if (this.phase === 'wake') this.wake(dt);
-    else if (this.phase === 'caught') this.caughtHold(dt);
+    this.wind = lerp(this.wind, this.phase === 'fall' ? 1 : this.phase === 'caught' ? 0 : 0.35, 1 - Math.exp(-dt * 3));
+    if (this.phase !== 'fall' && this.phase !== 'splash') this.flightT += dt;
+    switch (this.phase) {
+      case 'flight': this.flight(dt); break;
+      case 'loose': this.loose(dt); break;
+      case 'fall': this.fall(dt); break;
+      case 'splash': this.splash(dt); break;
+      case 'caught': this.caughtHold(dt); break;
+    }
   },
 
-  carry(dt) {
-    const P = G.player, c = this.cart;
-    // the trolley rolls east at a walking pace and stops short of the drain
-    const stopX = this.stage.x + 460;
-    c.vx = c.x < stopX ? approach(c.vx, 42, dt * 60) : approach(c.vx, 0, dt * 120);
-    c.x += c.vx * dt; c.y = World.floorY(c.x); c.roll = (c.roll || 0) + c.vx * dt;
-    // you ride in it, curled in the water, and the camera rides with you
-    P.frozen = true; P.x = c.x + Math.sin(this.t * 2.3) * 2; P.y = c.y - 42 + Math.cos(this.t * 1.7) * 1.5;
-    P.angle = Math.sin(this.t * 1.1) * 0.15 + (this.taps > 0 ? Math.sin(this.t * 14) * 0.08 * Math.min(1, this.taps / 3) : 0);
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.4 + this.taps * 0.1, false);
-    P.jaw = 0.1 + Math.abs(Math.sin(this.t * 3)) * 0.2;
-    // the crew keep their hands on the bar
-    for (const w of this.crew) { w.x = c.x + w.pushOff; w.facing = 1; w.vx = c.vx; w.y = World.floorY(w.x) - w.groundOff; w.anim.push = 1; w.anim.speed = clamp(c.vx / 40, 0, 1); w.anim.phase += dt * (1 + c.vx * 0.12); w.anim.expr = this.taps >= 4 ? 'alert' : 'calm'; }
-    this.prompt += dt;
-    // the glass
+  // ---- FLIGHT: mash bite ------------------------------------------------
+  flight(dt) {
+    const P = G.player, g = this.geo();
+    P.frozen = true;
+    // the airframe never stops moving, and neither do you
+    const buzz = Math.sin(G.t * 46) * 0.7 + Math.sin(G.t * 19) * 0.5;
+    P.x = g.crate + buzz * 0.5;
+    P.y = g.floor - 13 - 5 * P.vis + Math.sin(G.t * 23) * 0.6;
+    P.angle = lerp(P.angle, 0.05 + Math.sin(G.t * 3) * 0.05, 1 - Math.exp(-dt * 4));
+    P.jaw = 0.18 + Math.max(0, Math.sin(G.t * 2.4)) * 0.22;
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.5, false);
+    this.cx = g.crate + 10; this.cy = g.floor - 30; this.cz = 2.5;
+    if (chance(dt * 1.4)) G.shake(1.2);
     const tapped = Input.bitePressed() || Input.mouse.clicked || (Input.touch && Input.touch.bite);
-    if (tapped && this.t > 1.0) {
-      this.taps++; c.cracks = this.taps / this.need;
-      G.shake(3 + this.taps * 1.4); G.hitstop(0.04); SFX.crack && SFX.crack(this.taps);
-      for (let i = 0; i < 4 + this.taps * 3; i++) G.fx.add({ type: 'splinter', x: c.x + rand(-14, 14), y: c.y - 44 + rand(-16, 16), vx: rand(-80, 80), vy: rand(-110, 20), s: 1, w: randi(1, 3), color: choice(['#cfeef4', '#9fc4cc', '#e8f4f8']), rot: rand(TAU), vr: rand(-8, 8), life: rand(0.8, 1.6) });
-      if (this.taps >= 3) for (const w of this.crew) { w.anim.expr = 'alert'; }
+    if (tapped && this.t > 0.6) {
+      this.taps++;
+      this.crate = 1 - this.taps / this.need;
+      G.shake(3 + this.taps * 1.5); G.hitstop(0.04);
+      SFX.clank && SFX.clank(0); SFX.chomp && SFX.chomp(0.6, 0);
+      for (let i = 0; i < 5 + this.taps * 2; i++) {
+        G.fx.add({ type: 'splinter', x: g.crate + rand(-16, 16), y: g.floor - rand(8, 34), vx: rand(-80, 80), vy: rand(-120, -10), s: 1, w: randi(1, 3),
+          color: choice(['#b8c2c4', '#7e8a8e', '#dfe8ea']), rot: rand(TAU), vr: rand(-9, 9), life: rand(0.5, 1.2) });
+      }
+      // the handlers look round, then start to get up
+      for (const w of this.crew) w.anim.expr = this.taps > this.need * 0.5 ? 'scared' : 'calm';
       if (this.taps >= this.need) this.breach();
     }
-    // given long enough, the pressure finishes what you started
-    if (this.t > 28 && this.taps < this.need) { this.taps = this.need; this.breach(); }
+    if (this.flightT > this.LAND_AT) this.caught();
   },
 
+  // the welds go and the door of the crate comes off its hinge
+  breach() {
+    const P = G.player, g = this.geo();
+    this.phase = 'loose'; this.t = 0; this.crate = 0; this.hintT = 0;
+    P.frozen = false; P.invuln = 6;
+    P.x = g.crate + 20; P.y = g.floor - 16 - 5 * P.vis; P.vx = 150; P.vy = -110;
+    G.whiteFlash(0.5); G.shake(18); G.slowmo(0.3, 0.9);
+    SFX.hatch && SFX.hatch(); SFX.splinter && SFX.splinter(0); SFX.roar && SFX.roar(0.6, 0);
+    for (let i = 0; i < 70; i++) {
+      const a = rand(-Math.PI, 0.5), sp = rand(70, 300);
+      G.fx.add({ type: 'splinter', x: g.crate + rand(-22, 22), y: g.floor - 26 + rand(-22, 16), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: 1, w: randi(2, 5),
+        color: choice(['#c8d2d4', '#8a969a', '#e8f0f2', '#5e686c']), rot: rand(TAU), vr: rand(-11, 11), life: rand(2, 4.5) });
+    }
+    G.fx.cloud && G.fx.cloud(g.crate, g.floor - 30, 40, '#7e8a8e', 2.6);
+    G.banner = { text: 'CONTAINMENT BREACH', sub: 'THE SIDE DOOR IS OPEN', t: 4, max: 4, color: '#ff8c40' };
+  },
+
+  // ---- LOOSE: the cabin floor, and a hole in the side of it -------------
   loose(dt) {
-    const P = G.player;
-    // the two of them run for the west door and are gone through it
-    const doorX = this.stage.x - 50;
-    for (const w of this.crew) { if (w.remove) continue; w.state = 'flee'; w.stateT = 40; w.fleeDir = -1; w.panicked = true; w.anim.expr = 'scared'; if (w.x < doorX) { w.remove = true; SFX.clank && SFX.clank(-0.6); G.fx.smoke(w.x, w.y, 3, '#8a9aa0'); } }
+    const P = G.player, g = this.geo();
     this.hintT += dt;
-    // The cover. Stand on it and bite it: cast iron, eleven stone of it, and
-    // it gives on the sixth go. Every hit you land stays landed.
-    const onCover = Math.abs(P.x - this.MANHOLE) < 26 && P.onLand;
-    if (onCover && !this.coverBroken) {
-      const tapped = Input.bitePressed() || Input.mouse.clicked || (Input.touch && Input.touch.bite);
-      if (tapped) {
-        this.coverHits++; this.coverT = this.coverHits / this.NEED_COVER;
-        G.shake(4 + this.coverHits * 1.6); G.hitstop(0.05);
-        SFX.clank && SFX.clank(0); SFX.thud && SFX.thud(0);
-        for (let i = 0; i < 6 + this.coverHits * 3; i++) G.fx.add({ type: 'splinter', x: this.MANHOLE + rand(-22, 22), y: World.floorY(this.MANHOLE) - 4, vx: rand(-90, 90), vy: rand(-140, -20), s: 1, w: randi(1, 3), color: choice(['#8a8578', '#c8c0a8', '#5e5a52']), rot: rand(TAU), vr: rand(-9, 9), life: rand(0.6, 1.4) });
-        if (this.coverHits >= this.NEED_COVER) this.breakCover();
-      }
+    // The cabin is a box. You can walk it, and the only way out of the box is
+    // the one they left open.
+    P.y = Math.min(P.y, g.floor - 5 * P.vis);
+    if (P.y >= g.floor - 5 * P.vis - 0.5) { P.y = g.floor - 5 * P.vis; if (P.vy > 0) P.vy = 0; P.onLand = true; }
+    else P.vy += 900 * dt;
+    P.x += P.vx * dt; P.y += P.vy * dt;
+    P.vx *= Math.exp(-3.4 * dt);
+    const [ix] = Input.axis();
+    P.vx += ix * 520 * dt;
+    P.vx = clamp(P.vx, -190, 190);
+    if (P.x < g.fwd + 18) { P.x = g.fwd + 18; P.vx = Math.max(0, P.vx); }
+    if (P.x > g.aft - 14) { P.x = g.aft - 14; P.vx = Math.min(0, P.vx); }
+    if (Math.abs(P.vx) > 6) P.facing = sign(P.vx);
+    P.angle = lerp(P.angle, 0, 1 - Math.exp(-dt * 6));
+    P.legPhase = (P.legPhase || 0) + dt * (2 + Math.abs(P.vx) * 0.05);
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, clamp(Math.abs(P.vx) / 160, 0, 1.2), false);
+    this.cx = lerp(this.cx, clamp(P.x + 14, g.fwd + 80, g.aft - 60), 1 - Math.exp(-dt * 5));
+    this.cy = lerp(this.cy, g.floor - 30, 1 - Math.exp(-dt * 5));
+    this.cz = lerp(this.cz, 2.1, 1 - Math.exp(-dt * 2));
+    // the handlers come for you, and they are not fast
+    for (const w of this.crew) {
+      w.scared = true;
+      w.facing = sign(P.x - w.x) || 1;
+      w.x += w.facing * 34 * dt;
+      w.x = clamp(w.x, g.fwd + 12, g.aft - 10);
+      w.y = g.floor - (w.groundOff || 0) * w.size;
+      w.anim.mode = 'walk'; w.anim.speed = 1; w.anim.phase += dt * 6; w.anim.expr = 'scared';
     }
-    // The dock. Past this line there are two handlers, a crate and a truck,
-    // and the transfer order gets completed after all.
-    if (!this.coverBroken && P.x > this.DOCK) { this.caught(); return; }
-    if (this.hintT > 12 && !this.nagged) {
+    // out the door
+    if (P.x > g.door0 + 6 && P.x < g.door1 && this.t > 0.4) this.jump();
+    if (this.flightT > this.LAND_AT) this.caught();
+    if (this.hintT > 7 && !this.nagged) {
       this.nagged = true;
-      G.banner = { text: 'THE COVER', sub: 'STAND ON IT AND BITE IT', t: 3.4, max: 3.4, color: '#c8b070' };
+      G.banner = { text: 'THE DOOR', sub: 'GO AFT AND GO OUT OF IT', t: 3.4, max: 3.4, color: '#c8b070' };
     }
   },
 
-  // the cast iron goes, and the system takes what the building was sending it
-  breakCover() {
+  // ---- FALL: four hundred feet ------------------------------------------
+  jump() {
     const P = G.player;
-    this.coverBroken = true; this.coverT = 1;
-    this.fell = true; this.phase = 'drop'; this.t = 0; this.fall = 60;
-    P.frozen = true; P.invuln = 999; P.vx = 0; P.vy = 60;
-    P.x = this.MANHOLE; P.y = World.floorY(this.MANHOLE) - 4 * P.vis;
-    G.whiteFlash(0.35); G.shake(14); G.slowmo(0.4, 0.8);
-    SFX.breach && SFX.breach(); SFX.splinter && SFX.splinter(0);
-    for (let i = 0; i < 40; i++) G.fx.add({ type: 'splinter', x: this.MANHOLE + rand(-26, 26), y: P.y, vx: rand(-200, 200), vy: rand(-220, -30), s: 1, w: randi(2, 4), color: choice(['#8a8578', '#c8c0a8', '#4a463d']), rot: rand(TAU), vr: rand(-12, 12), life: rand(1.6, 3) });
-    G.fx.cloud && G.fx.cloud(this.MANHOLE, P.y - 10, 34, '#6a6a60', 2.2);
-    G.banner = { text: 'DOWN', sub: 'INTO THE SYSTEM', t: 2, max: 2, color: '#c8b070' };
+    this.phase = 'fall'; this.t = 0; this.fallT = 0; this.jumped = true; this.fell = true;
+    // out of the set and into the world, high over the water
+    P.frozen = false; P.invuln = 999; P.hidden = false;
+    P.x = this.WAKE - 190; P.y = World.surface(this.WAKE) - 1180;
+    P.vx = 150; P.vy = -40;
+    P.chain.reset(P.x, P.y, 0);
+    // the aircraft you just left, which carries on without you
+    this.heli = { x: P.x - 30, y: P.y - 40, vx: 210, vy: -26, t: 0 };
+    G.cam.x = P.x; G.cam.y = P.y; G.cam.zoomRaw = 0.9; G.cam.zoom = 0.9;
+    G.shake(8); G.slowmo(0.45, 1.1);
+    SFX.breach && SFX.breach(0); SFX.roar && SFX.roar(1, 0);
+    G.banner = { text: 'OUT', sub: 'FOUR HUNDRED FEET OF NOTHING', t: 2.6, max: 2.6, color: '#ffd060' };
   },
 
-  // the other ending: you walked the length of the building to the next truck
+  fall(dt) {
+    const P = G.player;
+    this.fallT += dt;
+    const h = this.heli;
+    if (h) { h.t += dt; h.x += h.vx * dt; h.y += h.vy * dt; h.vy -= 5 * dt; }
+    // steerable, because falling with nothing to do is not a thing to play
+    const [ix, iy] = Input.axis();
+    P.vx += ix * 240 * dt;
+    P.vy += 900 * dt + iy * 120 * dt;
+    P.vx *= Math.exp(-0.5 * dt);
+    P.vy = Math.min(P.vy, 900);
+    P.x += P.vx * dt; P.y += P.vy * dt;
+    // nose over into the dive the way a thing that is falling does
+    const want = Math.atan2(P.vy, Math.abs(P.vx) + 40);
+    P.angle = angleLerp(P.angle, want, 1 - Math.exp(-dt * 3));
+    P.facing = P.vx >= 0 ? 1 : -1;
+    P.jaw = 0.35 + Math.sin(this.fallT * 12) * 0.2;
+    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.6, false);
+    G.cam.x = lerp(G.cam.x, P.x + P.vx * 0.18, 1 - Math.exp(-dt * 6));
+    G.cam.y = lerp(G.cam.y, P.y + 70, 1 - Math.exp(-dt * 5));
+    if (chance(dt * 26)) G.fx.add({ type: 'drop', x: P.x + rand(-26, 26), y: P.y + rand(-40, 40), vx: 0, vy: -380, s: 1, color: '#cfe8f0', life: 0.34 });
+    if (P.y > World.surface(P.x) - 4) this.hitWater();
+  },
+
+  hitWater() {
+    const P = G.player;
+    this.phase = 'splash'; this.t = 0; this.splashed = true;
+    const p = 3.2;
+    P.vy *= 0.28; P.vx *= 0.7;
+    G.fx.splash(P.x, p, P.vx); Water.splash(P.x, p * 130, 26);
+    G.fx.bubbles(P.x, P.y + 10, 30, 30, 40);
+    G.shake(11); G.slowmo(0.5, 0.7);
+    SFX.splash && SFX.splash(1.8); SFX.breach && SFX.breach(0);
+    G.banner = { text: 'THE EVERGLADES', sub: 'NOBODY KNOWS WHERE YOU WENT IN', t: 4.6, max: 4.6, color: '#9fe0c8' };
+  },
+
+  splash(dt) {
+    const P = G.player;
+    P.angle = angleLerp(P.angle, 0, 1 - Math.exp(-dt * 3));
+    if (chance(dt * 12)) G.fx.bubbles(P.x, P.y, 2, 12 * P.vis);
+    if (this.t > 1.2) { this.phase = 'done'; this.on = false; P.invuln = 3; }
+  },
+
+  // ---- the other ending: the skids touch down ---------------------------
   caught() {
     const P = G.player;
-    this.phase = 'caught'; this.t = 0; this.caughtT = 0; this.caughtX = P.x;
+    this.phase = 'caught'; this.t = 0; this.caughtT = 0;
     P.frozen = true; P.invuln = 999; P.vx = 0; P.vy = 0;
-    G.shake(8); SFX.warning && SFX.warning();
-    G.banner = { text: 'RECAPTURED', sub: 'TRANSFER ORDER 11 COMPLETE', t: 5, max: 5, color: '#ff8c40' };
-    // two handlers step in from the dock and take hold
-    for (const ox of [28, 48]) {
-      const h = new LandAnimal(this.DOCK + ox, 'worker');
-      h.facing = -1; h.state = 'idle'; h.stateT = 999; h.watching = false; h.panicked = false;
-      h.y = World.floorY(h.x) - h.groundOff; G.add(h); this.crew.push(h);
-    }
+    G.shake(9); SFX.warning && SFX.warning();
+    G.banner = { text: 'RECAPTURED', sub: 'WELCOME TO THE RESERVE', t: 5, max: 5, color: '#ff8c40' };
   },
 
-  // held, lifted, crated, and the run is over
   caughtHold(dt) {
-    const P = G.player;
+    const P = G.player, g = this.geo();
     this.caughtT += dt;
-    P.frozen = true;
-    // a handler that has hold of you will carry you off down the pipe if its
-    // own routine is left running, so the animal is pinned where it was taken
-    P.x = this.caughtX;
+    P.frozen = true; P.vx = 0; P.vy = 0;
     if (P.grabbed && P.grabbed.release) P.grabbed.release();
     P.grabbed = false; P.haulT = 0; P.haulBy = null; P.netT = 0;
-    // The handlers are not wildlife and they are not running: they do this for
-    // a living. Their own AI is overridden every frame or it panics them east
-    // into the pipe, which is a funny thing to watch exactly once.
-    const hands = this.crew.filter(w => !w.remove && w.x > this.DOCK - 200);
-    hands.forEach((w, i) => {
-      const off = (i === 0 ? 1 : -1) * (20 + 4 * i);
-      w.x = P.x + off; w.y = World.floorY(w.x) - w.groundOff;
-      w.vx = 0; w.vy = 0; w.state = 'idle'; w.stateT = 999; w.panicked = false; w.fleeDir = 0; w.carrying = null;
-      w.facing = sign(P.x - w.x) || -1;
-      w.anim.expr = 'calm'; w.anim.push = clamp((this.caughtT - 0.4) * 2, 0, 1);
-      w.anim.speed = 0; w.anim.phase += dt * 2;
-    });
-    // lifted off the floor, nose up, the way a thing that is being carried goes
     const lift = clamp((this.caughtT - 1.1) / 1.2, 0, 1);
-    P.y = World.floorY(P.x) - 4 * P.vis - lift * 46 * P.vis;
+    P.x = lerp(P.x, g.crate + 30, 1 - Math.exp(-dt * 3));
+    P.y = g.floor - 5 * P.vis - lift * 40 * P.vis;
     P.angle = lerp(P.angle, -0.5, 1 - Math.exp(-dt * 4));
     P.jaw = 0.4 + Math.sin(this.caughtT * 9) * 0.25;
     P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.4, false);
-    if (chance(dt * 6)) G.fx.add({ type: 'drop', x: P.x + rand(-8, 8), y: P.y, vx: rand(-30, 30), vy: rand(-40, 20), s: 1, color: '#8ce8a0', life: 0.9 });
+    this.crew.forEach((w, i) => {
+      const off = (i === 0 ? 1 : -1) * (20 + 4 * i);
+      w.x = P.x + off; w.y = g.floor - (w.groundOff || 0) * w.size;
+      w.vx = 0; w.vy = 0; w.facing = sign(P.x - w.x) || -1;
+      w.anim.mode = 'stand'; w.anim.speed = 0; w.anim.expr = 'calm'; w.anim.push = clamp((this.caughtT - 0.4) * 2, 0, 1);
+      w.anim.phase += dt * 2;
+    });
+    this.cx = lerp(this.cx, P.x, 1 - Math.exp(-dt * 3)); this.cy = lerp(this.cy, g.floor - 34, 1 - Math.exp(-dt * 3));
     if (this.caughtT > 3.4 && !P.dead) {
       P.dead = true; P.cause = 'RECAPTURED'; P.hp = 0; this.on = false;
       G.onPlayerDeath('RECAPTURED', null);
     }
   },
 
-  // ---- THE DROP --------------------------------------------------------
-  // You do not see this. Eleven stone of cast iron gives way, the floor is not
-  // under you any more, and the light goes out in a third of a second — before
-  // the animal has fallen far enough to look at anything. Showing the fall was
-  // showing a crocodile sliding down a texture; not showing it is a floor
-  // opening under you, which is the thing that actually happened.
-  drop(dt) {
-    const P = G.player;
-    P.frozen = true;
-    P.vx = 0; P.vy = 0;
-    P.y += 260 * dt;                        // just enough that the cover line moves
-    P.angle = lerp(P.angle, 0.9, 1 - Math.exp(-dt * 8));
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 1.2, false);
-    if (this.t > 0.34) this.blackOut();
+  // =======================================================================
+  // THE SET
+  // =======================================================================
+  drawCabin(ctx) {
+    const W = G.W, H = G.H, P = G.player, g = this.geo();
+    const T = G.t, z = this.cz, camx = this.cx, camy = this.cy;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const S = (wx, wy) => [W / 2 + (wx - camx) * z, H / 2 + (wy - camy) * z];
+    // the airframe is never still
+    const vib = Math.sin(T * 44) * 0.8 + Math.sin(T * 17.3) * 0.5;
+    ctx.save();
+    ctx.translate(0, Math.round(vib));
+
+    // ---- what is out of the door: the glades from four hundred feet ------
+    this.drawAerial(ctx);
+
+    const [fwdX] = S(g.fwd, 0), [aftX] = S(g.aft, 0), [d0] = S(g.door0, 0), [d1] = S(g.door1, 0);
+    const [, flY] = S(0, g.floor), [, rfY] = S(0, g.roof);
+
+    // ---- the far side of the cabin --------------------------------------
+    // Everything between the two doorposts is sky; everything else is the
+    // aircraft, which is a riveted aluminium box with a lot going on in it.
+    const skin = '#5e6a6c', skinLo = '#485254', skinHi = '#7b8789';
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.clip();
+    // the far wall, in panels, with a window in it
+    const wallTop = rfY, wallBot = flY;
+    px(fwdX, wallTop, d0 - fwdX, wallBot - wallTop, skinLo);
+    px(d1, wallTop, aftX - d1, wallBot - wallTop, skinLo);
+    // longerons: the horizontal frames the skin is riveted to
+    for (let i = 0; i < 4; i++) {
+      const yy = wallTop + (wallBot - wallTop) * (0.16 + i * 0.22);
+      px(fwdX, yy, d0 - fwdX, 2 * z, shade(skinLo, 1.18));
+      px(d1, yy, aftX - d1, 2 * z, shade(skinLo, 1.18));
+      px(fwdX, yy + 2 * z, d0 - fwdX, 1.2 * z, shade(skinLo, 0.78));
+      px(d1, yy + 2 * z, aftX - d1, 1.2 * z, shade(skinLo, 0.78));
+    }
+    // frames: the ribs going up the wall, and the rivets on them
+    for (let wx = g.fwd; wx < g.aft; wx += 26) {
+      const [sx] = S(wx, 0);
+      if (sx > d0 - 2 && sx < d1) continue;
+      px(sx, wallTop, 3.2 * z, wallBot - wallTop, shade(skinLo, 1.1));
+      px(sx + 3.2 * z, wallTop, 1.2 * z, wallBot - wallTop, shade(skinLo, 0.72));
+      for (let r = 0; r < 9; r++) px(sx + 1.2 * z, wallTop + 4 * z + r * (wallBot - wallTop - 8 * z) / 9, 1.2 * z, 1.2 * z, shade(skinLo, 1.35));
+    }
+    // a porthole forward of the door, with the glades going past in it
+    {
+      const [wx0] = S(g.fwd + 52, 0), ww = 40 * z, wh = 26 * z, wy = wallTop + (wallBot - wallTop) * 0.24;
+      px(wx0 - 2 * z, wy - 2 * z, ww + 4 * z, wh + 4 * z, shade(skinLo, 0.7));
+      ctx.save();
+      ctx.beginPath(); ctx.rect(wx0, wy, ww, wh); ctx.clip();
+      const gg = ctx.createLinearGradient(0, wy, 0, wy + wh);
+      gg.addColorStop(0, '#8fb6c8'); gg.addColorStop(0.46, '#a9c6cc'); gg.addColorStop(0.52, '#4d6a4a'); gg.addColorStop(1, '#3d5c3e');
+      ctx.fillStyle = gg; ctx.fillRect(wx0, wy, ww, wh);
+      for (let i = 0; i < 7; i++) {
+        const sx2 = wx0 + ((i * 17 - T * 44) % (ww + 20)) - 10;
+        px(sx2, wy + wh * (0.58 + (i % 3) * 0.1), 9 * z, 2 * z, '#2f4a32');
+      }
+      ctx.restore();
+      px(wx0, wy, ww, 1.4 * z, 'rgba(230,246,250,0.5)');
+    }
+    // a placard, a fire bottle and a first aid box, because a cabin has those
+    px(fwdX + 12 * z, wallTop + 10 * z, 22 * z, 12 * z, '#8c3028');
+    px(fwdX + 13 * z, wallTop + 11 * z, 20 * z, 3 * z, '#c04a3a');
+    px(aftX - 34 * z, wallTop + 14 * z, 16 * z, 22 * z, '#d8d2c0');
+    px(aftX - 32 * z, wallTop + 18 * z, 12 * z, 3 * z, '#b03030');
+    px(aftX - 30 * z, wallTop + 16 * z, 3 * z, 9 * z, '#b03030');
+    ctx.restore();
+
+    // ---- the pilots' bulkhead, forward ----------------------------------
+    px(fwdX - 40 * z, rfY - 10 * z, 40 * z + 2, flY - rfY + 14 * z, skin);
+    px(fwdX - 40 * z, rfY - 10 * z, 40 * z, 3 * z, skinHi);
+    px(fwdX - 4 * z, rfY - 10 * z, 4 * z, flY - rfY + 14 * z, shade(skin, 0.7));
+    // the instrument panel bleeding through the doorway to the cockpit
+    {
+      const ix0 = fwdX - 34 * z, iy0 = rfY + 14 * z;
+      px(ix0, iy0, 26 * z, 34 * z, '#1a2224');
+      for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) {
+        const on = ihash(r * 7 + c, 91) > 0.35;
+        px(ix0 + 3 * z + c * 6 * z, iy0 + 4 * z + r * 6 * z, 3.4 * z, 3 * z, on ? (ihash(r * 5 + c, 92) > 0.6 ? '#ffb040' : '#50e090') : '#2a3436');
+      }
+      // and the back of a helmet in the right-hand seat
+      px(ix0 + 4 * z, iy0 - 13 * z, 16 * z, 13 * z, '#2c3438');
+      px(ix0 + 5 * z, iy0 - 12 * z, 14 * z, 4 * z, '#3e484c');
+      px(ix0 + 16 * z, iy0 - 7 * z, 6 * z, 4 * z, '#14181a');
+    }
+
+    // ---- the roof, the rail and the hoist --------------------------------
+    px(fwdX - 40 * z, rfY - 10 * z, aftX - fwdX + 80 * z, 12 * z, shade(skin, 0.86));
+    px(fwdX - 40 * z, rfY + 2 * z, aftX - fwdX + 80 * z, 2.4 * z, shade(skin, 0.6));
+    for (let wx = g.fwd - 20; wx < g.aft + 20; wx += 34) {
+      const [sx] = S(wx, 0);
+      px(sx, rfY - 10 * z, 4 * z, 12 * z, shade(skin, 1.12));
+    }
+    // the load rail, and the strop hanging off it
+    px(fwdX, rfY + 5 * z, aftX - fwdX, 2.4 * z, '#8e9a9c');
+    px(fwdX, rfY + 7.4 * z, aftX - fwdX, 1.4 * z, '#3c4446');
+    for (const ox of [-70, 24, 96]) {
+      const [sx] = S(g.crate + ox, 0);
+      const sw = Math.sin(T * 1.6 + ox) * 3 * z;
+      ctx.strokeStyle = '#2e3638'; ctx.lineWidth = Math.max(1, 1.6 * z);
+      ctx.beginPath(); ctx.moveTo(sx, rfY + 8 * z); ctx.quadraticCurveTo(sx + sw, rfY + 22 * z, sx + sw * 1.6, rfY + 34 * z); ctx.stroke();
+      px(sx + sw * 1.6 - 2 * z, rfY + 34 * z, 5 * z, 4 * z, '#6a7476');
+    }
+    // two cabin lamps
+    for (const ox of [-96, 60]) {
+      const [sx] = S(g.crate + ox, 0);
+      px(sx - 5 * z, rfY + 2 * z, 10 * z, 3 * z, '#ffe8a0');
+      const gl = ctx.createRadialGradient(sx, rfY + 4 * z, 1, sx, rfY + 4 * z, 40 * z);
+      gl.addColorStop(0, 'rgba(255,228,150,0.20)'); gl.addColorStop(1, 'rgba(255,228,150,0)');
+      ctx.fillStyle = gl; ctx.fillRect(sx - 40 * z, rfY, 80 * z, 60 * z);
+    }
+
+    // ---- the floor: tie-down rails and a lot of scuffed grey -------------
+    px(fwdX - 40 * z, flY, aftX - fwdX + 80 * z, H - flY, '#4a5254');
+    px(fwdX - 40 * z, flY, aftX - fwdX + 80 * z, 2.4 * z, '#79858a');
+    px(fwdX - 40 * z, flY + 2.4 * z, aftX - fwdX + 80 * z, 1.6 * z, '#333b3c');
+    // the diamond tread on it
+    ctx.save(); ctx.beginPath(); ctx.rect(0, flY + 4 * z, W, H - flY); ctx.clip();
+    for (let wx = g.fwd - 40; wx < g.aft + 40; wx += 9) {
+      const [sx] = S(wx, 0);
+      for (let r = 0; r < 4; r++) px(sx + (r % 2 ? 4 * z : 0), flY + 7 * z + r * 6 * z, 4 * z, 1.6 * z, 'rgba(126,140,142,0.5)');
+    }
+    // tie-down rails, and the rings in them
+    for (const oy of [10, 24]) {
+      px(fwdX - 40 * z, flY + oy * z, aftX - fwdX + 80 * z, 2.4 * z, '#606a6c');
+      px(fwdX - 40 * z, flY + oy * z + 2.4 * z, aftX - fwdX + 80 * z, 1.2 * z, '#2c3436');
+      for (let wx = g.fwd - 30; wx < g.aft + 30; wx += 22) { const [sx] = S(wx, 0); px(sx, flY + oy * z - 1.2 * z, 3 * z, 4 * z, '#8a9698'); }
+    }
+    ctx.restore();
+
+    // ---- the open door ---------------------------------------------------
+    // the sill, the slid-back door panel, and the wind coming in over it
+    px(d0 - 5 * z, rfY - 10 * z, 5 * z, flY - rfY + 16 * z, shade(skin, 1.2));
+    px(d1, rfY - 10 * z, 5 * z, flY - rfY + 16 * z, shade(skin, 1.2));
+    px(d0 - 5 * z, flY - 2 * z, d1 - d0 + 10 * z, 5 * z, '#8e9a9c');
+    px(d0 - 5 * z, flY + 3 * z, d1 - d0 + 10 * z, 2 * z, '#2c3436');
+    // the slid-back panel, stacked outboard aft of the opening
+    px(d1 + 5 * z, rfY - 6 * z, 22 * z, flY - rfY + 8 * z, shade(skin, 0.94));
+    px(d1 + 5 * z, rfY - 6 * z, 22 * z, 2.4 * z, skinHi);
+    px(d1 + 8 * z, rfY + 10 * z, 16 * z, 12 * z, '#2a3436');
+    // wind: streaks of it coming in through the hole
+    ctx.save(); ctx.beginPath(); ctx.rect(d0, rfY, d1 - d0, flY - rfY); ctx.clip();
+    for (let i = 0; i < 12; i++) {
+      const u = ((T * 1.7 + i * 0.37) % 1);
+      const yy = rfY + ((i * 13) % Math.max(1, flY - rfY));
+      ctx.globalAlpha = 0.22 * (1 - u);
+      px(d1 - u * (d1 - d0) * 1.4, yy, 16 * z, 1.4 * z, '#dff0f4');
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+
+    // ---- the cage, behind the animal --------------------------------------
+    this.drawCrate(ctx, S, z, g, false);
+
+    // ---- the animal ------------------------------------------------------
+    ctx.save();
+    ctx.translate(W / 2 + G.shakeX, H / 2 + G.shakeY);
+    ctx.scale(z, z);
+    ctx.translate(-camx, -camy);
+    ctx.imageSmoothingEnabled = false;
+    P.draw(ctx);
+    ctx.restore();
+
+    // ---- and the bars between it and you ---------------------------------
+    this.drawCrate(ctx, S, z, g, true);
+
+    // ---- the two of them on the bench -----------------------------------
+    this.drawCrew(ctx, S, z, g);
+
+    // ---- the near side of the cabin, between you and the camera ----------
+    // a cargo net across the aft end and a strap across the near doorpost
+    {
+      const [nx0] = S(g.aft - 54, 0), [nx1] = S(g.aft, 0);
+      ctx.globalAlpha = 0.85;
+      for (let i = 0; i <= 8; i++) { const sx = nx0 + (nx1 - nx0) * i / 8; px(sx, rfY, 1.6 * z, flY - rfY, '#2e3a30'); }
+      for (let i = 0; i <= 5; i++) { const sy = rfY + (flY - rfY) * i / 5; px(nx0, sy, nx1 - nx0, 1.6 * z, '#2e3a30'); }
+      ctx.globalAlpha = 1;
+    }
+    // the rotor's shadow going over everything, four times a second
+    {
+      const k = (T * 5.4) % 1;
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = '#04100e';
+      ctx.fillRect(0, 0, W, H * 0.24 + Math.sin(k * TAU) * H * 0.3);
+      ctx.globalAlpha = 1;
+    }
+    // and the grade over the top of it
+    const vg = ctx.createRadialGradient(W / 2, H / 2, W * 0.2, W / 2, H / 2, W * 0.66);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(4,10,12,0.55)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
   },
 
-  // ---- THE BLACKOUT ----------------------------------------------------
-  // The screen goes out. The game moves you a hundred and forty feet and
-  // three quarters of a mile while it is out, and you do not get to see it,
-  // because neither did the animal.
-  blackOut() {
-    const P = G.player;
-    this.phase = 'black'; this.t = 0; this.fall = 0;
-    P.frozen = true; P.vx = 0; P.vy = 0; P.invuln = 14;
-    G.shake(13); SFX.thud && SFX.thud(0);
-    this.land();
-    G.banner = null; G.dispatch = null;
+  // what is out of the door: four hundred feet of River of Grass
+  drawAerial(ctx) {
+    const W = G.W, H = G.H, T = G.t;
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    // sky at the top, water and grass below, and a horizon that sits high
+    // because you are looking down out of a door
+    const hz = H * 0.22;
+    const sky = ctx.createLinearGradient(0, 0, 0, hz);
+    sky.addColorStop(0, '#6f9dc0'); sky.addColorStop(1, '#bcd4dc');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hz);
+    const grd = ctx.createLinearGradient(0, hz, 0, H);
+    grd.addColorStop(0, '#8fa99a'); grd.addColorStop(0.24, '#6d8a6a'); grd.addColorStop(1, '#41603f');
+    ctx.fillStyle = grd; ctx.fillRect(0, hz, W, H - hz);
+    // the scroll: everything below moves aft at a rate set by how far down it is
+    const sc = (depth, rate) => ((T * rate) % 1);
+    // sheet water: long pale strips lying in the grass, going past
+    for (let i = 0; i < 26; i++) {
+      const d = 0.1 + (i % 7) / 7 * 0.9;
+      const y = hz + d * (H - hz);
+      const speed = 40 + d * 210;
+      const w = (30 + ihash(i, 7) * 90) * (0.4 + d);
+      const x = W - ((T * speed + ihash(i, 8) * 900) % (W + 240)) + 120;
+      ctx.globalAlpha = 0.5 + d * 0.3;
+      px(x, y, w, (1.4 + d * 3), '#a9c6c2');
+      px(x + w * 0.2, y + (1 + d * 2), w * 0.5, (1 + d * 2), '#7fa49c');
+      ctx.globalAlpha = 1;
+    }
+    // tree islands: dark blobs with a tail of shadow
+    for (let i = 0; i < 14; i++) {
+      const d = 0.16 + (i % 5) / 5 * 0.84;
+      const y = hz + d * (H - hz);
+      const speed = 44 + d * 220;
+      const r = (3 + ihash(i, 9) * 9) * (0.5 + d);
+      const x = W - ((T * speed + ihash(i, 10) * 1400) % (W + 300)) + 150;
+      px(x - r, y - r * 0.5, r * 2, r, '#22381f');
+      px(x - r * 0.7, y - r * 0.9, r * 1.4, r * 0.7, '#2e4826');
+      px(x - r * 0.5, y + r * 0.4, r * 1.6, r * 0.34, 'rgba(10,20,14,0.35)');
+    }
+    // and a canal, dead straight, because a man drew it
+    {
+      const y = hz + 0.62 * (H - hz);
+      px(0, y, W, 3, '#5a7f86');
+      px(0, y + 3, W, 2, '#3e5c62');
+      px(0, y - 3, W, 2, '#6f8a62');           // the spoil bank alongside it
+    }
+    // haze over the lot
+    const hzg = ctx.createLinearGradient(0, hz - 8, 0, hz + 40);
+    hzg.addColorStop(0, 'rgba(198,216,220,0.9)'); hzg.addColorStop(1, 'rgba(198,216,220,0)');
+    ctx.fillStyle = hzg; ctx.fillRect(0, hz - 8, W, 48);
   },
-  // put the animal on the bench on level one, with the camera already on it
-  land() {
-    const P = G.player;
-    P.x = this.WAKE; P.y = World.floorY(this.WAKE) - 4 * P.vis;
-    P.angle = 0.12; P.vx = 0; P.vy = 0;
-    P.chain.reset(P.x, P.y, 0);
-    G.cam.x = P.x; G.cam.y = P.y - 16;
-  },
-  black(dt) {
-    const P = G.player;
-    P.frozen = true; P.vx = 0; P.vy = 0;
-    P.y = World.floorY(P.x) - 4 * P.vis;
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.08, false);
-    G.cam.x = P.x; G.cam.y = P.y - 16;
-    if (this.t > 3.2) { this.phase = 'wake'; this.t = 0; SFX.splash && SFX.splash(0.5); }
-  },
-  // Coming round. The eye opens twice before it stays open, and the first
-  // thing in it is a shaft of daylight a hundred and forty feet up.
-  wake(dt) {
-    const P = G.player;
-    P.frozen = true;
-    P.y = World.floorY(P.x) - 4 * P.vis;
-    P.angle = lerp(P.angle, 0, 1 - Math.exp(-dt * 2.2));
-    P.jaw = Math.max(0, 0.45 - this.t * 0.22);
-    P.facing = 1;
-    P.chain.solve(P.x, P.y, P.angle, P.vis, dt, 0.22 + Math.max(0, 1 - this.t) * 0.5, false);
-    G.cam.x = lerp(G.cam.x, P.x + 30, 1 - Math.exp(-dt * 1.4));
-    G.cam.y = lerp(G.cam.y, P.y - 24, 1 - Math.exp(-dt * 1.4));
-    if (chance(dt * 3)) G.fx.add({ type: 'drop', x: P.x + rand(-20, 20), y: World.floorY(P.x) - 60, vx: 0, vy: 90, s: 1, color: '#9ad8c0', life: 1.1 });
-    if (this.t > 3.6) {
-      this.phase = 'done'; this.on = false; this.splashed = true;
-      P.frozen = false; P.invuln = 3;
-      G.banner = { text: 'THE FOREST', sub: 'ALIVE, OUTSIDE, AND NOBODY KNOWS WHERE YOU ARE.', t: 4.5, max: 4.5, color: '#9fe0c8' };
+
+  // A barred steel transport cage, not a box: you can see the whole animal in
+  // it, and when it goes you can see exactly what went.
+  drawCrate(ctx, S, z, g, front) {
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const [cx] = S(g.crate, 0), [, flY] = S(0, g.floor);
+    const w = 108 * z, h = 62 * z;
+    const x0 = cx - w / 2, y0 = flY - h;
+    const brk = this.crate <= 0;
+    const STEEL = '#7d878a', STEEL_HI = '#a5b0b2', STEEL_LO = '#4c5456';
+    if (brk) {
+      if (front) return;
+      // the pan, the posts, and the bars peeled out of the way
+      px(x0, flY - 12 * z, w, 12 * z, STEEL_LO);
+      px(x0, flY - 12 * z, w, 2.4 * z, STEEL);
+      px(x0, y0, 5 * z, h, STEEL_LO); px(x0 + w - 5 * z, y0, 5 * z, h, STEEL_LO);
+      px(x0, y0, w, 5 * z, STEEL_LO);
+      for (let i = 0; i < 7; i++) {
+        const bx = x0 + 12 * z + i * (w - 24 * z) / 7;
+        const bend = (i - 3) * 5 * z;
+        ctx.strokeStyle = STEEL_LO; ctx.lineWidth = Math.max(1, 3 * z);
+        ctx.beginPath(); ctx.moveTo(bx, y0 + 5 * z);
+        ctx.quadraticCurveTo(bx + bend * 1.6, y0 + h * 0.5, bx + bend * 2.4, flY - 12 * z);
+        ctx.stroke();
+      }
+      // the door, off its hinge, on the deck
+      px(x0 - 34 * z, flY - 5 * z, 36 * z, 5 * z, STEEL_LO);
+      px(x0 - 34 * z, flY - 7 * z, 36 * z, 2 * z, STEEL);
+      for (let i = 0; i < 6; i++) px(x0 - 32 * z + i * 6 * z, flY - 5 * z, 2 * z, 5 * z, '#333b3c');
+      return;
+    }
+    if (!front) {
+      // the box behind the animal: a solid back panel and the pan it stands on
+      px(x0, y0, w, h, '#39423f');
+      px(x0 + 4 * z, y0 + 4 * z, w - 8 * z, h - 12 * z, '#2c3432');
+      for (let i = 0; i < 5; i++) px(x0 + 4 * z, y0 + 8 * z + i * (h - 20 * z) / 5, w - 8 * z, 1.4 * z, 'rgba(120,132,130,0.20)');
+      // straw on the pan, because they are required to bed it
+      px(x0 + 5 * z, flY - 12 * z, w - 10 * z, 12 * z, '#3c3a2c');
+      for (let i = 0; i < 22; i++) {
+        const sx = x0 + 6 * z + ihash(i, 71) * (w - 12 * z);
+        px(sx, flY - 12 * z + ihash(i, 72) * 9 * z, (3 + ihash(i, 73) * 6) * z, 1.4 * z, ihash(i, 74) > 0.5 ? '#6e6444' : '#544c34');
+      }
+      return;
+    }
+    // ---- everything in front of the animal -------------------------------
+    // the pan lip
+    px(x0, flY - 12 * z, w, 12 * z, STEEL_LO);
+    px(x0, flY - 12 * z, w, 2.4 * z, STEEL);
+    px(x0, flY - 3 * z, w, 3 * z, '#2e3436');
+    // corner posts and rails
+    px(x0, y0, 6 * z, h, STEEL);
+    px(x0 + w - 6 * z, y0, 6 * z, h, STEEL);
+    px(x0 + 1.4 * z, y0, 1.6 * z, h, STEEL_HI);
+    px(x0 + w - 2.4 * z, y0, 1.6 * z, h, STEEL_LO);
+    px(x0, y0, w, 7 * z, STEEL);
+    px(x0, y0, w, 2 * z, STEEL_HI);
+    px(x0, y0 + 5 * z, w, 2 * z, STEEL_LO);
+    px(x0, y0 + h * 0.52, w, 5 * z, STEEL);
+    px(x0, y0 + h * 0.52, w, 1.6 * z, STEEL_HI);
+    // the bars
+    const nb = 11;
+    for (let i = 0; i < nb; i++) {
+      const bx = x0 + 9 * z + i * (w - 18 * z) / (nb - 1);
+      px(bx, y0 + 6 * z, 2.6 * z, h - 18 * z, STEEL);
+      px(bx, y0 + 6 * z, 1 * z, h - 18 * z, STEEL_HI);
+      px(bx + 2.6 * z, y0 + 6 * z, 1 * z, h - 18 * z, '#343c3e');
+    }
+    // the door in the middle of the front, with a latch and a padlock
+    const dx = x0 + w * 0.5 - 20 * z;
+    px(dx, y0 + 5 * z, 40 * z, h - 16 * z, 'rgba(0,0,0,0)');
+    px(dx - 2 * z, y0 + 5 * z, 2.6 * z, h - 16 * z, STEEL_HI);
+    px(dx + 40 * z, y0 + 5 * z, 2.6 * z, h - 16 * z, STEEL_HI);
+    px(dx + 38 * z, y0 + h * 0.42, 12 * z, 5 * z, STEEL);           // the latch bar
+    px(dx + 47 * z, y0 + h * 0.42 + 1 * z, 5 * z, 7 * z, '#c8a030'); // the padlock
+    px(dx + 48 * z, y0 + h * 0.42 - 2 * z, 3 * z, 3 * z, '#8a7020');
+    for (const hy of [0.2, 0.74]) { px(dx - 4 * z, y0 + 5 * z + (h - 16 * z) * hy, 5 * z, 6 * z, STEEL_LO); }
+    // placards: a red diamond and a stencil, because a live animal in a cabin
+    // is a regulated thing
+    px(x0 + 8 * z, y0 - 12 * z, 30 * z, 12 * z, '#c8b884');
+    Font.draw(ctx, 'LIVE', Math.round(x0 + 10 * z), Math.round(y0 - 10 * z), { color: '#2a2414' });
+    px(x0 + w - 32 * z, y0 - 14 * z, 14 * z, 14 * z, '#b03030');
+    px(x0 + w - 30 * z, y0 - 12 * z, 10 * z, 10 * z, '#e8d8c0');
+    px(x0 + w - 26 * z, y0 - 10 * z, 2 * z, 5 * z, '#b03030');
+    px(x0 + w - 26 * z, y0 - 4 * z, 2 * z, 2 * z, '#b03030');
+    // the straps holding it to the floor rails
+    for (const ox of [-34, 34]) {
+      const [sx] = S(g.crate + ox, 0);
+      px(sx - 2.4 * z, y0 - 3 * z, 5 * z, h + 15 * z, '#c8a030');
+      px(sx - 2.4 * z, y0 + h * 0.3, 5 * z, 5 * z, '#6a5418');
+      px(sx - 4 * z, flY - 2 * z, 8 * z, 4 * z, '#8a9698');
+    }
+    // and what your hitting it has done: bars bowing out, one at a time
+    for (let i = 0; i < this.taps; i++) {
+      const k = (i * 3 + 2) % nb;
+      const bx = x0 + 9 * z + k * (w - 18 * z) / (nb - 1);
+      const bend = ((i % 2) ? 1 : -1) * (2 + i * 0.7) * z;
+      ctx.strokeStyle = STEEL; ctx.lineWidth = Math.max(1, 2.6 * z);
+      ctx.beginPath(); ctx.moveTo(bx, y0 + 6 * z);
+      ctx.quadraticCurveTo(bx + bend * 3, y0 + h * 0.5, bx, flY - 12 * z);
+      ctx.stroke();
+      ctx.strokeStyle = STEEL_HI; ctx.lineWidth = Math.max(1, 1 * z); ctx.stroke();
+    }
+    if (this.taps > 4) {
+      px(dx + 38 * z, y0 + h * 0.42 - 1 * z, 12 * z, 2 * z, '#e8e0c0');   // the latch working loose
     }
   },
 
-  breach() {
-    const P = G.player, c = this.cart;
-    this.phase = 'loose'; this.t = 0; this.hintT = 0;
-    c.broken = true; c.cracks = 1; P.inTank = null; P.frozen = false; P.invuln = 2.5;
-    P.y = c.y - 6 * P.vis; P.vx = 90; P.vy = -60;
-    G.whiteFlash(0.6); G.shake(16); G.slowmo(0.3, 0.9); SFX.hatch && SFX.hatch(); SFX.splinter && SFX.splinter(0);
-    for (let i = 0; i < 70; i++) { const a = rand(-Math.PI, 0.6), sp = rand(60, 280); G.fx.add({ type: 'splinter', x: c.x + rand(-24, 24), y: c.y - 44 + rand(-30, 20), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, s: 1, w: randi(2, 5), color: choice(['#cfeef4', '#9fc4cc', '#e8f4f8', '#7fa8b0']), rot: rand(TAU), vr: rand(-10, 10), life: rand(3, 6) }); }
-    for (let i = 0; i < 40; i++) G.fx.add({ type: 'drop', x: c.x + rand(-30, 30), y: c.y - 40 + rand(-20, 10), vx: rand(-180, 180), vy: rand(-40, 140), s: randi(1, 2), color: choice(['#8ce8a0', '#3f9a54', '#cfeef4']), life: 2.4 });
-    G.fx.cloud && G.fx.cloud(c.x, c.y - 30, 46, '#3f9a54', 3);
-    // the two of them let go and run west, arms up, and do not look back
-    for (const w of this.crew) { w.pushing = null; w.anim.push = 0; w.panicked = true; w.state = 'flee'; w.stateT = 40; w.fleeDir = -1; w.anim.expr = 'scared'; SFX.scream && SFX.scream(w.pan); }
-    G.banner = { text: 'BREACH', sub: 'THERE IS A COVER IN THE FLOOR EAST OF HERE', t: 3.8, max: 3.8, color: '#ff8c40' };
+  drawCrew(ctx, S, z, g) {
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+    const [, flY] = S(0, g.floor);
+    // the bench they sit on, first, so they sit on it
+    const [bx0] = S(g.crate - 132, 0), [bx1] = S(g.crate - 62, 0);
+    px(bx0, flY - 34 * z, bx1 - bx0, 5 * z, '#40504c');
+    px(bx0, flY - 34 * z, bx1 - bx0, 1.6 * z, '#5c706a');
+    px(bx0 + 2 * z, flY - 29 * z, 4 * z, 29 * z, '#2c3a38');
+    px(bx1 - 6 * z, flY - 29 * z, 4 * z, 29 * z, '#2c3a38');
+    // The two of them: flight suit, harness, helmet with the visor down. Drawn
+    // rather than spawned — there is no ground under a cabin for a land animal
+    // to stand on, and these two never leave it.
+    const up = this.phase !== 'flight';
+    const scared = this.phase === 'loose';
+    for (let i = 0; i < 2; i++) {
+      const ox = i === 0 ? -116 : -82;
+      const walk = up ? Math.min(60, this.t * 26) : 0;
+      const [sx] = S(g.crate + ox + walk, 0);
+      const H0 = 56 * z;                                   // how tall a person is here
+      const hipY = flY - (up ? H0 * 0.52 : H0 * 0.42);
+      const shY = hipY - H0 * 0.34;
+      const sway = up ? Math.sin(G.t * 7 + i) * 1.2 * z : Math.sin(G.t * 1.5 + i) * 0.5 * z;
+      const suit = '#4a6350', suitHi = '#5e7a64', suitLo = '#33473a';
+      const skin = i === 0 ? '#c8a084' : '#8e6244';
+      // ---- legs ----------------------------------------------------------
+      if (up) {
+        const k = Math.sin(G.t * 7 + i * 2);
+        px(sx - 6 * z, hipY, 5 * z, flY - hipY + k * 2 * z, suit);
+        px(sx + 2 * z, hipY, 5 * z, flY - hipY - k * 2 * z, suit);
+        px(sx - 6 * z, hipY, 5 * z, 3 * z, suitHi); px(sx + 2 * z, hipY, 5 * z, 3 * z, suitHi);
+        px(sx - 7 * z, flY - 3 * z, 7 * z, 3 * z, '#14181a'); px(sx + 1 * z, flY - 3 * z, 7 * z, 3 * z, '#14181a');
+      } else {
+        // sitting: thighs forward, shins down off the bench
+        px(sx - 4 * z, hipY, 16 * z, 6 * z, suit);
+        px(sx - 4 * z, hipY, 16 * z, 2 * z, suitHi);
+        px(sx + 8 * z, hipY + 5 * z, 5 * z, flY - hipY - 8 * z, suit);
+        px(sx + 7 * z, flY - 3 * z, 8 * z, 3 * z, '#14181a');
+      }
+      // ---- torso ---------------------------------------------------------
+      px(sx - 7 * z + sway, shY, 15 * z, hipY - shY + 2 * z, suit);
+      px(sx - 7 * z + sway, shY, 15 * z, 2.4 * z, suitHi);
+      px(sx + 5 * z + sway, shY, 3 * z, hipY - shY, suitLo);
+      // the harness over it
+      px(sx - 5 * z + sway, shY + 2 * z, 3 * z, hipY - shY - 4 * z, '#1e2a30');
+      px(sx + 1 * z + sway, shY + 2 * z, 3 * z, hipY - shY - 4 * z, '#1e2a30');
+      px(sx - 7 * z + sway, shY + (hipY - shY) * 0.5, 15 * z, 3 * z, '#1e2a30');
+      px(sx - 2 * z + sway, shY + (hipY - shY) * 0.5, 4 * z, 4 * z, '#8a9298');
+      // a radio on the chest
+      px(sx + 2 * z + sway, shY + 3 * z, 4 * z, 6 * z, '#22282a');
+      if (Math.sin(G.t * 4 + i * 2) > 0.6) px(sx + 3 * z + sway, shY + 4 * z, 2 * z, 2 * z, '#50e090');
+      // ---- arms ----------------------------------------------------------
+      if (scared) {
+        // both out in front, going for the animal
+        px(sx + 7 * z + sway, shY + 3 * z, 16 * z, 4.4 * z, suit);
+        px(sx + 21 * z + sway, shY + 2 * z, 5 * z, 6 * z, skin);
+        px(sx - 12 * z + sway, shY + 5 * z, 6 * z, 4 * z, suit);
+      } else if (up) {
+        px(sx + 7 * z + sway, shY + 2 * z, 4.4 * z, 12 * z, suit);
+        px(sx + 7 * z + sway, shY + 14 * z, 5 * z, 5 * z, skin);
+        px(sx - 10 * z + sway, shY + 2 * z, 4 * z, 12 * z, suit);
+      } else {
+        px(sx + 6 * z + sway, shY + 2 * z, 4.4 * z, 11 * z, suit);
+        px(sx + 6 * z + sway, shY + 12 * z, 6 * z, 4 * z, skin);      // hands on knees
+      }
+      // ---- neck and helmet -----------------------------------------------
+      px(sx - 2 * z + sway, shY - 3 * z, 6 * z, 4 * z, skin);
+      const hy = shY - 15 * z;
+      px(sx - 8 * z + sway, hy, 17 * z, 14 * z, '#2a3236');
+      px(sx - 8 * z + sway, hy, 17 * z, 3 * z, '#404a4e');
+      px(sx - 8 * z + sway, hy + 12 * z, 17 * z, 2.4 * z, '#171d1f');
+      // visor, down, with the cabin in it
+      px(sx - 5 * z + sway, hy + 5 * z, 13 * z, 6 * z, scared ? '#8fe8d8' : '#3f5d66');
+      px(sx - 5 * z + sway, hy + 5 * z, 13 * z, 1.6 * z, '#a8d8e0');
+      // earcup and mic boom
+      px(sx + 8 * z + sway, hy + 4 * z, 3.4 * z, 7 * z, '#1a2022');
+      px(sx - 10 * z + sway, hy + 4 * z, 3 * z, 7 * z, '#1a2022');
+      ctx.strokeStyle = '#1a2022'; ctx.lineWidth = Math.max(1, 1.4 * z);
+      ctx.beginPath(); ctx.moveTo(sx + 9 * z + sway, hy + 10 * z);
+      ctx.quadraticCurveTo(sx + 6 * z + sway, hy + 17 * z, sx + 1 * z + sway, hy + 16 * z); ctx.stroke();
+    }
   },
 
-  // the one prompt the opening has, the state of the glass, and how far down
-  // the pipe has taken you
+  // ---- the helicopter, once you are out of it ---------------------------
+  drawWorld(ctx, cam) {
+    if (!this.on || !this.heli) return;
+    const h = this.heli, z = cam.zoom, T = G.t;
+    const px = (x, y, w, hh, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(hh))); };
+    const [sx, sy] = cam.toScreen(h.x, h.y);
+    if (sx < -400 || sx > G.W + 400 || sy < -400) return;
+    const s = z * 1.0;
+    // fuselage: a fat nose, a cabin, a tail boom and a fin
+    px(sx - 26 * s, sy - 9 * s, 44 * s, 18 * s, '#3d4a50');
+    px(sx - 26 * s, sy - 9 * s, 44 * s, 4 * s, '#5c6b72');
+    px(sx - 26 * s, sy + 5 * s, 44 * s, 4 * s, '#242c30');
+    px(sx - 30 * s, sy - 6 * s, 6 * s, 11 * s, '#2c363a');            // nose
+    px(sx - 24 * s, sy - 7 * s, 12 * s, 7 * s, '#9fd0dc');            // windscreen
+    px(sx - 2 * s, sy - 6 * s, 10 * s, 8 * s, '#101618');             // the open door
+    px(sx + 18 * s, sy - 4 * s, 34 * s, 6 * s, '#3d4a50');            // tail boom
+    px(sx + 18 * s, sy - 4 * s, 34 * s, 2 * s, '#5c6b72');
+    px(sx + 48 * s, sy - 16 * s, 5 * s, 14 * s, '#3d4a50');           // fin
+    px(sx + 44 * s, sy - 16 * s, 12 * s, 3 * s, '#5c6b72');
+    px(sx - 18 * s, sy + 9 * s, 30 * s, 2 * s, '#6a767c');            // skids
+    px(sx - 16 * s, sy + 9 * s, 2 * s, 5 * s, '#6a767c');
+    px(sx + 6 * s, sy + 9 * s, 2 * s, 5 * s, '#6a767c');
+    // the rotor, which is a disc at this speed
+    const blur = 0.3 + 0.2 * Math.sin(T * 40);
+    ctx.globalAlpha = blur;
+    px(sx - 54 * s, sy - 15 * s, 108 * s, 2 * s, '#c8d4d8');
+    ctx.globalAlpha = 0.85;
+    px(sx - 2 * s, sy - 18 * s, 5 * s, 5 * s, '#5c6b72');
+    ctx.globalAlpha = 1;
+    // a beacon
+    if (Math.sin(T * 5) > 0.4) px(sx - 2 * s, sy + 9 * s, 3 * s, 3 * s, '#ff5040');
+  },
+
+  // ---- the overlay: the prompt, and what the fall looks like ------------
   draw(ctx) {
     if (!this.on) return;
     const W = G.W, H = G.H;
-    if (this.phase === 'carry' && this.t > 1.0) {
+    if (this.phase === 'flight') {
       const k = Math.floor(G.t * 3) % 2;
       Font.draw(ctx, 'MASH BITE', W / 2, H - 58, { color: k ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#0a1a08' });
       ctx.fillStyle = '#1a1210'; ctx.fillRect(W / 2 - 41, H - 42, 82, 6);
-      ctx.fillStyle = '#cfeef4'; ctx.fillRect(W / 2 - 40, H - 41, Math.round(80 * (1 - this.taps / this.need)), 4);
-      Font.draw(ctx, 'GLASS', W / 2, H - 33, { color: '#6f8f88', align: 'center' });
+      ctx.fillStyle = '#c8a030'; ctx.fillRect(W / 2 - 40, H - 41, Math.round(80 * (1 - this.crate)), 4);
+      Font.draw(ctx, 'THE CRATE', W / 2, H - 33, { color: '#6f8f88', align: 'center' });
+      // how long until the skids touch
+      const left = Math.max(0, this.LAND_AT - this.flightT);
+      if (left < 18) {
+        const c = left < 8 && Math.floor(G.t * 5) % 2 ? '#ff5040' : '#ff9a50';
+        Font.draw(ctx, 'RESERVE IN ' + Math.ceil(left), W / 2, 32, { color: c, align: 'center', outline: '#1a0a06' });
+      }
       return;
     }
-    if (this.phase === 'loose' && !this.coverBroken) {
-      const P = G.player, near = Math.abs(P.x - this.MANHOLE) < 26 && P.onLand;
-      if (near) {
-        const k = Math.floor(G.t * 3) % 2;
-        Font.draw(ctx, 'BITE THE COVER', W / 2, H - 58, { color: k ? '#ffffff' : '#ffd060', align: 'center', scale: 2, outline: '#0a1a08' });
-        ctx.fillStyle = '#1a1210'; ctx.fillRect(W / 2 - 41, H - 42, 82, 6);
-        ctx.fillStyle = '#c8c0a8'; ctx.fillRect(W / 2 - 40, H - 41, Math.round(80 * (1 - this.coverT)), 4);
-        Font.draw(ctx, 'CAST IRON', W / 2, H - 33, { color: '#6f8f88', align: 'center' });
-      } else if (P.x > this.MANHOLE + 20) {
-        Font.draw(ctx, 'THE DOCK IS THAT WAY', W / 2, 30, { color: '#ff8c40', align: 'center', outline: '#1a0a06' });
+    if (this.phase === 'loose') {
+      const P = G.player, g = this.geo();
+      if (P.x < g.door0) Font.draw(ctx, 'AFT — THE DOOR IS OPEN', W / 2, H - 44, { color: Math.floor(G.t * 2) % 2 ? '#ffd060' : '#e8f0e0', align: 'center', outline: '#0a1a08' });
+      const left = Math.max(0, this.LAND_AT - this.flightT);
+      if (left < 18) {
+        const c = left < 8 && Math.floor(G.t * 5) % 2 ? '#ff5040' : '#ff9a50';
+        Font.draw(ctx, 'RESERVE IN ' + Math.ceil(left), W / 2, 32, { color: c, align: 'center', outline: '#1a0a06' });
       }
       return;
     }
     if (this.phase === 'caught') {
-      Font.draw(ctx, 'TRANSFER ORDER 11 COMPLETE', W / 2, H - 44, { color: '#ff8c40', align: 'center', outline: '#1a0a06' });
+      Font.draw(ctx, 'AIRLIFT 11 COMPLETE', W / 2, H - 44, { color: '#ff8c40', align: 'center', outline: '#1a0a06' });
       return;
     }
-    // ---- the shaft closing over, the dark, and the eye opening again -----
-    if (this.phase === 'drop') {
-      // the light of the access chamber going up and away from you
-      const u = clamp(this.t / 0.3, 0, 1);
-      ctx.fillStyle = 'rgba(3,5,6,' + Math.min(1, u * u * 1.15).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
-      return;
-    }
-    if (this.phase === 'black') {
-      ctx.fillStyle = '#030506'; ctx.fillRect(0, 0, W, H);
-      // a pulse, because something down there is still working
-      const b = 0.10 + 0.09 * Math.max(0, Math.sin(this.t * 3.4));
-      const g = ctx.createRadialGradient(W / 2, H / 2, 4, W / 2, H / 2, W * 0.42);
-      g.addColorStop(0, 'rgba(120,30,30,' + b.toFixed(3) + ')'); g.addColorStop(1, 'rgba(120,30,30,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      if (this.t > 1.5) {
-        const a = Math.min(1, (this.t - 1.5) / 0.9) * (Math.floor(G.t * 1.6) % 2 ? 0.85 : 0.5);
-        Font.draw(ctx, 'SOME TIME LATER', W / 2, H / 2 - 6, { color: 'rgba(150,176,172,' + a.toFixed(2) + ')', align: 'center' });
+    if (this.phase === 'fall') {
+      // the air going past, and how much of it is left
+      const P = G.player;
+      const drop = Math.max(0, World.surface(P.x) - P.y);
+      ctx.globalAlpha = clamp(this.fallT * 1.6, 0, 1) * 0.5;
+      for (let i = 0; i < 26; i++) {
+        const u = ((G.t * 2.4 + i * 0.3) % 1);
+        const x = (i * 71) % W, y = u * (H + 60) - 30;
+        ctx.fillStyle = '#dff0f6';
+        ctx.fillRect(Math.round(x), Math.round(y), 1, Math.round(16 + u * 26));
       }
-      return;
-    }
-    if (this.phase === 'wake') {
-      // two blinks and then it stays open: the lids come in from top and
-      // bottom and the gap between them is the only thing you can see through
-      const u = clamp(this.t / 3.6, 0, 1);
-      let open = clamp(u * 2.4, 0, 1);
-      if (this.t < 0.5) open = this.t / 0.5 * 0.45;
-      else if (this.t < 0.85) open = 0.45 - (this.t - 0.5) / 0.35 * 0.42;
-      else if (this.t < 1.6) open = 0.03 + (this.t - 0.85) / 0.75 * 0.72;
-      else if (this.t < 1.85) open = 0.75 - (this.t - 1.6) / 0.25 * 0.35;
-      else open = Math.min(1, 0.4 + (this.t - 1.85) / 1.1 * 0.6);
-      const lid = Math.round((H / 2) * (1 - open));
-      if (lid > 0) {
-        ctx.fillStyle = '#030506';
-        ctx.fillRect(0, 0, W, lid); ctx.fillRect(0, H - lid, W, lid);
-        ctx.fillStyle = 'rgba(30,44,44,0.9)';
-        ctx.fillRect(0, lid, W, 2); ctx.fillRect(0, H - lid - 2, W, 2);
-      }
-      // whatever is left of the dark, and the swimming that goes with it
-      ctx.fillStyle = 'rgba(3,5,6,' + ((1 - open) * 0.55).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H);
-      const vg = ctx.createRadialGradient(W / 2, H / 2, W * 0.16, W / 2, H / 2, W * 0.62);
-      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(2,6,8,' + (0.7 - open * 0.4).toFixed(2) + ')');
+      ctx.globalAlpha = 1;
+      const ft = Math.round(drop / 3.2);
+      Font.draw(ctx, ft + ' FT', W / 2, 28, { color: ft < 120 ? '#ff9a50' : '#cfe8f0', align: 'center', scale: 2, outline: '#08121a' });
+      const vg = ctx.createRadialGradient(W / 2, H / 2, W * 0.22, W / 2, H / 2, W * 0.7);
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(6,14,20,' + (0.3 + 0.25 * Math.sin(G.t * 6)).toFixed(2) + ')');
       ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-      if (this.t > 2.2 && Math.floor(G.t * 2) % 2) Font.draw(ctx, 'SOMEWHERE ELSE', W / 2, 30, { color: 'rgba(159,224,200,0.8)', align: 'center', outline: '#04100c' });
       return;
     }
   },
@@ -18777,8 +20184,10 @@ const UI = {
     ];
     // the induction's dialogue bar owns the foot of the screen, so the plates
     // move up out from under it while it is running
-    const pw = 102, ph = 26, gap = 8;   // 'RESEARCH' at double height needs the room
-    const py = H - 48;
+    // Big picture-led cards, the way a phone game does it: one for the animal
+    // and one for the building, both large enough to hit with a thumb.
+    const pw = 150, ph = 74, gap = 14;
+    const py = H - 96;
     const total = out.length * pw + (out.length - 1) * gap;
     out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
     return out;
@@ -18804,21 +20213,169 @@ const UI = {
     this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 15);
     ctx.globalAlpha = 1;
 
-    // --- two plates, one per station, always both visible. No tabs, no blurb.
+    // --- the two cards
     const py = st[0].by;
-    st.forEach((s2, i) => {
-      const on = i === si;
-      ctx.fillStyle = on ? 'rgba(10,32,29,0.95)' : 'rgba(4,12,12,0.8)';
-      ctx.fillRect(s2.bx, s2.by, s2.bw, s2.bh);
-      ctx.fillStyle = on ? '#7affda' : '#22403c'; ctx.fillRect(s2.bx, s2.by, s2.bw, 2);
-      Font.draw(ctx, s2.label, s2.bx + s2.bw / 2, s2.by + 9, { color: on ? '#e8fff8' : '#4f7f74', align: 'center', scale: 2, outline: '#04120e' });
-      if (on) this.bracket(ctx, s2.bx - 3, s2.by - 3, s2.bw + 6, s2.bh + 6, '#7affda', 8);
-    });
+    st.forEach((s2, i) => this.bigCard(ctx, s2, i === si, t));
 
     // --- one number that matters, and nothing else
     const d = Research.data();
     if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
     this.titleChrome(ctx, t);
+  },
+
+  // ---- A BIG CARD -------------------------------------------------------
+  // The two plates used to be labels. A phone game leads with a picture the
+  // size of your thumb and puts one word under it, so: a raised panel with a
+  // bevel, a big icon in it, a badge for whatever number matters, and the
+  // selected one lifted a few pixels with a glow behind it.
+  bigCard(ctx, s2, on, t) {
+    const x = s2.bx, w = s2.bw, h = s2.bh;
+    const lift = on ? Math.round(2 + Math.sin(t * 3) * 1.2) : 0;
+    const y = s2.by - lift;
+    const P = G.player;
+    const face = on ? '#123a35' : '#0b1c1e';
+    const rim = on ? '#7affda' : '#2c4a48';
+    const glow = s2.id === 'habitat' ? '#7affda' : '#ffc84a';
+    // the glow behind a selected card
+    if (on) {
+      const g = ctx.createRadialGradient(x + w / 2, y + h / 2, 4, x + w / 2, y + h / 2, w * 0.8);
+      g.addColorStop(0, rgba(glow, 0.22)); g.addColorStop(1, rgba(glow, 0));
+      ctx.fillStyle = g; ctx.fillRect(x - w * 0.4, y - h * 0.5, w * 1.8, h * 2);
+    }
+    // the drop shadow it sits on
+    ctx.fillStyle = 'rgba(2,8,8,0.55)'; ctx.fillRect(x + 3, y + h - 1 + lift, w - 6, 5);
+    // the body of it, with a bevel
+    ctx.fillStyle = '#04100f'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = face; ctx.fillRect(x, y, w, h);
+    const tg = ctx.createLinearGradient(0, y, 0, y + h);
+    tg.addColorStop(0, 'rgba(255,255,255,0.10)'); tg.addColorStop(0.45, 'rgba(255,255,255,0)');
+    ctx.fillStyle = tg; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = rim; ctx.fillRect(x, y, w, 2); ctx.fillRect(x, y, 2, h);
+    ctx.fillStyle = on ? '#2f6f66' : '#06110f'; ctx.fillRect(x, y + h - 2, w, 2); ctx.fillRect(x + w - 2, y, 2, h);
+    // the corner cuts, so it reads as a panel and not a rectangle
+    ctx.fillStyle = '#04100f';
+    ctx.fillRect(x, y, 4, 4); ctx.fillRect(x + w - 4, y, 4, 4);
+    ctx.fillRect(x, y + h - 4, 4, 4); ctx.fillRect(x + w - 4, y + h - 4, 4, 4);
+    // ---- the picture ----------------------------------------------------
+    const ix = x + w / 2, iy = y + 34;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x + 3, y + 3, w - 6, h - 20); ctx.clip();
+    if (s2.id === 'habitat') this.crocIcon(ctx, ix + 4, iy + 5, on ? 1.34 : 1.24, t, on);
+    else this.labIcon(ctx, ix, iy + 4, on ? 1.22 : 1.12, t, on);
+    ctx.restore();
+    // ---- the word -------------------------------------------------------
+    const label = s2.id === 'habitat' ? 'YOUR ANIMAL' : 'THE LAB';
+    ctx.fillStyle = on ? 'rgba(6,26,24,0.85)' : 'rgba(3,12,12,0.8)';
+    ctx.fillRect(x + 3, y + h - 17, w - 6, 14);
+    Font.draw(ctx, label, x + w / 2, y + h - 13, { color: on ? '#e8fff8' : '#4f7f74', align: 'center', scale: 2, outline: '#04120e' });
+    // ---- the badge ------------------------------------------------------
+    const badge = s2.id === 'habitat'
+      ? (P && P.lengthFt !== undefined ? P.lengthFt.toFixed(1) + ' FT' : null)
+      : (Research.data() > 0 ? Research.data() + '' : null);
+    if (badge) {
+      const bw2 = Font.width(badge) + 8;
+      ctx.fillStyle = s2.id === 'habitat' ? '#1d6f60' : '#8a6a10';
+      ctx.fillRect(x + w - bw2 - 4, y + 4, bw2, 11);
+      ctx.fillStyle = s2.id === 'habitat' ? '#3fd0b0' : '#ffc84a';
+      ctx.fillRect(x + w - bw2 - 4, y + 4, bw2, 2);
+      Font.draw(ctx, badge, x + w - bw2 / 2 - 4, y + 7, { color: '#f0fff8', align: 'center' });
+    }
+    if (on) this.bracket(ctx, x - 5, y - 5, w + 10, h + 10, glow, 12);
+  },
+
+  // ---- CHUNKY PANEL -----------------------------------------------------
+  // The chrome the cards are made of: a hard shadow, a bevel, cut corners and
+  // a rim. Everything on a menu that is meant to be pressed gets it.
+  panel(ctx, x, y, w, h, rim, face, glow) {
+    if (glow) {
+      const g = ctx.createRadialGradient(x + w / 2, y + h / 2, 4, x + w / 2, y + h / 2, Math.max(w, h) * 0.8);
+      g.addColorStop(0, rgba(glow, 0.16)); g.addColorStop(1, rgba(glow, 0));
+      ctx.fillStyle = g; ctx.fillRect(x - w * 0.4, y - h * 0.4, w * 1.8, h * 1.8);
+    }
+    ctx.fillStyle = 'rgba(2,8,8,0.6)'; ctx.fillRect(x + 3, y + h, w - 6, 4);
+    ctx.fillStyle = '#04100f'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = face; ctx.fillRect(x, y, w, h);
+    const tg = ctx.createLinearGradient(0, y, 0, y + h);
+    tg.addColorStop(0, 'rgba(255,255,255,0.09)'); tg.addColorStop(0.4, 'rgba(255,255,255,0)');
+    ctx.fillStyle = tg; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = rim; ctx.fillRect(x, y, w, 2); ctx.fillRect(x, y, 2, h);
+    ctx.fillStyle = shade(rim, 0.45); ctx.fillRect(x, y + h - 2, w, 2); ctx.fillRect(x + w - 2, y, 2, h);
+    ctx.fillStyle = '#04100f';
+    ctx.fillRect(x, y, 4, 4); ctx.fillRect(x + w - 4, y, 4, 4);
+    ctx.fillRect(x, y + h - 4, 4, 4); ctx.fillRect(x + w - 4, y + h - 4, 4, 4);
+  },
+
+  // a crocodile's head, three-quarter on, drawn big and blunt
+  crocIcon(ctx, cx, cy, s, t, on) {
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(cx + x * s), Math.round(cy + y * s), Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))); };
+    const L = G.player && G.player.parts ? null : null;
+    const back = '#4a6b2e', mid = '#6f8f3f', belly = '#c9c48a', dark = '#22301a';
+    const blink = Math.sin(t * 0.7) > 0.96;
+    const jaw = on ? Math.max(0, Math.sin(t * 2.2)) * 3 : 0;
+    // the snout, going left, and the skull behind it
+    px(-34, -4, 30, 9, mid);
+    px(-34, -4, 30, 3, mixColor(mid, '#ffffff', 0.18));
+    px(-34, 4, 30, 2, dark);
+    px(-6, -10, 22, 20, mid);
+    px(-6, -10, 22, 4, mixColor(mid, '#ffffff', 0.2));
+    px(-6, 7, 22, 3, dark);
+    px(16, -8, 8, 16, back);
+    // the lower jaw, hinged open a touch
+    px(-34, 5 + jaw, 30, 5, belly);
+    px(-6, 5 + jaw, 22, 6, belly);
+    px(-34, 9 + jaw, 30, 2, mixColor(belly, '#000000', 0.3));
+    // teeth along both
+    for (let i = 0; i < 9; i++) {
+      px(-32 + i * 3.4, 4, 2, 3, '#f4f1e6');
+      px(-32 + i * 3.4, 2 + jaw, 2, 3, '#f4f1e6');
+    }
+    // the eye up on top, with a slit pupil and a brow over it
+    px(1, -16, 15, 10, dark);
+    px(2, -15, 13, 8, back);
+    px(3, -14, 11, 6, blink ? back : '#ffd84a');
+    if (!blink) { px(7, -14, 3, 6, '#111111'); px(4, -14, 2, 2, '#fff8c0'); }
+    px(2, -18, 13, 3, mixColor(back, '#ffffff', 0.28));
+    // scutes down the back of the skull
+    for (let i = 0; i < 4; i++) px(14 + i * 4, -12 + i, 3, 4, dark);
+    // nostril
+    px(-32, -6, 4, 3, dark);
+    // a keyline under the top jaw so the two halves separate
+    px(-34, 3, 50, 1.4, dark);
+  },
+
+  // a flask and a helix: the lab, as an object
+  labIcon(ctx, cx, cy, s, t, on) {
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(cx + x * s), Math.round(cy + y * s), Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))); };
+    // the flask
+    px(-6, -20, 12, 4, '#9fd8e4');
+    px(-4, -16, 8, 8, '#8ec8d4');
+    ctx.fillStyle = '#8ec8d4';
+    ctx.beginPath();
+    ctx.moveTo(cx - 4 * s, cy - 8 * s); ctx.lineTo(cx - 18 * s, cy + 16 * s);
+    ctx.lineTo(cx + 18 * s, cy + 16 * s); ctx.lineTo(cx + 4 * s, cy - 8 * s);
+    ctx.closePath(); ctx.fill();
+    // what is in it, with a meniscus and a bubble or two
+    const lvl = 4 + Math.sin(t * 1.4) * 1.2;
+    ctx.fillStyle = on ? '#4fe08a' : '#2f8a58';
+    ctx.beginPath();
+    ctx.moveTo(cx - 13 * s, cy + lvl * s); ctx.lineTo(cx - 18 * s, cy + 16 * s);
+    ctx.lineTo(cx + 18 * s, cy + 16 * s); ctx.lineTo(cx + 13 * s, cy + lvl * s);
+    ctx.closePath(); ctx.fill();
+    px(-13, lvl - 1, 26, 2, on ? '#a8ffc8' : '#5fae82');
+    for (let i = 0; i < 3; i++) {
+      const u = ((t * 0.7 + i * 0.33) % 1);
+      px(-8 + i * 7, 15 - u * (15 - lvl), 2, 2, 'rgba(226,255,238,0.75)');
+    }
+    // the glass highlight
+    px(-14, 8, 3, 7, 'rgba(240,252,255,0.35)');
+    // a helix rising out of it
+    for (let i = 0; i < 7; i++) {
+      const a = t * 1.2 + i * 0.7;
+      const hx = Math.cos(a) * 7, hy = -24 - i * 3.6;
+      px(hx - 1, hy, 3, 2, i % 2 ? '#ffc84a' : '#7affda');
+      px(-hx - 1, hy, 3, 2, i % 2 ? '#7affda' : '#ffc84a');
+      if (i % 2 === 0) px(-Math.abs(hx), hy, Math.abs(hx) * 2, 1, 'rgba(180,220,230,0.4)');
+    }
   },
 
   // ---- THE FRAME ROUND THE TITLE ----------------------------------------
@@ -18832,7 +20389,7 @@ const UI = {
     const W = G.W, H = G.H;
     const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
     // the strapline, on its own little plate under the sign
-    const sub = 'SUBJECT 7 — TRANSFER ORDER 11';
+    const sub = 'SUBJECT 7 — AIRLIFT 11';
     const sw2 = Font.width(sub) + 14;
     px(W / 2 - sw2 / 2, 68, sw2, 13, 'rgba(6,16,18,0.82)');
     px(W / 2 - sw2 / 2, 68, sw2, 1, 'rgba(122,255,218,0.35)');
@@ -19960,13 +21517,23 @@ const UI = {
     }
     Font.draw(ctx, 'ZONE ' + Z.n, 58, 13, { color: Z.col, scale: 2, outline: '#04120e' });
     Font.draw(ctx, Z.name, 58, 28, { color: '#c8d8d0' });
+    // the whole readout is one card now, not a column of floating text
+    this.panel(ctx, px0 - 8 + shake, 16, W - 14 - px0 + 8, 230, open ? accent : '#4a4038', 'rgba(6,20,20,0.93)', open ? accent : null);
     Font.draw(ctx, 'RELEASE SITE', px0 + shake, 26, { color: '#4f7f74' });
     Font.draw(ctx, String(zIdx + 1).padStart(2, '0') + ' / ' + String(zSites.length).padStart(2, '0'), W - 22, 26, { color: '#4f7f74', align: 'right' });
     ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(px0 + shake, 36, W - 22 - px0, 1);
     // the landmark icon, large, standing in for a paragraph of description
-    const iw = 54;
-    this.bracket(ctx, px0 + shake, 46, iw, iw, 'rgba(120,220,200,0.4)');
-    ctx.save(); ctx.translate(px0 + iw / 2 + shake, 46 + iw * 0.72); ctx.scale(1.7, 1.7);
+    const iw = 66;
+    ctx.fillStyle = open ? rgba(accent, 0.10) : 'rgba(40,32,28,0.4)';
+    ctx.fillRect(Math.round(px0 + shake), 44, iw, iw);
+    ctx.fillStyle = open ? rgba(accent, 0.45) : '#4a4038';
+    ctx.fillRect(Math.round(px0 + shake), 44, iw, 1); ctx.fillRect(Math.round(px0 + shake), 44, 1, iw);
+    // a horizon line behind it so the landmark stands on something
+    ctx.fillStyle = open ? rgba(accent, 0.22) : 'rgba(60,50,44,0.5)';
+    ctx.fillRect(Math.round(px0 + shake) + 1, 44 + iw - 18, iw - 2, 17);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(Math.round(px0 + shake) + 1, 45, iw - 2, iw - 2); ctx.clip();
+    ctx.translate(px0 + iw / 2 + shake, 44 + iw - 16); ctx.scale(2.4, 2.4);
     this.drawLandmark(ctx, cur.id, 0, 0, open);
     ctx.restore();
     // long site names drop to a single-height face rather than running off the panel
@@ -19975,8 +21542,9 @@ const UI = {
     const nameSc = Font.width(nameStr, 2) <= nameW ? 2 : 1;
     Font.draw(ctx, nameStr, nameX, nameSc === 2 ? 52 : 55, { color: accent, scale: nameSc, outline: '#04120e' });
     if (open) {
-      Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 72, { color: '#c8d8d0' });
-      for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 8 + shake), 84, 6, 6); }
+      Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 74, { color: '#c8d8d0' });
+      for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 9 + shake), 88, 7, 7); }
+      Font.drawWrapped(ctx, cur.sub || '', px0 + shake, 44 + iw + 6, W - 14 - px0, { color: '#7f9a90', lineHeight: 9 });
     } else Font.draw(ctx, Stages.hint(cur.need, cur), px0 + iw + 10 + shake, 72, { color: '#a08070' });
 
     // --- the chain of sites in this zone, so progress reads at a glance
@@ -20020,11 +21588,18 @@ const UI = {
     // --- the button that actually sends you. It used to be the word ENTER,
     // which is not a key a phone or a tablet has.
     const go = this.stageGoRect(), gx2 = go.x + shake;
-    ctx.fillStyle = open ? 'rgba(52,26,6,0.96)' : 'rgba(20,10,10,0.9)'; ctx.fillRect(gx2, go.y, go.w, go.h);
-    ctx.fillStyle = open ? (Math.floor(t * 2) % 2 ? '#ffe060' : '#c8a030') : '#6a4038'; ctx.fillRect(gx2, go.y, go.w, 2);
-    ctx.fillStyle = '#1a0e04'; ctx.fillRect(gx2, go.y + go.h - 1, go.w, 1);
-    this.bracket(ctx, gx2 - 2, go.y - 2, go.w + 4, go.h + 4, open ? '#ff8050' : '#5a4a48', 7);
-    Font.draw(ctx, open ? 'RELEASE' : 'SEALED', gx2 + go.w / 2, go.y + 7, { color: open ? '#ffd0a0' : '#a08070', align: 'center', scale: 2, outline: '#2a0c00' });
+    const pump = open ? Math.round(Math.sin(t * 3) * 1.2) : 0;
+    this.panel(ctx, gx2, go.y - pump, go.w, go.h, open ? '#ffb040' : '#5a4a48', open ? '#7a3c08' : 'rgba(20,10,10,0.9)', open ? '#ff8030' : null);
+    if (open) {
+      // the sheen that runs across a button you are meant to press
+      const u = (t * 0.6) % 1.6;
+      ctx.save(); ctx.beginPath(); ctx.rect(gx2 + 2, go.y - pump + 2, go.w - 4, go.h - 4); ctx.clip();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = '#fff0c0';
+      ctx.fillRect(Math.round(gx2 + u * go.w - 14), go.y - pump, 12, go.h);
+      ctx.globalAlpha = 1; ctx.restore();
+    }
+    Font.draw(ctx, open ? 'RELEASE' : 'SEALED', gx2 + go.w / 2, go.y - pump + go.h / 2 - 4, { color: open ? '#fff0c8' : '#a08070', align: 'center', scale: 2, outline: '#2a0c00' });
     Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE     ENTER  RELEASE', px0 + shake, H - 11, { color: '#4f7f74' });
     this.drawExit(ctx);
   },
@@ -20640,7 +22215,7 @@ const G = {
     this.nightCounted = false; this.newUnlocks = [];
     this.t = 0; this.day = 0.1; World.t = 0; this.timeScale = 1; this.slowT = 0; this.slowScale = 1; this.hitstopT = 0; this.red = 0; this.white = 0;
     this.director = { spawnT: 0, predT: 28, flockT: 6, bossQueue: null, bossT: 0 };
-    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin(); Forest.reset(); Breed.reset();
+    Alarm.reset(); Labyrinth.reset(); Lairs.reset(); Puzzles.reset(); Abilities.reset(); Opening.reset(); Arena.reset(); Secrets.begin(); Forest.reset(); Glades.reset(); Breed.reset();
     this.startDiff = 0; this.stage = STAGES[0];
     this.cam.x = 0; this.cam.y = 60; this.cam.zoom = 1.6;
     World.ensure(0, 1400);
@@ -20963,6 +22538,12 @@ const G = {
     // harder: nothing hunts you on the bench you woke up on.
     const B = Biome.at(P.x);
     if (B.id === 'wake' || B.lab) d = Math.min(d, 0.35);
+    // The animal comes down out of the aircraft into the park's basin at the
+    // length of a hand. The basin and the two miles of sheet water either side
+    // of it are held down the same way level one of zone one is: something
+    // that eats you inside thirty seconds is not a difficulty curve.
+    else if (B.park) d = Math.min(d, 0.35);
+    else if (P.x > 2200 && P.x < 5200) d = Math.min(d * 0.55, 1.2);
     else if (P.x < 1100) d = Math.min(d * 0.62, 2.4);
     return d;
   },
@@ -21665,7 +23246,7 @@ const G = {
     // and anything that wandered off the bank into the shaft is inside the
     // rock, which is not a place a bird can be seen standing
     for (const e of this.ents) if (e.x < World.WEST - 20 && e.x > -5966 && e.type !== 'gib' && !e.persistent) e.remove = true;
-    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Forest.update(dt, this.cam); Breed.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
+    Alarm.update(dt); Labyrinth.update(dt); Labyrinth.clamp(this.player); Lairs.update(dt); Arena.update(dt); Secrets.update(dt); Forest.update(dt, this.cam); Glades.update(dt, this.cam); Park.update(dt); Breed.update(dt); Objectives.update(dt); Puzzles.update(dt); Abilities.update(dt); Opening.update(dt);
     for (let i = 0; i < this.ents.length; i++) {
       const e = this.ents[i]; if (e.remove) continue;
       const dx = Math.abs(e.x - P.x);
@@ -21686,9 +23267,10 @@ const G = {
     const tz = clamp(1.35 / Math.pow(P.vis, 0.95), 0.22, 2.9) * this.zoomP * (this.state === 'title' ? 1.1 : 1);
     // the trolley ride is framed on the tank and the two pushing it; the ride
     // down the pipe wants a little more of the pipe than that
-    const tz2 = Opening.on && Opening.phase === 'carry' ? clamp(tz, 1.6, 2.2)
-      : Opening.on && Opening.phase === 'drop' ? clamp(tz * 0.62, 1.1, 1.7)
-      : Opening.on && (Opening.phase === 'black' || Opening.phase === 'wake') ? clamp(tz * 1.05, 1.9, 3.0) : tz;
+    const tz2 = Opening.on && (Opening.phase === 'flight' || Opening.phase === 'caught') ? clamp(tz, 1.9, 2.6)
+      : Opening.on && Opening.phase === 'loose' ? clamp(tz, 1.5, 2.1)
+      : Opening.on && Opening.phase === 'fall' ? clamp(tz * 0.5, 0.75, 1.15)
+      : Opening.on && Opening.phase === 'splash' ? clamp(tz * 0.8, 1.0, 1.8) : tz;
     // The zoom used to be a live float that moved a hair every frame. Every
     // background layer is a pattern locked to camera * zoom, so a zoom that
     // never settles makes the grain crawl, the strata shimmer and the whole
@@ -21748,15 +23330,24 @@ const G = {
     if (this.state === 'habitat') { UI.drawHabitat(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'bench') { UI.drawLabBench(ctx); UI.drawWipe(ctx); return; }
     if (this.state === 'stages') { UI.drawStages(ctx); return; }
+    // The airlift is a set, not a stretch of map: while the animal is in the
+    // aircraft there is no world under the camera to draw.
+    if (typeof Opening !== 'undefined' && Opening.cabin()) {
+      Opening.drawCabin(ctx);
+      Opening.draw(ctx);
+      UI.drawWipe(ctx);
+      return;
+    }
     const indoor = World.isIndoor(cam.x);
     if (indoor) { World.drawIndoor(ctx, cam, day); World.drawTunnelPipes(ctx, cam); }
-    else { World.drawSky(ctx, cam, day); Forest.back(ctx, cam, day); World.drawParallax(ctx, cam, day); Forest.canopy(ctx, cam, day); }
+    else { World.drawSky(ctx, cam, day); Forest.back(ctx, cam, day); World.drawParallax(ctx, cam, day); Glades.back(ctx, cam, day); Forest.canopy(ctx, cam, day); }
     World.drawWater(ctx, cam, day);
     World.drawDeepScene(ctx, cam, day);
     World.drawTerrain(ctx, cam);
     if (indoor) World.drawTunnelFloor(ctx, cam);
     World.drawDepthShade(ctx, cam);
     Forest.deep(ctx, cam, day);
+    Glades.deep(ctx, cam, day);
     World.drawDecor(ctx, cam, 0, day);
     Secrets.draw(ctx, cam);
     if (indoor) Waste.draw(ctx, cam);
@@ -21794,6 +23385,7 @@ const G = {
     if (this.state === 'egg') this.drawEgg(ctx);
     if (this.morph) Morph.drawWorld(ctx);
     if (this.drop) Drop.drawWorld(ctx);
+    if (typeof Opening !== 'undefined') Opening.drawWorld(ctx, cam);
     Arena.drawWorld(ctx);
     for (const e of vis) if (e.type !== 'gib' && e.type !== 'proj' && !e.isBoss) e.drawHpBar(ctx);
     ctx.restore();
@@ -21806,6 +23398,7 @@ const G = {
     // the near side of the bore: pipes, chains and rail between you and the animal
     if (indoor && typeof Sewer !== 'undefined') Sewer.foreground(ctx, cam);
     Forest.front(ctx, cam, day);
+    Glades.front(ctx, cam, day);
     World.drawSurface(ctx, cam, day);
     World.drawMist(ctx, cam, day);
     World.drawNight(ctx, cam, day);

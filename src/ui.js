@@ -655,8 +655,10 @@ const UI = {
     ];
     // the induction's dialogue bar owns the foot of the screen, so the plates
     // move up out from under it while it is running
-    const pw = 102, ph = 26, gap = 8;   // 'RESEARCH' at double height needs the room
-    const py = H - 48;
+    // Big picture-led cards, the way a phone game does it: one for the animal
+    // and one for the building, both large enough to hit with a thumb.
+    const pw = 150, ph = 74, gap = 14;
+    const py = H - 96;
     const total = out.length * pw + (out.length - 1) * gap;
     out.forEach((s2, i) => { s2.bx = Math.round(W / 2 - total / 2 + i * (pw + gap)); s2.by = py; s2.bw = pw; s2.bh = ph; });
     return out;
@@ -682,21 +684,169 @@ const UI = {
     this.bracket(ctx, sel.x, sel.y, sel.w, sel.h, '#7affda', 15);
     ctx.globalAlpha = 1;
 
-    // --- two plates, one per station, always both visible. No tabs, no blurb.
+    // --- the two cards
     const py = st[0].by;
-    st.forEach((s2, i) => {
-      const on = i === si;
-      ctx.fillStyle = on ? 'rgba(10,32,29,0.95)' : 'rgba(4,12,12,0.8)';
-      ctx.fillRect(s2.bx, s2.by, s2.bw, s2.bh);
-      ctx.fillStyle = on ? '#7affda' : '#22403c'; ctx.fillRect(s2.bx, s2.by, s2.bw, 2);
-      Font.draw(ctx, s2.label, s2.bx + s2.bw / 2, s2.by + 9, { color: on ? '#e8fff8' : '#4f7f74', align: 'center', scale: 2, outline: '#04120e' });
-      if (on) this.bracket(ctx, s2.bx - 3, s2.by - 3, s2.bw + 6, s2.bh + 6, '#7affda', 8);
-    });
+    st.forEach((s2, i) => this.bigCard(ctx, s2, i === si, t));
 
     // --- one number that matters, and nothing else
     const d = Research.data();
     if (d > 0) Font.draw(ctx, d + ' DATA', W / 2, py - 13, { color: '#ffe060', align: 'center', outline: '#3a2a00' });
     this.titleChrome(ctx, t);
+  },
+
+  // ---- A BIG CARD -------------------------------------------------------
+  // The two plates used to be labels. A phone game leads with a picture the
+  // size of your thumb and puts one word under it, so: a raised panel with a
+  // bevel, a big icon in it, a badge for whatever number matters, and the
+  // selected one lifted a few pixels with a glow behind it.
+  bigCard(ctx, s2, on, t) {
+    const x = s2.bx, w = s2.bw, h = s2.bh;
+    const lift = on ? Math.round(2 + Math.sin(t * 3) * 1.2) : 0;
+    const y = s2.by - lift;
+    const P = G.player;
+    const face = on ? '#123a35' : '#0b1c1e';
+    const rim = on ? '#7affda' : '#2c4a48';
+    const glow = s2.id === 'habitat' ? '#7affda' : '#ffc84a';
+    // the glow behind a selected card
+    if (on) {
+      const g = ctx.createRadialGradient(x + w / 2, y + h / 2, 4, x + w / 2, y + h / 2, w * 0.8);
+      g.addColorStop(0, rgba(glow, 0.22)); g.addColorStop(1, rgba(glow, 0));
+      ctx.fillStyle = g; ctx.fillRect(x - w * 0.4, y - h * 0.5, w * 1.8, h * 2);
+    }
+    // the drop shadow it sits on
+    ctx.fillStyle = 'rgba(2,8,8,0.55)'; ctx.fillRect(x + 3, y + h - 1 + lift, w - 6, 5);
+    // the body of it, with a bevel
+    ctx.fillStyle = '#04100f'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = face; ctx.fillRect(x, y, w, h);
+    const tg = ctx.createLinearGradient(0, y, 0, y + h);
+    tg.addColorStop(0, 'rgba(255,255,255,0.10)'); tg.addColorStop(0.45, 'rgba(255,255,255,0)');
+    ctx.fillStyle = tg; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = rim; ctx.fillRect(x, y, w, 2); ctx.fillRect(x, y, 2, h);
+    ctx.fillStyle = on ? '#2f6f66' : '#06110f'; ctx.fillRect(x, y + h - 2, w, 2); ctx.fillRect(x + w - 2, y, 2, h);
+    // the corner cuts, so it reads as a panel and not a rectangle
+    ctx.fillStyle = '#04100f';
+    ctx.fillRect(x, y, 4, 4); ctx.fillRect(x + w - 4, y, 4, 4);
+    ctx.fillRect(x, y + h - 4, 4, 4); ctx.fillRect(x + w - 4, y + h - 4, 4, 4);
+    // ---- the picture ----------------------------------------------------
+    const ix = x + w / 2, iy = y + 34;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x + 3, y + 3, w - 6, h - 20); ctx.clip();
+    if (s2.id === 'habitat') this.crocIcon(ctx, ix + 4, iy + 5, on ? 1.34 : 1.24, t, on);
+    else this.labIcon(ctx, ix, iy + 4, on ? 1.22 : 1.12, t, on);
+    ctx.restore();
+    // ---- the word -------------------------------------------------------
+    const label = s2.id === 'habitat' ? 'YOUR ANIMAL' : 'THE LAB';
+    ctx.fillStyle = on ? 'rgba(6,26,24,0.85)' : 'rgba(3,12,12,0.8)';
+    ctx.fillRect(x + 3, y + h - 17, w - 6, 14);
+    Font.draw(ctx, label, x + w / 2, y + h - 13, { color: on ? '#e8fff8' : '#4f7f74', align: 'center', scale: 2, outline: '#04120e' });
+    // ---- the badge ------------------------------------------------------
+    const badge = s2.id === 'habitat'
+      ? (P && P.lengthFt !== undefined ? P.lengthFt.toFixed(1) + ' FT' : null)
+      : (Research.data() > 0 ? Research.data() + '' : null);
+    if (badge) {
+      const bw2 = Font.width(badge) + 8;
+      ctx.fillStyle = s2.id === 'habitat' ? '#1d6f60' : '#8a6a10';
+      ctx.fillRect(x + w - bw2 - 4, y + 4, bw2, 11);
+      ctx.fillStyle = s2.id === 'habitat' ? '#3fd0b0' : '#ffc84a';
+      ctx.fillRect(x + w - bw2 - 4, y + 4, bw2, 2);
+      Font.draw(ctx, badge, x + w - bw2 / 2 - 4, y + 7, { color: '#f0fff8', align: 'center' });
+    }
+    if (on) this.bracket(ctx, x - 5, y - 5, w + 10, h + 10, glow, 12);
+  },
+
+  // ---- CHUNKY PANEL -----------------------------------------------------
+  // The chrome the cards are made of: a hard shadow, a bevel, cut corners and
+  // a rim. Everything on a menu that is meant to be pressed gets it.
+  panel(ctx, x, y, w, h, rim, face, glow) {
+    if (glow) {
+      const g = ctx.createRadialGradient(x + w / 2, y + h / 2, 4, x + w / 2, y + h / 2, Math.max(w, h) * 0.8);
+      g.addColorStop(0, rgba(glow, 0.16)); g.addColorStop(1, rgba(glow, 0));
+      ctx.fillStyle = g; ctx.fillRect(x - w * 0.4, y - h * 0.4, w * 1.8, h * 1.8);
+    }
+    ctx.fillStyle = 'rgba(2,8,8,0.6)'; ctx.fillRect(x + 3, y + h, w - 6, 4);
+    ctx.fillStyle = '#04100f'; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    ctx.fillStyle = face; ctx.fillRect(x, y, w, h);
+    const tg = ctx.createLinearGradient(0, y, 0, y + h);
+    tg.addColorStop(0, 'rgba(255,255,255,0.09)'); tg.addColorStop(0.4, 'rgba(255,255,255,0)');
+    ctx.fillStyle = tg; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = rim; ctx.fillRect(x, y, w, 2); ctx.fillRect(x, y, 2, h);
+    ctx.fillStyle = shade(rim, 0.45); ctx.fillRect(x, y + h - 2, w, 2); ctx.fillRect(x + w - 2, y, 2, h);
+    ctx.fillStyle = '#04100f';
+    ctx.fillRect(x, y, 4, 4); ctx.fillRect(x + w - 4, y, 4, 4);
+    ctx.fillRect(x, y + h - 4, 4, 4); ctx.fillRect(x + w - 4, y + h - 4, 4, 4);
+  },
+
+  // a crocodile's head, three-quarter on, drawn big and blunt
+  crocIcon(ctx, cx, cy, s, t, on) {
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(cx + x * s), Math.round(cy + y * s), Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))); };
+    const L = G.player && G.player.parts ? null : null;
+    const back = '#4a6b2e', mid = '#6f8f3f', belly = '#c9c48a', dark = '#22301a';
+    const blink = Math.sin(t * 0.7) > 0.96;
+    const jaw = on ? Math.max(0, Math.sin(t * 2.2)) * 3 : 0;
+    // the snout, going left, and the skull behind it
+    px(-34, -4, 30, 9, mid);
+    px(-34, -4, 30, 3, mixColor(mid, '#ffffff', 0.18));
+    px(-34, 4, 30, 2, dark);
+    px(-6, -10, 22, 20, mid);
+    px(-6, -10, 22, 4, mixColor(mid, '#ffffff', 0.2));
+    px(-6, 7, 22, 3, dark);
+    px(16, -8, 8, 16, back);
+    // the lower jaw, hinged open a touch
+    px(-34, 5 + jaw, 30, 5, belly);
+    px(-6, 5 + jaw, 22, 6, belly);
+    px(-34, 9 + jaw, 30, 2, mixColor(belly, '#000000', 0.3));
+    // teeth along both
+    for (let i = 0; i < 9; i++) {
+      px(-32 + i * 3.4, 4, 2, 3, '#f4f1e6');
+      px(-32 + i * 3.4, 2 + jaw, 2, 3, '#f4f1e6');
+    }
+    // the eye up on top, with a slit pupil and a brow over it
+    px(1, -16, 15, 10, dark);
+    px(2, -15, 13, 8, back);
+    px(3, -14, 11, 6, blink ? back : '#ffd84a');
+    if (!blink) { px(7, -14, 3, 6, '#111111'); px(4, -14, 2, 2, '#fff8c0'); }
+    px(2, -18, 13, 3, mixColor(back, '#ffffff', 0.28));
+    // scutes down the back of the skull
+    for (let i = 0; i < 4; i++) px(14 + i * 4, -12 + i, 3, 4, dark);
+    // nostril
+    px(-32, -6, 4, 3, dark);
+    // a keyline under the top jaw so the two halves separate
+    px(-34, 3, 50, 1.4, dark);
+  },
+
+  // a flask and a helix: the lab, as an object
+  labIcon(ctx, cx, cy, s, t, on) {
+    const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(cx + x * s), Math.round(cy + y * s), Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))); };
+    // the flask
+    px(-6, -20, 12, 4, '#9fd8e4');
+    px(-4, -16, 8, 8, '#8ec8d4');
+    ctx.fillStyle = '#8ec8d4';
+    ctx.beginPath();
+    ctx.moveTo(cx - 4 * s, cy - 8 * s); ctx.lineTo(cx - 18 * s, cy + 16 * s);
+    ctx.lineTo(cx + 18 * s, cy + 16 * s); ctx.lineTo(cx + 4 * s, cy - 8 * s);
+    ctx.closePath(); ctx.fill();
+    // what is in it, with a meniscus and a bubble or two
+    const lvl = 4 + Math.sin(t * 1.4) * 1.2;
+    ctx.fillStyle = on ? '#4fe08a' : '#2f8a58';
+    ctx.beginPath();
+    ctx.moveTo(cx - 13 * s, cy + lvl * s); ctx.lineTo(cx - 18 * s, cy + 16 * s);
+    ctx.lineTo(cx + 18 * s, cy + 16 * s); ctx.lineTo(cx + 13 * s, cy + lvl * s);
+    ctx.closePath(); ctx.fill();
+    px(-13, lvl - 1, 26, 2, on ? '#a8ffc8' : '#5fae82');
+    for (let i = 0; i < 3; i++) {
+      const u = ((t * 0.7 + i * 0.33) % 1);
+      px(-8 + i * 7, 15 - u * (15 - lvl), 2, 2, 'rgba(226,255,238,0.75)');
+    }
+    // the glass highlight
+    px(-14, 8, 3, 7, 'rgba(240,252,255,0.35)');
+    // a helix rising out of it
+    for (let i = 0; i < 7; i++) {
+      const a = t * 1.2 + i * 0.7;
+      const hx = Math.cos(a) * 7, hy = -24 - i * 3.6;
+      px(hx - 1, hy, 3, 2, i % 2 ? '#ffc84a' : '#7affda');
+      px(-hx - 1, hy, 3, 2, i % 2 ? '#7affda' : '#ffc84a');
+      if (i % 2 === 0) px(-Math.abs(hx), hy, Math.abs(hx) * 2, 1, 'rgba(180,220,230,0.4)');
+    }
   },
 
   // ---- THE FRAME ROUND THE TITLE ----------------------------------------
@@ -710,7 +860,7 @@ const UI = {
     const W = G.W, H = G.H;
     const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
     // the strapline, on its own little plate under the sign
-    const sub = 'SUBJECT 7 — TRANSFER ORDER 11';
+    const sub = 'SUBJECT 7 — AIRLIFT 11';
     const sw2 = Font.width(sub) + 14;
     px(W / 2 - sw2 / 2, 68, sw2, 13, 'rgba(6,16,18,0.82)');
     px(W / 2 - sw2 / 2, 68, sw2, 1, 'rgba(122,255,218,0.35)');
@@ -1838,13 +1988,23 @@ const UI = {
     }
     Font.draw(ctx, 'ZONE ' + Z.n, 58, 13, { color: Z.col, scale: 2, outline: '#04120e' });
     Font.draw(ctx, Z.name, 58, 28, { color: '#c8d8d0' });
+    // the whole readout is one card now, not a column of floating text
+    this.panel(ctx, px0 - 8 + shake, 16, W - 14 - px0 + 8, 230, open ? accent : '#4a4038', 'rgba(6,20,20,0.93)', open ? accent : null);
     Font.draw(ctx, 'RELEASE SITE', px0 + shake, 26, { color: '#4f7f74' });
     Font.draw(ctx, String(zIdx + 1).padStart(2, '0') + ' / ' + String(zSites.length).padStart(2, '0'), W - 22, 26, { color: '#4f7f74', align: 'right' });
     ctx.fillStyle = 'rgba(120,220,200,0.25)'; ctx.fillRect(px0 + shake, 36, W - 22 - px0, 1);
     // the landmark icon, large, standing in for a paragraph of description
-    const iw = 54;
-    this.bracket(ctx, px0 + shake, 46, iw, iw, 'rgba(120,220,200,0.4)');
-    ctx.save(); ctx.translate(px0 + iw / 2 + shake, 46 + iw * 0.72); ctx.scale(1.7, 1.7);
+    const iw = 66;
+    ctx.fillStyle = open ? rgba(accent, 0.10) : 'rgba(40,32,28,0.4)';
+    ctx.fillRect(Math.round(px0 + shake), 44, iw, iw);
+    ctx.fillStyle = open ? rgba(accent, 0.45) : '#4a4038';
+    ctx.fillRect(Math.round(px0 + shake), 44, iw, 1); ctx.fillRect(Math.round(px0 + shake), 44, 1, iw);
+    // a horizon line behind it so the landmark stands on something
+    ctx.fillStyle = open ? rgba(accent, 0.22) : 'rgba(60,50,44,0.5)';
+    ctx.fillRect(Math.round(px0 + shake) + 1, 44 + iw - 18, iw - 2, 17);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(Math.round(px0 + shake) + 1, 45, iw - 2, iw - 2); ctx.clip();
+    ctx.translate(px0 + iw / 2 + shake, 44 + iw - 16); ctx.scale(2.4, 2.4);
     this.drawLandmark(ctx, cur.id, 0, 0, open);
     ctx.restore();
     // long site names drop to a single-height face rather than running off the panel
@@ -1853,8 +2013,9 @@ const UI = {
     const nameSc = Font.width(nameStr, 2) <= nameW ? 2 : 1;
     Font.draw(ctx, nameStr, nameX, nameSc === 2 ? 52 : 55, { color: accent, scale: nameSc, outline: '#04120e' });
     if (open) {
-      Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 72, { color: '#c8d8d0' });
-      for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 8 + shake), 84, 6, 6); }
+      Font.draw(ctx, (cur.size * 3.2).toFixed(1) + ' FT', px0 + iw + 10 + shake, 74, { color: '#c8d8d0' });
+      for (let k = 0; k < 5; k++) { ctx.fillStyle = k < Math.min(5, Math.round(cur.diff + 1)) ? accent : '#22322e'; ctx.fillRect(Math.round(px0 + iw + 10 + k * 9 + shake), 88, 7, 7); }
+      Font.drawWrapped(ctx, cur.sub || '', px0 + shake, 44 + iw + 6, W - 14 - px0, { color: '#7f9a90', lineHeight: 9 });
     } else Font.draw(ctx, Stages.hint(cur.need, cur), px0 + iw + 10 + shake, 72, { color: '#a08070' });
 
     // --- the chain of sites in this zone, so progress reads at a glance
@@ -1898,11 +2059,18 @@ const UI = {
     // --- the button that actually sends you. It used to be the word ENTER,
     // which is not a key a phone or a tablet has.
     const go = this.stageGoRect(), gx2 = go.x + shake;
-    ctx.fillStyle = open ? 'rgba(52,26,6,0.96)' : 'rgba(20,10,10,0.9)'; ctx.fillRect(gx2, go.y, go.w, go.h);
-    ctx.fillStyle = open ? (Math.floor(t * 2) % 2 ? '#ffe060' : '#c8a030') : '#6a4038'; ctx.fillRect(gx2, go.y, go.w, 2);
-    ctx.fillStyle = '#1a0e04'; ctx.fillRect(gx2, go.y + go.h - 1, go.w, 1);
-    this.bracket(ctx, gx2 - 2, go.y - 2, go.w + 4, go.h + 4, open ? '#ff8050' : '#5a4a48', 7);
-    Font.draw(ctx, open ? 'RELEASE' : 'SEALED', gx2 + go.w / 2, go.y + 7, { color: open ? '#ffd0a0' : '#a08070', align: 'center', scale: 2, outline: '#2a0c00' });
+    const pump = open ? Math.round(Math.sin(t * 3) * 1.2) : 0;
+    this.panel(ctx, gx2, go.y - pump, go.w, go.h, open ? '#ffb040' : '#5a4a48', open ? '#7a3c08' : 'rgba(20,10,10,0.9)', open ? '#ff8030' : null);
+    if (open) {
+      // the sheen that runs across a button you are meant to press
+      const u = (t * 0.6) % 1.6;
+      ctx.save(); ctx.beginPath(); ctx.rect(gx2 + 2, go.y - pump + 2, go.w - 4, go.h - 4); ctx.clip();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = '#fff0c0';
+      ctx.fillRect(Math.round(gx2 + u * go.w - 14), go.y - pump, 12, go.h);
+      ctx.globalAlpha = 1; ctx.restore();
+    }
+    Font.draw(ctx, open ? 'RELEASE' : 'SEALED', gx2 + go.w / 2, go.y - pump + go.h / 2 - 4, { color: open ? '#fff0c8' : '#a08070', align: 'center', scale: 2, outline: '#2a0c00' });
     Font.draw(ctx, this.exitShown() ? 'DRAG TO SPIN' : 'DRAG  SPIN     UP/DOWN  SITE     ENTER  RELEASE', px0 + shake, H - 11, { color: '#4f7f74' });
     this.drawExit(ctx);
   },

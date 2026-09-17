@@ -19,9 +19,9 @@ const LAIRS = [
   { id: 'gnasher', x: -2280, r: 260, warn: 680, name: 'THE GNASHER', sign: 'bones', tell: 'THERE ARE BONES ON EVERY PILING' },
   { id: 'sludgeking', x: 640, r: 330, warn: 860, name: 'THE GATEKEEPER', sign: 'sludge', tell: 'THE CURRENT IS GOING THE WRONG WAY' },
   // ---- the glades ------------------------------------------------------
-  { id: 'oldscar', x: 4250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'THIS BANK BELONGS TO SOMETHING' },
-  { id: 'python', x: 5950, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
-  { id: 'warboat', x: 9300, r: 320, warn: 800, name: 'THE POACHER WARBOAT', sign: 'traps', tell: 'TRAPLINES. SOMEBODY WORKS THIS WATER' },
+  { id: 'oldscar', x: 6250, r: 300, warn: 760, name: 'OLD SCAR', sign: 'bones', tell: 'EVERY HOLE ON THIS PRAIRIE IS EMPTY' },
+  { id: 'python', x: 8300, r: 280, warn: 720, name: 'MOTHER PYTHON', sign: 'sheds', tell: 'SHED SKIN, AND PLENTY OF IT' },
+  { id: 'warboat', x: 10600, r: 320, warn: 800, name: 'THE POACHER WARBOAT', sign: 'traps', tell: 'TRAPLINES. SOMEBODY WORKS THIS WATER' },
   { id: 'skunkape', x: 14250, r: 340, warn: 900, name: 'THE SKUNK APE', sign: 'prints', tell: 'PRINTS IN THE MUD, AND THEY ARE NOT YOURS' },
   // ---- the ocean -------------------------------------------------------
   { id: 'anvil', x: 21800, r: 320, warn: 800, name: 'THE ANVIL', sign: 'bones', tell: 'EVERY FISH HERE IS SWIMMING THE OTHER WAY' },

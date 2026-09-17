@@ -126,7 +126,9 @@ const Puzzles = {
   reset() { this.mechs = []; this.gate = null; this.qte = null; this.solved = 0; this.exitOpen = false; this.stage = null; },
   begin(stage) {
     this.reset();
-    if (!stage || !stage.intro) return;
+    // The tide gate is a zone-one thing, at the Golden Gate. The run does not
+    // start in zone one any more, so it arms for a zone-one release only.
+    if (!stage || stage.zone !== 'river') return;
     this.stage = stage;
     for (const m of CATACOMB_MECHS) {
       // exactly where it was drawn: these are bolted to a weir, not scattered

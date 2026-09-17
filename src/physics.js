@@ -136,7 +136,7 @@ const Foliage = {
       const k = FOLIAGE_KIND[d.type]; if (!k || !k.water) continue;
       const top = k.top(d);
       if (y < Math.min(top, d.y) - 10 || y > Math.max(top, d.y) + 10) continue;
-      c += 0.22 * clamp(1 - Math.abs(d.x - x) / 40, 0, 1);
+      c += 0.22 * (k.cover || 1) * clamp(1 - Math.abs(d.x - x) / 40, 0, 1);
       if (c >= 1) break;
     }
     return clamp(c, 0, 1);
@@ -176,7 +176,9 @@ const Foliage = {
 };
 const FOLIAGE_KIND = {
   weed: { top: d => d.y - d.h, water: true }, algae: { top: d => d.y - d.h, water: true }, reed: { top: d => d.top }, cattail: { top: d => d.top },
-  sawgrass: { top: d => d.y - 12 * d.s }, seagrass: { top: d => d.y - d.h, water: true }, mushroom: { top: d => d.y - 6 }, palmetto: { top: d => d.y - 16 * d.s }, fern: { top: d => d.y - 13 * d.s }, bush: { top: d => d.y - 12 * d.s },
+  sawgrass: { top: d => d.y - 12 * d.s },
+  // the only real cover in the glades: standing grass you can lie down in
+  tallgrass: { top: d => d.y - d.h * d.s, water: true, cover: 1.25 }, periphyton: { top: d => d.y - 3 }, seagrass: { top: d => d.y - d.h, water: true }, mushroom: { top: d => d.y - 6 }, palmetto: { top: d => d.y - 16 * d.s }, fern: { top: d => d.y - 13 * d.s }, bush: { top: d => d.y - 12 * d.s },
   hyacinth: { top: d => -10, water: true }, duckweed: { top: d => -3, water: true }, lily: { top: d => -3, water: true },
   cypress: { top: d => d.y - d.h, tree: true, leaf: '#3a6a30' }, oak: { top: d => d.y - d.h, tree: true, leaf: '#4a7a3a' }, palm: { top: d => d.y - d.h, tree: true, leaf: '#5a8a3a' },
   mangrove: { top: d => d.y - 30 * d.s, tree: true, leaf: '#3f7a3a' }, vine: { top: d => d.y - d.h }, flower: { top: d => d.y - 10 },

@@ -1,11 +1,17 @@
 # CHOMPERS
 
 A 2D pixel-art, side-scrolling **eater roguelike**. You are Subject 7: a lab-made crocodile spliced
-with the genes of every animal alive. You break your tank, the floor plate lets go under you, and a
-hundred and forty feet of brick shaft goes past in the dark. You black out on the way and come round
-in a **creek in the bottom of a wooded canyon**, under a hundred feet of redwood, with no fence
-anywhere. Work down the creek into two miles of **blackwater swamp**, out of the swamp into Islais
-Creek, past the wharf, into the bay, and under the Golden Gate into the Pacific.
+with the genes of every animal alive. The facility signs you over and a helicopter comes for you: a
+steel cage lashed to the cabin floor, two handlers on the bench in flight helmets, the side door open
+because it is ninety degrees at four hundred feet, and forty minutes of the **River of Grass** going
+past underneath. They are taking you to a crocodile reserve in the Everglades.
+
+You are not going to a crocodile reserve in the Everglades. You break the cage, you walk aft, and you
+go out of the door.
+
+What is at the bottom is sixty miles of sawgrass standing in a foot of water, with **Everglades
+Holiday Park** on the levee in the middle of it — four hundred people, an airboat dock and a gator
+show at two o'clock. Work out of the basin, down the canal and east into the bay.
 
 Everything in the water is food or is going to eat you, and which one it is depends on how big you have
 got. Hunger drains the whole time you are not eating. Chain mouthfuls for a multiplier. Every lair is a
@@ -297,6 +303,97 @@ axis off the impact. Gore still comes off the prey; nothing comes off the bite.
 **Density.** The director stocks to thirty-plus visible prey, counts only what
 is within a screen and a bit, puts shoals in just past the edge of the shot at
 roughly the depth you are swimming at, and doubles school sizes indoors.
+
+## The airlift
+
+The opening is not a cutscene and it is not a corridor any more. It is a
+helicopter cabin, drawn as a set: a riveted aluminium box with longerons and
+frames and rivets on them, a porthole with the glades going past in it, a fire
+bottle and a first aid box on the wall, a load rail down the roof with strops
+swinging off it, two cabin lamps, a diamond-tread floor with tie-down rails
+in it, a cargo net across the aft end, the pilots' bulkhead with an instrument
+panel bleeding through the doorway — and a hole in the side of the aircraft
+with the wind coming in over the sill.
+
+You are in a **barred steel transport cage** on the floor of it: pan, corner
+posts, eleven bars, a door with a latch and a padlock, a LIVE ANIMAL placard
+and a red diamond, and two yellow ratchet straps holding the lot to the rails.
+Mash bite. Every hit bows one more bar and the latch works looser, and on the
+eighth the whole thing goes.
+
+Then you are loose on the cabin floor with two people in flight suits and
+helmets coming for you, and the door is aft. Walk out of it.
+
+**The fall is real.** Four hundred feet of the game's own physics with the
+game's own camera on it: you can steer, the air goes past in streaks, the
+altitude counts down, the helicopter you just left carries on without you with
+its rotor a blur, and at the bottom is the water you spend the rest of the run
+in. Nothing is hidden and nothing is faded out.
+
+There is a way to lose it. Stay in the cabin and the reserve comes up, the
+skids touch, and Airlift 11 gets completed after all.
+
+## The River of Grass
+
+The Everglades is the flattest landscape on the continent, and the map is
+built that way now: **depth thirty to seventy nearly everywhere**, and every
+departure from it is a thing you can point at.
+
+| What | What it is |
+| --- | --- |
+| **The sheet** | a foot of water over flat limestone, sawgrass standing in it, going on past the edge of the screen |
+| **Gator holes** | the only deep water in a drought, and therefore the only water with anything in it |
+| **Tree islands** | a few feet of hardwood standing proud of the sheet — the only thing out here with a top edge |
+| **Cypress domes** | a ring of cypress that gets taller toward the middle, because the hole under it is deeper there |
+| **The canal** | dead straight and forty feet deep, because a man drew it with a dragline |
+
+There is no ridge on the horizon and no tree line, because there is no ridge
+and no tree line: the background is four flat bands of grass at four parallaxes
+with tuft noise on the top edge, tree islands and domes sitting on them, dead
+cypress standing white out of the domes with something in the top, wading
+birds with their reflections under them, and a wall of heat over the lot that
+wobbles a pixel at a time.
+
+Under the water: shafts of light through the grass, solution holes in the
+limestone with a pale rock lip round them, sunken logs with branch stubs and
+weed on the upper side, and marl hanging in suspension.
+
+**Tall grass is cover.** Sawgrass now stands in the water as well as on the
+banks — blades from the bed up through the surface, cut by the waterline,
+bending away from you as you swim through them — and it feeds the concealment
+system at better than the rate of anything else in the game. Lie down in it and
+the bank cannot see you.
+
+## Everglades Holiday Park
+
+The one built thing in sixty miles of grass, laid out the way the real one is
+laid out, west to east:
+
+| | |
+| --- | --- |
+| **The sign** | off the highway, on two poles, with a gator along the bottom of it |
+| **Parking** | painted bays, a coach with its destination blind still lit, two pickups, light poles that come on after dark |
+| **Main building** | stucco under a green standing-seam hip roof: three ticket windows, a **gift shop** with plush gators in the glass under a striped awning, a **cafe** with parasol tables out front, a flagpole, and the **grand concourse** running straight through the middle of it to the water with people walking down it |
+| **The gator pit** | a sand ring with a pool in the middle, a wall round it, five rows of stadium seating either side with people on them, and a **louvered roof** over the lot that throws stripes on the sand. A handler and something with teeth in the middle |
+| **The docks** | a timber concourse on piles with tyre fenders and weed on the waterline, a rail, a **photo stand**, four **airboats** in their berths — flat aluminium hull, stepped bench seats, a driver's chair up on a post, the cage and the prop — and a queue of people in life jackets |
+| **The ramps** | concrete, going down into the basin |
+
+Nothing self-seeds through it: the levee is twenty-nine acres of asphalt and
+building, and the planting is in the water either side.
+
+## The menu
+
+The two plates on the title screen were labels. They are **cards** now — the
+chrome a phone game uses: a hard shadow, a bevel, cut corners, a lit rim, and a
+picture the size of your thumb. One card is your animal, drawn as a crocodile's
+head with a slit pupil that blinks and a jaw that works, with your length on a
+badge. The other is the lab, drawn as a flask with something green in it and a
+helix turning out of the top, with your data count on a badge. The selected one
+lifts off the screen and glows.
+
+The world map got the same treatment: the readout column is one card with a
+hero image of the site's landmark standing on a horizon, and the release button
+is a slab with a sheen running across it.
 
 ## Breeding
 

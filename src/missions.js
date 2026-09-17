@@ -11,7 +11,7 @@ const ARTIFACTS = [
     boon: 'START EVERY RUN WITH 2 GENE POINTS', col: '#9ad8c0', glyph: 'tag', apply: P => { P.genePoints += 2; } },
   { id: 'oyster', stage: 'mangrove', name: "DROWNED MAN'S RING", line: 'PRISED OUT OF AN OYSTER BED WITH A FINGER STILL IN IT.',
     boon: '+8% BITE', col: '#d8c8a0', glyph: 'ring', apply: P => { P.st.bite *= 1.08; } },
-  { id: 'skull', stage: 'camp', name: "GATOR JOE'S SKULL", line: 'HE NAMED THE CAMP AFTER HIMSELF. YOU KEPT THE REST.',
+  { id: 'skull', stage: 'camp', name: 'AN AIRBOAT PROP BLADE', line: 'IT CAME OFF AT TWO THOUSAND REVOLUTIONS AND WENT THROUGH THE CAGE.',
     boon: '+10% MAX HEALTH', col: '#e4dcc4', glyph: 'skull', apply: P => { P.st.hpMul *= 1.10; } },
   { id: 'knee', stage: 'cypress', name: 'BLACKWATER KNEE', line: 'A CYPRESS KNEE THAT GREW AROUND SOMETHING METAL.',
     boon: '+2 STRAIN TOLERANCE', col: '#8a6a44', glyph: 'knee', apply: P => { P.strainBonus = (P.strainBonus || 0) + 2; } },
@@ -53,9 +53,9 @@ for (const a of ARTIFACTS) ARTIFACT_BY_ID[a.id] = a;
 
 // One standing order per site. `kind` decides which hook counts.
 const MISSIONS = {
-  facility:   { title: 'GET TO THE PACIFIC', line: 'OPEN THE TIDE GATE', kind: 'puzzle', target: 3 },
+  facility:   { title: 'DISAPPEAR', line: 'PUT 2500M BETWEEN YOU AND THE PARK', kind: 'travel', target: 2500 },
   mangrove:   { title: 'THIN THE ROOTS', line: 'TAKE 14 FISH', kind: 'fish', target: 14 },
-  camp:       { title: 'CLOSE THE CAMP', line: 'WRECK 3 BUILDS', kind: 'wreck', target: 3 },
+  camp:       { title: 'CLOSE THE PARK', line: 'TAKE 8 PEOPLE', kind: 'human', target: 8 },
   cypress:    { title: 'OWN THE DEEP', line: 'KILL 5 PREDATORS', kind: 'threat', target: 5 },
   prairie:    { title: 'CROSS THE OPEN', line: 'CROSS THE OPEN', kind: 'travel', target: 1600, unit: 'M' },
   river:      { title: 'RUN THE CHANNEL', line: 'KILL A BOSS', kind: 'boss', target: 1 },
@@ -82,13 +82,13 @@ const MISSIONS = {
 // in your teeth. Nobody is talking to you. You are what they are talking about.
 // ---------------------------------------------------------------------------
 const STORY = {
-  facility: ['SUBJECT 11 IS OUT OF THE TANK AND INSIDE THE BUILDING.', 'THE FLOOR PLATE IN THE WEST CORRIDOR HAS GONE.',
-    'THAT SHAFT IS A HUNDRED AND FORTY FEET AND IT LETS OUT IN A CREEK.',
-    'THE CREEK IS IN A NATIONAL FOREST. THERE IS NO FENCE AROUND A FOREST.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
+  facility: ['AIRLIFT 11 REPORTS THE CRATE IS OPEN. THEY ARE STILL IN THE AIR.', 'IT WENT OUT OF THE DOOR. THAT IS FOUR HUNDRED FEET.',
+    'IT WENT INTO THE WATER NORTH OF THE PARK AND IT DID NOT COME BACK UP WHERE IT WENT IN.',
+    'THAT IS SIXTY MILES OF SAWGRASS AND NOBODY HAS A FENCE AROUND IT.', 'IT KEPT THE TAG. IT KNOWS WHAT IT IS.'],
   mangrove: ['THE ROOT LINE IS SHALLOW. IT WILL HAVE TO SURFACE TO CROSS.', 'IT IS NOT CROSSING. IT IS FEEDING.',
     'SIXTY POUNDS OF SNOOK IN ELEVEN MINUTES.', 'THAT RING CAME OFF A DIVER WE NEVER FOUND.'],
-  camp: ['THERE ARE PEOPLE AT THAT CAMP. ADVISE THEM.', 'NOBODY IS ANSWERING AT THE CAMP.',
-    'THE CAMP IS IN THE WATER.', 'JOE BUILT THAT PLACE WITH HIS HANDS. YOU HAVE HIS HEAD.'],
+  camp: ['IT IS AT THE HOLIDAY PARK. THERE ARE FOUR HUNDRED PEOPLE ON THOSE DOCKS.', 'CLEAR THE BOARDS. CLEAR THE PIT AS WELL.',
+    'THE TWO O CLOCK SHOW IS NOT GOING AHEAD.', 'THAT BLADE WENT THROUGH THE CAGE AND THROUGH THE MAN BEHIND IT.'],
   cypress: ['TANNIC WATER. WE LOSE THE TRANSPONDER UNDER THE KNEES.', 'SOMETHING ELSE IS HUNTING IN THERE WITH IT.',
     'WHATEVER WAS HUNTING IT IS NOT ANY MORE.', 'THE KNEE GREW AROUND A SURVEY STAKE. NOBODY SURVEYED THAT FAR IN.'],
   prairie: ['SHEET FLOW. NO COVER FOR MILES. IT WILL TURN BACK.', 'IT IS NOT TURNING BACK.',
